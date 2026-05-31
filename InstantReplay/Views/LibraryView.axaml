@@ -79,6 +79,19 @@
                                  FontSize="10"
                                  Foreground="#A6FFFFFF" />
                     </Border>
+
+                    <!-- Delete button (top-right). Binds to the VM via the ItemsControl ancestor,
+                         which is reliably in the visual tree (popups/flyouts are not). -->
+                    <Button HorizontalAlignment="Right" VerticalAlignment="Top"
+                            Margin="0,5,5,0" Width="26" Height="26" CornerRadius="13" Padding="0"
+                            Background="#99000000" BorderThickness="0" Cursor="Hand"
+                            ToolTip.Tip="{DynamicResource Library_Delete}"
+                            Command="{Binding $parent[ItemsControl].((vm:LibraryViewModel)DataContext).DeleteClipCommand}"
+                            CommandParameter="{Binding}">
+                      <materialIcons:MaterialIcon Kind="TrashCanOutline" Width="14" Height="14"
+                                                  Foreground="#E6FFFFFF"
+                                                  HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Button>
                   </Grid>
 
                   <!-- Info area -->

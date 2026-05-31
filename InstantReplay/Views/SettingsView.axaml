@@ -104,6 +104,23 @@
                         MinWidth="80" />
             </DockPanel>
 
+            <Border Height="0.5" Background="#0DFFFFFF" />
+
+            <!-- Microphone Volume -->
+            <DockPanel Margin="16,11">
+              <TextBlock DockPanel.Dock="Left" Text="{DynamicResource Settings_MicVolume}"
+                         FontSize="13" Foreground="#B3FFFFFF"
+                         VerticalAlignment="Center" />
+              <TextBlock DockPanel.Dock="Right" Width="42"
+                         Text="{Binding MicVolume, StringFormat='{}{0}%'}"
+                         FontSize="12" Foreground="{StaticResource AccentCyanBrush}"
+                         HorizontalAlignment="Right" VerticalAlignment="Center" />
+              <Slider Minimum="0" Maximum="100"
+                      Value="{Binding MicVolume, Mode=TwoWay}"
+                      Margin="16,0,10,0" VerticalAlignment="Center"
+                      Foreground="{StaticResource AccentCyanBrush}" />
+            </DockPanel>
+
           </StackPanel>
         </Border>
       </StackPanel>

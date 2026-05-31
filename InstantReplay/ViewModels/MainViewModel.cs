@@ -165,9 +165,10 @@ public partial class MainViewModel : ViewModelBase
 
             // Shift heavy native initialization to a background thread to prevent UI freezing/crashing
             string? libPath = Settings.LibraryPath;
+            float micVolume = Settings.MicVolume / 100f;
             await Task.Run(() =>
             {
-                _engine.Initialize(bufferSeconds, fps, width, height, micId, monitorId, libPath);
+                _engine.Initialize(bufferSeconds, fps, width, height, micId, monitorId, libPath, micVolume);
                 _engine.StartBuffer();
             });
             

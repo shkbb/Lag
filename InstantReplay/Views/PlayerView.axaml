@@ -153,7 +153,8 @@
             <Border x:Name="VideoClickSurface"
                     Background="Transparent"
                     IsHitTestVisible="True"
-                    PointerPressed="OnVideoSurfacePressed" />
+                    ZIndex="100"
+                    PointerReleased="OnVideoSurfaceReleased" />
           </Grid>
 
           <!-- Replay Badge -->

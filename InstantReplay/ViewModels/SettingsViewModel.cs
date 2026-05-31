@@ -155,6 +155,17 @@ public partial class SettingsViewModel : ViewModelBase
         SaveSettings();
     }
 
+    // ───────────── Microphone Volume ─────────────
+
+    /// <summary>Microphone volume in percent (0–100). Applied to the OBS mic source as a 0.0–1.0 gain.</summary>
+    [ObservableProperty]
+    private int _micVolume = 100;
+
+    partial void OnMicVolumeChanged(int value)
+    {
+        SaveSettings();
+    }
+
     // ───────────── Automation ─────────────
 
     /// <summary>The Run-key registry value name used for "Start with Windows".</summary>
@@ -464,7 +475,8 @@ public partial class SettingsViewModel : ViewModelBase
                 MicrophoneId = SelectedMicrophone?.Id ?? string.Empty,
                 StartWithWindows = StartWithWindows,
                 AutoStartRecording = AutoStartRecording,
-                Language = SelectedLanguage.Code
+                Language = SelectedLanguage.Code,
+                MicVolume = MicVolume
             };
 
             string dir = Path.GetDirectoryName(SettingsFilePath)!;
@@ -505,6 +517,7 @@ public partial class SettingsViewModel : ViewModelBase
             LibraryPath = settings.LibraryPath ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyVideos), "Lag");
             SelectedFrameRate = FrameRateOptions.Contains(settings.FrameRate)
                 ? settings.FrameRate : 30;
+            MicVolume = Math.Clamp(settings.MicVolume, 0, 100);
 
             // Restore the persisted monitor/microphone by matching against the enumerated devices.
             if (!string.IsNullOrEmpty(settings.MonitorDeviceName))
@@ -552,6 +565,9 @@ public partial class SettingsViewModel : ViewModelBase
 
         /// <summary>UI language code: "en" (default) or "uk".</summary>
         public string Language { get; set; } = "en";
+
+        /// <summary>Microphone volume in percent (0–100).</summary>
+        public int MicVolume { get; set; } = 100;
     }
 }
 

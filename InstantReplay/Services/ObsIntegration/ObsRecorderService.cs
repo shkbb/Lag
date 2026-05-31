@@ -25,6 +25,9 @@ public sealed class ObsRecorderService : IDisposable
 
     private string? _libraryPath;
 
+    /// <summary>Linear microphone volume applied to the mic source (1.0 = 100%). Set in Initialize.</summary>
+    private float _micVolume = 1.0f;
+
     // SafeHandles for unmanaged resources to prevent memory leaks during GC
     private ObsSourceHandle? _captureSource;
     private ObsEncoderHandle? _videoEncoder;
@@ -109,10 +112,11 @@ public sealed class ObsRecorderService : IDisposable
     /// is torn down on every Stop via <see cref="Teardown"/>; the core is only shut down on real app
     /// exit via <see cref="Dispose"/> (invoked by the DI container on ShutdownRequested).
     /// </summary>
-    public void Initialize(int bufferSeconds, int frameRate, uint width, uint height, string? microphoneId = null, string? monitorId = null, string? libraryPath = null)
+    public void Initialize(int bufferSeconds, int frameRate, uint width, uint height, string? microphoneId = null, string? monitorId = null, string? libraryPath = null, float micVolume = 1.0f)
     {
         // Refresh the destination path so a changed library folder is honoured on every Start.
         _libraryPath = libraryPath;
+        _micVolume = micVolume;
 
         // Defensive: if a previous session was not explicitly stopped, release its pipeline first
         // so we never leak or double-attach native objects. (Core stays resident.)
@@ -636,8 +640,10 @@ public sealed class ObsRecorderService : IDisposable
 
                 if (_micAudioSource != null && !_micAudioSource.IsInvalid)
                 {
+                    // Apply the user-configured microphone volume (linear, 1.0 = 100%).
+                    ObsInterop.obs_source_set_volume(_micAudioSource, _micVolume);
                     ObsInterop.obs_set_output_source(2, _micAudioSource); // Channel 2: Mic
-                    Console.WriteLine($"[ObsRecorderService] Microphone source active: {micSourceId} (device: {resolvedMicId})");
+                    Console.WriteLine($"[ObsRecorderService] Microphone source active: {micSourceId} (device: {resolvedMicId}, volume: {_micVolume:P0})");
                 }
                 else
                 {

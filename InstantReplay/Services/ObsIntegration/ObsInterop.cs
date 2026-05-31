@@ -176,8 +176,11 @@ public static class ObsInterop
     [DllImport(ObsDll, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
     public static extern void obs_data_set_int(ObsDataHandle data, string name, long val);
 
+    // The VALUE is marshalled as UTF-8 (libobs expects strict UTF-8). This fixes corrupted output
+    // when the replay directory / file path contains Cyrillic (or any non-ASCII) characters.
+    // The key name stays ASCII, which is a valid UTF-8 subset.
     [DllImport(ObsDll, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-    public static extern void obs_data_set_string(ObsDataHandle data, string name, string val);
+    public static extern void obs_data_set_string(ObsDataHandle data, string name, [MarshalAs(UnmanagedType.LPUTF8Str)] string val);
 
     [DllImport(ObsDll, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
     public static extern void obs_data_set_bool(ObsDataHandle data, string name, bool val);
@@ -191,6 +194,10 @@ public static class ObsInterop
 
     [DllImport(ObsDll, CallingConvention = CallingConvention.Cdecl)]
     public static extern void obs_source_release(IntPtr source);
+
+    // Sets the linear volume of a source (1.0 = 100%, 0.0 = muted). Used for mic volume control.
+    [DllImport(ObsDll, CallingConvention = CallingConvention.Cdecl)]
+    public static extern void obs_source_set_volume(ObsSourceHandle source, float volume);
 
     // Encoders (NVENC, AMF, VAAPI, x264)
     [DllImport(ObsDll, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]

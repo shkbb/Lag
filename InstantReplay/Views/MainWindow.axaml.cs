@@ -96,6 +96,13 @@ public partial class MainWindow : Window
         }
     }
 
+    /// <summary>Lets the user drag the window by the custom title bar (left mouse button).</summary>
+    private void OnTitleBarPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+            BeginMoveDrag(e);
+    }
+
     /// <summary>ESC exits fullscreen (restores the normal layout).</summary>
     private void OnPreviewKeyDown(object? sender, KeyEventArgs e)
     {

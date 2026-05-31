@@ -140,11 +140,14 @@ public partial class PlayerView : UserControl
     }
 
     /// <summary>
-    /// Toggles play/pause when the user clicks the video surface. This works because libVLC mouse
-    /// input is disabled in PlayerViewModel, letting the native window pass clicks to this overlay.
+    /// Toggles play/pause on click of the high-ZIndex transparent overlay. Uses PointerReleased
+    /// (more reliable than Tapped/Pressed over the native host); works because libVLC mouse input
+    /// is disabled in PlayerViewModel, so the native window forwards events to this overlay.
     /// </summary>
-    private void OnVideoSurfacePressed(object? sender, PointerPressedEventArgs e)
+    private void OnVideoSurfaceReleased(object? sender, PointerReleasedEventArgs e)
     {
+        if (e.InitialPressMouseButton != MouseButton.Left) return;
+
         Focus();
         if (DataContext is PlayerViewModel vm && vm.PlayPauseCommand.CanExecute(null))
             vm.PlayPauseCommand.Execute(null);

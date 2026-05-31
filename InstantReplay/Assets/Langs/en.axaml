@@ -22,6 +22,7 @@
   <sys:String x:Key="Settings_Display">Display</sys:String>
   <sys:String x:Key="Settings_Microphone">Microphone</sys:String>
   <sys:String x:Key="Settings_FrameRate">Frame rate (FPS)</sys:String>
+  <sys:String x:Key="Settings_MicVolume">Mic volume</sys:String>
   <sys:String x:Key="Settings_Group_Automation">AUTOMATION</sys:String>
   <sys:String x:Key="Settings_StartWithWindows">Start with Windows</sys:String>
   <sys:String x:Key="Settings_StartWithWindows_Desc">Adds the app to system startup</sys:String>
@@ -48,6 +49,7 @@
   <sys:String x:Key="Library_Title">Library</sys:String>
   <sys:String x:Key="Library_Subtitle">Your saved moments</sys:String>
   <sys:String x:Key="Library_Empty">No replays yet. Start recording and press the hotkey to save a replay!</sys:String>
+  <sys:String x:Key="Library_Delete">Delete</sys:String>
 
   <!-- ════════ Player ════════ -->
   <sys:String x:Key="Player_Replays">REPLAYS</sys:String>
