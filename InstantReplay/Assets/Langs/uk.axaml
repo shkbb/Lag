@@ -1,0 +1,83 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="using:System">
+
+  <!-- ════════ Shell / Navigation ════════ -->
+  <sys:String x:Key="App_Tagline">Фоновий запис екрану</sys:String>
+  <sys:String x:Key="Nav_Header">НАВІГАЦІЯ</sys:String>
+  <sys:String x:Key="Nav_Settings">Налаштування</sys:String>
+  <sys:String x:Key="Nav_Library">Бібліотека</sys:String>
+  <sys:String x:Key="Nav_Player">Програвач</sys:String>
+  <sys:String x:Key="Btn_StartRecording">Почати запис</sys:String>
+  <sys:String x:Key="Btn_StopRecording">Зупинити запис</sys:String>
+  <sys:String x:Key="Btn_SaveReplay">Зберегти повтор</sys:String>
+
+  <!-- ════════ Settings ════════ -->
+  <sys:String x:Key="Settings_Title">Налаштування</sys:String>
+  <sys:String x:Key="Settings_PendingChanges">Зміни набудуть чинності після перезапуску запису.</sys:String>
+  <sys:String x:Key="Settings_Group_Language">МОВА</sys:String>
+  <sys:String x:Key="Settings_Language">Мова</sys:String>
+  <sys:String x:Key="Settings_Group_Recording">ЗАПИС</sys:String>
+  <sys:String x:Key="Settings_BufferLength">Довжина буфера повтору</sys:String>
+  <sys:String x:Key="Settings_Display">Екран</sys:String>
+  <sys:String x:Key="Settings_Microphone">Мікрофон</sys:String>
+  <sys:String x:Key="Settings_FrameRate">Частота кадрів (FPS)</sys:String>
+  <sys:String x:Key="Settings_Group_Automation">АВТОМАТИЗАЦІЯ</sys:String>
+  <sys:String x:Key="Settings_StartWithWindows">Запускати разом із Windows</sys:String>
+  <sys:String x:Key="Settings_StartWithWindows_Desc">Додає застосунок до автозавантаження системи</sys:String>
+  <sys:String x:Key="Settings_AutoStart">Автоматично починати запис</sys:String>
+  <sys:String x:Key="Settings_AutoStart_Desc">Запис у буфер повтору стартує одразу після запуску</sys:String>
+  <sys:String x:Key="Settings_Group_Hotkey">ГАРЯЧІ КЛАВІШІ</sys:String>
+  <sys:String x:Key="Settings_Hotkey_SaveReplay">Зберегти повтор</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Desc">Натисніть кнопку, а потім потрібну комбінацію клавіш</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Change">Змінити</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Listening">Слухаю...</sys:String>
+  <sys:String x:Key="Settings_Group_Paths">ШЛЯХИ</sys:String>
+  <sys:String x:Key="Settings_LibraryFolder">Папка бібліотеки</sys:String>
+  <sys:String x:Key="Settings_Browse">Огляд</sys:String>
+  <sys:String x:Key="About_Group">ПРО ПРОГРАМУ</sys:String>
+  <sys:String x:Key="About_Version">Версія</sys:String>
+  <sys:String x:Key="About_CheckUpdates">Перевірити оновлення</sys:String>
+  <sys:String x:Key="Update_Checking">Перевірка оновлень...</sys:String>
+  <sys:String x:Key="Update_UpToDate">У вас найновіша версія.</sys:String>
+  <sys:String x:Key="Update_Downloading">Завантаження оновлення...</sys:String>
+  <sys:String x:Key="Update_DevMode">Оновлення недоступні в режимі розробки.</sys:String>
+  <sys:String x:Key="Update_Failed">Помилка оновлення: {0}</sys:String>
+
+  <!-- ════════ Library ════════ -->
+  <sys:String x:Key="Library_Title">Бібліотека</sys:String>
+  <sys:String x:Key="Library_Subtitle">Ваші збережені моменти</sys:String>
+  <sys:String x:Key="Library_Empty">Поки немає повторів. Почніть запис і натисніть гарячу клавішу, щоб зберегти повтор!</sys:String>
+
+  <!-- ════════ Player ════════ -->
+  <sys:String x:Key="Player_Replays">ПОВТОРИ</sys:String>
+  <sys:String x:Key="Player_Clips">Кліпи</sys:String>
+  <sys:String x:Key="Player_Duration">Тривалість</sys:String>
+  <sys:String x:Key="Player_Placeholder">Відеопрогравач</sys:String>
+  <sys:String x:Key="Player_NowPlaying">Відтворюється: </sys:String>
+  <sys:String x:Key="Player_ReplayBadge">ПОВТОР</sys:String>
+  <sys:String x:Key="Tooltip_Stop">Зупинити</sys:String>
+  <sys:String x:Key="Tooltip_Rewind">Назад 10 с</sys:String>
+  <sys:String x:Key="Tooltip_PlayPause">Відтворити / Пауза</sys:String>
+  <sys:String x:Key="Tooltip_Forward">Вперед 10 с</sys:String>
+  <sys:String x:Key="Tooltip_Next">Наступний повтор</sys:String>
+  <sys:String x:Key="Tooltip_Fullscreen">Повний екран (ESC — вихід)</sys:String>
+  <sys:String x:Key="Tooltip_Volume">Гучність</sys:String>
+
+  <!-- ════════ Runtime status (ViewModels) ════════ -->
+  <sys:String x:Key="Status_Ready">Готовий</sys:String>
+  <sys:String x:Key="Status_Starting">Початок запису (OBS)...</sys:String>
+  <sys:String x:Key="Status_Recording">Запис...</sys:String>
+  <sys:String x:Key="Status_NoMonitor">Монітор для запису не вибрано.</sys:String>
+  <sys:String x:Key="Status_ObsError">Помилка OBS: {0}</sys:String>
+  <sys:String x:Key="Status_Stopping">Зупинка...</sys:String>
+  <sys:String x:Key="Status_Stopped">Зупинено</sys:String>
+  <sys:String x:Key="Status_StopError">Помилка зупинки: {0}</sys:String>
+  <sys:String x:Key="Status_SaveError">Помилка збереження: {0}</sys:String>
+  <sys:String x:Key="Status_ReplaySaved">Повтор збережено: {0}</sys:String>
+  <sys:String x:Key="Status_Saving">Збереження повтору...</sys:String>
+  <sys:String x:Key="Status_NotRecording">Запис не активний — спочатку натисніть 'Почати запис'.</sys:String>
+  <sys:String x:Key="Hotkey_PressCombo">Натисніть комбінацію клавіш...</sys:String>
+  <sys:String x:Key="Browse_Title">Виберіть папку для збереження повторів</sys:String>
+
+</ResourceDictionary>

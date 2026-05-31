@@ -1,0 +1,45 @@
+# ───────── Build output ─────────
+[Bb]in/
+[Oo]bj/
+**/[Bb]in/
+**/[Oo]bj/
+
+# ───────── Publish / Velopack release artifacts ─────────
+publish/
+**/publish/
+[Rr]eleases/
+**/[Rr]eleases/
+
+# ───────── Heavy native runtime (libobs/FFmpeg) — NOT committed ─────────
+# Keep this folder locally; it is bundled into the Velopack release package,
+# not stored in git. ~408 MB of native binaries (ffmpeg.exe, obs64.dll, etc.).
+obs-core/
+**/obs-core/
+
+# ───────── Tooling / generated ─────────
+graphify-out/
+**/graphify-out/
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# ───────── OS / editor ─────────
+Thumbs.db
+ehthumbs.db
+desktop.ini
+.DS_Store
+
+# ───────── NuGet ─────────
+*.nupkg
+*.snupkg
+.nuget/
+
+# ───────── Logs ─────────
+*.log
+obs_native.log
+
+# ───────── Local Claude Code settings (user-specific) ─────────
+.claude/settings.local.json
+**/.claude/settings.local.json

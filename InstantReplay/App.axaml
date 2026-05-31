@@ -1,0 +1,58 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:core="using:Lag.Core"
+             xmlns:materialIcons="using:Material.Icons.Avalonia"
+             x:Class="Lag.App"
+             RequestedThemeVariant="Dark">
+
+  <Application.Resources>
+    <core:BoolToStringConverter x:Key="BoolToString" />
+
+    <!-- ═══════════ Global "Lag" palette (neon glass) ═══════════ -->
+    <!-- Headline accents reused across the redesign -->
+    <Color x:Key="LagCyan">#FF22D3EE</Color>
+    <Color x:Key="LagPurple">#FF9D8CFF</Color>
+    <Color x:Key="LagTeal">#FF2DD4BF</Color>
+    <SolidColorBrush x:Key="LagCyanBrush" Color="#FF22D3EE" />
+    <SolidColorBrush x:Key="LagPurpleBrush" Color="#FF9D8CFF" />
+    <SolidColorBrush x:Key="LagTealBrush" Color="#FF2DD4BF" />
+
+    <!-- Window backdrop gradient (deep translucent navy → black; lets Mica peek through) -->
+    <LinearGradientBrush x:Key="LagBackdropBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+      <GradientStop Color="#F20B0F1A" Offset="0" />
+      <GradientStop Color="#F2090B12" Offset="0.5" />
+      <GradientStop Color="#F2070910" Offset="1" />
+    </LinearGradientBrush>
+
+    <!-- Override Fluent's system accent so built-in controls (ToggleSwitch on-state,
+         focus rings, selection) match the neon-cyan brand. -->
+    <Color x:Key="SystemAccentColor">#FF22D3EE</Color>
+    <Color x:Key="SystemAccentColorLight1">#FF4DDDF2</Color>
+    <Color x:Key="SystemAccentColorLight2">#FF7BE7F5</Color>
+    <Color x:Key="SystemAccentColorLight3">#FFA7F0F9</Color>
+    <Color x:Key="SystemAccentColorDark1">#FF18B8D6</Color>
+    <Color x:Key="SystemAccentColorDark2">#FF129BB8</Color>
+    <Color x:Key="SystemAccentColorDark3">#FF0C7E96</Color>
+  </Application.Resources>
+
+  <Application.Styles>
+    <FluentTheme />
+    <materialIcons:MaterialIconStyles />
+    <StyleInclude Source="avares://Lag/Themes/DarkTheme.axaml" />
+  </Application.Styles>
+
+  <TrayIcon.Icons>
+    <TrayIcons>
+      <TrayIcon Icon="avares://Lag/Assets/icon.ico"
+                ToolTipText="Lag" Clicked="TrayIcon_OpenClicked">
+        <TrayIcon.Menu>
+          <NativeMenu>
+            <NativeMenuItem Header="Open" Click="TrayIcon_OpenClicked" />
+            <NativeMenuItem Header="Exit" Click="TrayIcon_ExitClicked" />
+          </NativeMenu>
+        </TrayIcon.Menu>
+      </TrayIcon>
+    </TrayIcons>
+  </TrayIcon.Icons>
+
+</Application>

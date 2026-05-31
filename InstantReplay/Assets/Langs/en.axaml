@@ -1,0 +1,83 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="using:System">
+
+  <!-- ════════ Shell / Navigation ════════ -->
+  <sys:String x:Key="App_Tagline">Background screen recording</sys:String>
+  <sys:String x:Key="Nav_Header">NAVIGATION</sys:String>
+  <sys:String x:Key="Nav_Settings">Settings</sys:String>
+  <sys:String x:Key="Nav_Library">Library</sys:String>
+  <sys:String x:Key="Nav_Player">Player</sys:String>
+  <sys:String x:Key="Btn_StartRecording">Start Recording</sys:String>
+  <sys:String x:Key="Btn_StopRecording">Stop Recording</sys:String>
+  <sys:String x:Key="Btn_SaveReplay">Save Replay</sys:String>
+
+  <!-- ════════ Settings ════════ -->
+  <sys:String x:Key="Settings_Title">Settings</sys:String>
+  <sys:String x:Key="Settings_PendingChanges">Changes will take effect after restarting the recording.</sys:String>
+  <sys:String x:Key="Settings_Group_Language">LANGUAGE</sys:String>
+  <sys:String x:Key="Settings_Language">Language</sys:String>
+  <sys:String x:Key="Settings_Group_Recording">RECORDING</sys:String>
+  <sys:String x:Key="Settings_BufferLength">Replay buffer length</sys:String>
+  <sys:String x:Key="Settings_Display">Display</sys:String>
+  <sys:String x:Key="Settings_Microphone">Microphone</sys:String>
+  <sys:String x:Key="Settings_FrameRate">Frame rate (FPS)</sys:String>
+  <sys:String x:Key="Settings_Group_Automation">AUTOMATION</sys:String>
+  <sys:String x:Key="Settings_StartWithWindows">Start with Windows</sys:String>
+  <sys:String x:Key="Settings_StartWithWindows_Desc">Adds the app to system startup</sys:String>
+  <sys:String x:Key="Settings_AutoStart">Start recording automatically</sys:String>
+  <sys:String x:Key="Settings_AutoStart_Desc">The replay buffer starts right after launch</sys:String>
+  <sys:String x:Key="Settings_Group_Hotkey">HOTKEY</sys:String>
+  <sys:String x:Key="Settings_Hotkey_SaveReplay">Save replay</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Desc">Click the button, then press the desired key combination</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Change">Change</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Listening">Listening...</sys:String>
+  <sys:String x:Key="Settings_Group_Paths">PATHS</sys:String>
+  <sys:String x:Key="Settings_LibraryFolder">Library folder</sys:String>
+  <sys:String x:Key="Settings_Browse">Browse</sys:String>
+  <sys:String x:Key="About_Group">ABOUT</sys:String>
+  <sys:String x:Key="About_Version">Version</sys:String>
+  <sys:String x:Key="About_CheckUpdates">Check for Updates</sys:String>
+  <sys:String x:Key="Update_Checking">Checking for updates...</sys:String>
+  <sys:String x:Key="Update_UpToDate">You have the latest version.</sys:String>
+  <sys:String x:Key="Update_Downloading">Downloading update...</sys:String>
+  <sys:String x:Key="Update_DevMode">Updates are unavailable in dev mode.</sys:String>
+  <sys:String x:Key="Update_Failed">Update failed: {0}</sys:String>
+
+  <!-- ════════ Library ════════ -->
+  <sys:String x:Key="Library_Title">Library</sys:String>
+  <sys:String x:Key="Library_Subtitle">Your saved moments</sys:String>
+  <sys:String x:Key="Library_Empty">No replays yet. Start recording and press the hotkey to save a replay!</sys:String>
+
+  <!-- ════════ Player ════════ -->
+  <sys:String x:Key="Player_Replays">REPLAYS</sys:String>
+  <sys:String x:Key="Player_Clips">Clips</sys:String>
+  <sys:String x:Key="Player_Duration">Duration</sys:String>
+  <sys:String x:Key="Player_Placeholder">Video player</sys:String>
+  <sys:String x:Key="Player_NowPlaying">Now playing: </sys:String>
+  <sys:String x:Key="Player_ReplayBadge">REPLAY</sys:String>
+  <sys:String x:Key="Tooltip_Stop">Stop</sys:String>
+  <sys:String x:Key="Tooltip_Rewind">Back 10s</sys:String>
+  <sys:String x:Key="Tooltip_PlayPause">Play / Pause</sys:String>
+  <sys:String x:Key="Tooltip_Forward">Forward 10s</sys:String>
+  <sys:String x:Key="Tooltip_Next">Next replay</sys:String>
+  <sys:String x:Key="Tooltip_Fullscreen">Fullscreen (ESC to exit)</sys:String>
+  <sys:String x:Key="Tooltip_Volume">Volume</sys:String>
+
+  <!-- ════════ Runtime status (ViewModels) ════════ -->
+  <sys:String x:Key="Status_Ready">Ready</sys:String>
+  <sys:String x:Key="Status_Starting">Starting recording (OBS)...</sys:String>
+  <sys:String x:Key="Status_Recording">Recording...</sys:String>
+  <sys:String x:Key="Status_NoMonitor">No display selected for recording.</sys:String>
+  <sys:String x:Key="Status_ObsError">OBS error: {0}</sys:String>
+  <sys:String x:Key="Status_Stopping">Stopping...</sys:String>
+  <sys:String x:Key="Status_Stopped">Stopped</sys:String>
+  <sys:String x:Key="Status_StopError">Stop error: {0}</sys:String>
+  <sys:String x:Key="Status_SaveError">Save error: {0}</sys:String>
+  <sys:String x:Key="Status_ReplaySaved">Replay saved: {0}</sys:String>
+  <sys:String x:Key="Status_Saving">Saving replay...</sys:String>
+  <sys:String x:Key="Status_NotRecording">Recording is not active — press 'Start Recording' first.</sys:String>
+  <sys:String x:Key="Hotkey_PressCombo">Press a key combination...</sys:String>
+  <sys:String x:Key="Browse_Title">Select a folder for saving replays</sys:String>
+
+</ResourceDictionary>

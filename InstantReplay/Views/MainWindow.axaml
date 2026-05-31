@@ -1,0 +1,207 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Lag.ViewModels"
+        xmlns:views="using:Lag.Views"
+        xmlns:materialIcons="using:Material.Icons.Avalonia"
+        x:Class="Lag.Views.MainWindow"
+        x:DataType="vm:MainViewModel"
+        Title="Lag"
+        Icon="avares://Lag/Assets/icon.ico"
+        Width="1200" Height="760"
+        MinWidth="900" MinHeight="600"
+        Background="Transparent"
+        TransparencyLevelHint="Mica, AcrylicBlur, Blur"
+        ExtendClientAreaToDecorationsHint="True"
+        ExtendClientAreaChromeHints="PreferSystemChrome"
+        ExtendClientAreaTitleBarHeightHint="44"
+        WindowStartupLocation="CenterScreen">
+
+  <!-- DataTemplates for view switching -->
+  <Window.DataTemplates>
+    <DataTemplate DataType="{x:Type vm:SettingsViewModel}">
+      <views:SettingsView />
+    </DataTemplate>
+    <DataTemplate DataType="{x:Type vm:LibraryViewModel}">
+      <views:LibraryView />
+    </DataTemplate>
+    <DataTemplate DataType="{x:Type vm:PlayerViewModel}">
+      <views:PlayerView />
+    </DataTemplate>
+  </Window.DataTemplates>
+
+  <!-- Full-bleed dark backdrop over the OS Mica material -->
+  <Panel Background="{StaticResource LagBackdropBrush}">
+
+    <!-- Soft top glow for depth -->
+    <Border Height="260" VerticalAlignment="Top" IsHitTestVisible="False">
+      <Border.Background>
+        <LinearGradientBrush StartPoint="50%,0%" EndPoint="50%,100%">
+          <GradientStop Color="#2622D3EE" Offset="0" />
+          <GradientStop Color="#00000000" Offset="1" />
+        </LinearGradientBrush>
+      </Border.Background>
+    </Border>
+
+    <DockPanel>
+
+      <!-- ═══════════ Custom Title Bar (44px, draggable via system chrome) ═══════════ -->
+      <Border DockPanel.Dock="Top" Height="44"
+              IsVisible="{Binding !IsFullscreen}"
+              Background="Transparent">
+        <StackPanel Orientation="Horizontal" Spacing="9"
+                    VerticalAlignment="Center" Margin="18,0,0,0">
+          <Image Source="avares://Lag/Assets/icon.ico" Width="16" Height="16"
+                 VerticalAlignment="Center" />
+          <TextBlock Text="LAG" FontSize="12" FontWeight="Bold"
+                     LetterSpacing="3"
+                     Foreground="{StaticResource TextSecondaryBrush}"
+                     VerticalAlignment="Center" />
+        </StackPanel>
+      </Border>
+
+      <!-- ═══════════ Body: floating glass nav + content ═══════════ -->
+      <DockPanel>
+
+        <!-- ═══════════ Floating Glass Sidebar ═══════════ -->
+        <Border DockPanel.Dock="Left"
+                Width="222"
+                Margin="12,4,6,14"
+                IsVisible="{Binding !IsFullscreen}"
+                CornerRadius="20"
+                BorderThickness="1"
+                BorderBrush="{StaticResource GlassBorderBrush}"
+                BoxShadow="0 22 60 0 #73000000">
+          <Border.Background>
+            <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+              <GradientStop Color="#24FFFFFF" Offset="0" />
+              <GradientStop Color="#0FFFFFFF" Offset="1" />
+            </LinearGradientBrush>
+          </Border.Background>
+
+          <DockPanel Margin="0,4,0,0">
+
+            <!-- Brand -->
+            <StackPanel DockPanel.Dock="Top" Spacing="3" Margin="18,16,18,16">
+              <TextBlock Text="Lag"
+                         FontSize="20" FontWeight="Bold"
+                         Foreground="{StaticResource TextPrimaryBrush}" />
+              <TextBlock Text="{DynamicResource App_Tagline}"
+                         FontSize="11"
+                         Foreground="{StaticResource TextDimBrush}" />
+            </StackPanel>
+
+            <!-- Recording Controls -->
+            <StackPanel DockPanel.Dock="Top" Margin="14,4,14,0" Spacing="8">
+
+              <!-- "Start Recording" (shown when NOT recording) -->
+              <Button Classes="btn-record"
+                      IsVisible="{Binding !IsRecording}"
+                      Command="{Binding ToggleRecordingCommand}">
+                <StackPanel Orientation="Horizontal" Spacing="8"
+                            HorizontalAlignment="Center">
+                  <Ellipse Width="8" Height="8" Fill="White" VerticalAlignment="Center" />
+                  <TextBlock Text="{DynamicResource Btn_StartRecording}" VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
+
+              <!-- "Stop Recording" (shown when recording) -->
+              <Button Classes="btn-stop"
+                      IsVisible="{Binding IsRecording}"
+                      Command="{Binding ToggleRecordingCommand}">
+                <StackPanel Orientation="Horizontal" Spacing="8"
+                            HorizontalAlignment="Center">
+                  <Rectangle Width="8" Height="8" Fill="White" RadiusX="2" RadiusY="2"
+                             VerticalAlignment="Center" />
+                  <TextBlock Text="{DynamicResource Btn_StopRecording}" VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
+
+              <!-- Save Replay -->
+              <Button Classes="btn-save"
+                      Command="{Binding SaveReplayCommand}"
+                      IsEnabled="{Binding IsRecording}">
+                <StackPanel Orientation="Horizontal" Spacing="8"
+                            HorizontalAlignment="Center">
+                  <materialIcons:MaterialIcon Kind="ContentSave" Width="16" Height="16"
+                                              VerticalAlignment="Center" />
+                  <TextBlock Text="{DynamicResource Btn_SaveReplay}" VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
+            </StackPanel>
+
+            <!-- Navigation -->
+            <StackPanel DockPanel.Dock="Top" Margin="14,18,14,0" Spacing="4">
+              <TextBlock Text="{DynamicResource Nav_Header}" Classes="section-header" Margin="6,0,0,6" />
+
+              <Button x:Name="NavSettings"
+                      Classes="nav"
+                      Command="{Binding NavigateToSettingsCommand}">
+                <StackPanel Orientation="Horizontal" Spacing="11">
+                  <materialIcons:MaterialIcon Kind="Cog" Width="18" Height="18" VerticalAlignment="Center" />
+                  <TextBlock Text="{DynamicResource Nav_Settings}" VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
+
+              <Button x:Name="NavLibrary"
+                      Classes="nav"
+                      Command="{Binding NavigateToLibraryCommand}">
+                <StackPanel Orientation="Horizontal" Spacing="11">
+                  <materialIcons:MaterialIcon Kind="VideoVintage" Width="18" Height="18" VerticalAlignment="Center" />
+                  <TextBlock Text="{DynamicResource Nav_Library}" VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
+
+              <Button x:Name="NavPlayer"
+                      Classes="nav"
+                      Command="{Binding NavigateToPlayerCommand}">
+                <StackPanel Orientation="Horizontal" Spacing="11">
+                  <materialIcons:MaterialIcon Kind="PlayCircleOutline" Width="18" Height="18" VerticalAlignment="Center" />
+                  <TextBlock Text="{DynamicResource Nav_Player}" VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
+            </StackPanel>
+
+            <!-- Status Bar (docked bottom) -->
+            <Border DockPanel.Dock="Bottom"
+                    Margin="14,0,14,14"
+                    Padding="12,10"
+                    CornerRadius="12"
+                    Background="{StaticResource GlassFillBrush}"
+                    BorderThickness="1"
+                    BorderBrush="{StaticResource BorderSubtleBrush}">
+              <!-- Grid (not a horizontal StackPanel): the status text column is width-constrained so
+                   TextWrapping actually wraps within the sidebar instead of overflowing. -->
+              <Grid ColumnDefinitions="Auto,*">
+                <Panel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,8,0">
+                  <Ellipse Width="8" Height="8"
+                           Fill="{StaticResource StatusReadyBrush}"
+                           IsVisible="{Binding !IsRecording}" />
+                  <Ellipse Width="8" Height="8"
+                           Fill="{StaticResource StatusRecordingBrush}"
+                           IsVisible="{Binding IsRecording}" />
+                </Panel>
+                <TextBlock Grid.Column="1"
+                           Text="{Binding StatusText}"
+                           FontSize="11"
+                           Foreground="{StaticResource TextSecondaryBrush}"
+                           TextWrapping="Wrap"
+                           VerticalAlignment="Center" />
+              </Grid>
+            </Border>
+
+            <!-- Flexible spacer (LAST child fills) — pushes the status panel cleanly to the bottom,
+                 away from the navigation buttons. -->
+            <Panel />
+
+          </DockPanel>
+        </Border>
+
+        <!-- ═══════════ Main Content Area (fills remaining space) ═══════════ -->
+        <ContentControl x:Name="ContentHost" Content="{Binding CurrentView}" Margin="6,4,12,14" />
+
+      </DockPanel>
+
+    </DockPanel>
+  </Panel>
+
+</Window>

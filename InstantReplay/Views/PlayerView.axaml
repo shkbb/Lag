@@ -1,0 +1,318 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Lag.ViewModels"
+             xmlns:models="using:Lag.Models"
+             xmlns:materialIcons="using:Material.Icons.Avalonia"
+             xmlns:vlc="clr-namespace:LibVLCSharp.Avalonia;assembly=LibVLCSharp.Avalonia"
+             x:Class="Lag.Views.PlayerView"
+             x:DataType="vm:PlayerViewModel"
+             Focusable="True">
+
+  <!-- Spacebar toggles play/pause while the player view is focused. -->
+  <UserControl.KeyBindings>
+    <KeyBinding Gesture="Space" Command="{Binding PlayPauseCommand}" />
+  </UserControl.KeyBindings>
+
+  <!-- DockPanel root: the right "Replays" sidebar collapses when MainViewModel.IsFullscreen,
+       letting the VideoView fill the whole window. -->
+  <DockPanel Background="{StaticResource BgDarkBrush}">
+
+    <!-- ═══════════ Right Sidebar (Replay list) — floating glass panel ═══════════ -->
+    <Border DockPanel.Dock="Right"
+            Width="204"
+            x:CompileBindings="False"
+            IsVisible="{Binding !DataContext.IsFullscreen, RelativeSource={RelativeSource AncestorType=Window}}"
+            Margin="8,2,2,2"
+            CornerRadius="18"
+            Background="{StaticResource GlassFillBrush}"
+            BorderThickness="1"
+            BorderBrush="{StaticResource GlassBorderBrush}"
+            BoxShadow="0 18 50 0 #66000000"
+            ClipToBounds="True">
+      <DockPanel>
+
+        <!-- Header -->
+        <Border DockPanel.Dock="Top"
+                Padding="14,11,14,8"
+                BorderThickness="0,0,0,0.5"
+                BorderBrush="#0FFFFFFF">
+          <TextBlock Text="{DynamicResource Player_Replays}" FontSize="10" FontWeight="SemiBold"
+                     Foreground="#47FFFFFF" />
+        </Border>
+
+        <!-- Stats Footer -->
+        <Grid DockPanel.Dock="Bottom" ColumnDefinitions="*,*"
+              Margin="8" RowDefinitions="Auto">
+          <Border Grid.Column="0" Background="#0AFFFFFF"
+                  CornerRadius="8" Padding="8,6" Margin="0,0,2.5,0"
+                  BorderBrush="#0DFFFFFF" BorderThickness="0.5">
+            <StackPanel Spacing="2">
+              <TextBlock Text="{DynamicResource Player_Clips}" FontSize="9" Foreground="#47FFFFFF" />
+              <TextBlock Text="{Binding TotalClips}" FontSize="15" FontWeight="SemiBold"
+                         Foreground="{StaticResource AccentCyanBrush}" />
+            </StackPanel>
+          </Border>
+          <Border Grid.Column="1" Background="#0AFFFFFF"
+                  CornerRadius="8" Padding="8,6" Margin="2.5,0,0,0"
+                  BorderBrush="#0DFFFFFF" BorderThickness="0.5">
+            <StackPanel Spacing="2">
+              <TextBlock Text="{DynamicResource Player_Duration}" FontSize="9" Foreground="#47FFFFFF" />
+              <TextBlock Text="{Binding TotalDurationDisplay}" FontSize="15" FontWeight="SemiBold"
+                         Foreground="#CCFFFFFF" />
+            </StackPanel>
+          </Border>
+        </Grid>
+
+        <!-- Replay List (real clips; click to play) -->
+        <ListBox ItemsSource="{Binding Clips}"
+                 SelectedItem="{Binding ActiveSidebarClip, Mode=TwoWay}"
+                 Background="Transparent"
+                 BorderThickness="0"
+                 Padding="8"
+                 ScrollViewer.VerticalScrollBarVisibility="Auto">
+
+          <ListBox.Styles>
+            <Style Selector="ListBoxItem">
+              <Setter Property="Padding" Value="0" />
+              <Setter Property="Margin" Value="0,0,0,5" />
+              <Setter Property="Background" Value="Transparent" />
+              <Setter Property="Cursor" Value="Hand" />
+            </Style>
+            <Style Selector="ListBoxItem:selected /template/ ContentPresenter">
+              <Setter Property="Background" Value="#2622D3EE" />
+              <Setter Property="CornerRadius" Value="10" />
+            </Style>
+          </ListBox.Styles>
+
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="models:ReplayClip">
+              <Border CornerRadius="10" ClipToBounds="True"
+                      BorderBrush="#14FFFFFF" BorderThickness="0.5"
+                      Background="#08FFFFFF">
+                <StackPanel>
+                  <Grid Height="64">
+                    <!-- Fallback gradient behind the thumbnail -->
+                    <Border>
+                      <Border.Background>
+                        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                          <GradientStop Color="#0a1628" Offset="0" />
+                          <GradientStop Color="#141a35" Offset="1" />
+                        </LinearGradientBrush>
+                      </Border.Background>
+                    </Border>
+                    <Image Source="{Binding Thumbnail}" Stretch="UniformToFill" />
+                    <Border Background="#8C000000" CornerRadius="3"
+                            Padding="5,2" Margin="0,0,6,5"
+                            HorizontalAlignment="Right" VerticalAlignment="Bottom">
+                      <TextBlock Text="{Binding DurationDisplay}" FontSize="10" Foreground="#99FFFFFF" />
+                    </Border>
+                  </Grid>
+                  <StackPanel Margin="10,7,10,7" Spacing="1">
+                    <TextBlock Text="{Binding CreatedDate, StringFormat='{}{0:dd.MM HH:mm}'}"
+                               FontSize="12" FontWeight="Medium" Foreground="#BFFFFFFF" />
+                    <TextBlock Text="{Binding FileSizeDisplay}" FontSize="10" Foreground="#4DFFFFFF" />
+                  </StackPanel>
+                </StackPanel>
+              </Border>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+
+      </DockPanel>
+    </Border>
+
+    <!-- ═══════════ Main Player Area (fills remaining space) ═══════════ -->
+    <Grid x:Name="PlayerArea" RowDefinitions="*,Auto,Auto" Margin="14">
+
+      <!-- Video Frame -->
+      <Border x:Name="VideoFrame" Grid.Row="0" CornerRadius="16"
+              BorderBrush="{StaticResource GlassBorderBrush}" BorderThickness="1"
+              BoxShadow="0 20 56 0 #73000000"
+              ClipToBounds="True" MinHeight="220">
+        <Panel>
+          <!-- Game-like background scene -->
+          <Border>
+            <Border.Background>
+              <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                <GradientStop Color="#0a1628" Offset="0" />
+                <GradientStop Color="#0d2040" Offset="0.4" />
+                <GradientStop Color="#091525" Offset="1" />
+              </LinearGradientBrush>
+            </Border.Background>
+          </Border>
+
+          <!-- VideoView + transparent click-catcher. The native video corners are rounded at the OS
+               level via Win32 SetWindowRgn in code-behind (Avalonia visuals can't clip a native
+               window — they render beneath it). The click-catcher works because libVLC mouse input
+               is disabled (see PlayerViewModel), so pointer events reach this overlay. -->
+          <Grid>
+            <vlc:VideoView x:Name="MainVideoView"
+                           MediaPlayer="{Binding Player}"
+                           HorizontalAlignment="Stretch"
+                           VerticalAlignment="Stretch" />
+            <Border x:Name="VideoClickSurface"
+                    Background="Transparent"
+                    IsHitTestVisible="True"
+                    PointerPressed="OnVideoSurfacePressed" />
+          </Grid>
+
+          <!-- Replay Badge -->
+          <Border Background="#CCD85A30" CornerRadius="6"
+                  Padding="8,3" Margin="12"
+                  HorizontalAlignment="Right" VerticalAlignment="Top">
+            <StackPanel Orientation="Horizontal" Spacing="5">
+              <Ellipse Width="5" Height="5" Fill="White"
+                       VerticalAlignment="Center" />
+              <TextBlock Text="{DynamicResource Player_ReplayBadge}"
+                         FontSize="10" FontWeight="SemiBold"
+                         Foreground="White" />
+            </StackPanel>
+          </Border>
+
+          <!-- Video overlay for when nothing is playing -->
+          <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
+                      Spacing="10" IsVisible="{Binding !IsPlaying}" IsHitTestVisible="False">
+            <materialIcons:MaterialIcon Kind="MoviePlayOutline" Width="48" Height="48"
+                                        Opacity="0.28" Foreground="White"
+                                        HorizontalAlignment="Center" />
+            <TextBlock Text="{DynamicResource Player_Placeholder}"
+                       HorizontalAlignment="Center"
+                       FontSize="16" Opacity="0.32"
+                       Foreground="{StaticResource TextDimBrush}" />
+          </StackPanel>
+
+          <!-- Clip info overlay (top) -->
+          <Border Background="#80000000" Padding="16,8"
+                  VerticalAlignment="Top"
+                  IsVisible="{Binding CurrentClip, Converter={x:Static ObjectConverters.IsNotNull}}">
+            <TextBlock FontSize="13"
+                       Foreground="{StaticResource TextSecondaryBrush}">
+              <Run Text="{DynamicResource Player_NowPlaying}" />
+              <Run Text="{Binding CurrentClip.CreatedDate, StringFormat='{}{0:MMM dd, yyyy HH:mm}'}"
+                   Foreground="{StaticResource TextPrimaryBrush}" />
+            </TextBlock>
+          </Border>
+
+          <!-- Bottom gradient overlay -->
+          <Border VerticalAlignment="Bottom" Height="80" IsHitTestVisible="False">
+            <Border.Background>
+              <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+                <GradientStop Color="#00000000" Offset="0" />
+                <GradientStop Color="#80000000" Offset="1" />
+              </LinearGradientBrush>
+            </Border.Background>
+          </Border>
+        </Panel>
+      </Border>
+
+      <!-- Timeline (seekable) -->
+      <Border Grid.Row="1" Margin="0,12,0,0"
+              Height="30" CornerRadius="8"
+              Background="#0DFFFFFF"
+              BorderBrush="#14FFFFFF" BorderThickness="0.5"
+              ClipToBounds="True">
+        <Slider Minimum="0" Maximum="1" Value="{Binding Position, Mode=TwoWay}"
+                Margin="8,0" VerticalAlignment="Center"
+                Foreground="{StaticResource AccentCyanBrush}" />
+      </Border>
+
+      <!-- Controls Row: transport on the left, volume + fullscreen pinned bottom-right -->
+      <DockPanel Grid.Row="2" Margin="0,12,0,0" VerticalAlignment="Center">
+
+        <!-- Fullscreen toggle (far right; calls MainViewModel.ToggleFullscreenCommand on the Window) -->
+        <Button DockPanel.Dock="Right"
+                Width="32" Height="32" CornerRadius="8"
+                Background="#12FFFFFF" BorderBrush="#19FFFFFF" BorderThickness="0.5"
+                Cursor="Hand" Padding="0"
+                x:CompileBindings="False"
+                Command="{Binding DataContext.ToggleFullscreenCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                ToolTip.Tip="{DynamicResource Tooltip_Fullscreen}">
+          <materialIcons:MaterialIcon Kind="Fullscreen" Width="17" Height="17"
+                                      Foreground="#A6FFFFFF"
+                                      HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </Button>
+
+        <!-- Volume (icon + horizontal slider), right side -->
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="6"
+                    VerticalAlignment="Center" Margin="0,0,10,0">
+          <materialIcons:MaterialIcon Kind="VolumeHigh" Width="16" Height="16"
+                                      Foreground="#A6FFFFFF" VerticalAlignment="Center" />
+          <Slider Width="90" Minimum="0" Maximum="100"
+                  Value="{Binding Volume, Mode=TwoWay}"
+                  VerticalAlignment="Center" Foreground="{StaticResource AccentCyanBrush}"
+                  ToolTip.Tip="{DynamicResource Tooltip_Volume}" />
+        </StackPanel>
+
+        <!-- Transport controls (left, fills remaining space) -->
+        <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+
+          <!-- Stop -->
+          <Button Width="32" Height="32" CornerRadius="8"
+                  Background="#12FFFFFF" BorderBrush="#19FFFFFF" BorderThickness="0.5"
+                  Cursor="Hand" Command="{Binding StopCommand}" Padding="0"
+                  ToolTip.Tip="{DynamicResource Tooltip_Stop}">
+            <materialIcons:MaterialIcon Kind="Stop" Width="16" Height="16"
+                                        Foreground="#A6FFFFFF"
+                                        HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Button>
+
+          <!-- Rewind 10s -->
+          <Button Width="32" Height="32" CornerRadius="8"
+                  Background="#12FFFFFF" BorderBrush="#19FFFFFF" BorderThickness="0.5"
+                  Cursor="Hand" Command="{Binding SeekBackwardCommand}" Padding="0"
+                  ToolTip.Tip="{DynamicResource Tooltip_Rewind}">
+            <materialIcons:MaterialIcon Kind="Rewind10" Width="16" Height="16"
+                                        Foreground="#A6FFFFFF"
+                                        HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Button>
+
+          <!-- Play/Pause (primary, accent) -->
+          <Button Width="36" Height="36" CornerRadius="10"
+                  Background="#3322D3EE" BorderBrush="#5522D3EE" BorderThickness="0.5"
+                  Cursor="Hand" Command="{Binding PlayPauseCommand}" Padding="0"
+                  ToolTip.Tip="{DynamicResource Tooltip_PlayPause}">
+            <Panel>
+              <materialIcons:MaterialIcon Kind="Play" Width="19" Height="19"
+                                          Foreground="{StaticResource AccentCyanBrush}"
+                                          IsVisible="{Binding !IsPlaying}"
+                                          HorizontalAlignment="Center" VerticalAlignment="Center" />
+              <materialIcons:MaterialIcon Kind="Pause" Width="19" Height="19"
+                                          Foreground="{StaticResource AccentCyanBrush}"
+                                          IsVisible="{Binding IsPlaying}"
+                                          HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Panel>
+          </Button>
+
+          <!-- Fast Forward 10s -->
+          <Button Width="32" Height="32" CornerRadius="8"
+                  Background="#12FFFFFF" BorderBrush="#19FFFFFF" BorderThickness="0.5"
+                  Cursor="Hand" Command="{Binding SeekForwardCommand}" Padding="0"
+                  ToolTip.Tip="{DynamicResource Tooltip_Forward}">
+            <materialIcons:MaterialIcon Kind="FastForward10" Width="16" Height="16"
+                                        Foreground="#A6FFFFFF"
+                                        HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Button>
+
+          <!-- Next clip -->
+          <Button Width="32" Height="32" CornerRadius="8"
+                  Background="#12FFFFFF" BorderBrush="#19FFFFFF" BorderThickness="0.5"
+                  Cursor="Hand" Command="{Binding PlayNextCommand}" Padding="0"
+                  ToolTip.Tip="{DynamicResource Tooltip_Next}">
+            <materialIcons:MaterialIcon Kind="SkipNext" Width="17" Height="17"
+                                        Foreground="#A6FFFFFF"
+                                        HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Button>
+
+          <!-- Time Display -->
+          <TextBlock Text="{Binding TimeDisplay, FallbackValue='0:00 / 0:00'}"
+                     FontSize="12" Foreground="#66FFFFFF"
+                     VerticalAlignment="Center" Margin="6,0,0,0" />
+
+        </StackPanel>
+
+      </DockPanel>
+    </Grid>
+
+  </DockPanel>
+
+</UserControl>

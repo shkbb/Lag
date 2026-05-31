@@ -1,0 +1,341 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!-- ═══════════════════════════════════════════
+       "Lag" — Glassmorphism dark theme
+       Deep translucent surfaces · neon cyan/purple/teal accents · soft glow & depth
+       (All resource KEYS and style CLASS names are preserved so bindings / code-behind
+        class toggling keep working — only the visuals changed.)
+       ═══════════════════════════════════════════ -->
+
+  <Style>
+    <Style.Resources>
+      <!-- ── Base surfaces ── -->
+      <Color x:Key="BgDark">#E60A0D15</Color>      <!-- content/player veil over Mica -->
+      <Color x:Key="BgMedium">#CC10141F</Color>     <!-- sidebar fallback -->
+      <Color x:Key="BgLight">#FF161A24</Color>
+      <Color x:Key="BgCard">#14FFFFFF</Color>       <!-- glass fill -->
+      <Color x:Key="BgHover">#22FFFFFF</Color>
+
+      <!-- ── Accents (neon) ── -->
+      <Color x:Key="AccentGreen">#FF22C55E</Color>
+      <Color x:Key="AccentGreenHover">#FF16A34A</Color>
+      <Color x:Key="StopRed">#FFEF4444</Color>
+      <Color x:Key="StopRedHover">#FFDC2626</Color>
+      <Color x:Key="AccentPurple">#FF9D8CFF</Color>
+      <Color x:Key="AccentPurpleText">#FFE3DEFF</Color>
+      <Color x:Key="AccentPurpleBg">#338B7CF6</Color>
+      <Color x:Key="AmberAccent">#FFF5B14B</Color>
+      <Color x:Key="AccentCyan">#FF22D3EE</Color>
+      <Color x:Key="AccentTeal">#FF2DD4BF</Color>
+
+      <!-- ── Text ── -->
+      <Color x:Key="TextPrimary">#F2FFFFFF</Color>
+      <Color x:Key="TextSecondary">#C2FFFFFF</Color>
+      <Color x:Key="TextDim">#59FFFFFF</Color>
+      <Color x:Key="TextMuted">#8FFFFFFF</Color>
+
+      <!-- ── Glass borders ── -->
+      <Color x:Key="BorderSubtle">#1AFFFFFF</Color>
+      <Color x:Key="BorderMedium">#2AFFFFFF</Color>
+      <Color x:Key="BorderLight">#3DFFFFFF</Color>
+
+      <!-- ── Status ── -->
+      <Color x:Key="StatusRecording">#FFFF5A5A</Color>
+      <Color x:Key="StatusReady">#FF34D399</Color>
+      <Color x:Key="StatusSaving">#FFFBBF24</Color>
+
+      <!-- ── Solid Brushes (keys preserved) ── -->
+      <SolidColorBrush x:Key="BgDarkBrush" Color="{StaticResource BgDark}" />
+      <SolidColorBrush x:Key="BgMediumBrush" Color="{StaticResource BgMedium}" />
+      <SolidColorBrush x:Key="BgLightBrush" Color="{StaticResource BgLight}" />
+      <SolidColorBrush x:Key="BgCardBrush" Color="{StaticResource BgCard}" />
+      <SolidColorBrush x:Key="BgHoverBrush" Color="{StaticResource BgHover}" />
+      <SolidColorBrush x:Key="AccentGreenBrush" Color="{StaticResource AccentGreen}" />
+      <SolidColorBrush x:Key="AccentGreenHoverBrush" Color="{StaticResource AccentGreenHover}" />
+      <SolidColorBrush x:Key="StopRedBrush" Color="{StaticResource StopRed}" />
+      <SolidColorBrush x:Key="StopRedHoverBrush" Color="{StaticResource StopRedHover}" />
+      <SolidColorBrush x:Key="AccentPurpleBrush" Color="{StaticResource AccentPurple}" />
+      <SolidColorBrush x:Key="AccentPurpleTextBrush" Color="{StaticResource AccentPurpleText}" />
+      <SolidColorBrush x:Key="AccentPurpleBgBrush" Color="{StaticResource AccentPurpleBg}" />
+      <SolidColorBrush x:Key="AmberAccentBrush" Color="{StaticResource AmberAccent}" />
+      <SolidColorBrush x:Key="AccentCyanBrush" Color="{StaticResource AccentCyan}" />
+      <SolidColorBrush x:Key="AccentTealBrush" Color="{StaticResource AccentTeal}" />
+      <SolidColorBrush x:Key="TextPrimaryBrush" Color="{StaticResource TextPrimary}" />
+      <SolidColorBrush x:Key="TextSecondaryBrush" Color="{StaticResource TextSecondary}" />
+      <SolidColorBrush x:Key="TextDimBrush" Color="{StaticResource TextDim}" />
+      <SolidColorBrush x:Key="TextMutedBrush" Color="{StaticResource TextMuted}" />
+      <SolidColorBrush x:Key="BorderSubtleBrush" Color="{StaticResource BorderSubtle}" />
+      <SolidColorBrush x:Key="BorderMediumBrush" Color="{StaticResource BorderMedium}" />
+      <SolidColorBrush x:Key="BorderLightBrush" Color="{StaticResource BorderLight}" />
+      <SolidColorBrush x:Key="StatusRecordingBrush" Color="{StaticResource StatusRecording}" />
+      <SolidColorBrush x:Key="StatusReadyBrush" Color="{StaticResource StatusReady}" />
+      <SolidColorBrush x:Key="StatusSavingBrush" Color="{StaticResource StatusSaving}" />
+
+      <!-- Glass surface brushes (new, used by the redesign) -->
+      <SolidColorBrush x:Key="GlassFillBrush" Color="#14FFFFFF" />
+      <SolidColorBrush x:Key="GlassFillStrongBrush" Color="#1FFFFFFF" />
+      <SolidColorBrush x:Key="GlassBorderBrush" Color="#2EFFFFFF" />
+
+      <!-- Legacy aliases -->
+      <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentGreen}" />
+      <SolidColorBrush x:Key="AccentHoverBrush" Color="{StaticResource AccentGreenHover}" />
+      <SolidColorBrush x:Key="AccentDimBrush" Color="#40FFFFFF" />
+
+      <CornerRadius x:Key="SmallRadius">8</CornerRadius>
+      <CornerRadius x:Key="MediumRadius">12</CornerRadius>
+      <CornerRadius x:Key="LargeRadius">16</CornerRadius>
+    </Style.Resources>
+  </Style>
+
+  <!-- ═══════════════ Global Text ═══════════════ -->
+  <Style Selector="TextBlock">
+    <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+    <Setter Property="FontFamily" Value="Inter, Segoe UI, sans-serif" />
+  </Style>
+
+  <!-- ═══════════════ Buttons ═══════════════ -->
+
+  <!-- Record button (green) -->
+  <Style Selector="Button.btn-record">
+    <Setter Property="Background" Value="{StaticResource AccentGreenBrush}" />
+    <Setter Property="Foreground" Value="White" />
+    <Setter Property="CornerRadius" Value="10" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Height" Value="40" />
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.btn-record:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{StaticResource AccentGreenHoverBrush}" />
+  </Style>
+
+  <!-- Stop button (red) -->
+  <Style Selector="Button.btn-stop">
+    <Setter Property="Background" Value="{StaticResource StopRedBrush}" />
+    <Setter Property="Foreground" Value="White" />
+    <Setter Property="CornerRadius" Value="10" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Height" Value="40" />
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.btn-stop:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{StaticResource StopRedHoverBrush}" />
+  </Style>
+
+  <!-- Save button (glass) -->
+  <Style Selector="Button.btn-save">
+    <Setter Property="Background" Value="{StaticResource GlassFillBrush}" />
+    <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+    <Setter Property="CornerRadius" Value="10" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Height" Value="40" />
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="BorderBrush" Value="{StaticResource GlassBorderBrush}" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.btn-save:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{StaticResource GlassFillStrongBrush}" />
+    <Setter Property="TextBlock.Foreground" Value="{StaticResource TextPrimaryBrush}" />
+  </Style>
+
+  <!-- Nav items (pill) -->
+  <Style Selector="Button.nav">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{StaticResource TextDimBrush}" />
+    <Setter Property="CornerRadius" Value="10" />
+    <Setter Property="Padding" Value="12,0" />
+    <Setter Property="Height" Value="40" />
+    <Setter Property="HorizontalContentAlignment" Value="Left" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="FontWeight" Value="Medium" />
+  </Style>
+  <Style Selector="Button.nav:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{StaticResource GlassFillBrush}" />
+    <Setter Property="TextBlock.Foreground" Value="{StaticResource TextPrimaryBrush}" />
+  </Style>
+
+  <!-- Active nav item (purple glass highlight) -->
+  <Style Selector="Button.nav-active">
+    <Setter Property="Background" Value="{StaticResource AccentPurpleBgBrush}" />
+    <Setter Property="Foreground" Value="{StaticResource AccentPurpleTextBrush}" />
+    <Setter Property="CornerRadius" Value="10" />
+    <Setter Property="Padding" Value="12,0" />
+    <Setter Property="Height" Value="40" />
+    <Setter Property="HorizontalContentAlignment" Value="Left" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="BorderBrush" Value="#558B7CF6" />
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+  <Style Selector="Button.nav-active:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="#4D8B7CF6" />
+  </Style>
+
+  <!-- Accent button (cyan glow, for hotkey change) -->
+  <Style Selector="Button.accent">
+    <Setter Property="Background" Value="#1F22D3EE" />
+    <Setter Property="Foreground" Value="{StaticResource AccentCyanBrush}" />
+    <Setter Property="CornerRadius" Value="9" />
+    <Setter Property="Padding" Value="16,7" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="BorderBrush" Value="#5522D3EE" />
+  </Style>
+  <Style Selector="Button.accent:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="#3322D3EE" />
+  </Style>
+
+  <!-- Icon button -->
+  <Style Selector="Button.icon">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+    <Setter Property="Padding" Value="8" />
+    <Setter Property="MinWidth" Value="36" />
+    <Setter Property="MinHeight" Value="36" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+  <Style Selector="Button.icon:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{StaticResource BgHoverBrush}" />
+    <Setter Property="TextBlock.Foreground" Value="{StaticResource TextPrimaryBrush}" />
+  </Style>
+
+  <!-- ═══════════════ ComboBox ═══════════════ -->
+  <Style Selector="ComboBox">
+    <Setter Property="Background" Value="{StaticResource GlassFillBrush}" />
+    <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+    <Setter Property="CornerRadius" Value="10" />
+    <Setter Property="Padding" Value="12,7" />
+    <Setter Property="MinWidth" Value="110" />
+    <Setter Property="BorderBrush" Value="{StaticResource GlassBorderBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="FontSize" Value="12" />
+  </Style>
+  <Style Selector="ComboBox:pointerover /template/ Border#Background">
+    <Setter Property="Background" Value="{StaticResource GlassFillStrongBrush}" />
+    <Setter Property="BorderBrush" Value="#5522D3EE" />
+  </Style>
+
+  <!-- ═══════════════ TextBox ═══════════════ -->
+  <Style Selector="TextBox">
+    <Setter Property="Background" Value="{StaticResource GlassFillBrush}" />
+    <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+    <Setter Property="CornerRadius" Value="10" />
+    <Setter Property="Padding" Value="13,9" />
+    <Setter Property="BorderBrush" Value="{StaticResource GlassBorderBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="FontFamily" Value="Consolas, monospace" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="CaretBrush" Value="{StaticResource AccentCyanBrush}" />
+  </Style>
+  <Style Selector="TextBox:focus /template/ Border#PART_BorderElement">
+    <Setter Property="BorderBrush" Value="{StaticResource AccentCyanBrush}" />
+  </Style>
+
+  <!-- ═══════════════ ToggleSwitch ═══════════════ -->
+  <Style Selector="ToggleSwitch">
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+  </Style>
+  <!-- Recolor the "on" track to the cyan accent (Fluent template parts) -->
+  <Style Selector="ToggleSwitch:checked /template/ Border#OuterBorder">
+    <Setter Property="Background" Value="{StaticResource AccentCyanBrush}" />
+    <Setter Property="BorderBrush" Value="{StaticResource AccentCyanBrush}" />
+  </Style>
+  <Style Selector="ToggleSwitch:checked /template/ Border#SwitchKnobBounds">
+    <Setter Property="Background" Value="{StaticResource AccentCyanBrush}" />
+  </Style>
+
+  <!-- ═══════════════ Section Headers / Typography ═══════════════ -->
+  <Style Selector="TextBlock.section-header">
+    <Setter Property="FontSize" Value="10" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="{StaticResource TextDimBrush}" />
+    <Setter Property="Margin" Value="0,0,0,6" />
+    <Setter Property="LetterSpacing" Value="1.2" />
+  </Style>
+
+  <Style Selector="TextBlock.group-label">
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="{StaticResource AccentCyanBrush}" />
+    <Setter Property="Margin" Value="2,0,0,8" />
+    <Setter Property="LetterSpacing" Value="1.4" />
+  </Style>
+
+  <Style Selector="TextBlock.page-title">
+    <Setter Property="FontSize" Value="24" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+    <Setter Property="Margin" Value="0,0,0,0" />
+  </Style>
+
+  <!-- ═══════════════ Glass Card ═══════════════ -->
+  <Style Selector="Border.card">
+    <Setter Property="Background" Value="{StaticResource GlassFillBrush}" />
+    <Setter Property="CornerRadius" Value="14" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="BorderBrush" Value="{StaticResource GlassBorderBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="BoxShadow" Value="0 12 34 0 #4D000000" />
+  </Style>
+
+  <!-- ═══════════════ Replay Card (Library) ═══════════════ -->
+  <Style Selector="Border.replay-card">
+    <Setter Property="Background" Value="{StaticResource GlassFillBrush}" />
+    <Setter Property="CornerRadius" Value="14" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="BorderBrush" Value="{StaticResource GlassBorderBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="ClipToBounds" Value="True" />
+    <Setter Property="BoxShadow" Value="0 10 26 0 #40000000" />
+    <Setter Property="RenderTransform" Value="scale(1)" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.16" />
+        <BoxShadowsTransition Property="BoxShadow" Duration="0:0:0.16" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Border.replay-card:pointerover">
+    <Setter Property="BorderBrush" Value="#6622D3EE" />
+    <Setter Property="RenderTransform" Value="scale(1.035)" />
+    <Setter Property="BoxShadow" Value="0 16 40 0 #6622D3EE" />
+  </Style>
+
+  <!-- ═══════════════ Slider ═══════════════ -->
+  <Style Selector="Slider">
+    <Setter Property="Foreground" Value="{StaticResource AccentCyanBrush}" />
+    <Setter Property="Background" Value="#1FFFFFFF" />
+  </Style>
+
+  <!-- ═══════════════ ScrollBar (slim glass) ═══════════════ -->
+  <Style Selector="ScrollBar:vertical">
+    <Setter Property="Width" Value="8" />
+  </Style>
+
+</Styles>

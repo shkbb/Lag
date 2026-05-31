@@ -1,0 +1,105 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Lag.ViewModels"
+             xmlns:models="using:Lag.Models"
+             xmlns:materialIcons="using:Material.Icons.Avalonia"
+             x:Class="Lag.Views.LibraryView"
+             x:DataType="vm:LibraryViewModel">
+
+  <Grid RowDefinitions="Auto,*">
+
+    <!-- Header -->
+    <StackPanel Grid.Row="0" Margin="30,22,30,0" Spacing="2">
+      <TextBlock Classes="page-title" Text="{DynamicResource Library_Title}" />
+      <TextBlock Text="{DynamicResource Library_Subtitle}"
+                 FontSize="12" Foreground="{StaticResource TextDimBrush}" />
+    </StackPanel>
+
+    <!-- Loading indicator -->
+    <ProgressBar Grid.Row="0" IsIndeterminate="True"
+                 IsVisible="{Binding IsLoading}"
+                 Height="2" Margin="24,0"
+                 VerticalAlignment="Bottom"
+                 Foreground="{StaticResource AccentPurpleBrush}" />
+
+    <!-- Clip Gallery -->
+    <ScrollViewer Grid.Row="1" Margin="18,16,18,0"
+                  VerticalScrollBarVisibility="Auto">
+      <Panel>
+        <!-- Empty state -->
+        <TextBlock Text="{DynamicResource Library_Empty}"
+                   IsVisible="{Binding !Clips.Count}"
+                   Foreground="{StaticResource TextDimBrush}"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"
+                   TextWrapping="Wrap" MaxWidth="420" TextAlignment="Center"
+                   Margin="0,80" FontSize="14" />
+
+        <ItemsControl ItemsSource="{Binding Clips}"
+                      IsVisible="{Binding Clips.Count}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <WrapPanel Orientation="Horizontal" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="models:ReplayClip">
+              <Button Command="{Binding $parent[UserControl].((vm:LibraryViewModel)DataContext).PlayClipCommand}"
+                      CommandParameter="{Binding}"
+                      Padding="0" Background="Transparent" BorderThickness="0" Cursor="Hand">
+                <Border Classes="replay-card" Width="204" Margin="8">
+                <StackPanel>
+
+                  <!-- Thumbnail area -->
+                  <Grid Height="108">
+                    <Border CornerRadius="14,14,0,0" ClipToBounds="True">
+                      <Border.Background>
+                        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                          <GradientStop Color="#0a1628" Offset="0" />
+                          <GradientStop Color="#141a35" Offset="1" />
+                        </LinearGradientBrush>
+                      </Border.Background>
+                      <Image Source="{Binding Thumbnail}"
+                             Stretch="UniformToFill" />
+                    </Border>
+
+                    <!-- Play icon -->
+                    <materialIcons:MaterialIcon Kind="PlayCircleOutline" Width="32" Height="32"
+                                                Opacity="0.65" Foreground="White"
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center" />
+
+                    <!-- Duration badge -->
+                    <Border Background="#99000000" CornerRadius="3"
+                            Padding="5,2" Margin="0,0,6,5"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Bottom">
+                      <TextBlock Text="{Binding DurationDisplay}"
+                                 FontSize="10"
+                                 Foreground="#A6FFFFFF" />
+                    </Border>
+                  </Grid>
+
+                  <!-- Info area -->
+                  <StackPanel Margin="10,8,10,8" Spacing="2">
+                    <TextBlock Text="{Binding CreatedDate, StringFormat='{}{0:MMM dd, yyyy  HH:mm}'}"
+                               FontSize="12" FontWeight="Medium"
+                               Foreground="#BFFFFFFF" />
+                    <TextBlock Text="{Binding FileSizeDisplay}"
+                               FontSize="10"
+                               Foreground="#4DFFFFFF" />
+                  </StackPanel>
+
+                </StackPanel>
+              </Border>
+              </Button>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </Panel>
+    </ScrollViewer>
+
+  </Grid>
+
+</UserControl>
