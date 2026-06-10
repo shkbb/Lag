@@ -505,7 +505,7 @@ public partial class SettingsViewModel : ViewModelBase
         try
         {
             // ── Buffer durations (default: 5 min) ──
-            int selBufSec = (int)(_selectedBuffer?.Duration.TotalSeconds ?? 300);
+            int selBufSec = (int)(SelectedBuffer?.Duration.TotalSeconds ?? 300);
             BufferOptions.Clear();
             foreach (var d in new[]
                      {
@@ -522,7 +522,7 @@ public partial class SettingsViewModel : ViewModelBase
                              ?? BufferOptions[3];
 
             // ── Output resolution (default: Native) ──
-            int selRes = _selectedResolution?.TargetHeight ?? 0;
+            int selRes = SelectedResolution?.TargetHeight ?? 0;
             ResolutionOptions.Clear();
             ResolutionOptions.Add(new ResolutionOption(Localizer.Get("Option_Native"), 0));
             ResolutionOptions.Add(new ResolutionOption("1080p", 1080));
@@ -531,7 +531,7 @@ public partial class SettingsViewModel : ViewModelBase
                                  ?? ResolutionOptions[0];
 
             // ── Codec (default: Auto) ──
-            string selCodec = _selectedCodec?.EncoderId ?? "";
+            string selCodec = SelectedCodec?.EncoderId ?? "";
             CodecOptions.Clear();
             CodecOptions.Add(new CodecOption(Localizer.Get("Option_Auto"), ""));
             CodecOptions.Add(new CodecOption("NVIDIA NVENC", "ffmpeg_nvenc"));
@@ -541,7 +541,7 @@ public partial class SettingsViewModel : ViewModelBase
             SelectedCodec = CodecOptions.FirstOrDefault(c => c.EncoderId == selCodec) ?? CodecOptions[0];
 
             // ── Bitrate (default: 20 Mbps) ──
-            int selKbps = _selectedBitrate?.Kbps ?? 20000;
+            int selKbps = SelectedBitrate?.Kbps ?? 20000;
             BitrateOptions.Clear();
             foreach (int kbps in new[] { 5000, 10000, 20000, 30000, 50000 })
                 BitrateOptions.Add(new BitrateOption($"{kbps / 1000} Mbps", kbps));
@@ -549,7 +549,7 @@ public partial class SettingsViewModel : ViewModelBase
             SelectedBitrate = BitrateOptions.FirstOrDefault(b => b.Kbps == selKbps) ?? BitrateOptions[2];
 
             // ── FPS (default: 30) ──
-            int selFps = _selectedFps?.Value ?? 30;
+            int selFps = SelectedFps?.Value ?? 30;
             FpsOptions.Clear();
             foreach (int fps in new[] { 24, 30, 60, 120, 240, 360 })
                 FpsOptions.Add(new FpsOption(fps.ToString(), fps));
