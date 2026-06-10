@@ -31,16 +31,136 @@ public partial class LibraryViewModel : ViewModelBase
 
     private readonly SettingsViewModel _settings;
 
+    /// <summary>All container formats the recorder can produce (must match SettingsViewModel.FormatOptions).</summary>
+    private static readonly string[] VideoPatterns = ["*.mp4", "*.mkv", "*.mov", "*.avi"];
+
+    /// <summary>Enumerates every saved replay regardless of its container format.</summary>
+    private static IEnumerable<string> GetVideoFiles(string dir) =>
+        VideoPatterns.SelectMany(p => Directory.GetFiles(dir, p));
+
     /// <summary>
-    /// Persistent thumbnail cache directory inside the library folder.
-    /// Avoids re-generating thumbnails on every refresh.
+    /// Persistent thumbnail cache. Lives in %LocalAppData%\Lag\thumbnails — NOT inside the
+    /// user's library folder, so no visible ".thumbnails" clutter next to their videos.
     /// </summary>
-    private string ThumbnailCacheDir => Path.Combine(_settings.LibraryPath, ".thumbnails");
+    private static string ThumbnailCacheDir => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "Lag", "thumbnails");
+
+    /// <summary>
+    /// One-time migration: removes the legacy visible ".thumbnails" folder that older versions
+    /// created inside the library. Thumbnails simply regenerate into the new hidden cache.
+    /// </summary>
+    private void CleanupLegacyThumbnailFolder(string libraryDir)
+    {
+        try
+        {
+            string legacy = Path.Combine(libraryDir, ".thumbnails");
+            if (Directory.Exists(legacy))
+                Directory.Delete(legacy, recursive: true);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Library] Legacy thumbnail cleanup failed: {ex.Message}");
+        }
+    }
+
+    // ───────────── Disk Space Management ─────────────
+
+    /// <summary>Human-readable free space on the drive hosting the library (e.g. "123.4 GB").</summary>
+    [ObservableProperty]
+    private string _freeSpaceDisplay = "—";
+
+    /// <summary>Used percentage of the library drive (0–100), drives the indicator bar.</summary>
+    [ObservableProperty]
+    private double _usedSpacePercent;
+
+    /// <summary>
+    /// Refreshes the free-space indicator from the drive that hosts the library folder.
+    /// </summary>
+    private void UpdateFreeSpace()
+    {
+        try
+        {
+            string? root = Path.GetPathRoot(Path.GetFullPath(_settings.LibraryPath));
+            if (string.IsNullOrEmpty(root)) return;
+
+            var drive = new DriveInfo(root);
+            double freeGb = drive.AvailableFreeSpace / 1_073_741_824.0;
+            FreeSpaceDisplay = freeGb >= 100 ? $"{freeGb:F0} GB" : $"{freeGb:F1} GB";
+            UsedSpacePercent = 100.0 * (drive.TotalSize - drive.AvailableFreeSpace) / drive.TotalSize;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Storage] Free-space check failed: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// OPT-IN auto-cleanup: does nothing unless the user enabled it in Settings. When enabled and
+    /// the total size of saved clips exceeds the user-chosen limit, deletes the OLDEST clips
+    /// (by CreationTime) until the folder is back under it. Thumbnails of deleted clips are
+    /// removed too. Runs on startup and before every refresh (a refresh follows every saved
+    /// replay, so new clips trigger the check automatically).
+    /// </summary>
+    private void EnforceStorageQuota()
+    {
+        // Respect the user's choice — auto-cleanup is a feature you turn on, not a default.
+        if (!_settings.AutoCleanupEnabled) return;
+
+        long maxLibraryBytes = (long)_settings.SelectedStorageLimit.Gb * 1024 * 1024 * 1024;
+        if (maxLibraryBytes <= 0) return;
+
+        try
+        {
+            string libraryDir = _settings.LibraryPath;
+            if (!Directory.Exists(libraryDir)) return;
+
+            var files = GetVideoFiles(libraryDir)
+                .Select(f => new FileInfo(f))
+                .OrderBy(f => f.CreationTime) // oldest first
+                .ToList();
+
+            long totalBytes = files.Sum(f => f.Length);
+            if (totalBytes <= maxLibraryBytes) return;
+
+            foreach (var file in files)
+            {
+                if (totalBytes <= maxLibraryBytes) break;
+
+                try
+                {
+                    long size = file.Length;
+                    file.Delete();
+
+                    string thumb = GetThumbnailCachePath(file.FullName);
+                    if (File.Exists(thumb)) File.Delete(thumb);
+
+                    totalBytes -= size;
+                    Console.WriteLine($"[Storage] Quota cleanup: deleted oldest clip '{file.Name}' ({size / 1_048_576} MB).");
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[Storage] Failed to delete '{file.Name}': {ex.Message}");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Storage] Quota enforcement failed: {ex.Message}");
+        }
+    }
 
     public LibraryViewModel(SettingsViewModel settings)
     {
         Title = "Library";
         _settings = settings;
+
+        // Startup pass: enforce the quota and prime the free-space indicator without blocking DI.
+        _ = Task.Run(() =>
+        {
+            EnforceStorageQuota();
+            Avalonia.Threading.Dispatcher.UIThread.Post(UpdateFreeSpace);
+        });
     }
 
     /// <summary>
@@ -54,6 +174,10 @@ public partial class LibraryViewModel : ViewModelBase
 
         try
         {
+            // Keep the library under the size quota BEFORE scanning, so clips removed by the
+            // cleanup never appear in the gallery. A refresh runs after every saved replay.
+            await Task.Run(EnforceStorageQuota);
+
             Clips.Clear();
 
             string libraryDir = _settings.LibraryPath;
@@ -63,10 +187,12 @@ public partial class LibraryViewModel : ViewModelBase
                 return;
             }
 
-            // Ensure thumbnail cache directory exists
+            // Ensure the (hidden, LocalAppData) thumbnail cache exists; drop the legacy
+            // visible ".thumbnails" folder older versions kept inside the library.
             Directory.CreateDirectory(ThumbnailCacheDir);
+            CleanupLegacyThumbnailFolder(libraryDir);
 
-            var files = Directory.GetFiles(libraryDir, "*.mp4")
+            var files = GetVideoFiles(libraryDir)
                 .OrderByDescending(File.GetCreationTime);
 
             foreach (var filePath in files)
@@ -122,17 +248,21 @@ public partial class LibraryViewModel : ViewModelBase
         }
         finally
         {
+            UpdateFreeSpace();
             IsLoading = false;
         }
     }
 
     /// <summary>
-    /// Generates a deterministic thumbnail cache file path for the given video.
+    /// Deterministic thumbnail path for a video: the file name is an MD5 hash of the FULL
+    /// video path, so clips with identical names in different folders never collide and the
+    /// cache survives library-folder changes.
     /// </summary>
-    private string GetThumbnailCachePath(string videoPath)
+    private static string GetThumbnailCachePath(string videoPath)
     {
-        string fileName = Path.GetFileNameWithoutExtension(videoPath);
-        return Path.Combine(ThumbnailCacheDir, $"{fileName}_thumb.jpg");
+        byte[] hash = System.Security.Cryptography.MD5.HashData(
+            System.Text.Encoding.UTF8.GetBytes(videoPath.ToLowerInvariant()));
+        return Path.Combine(ThumbnailCacheDir, $"{Convert.ToHexString(hash)}.jpg");
     }
 
     /// <summary>
@@ -166,6 +296,24 @@ public partial class LibraryViewModel : ViewModelBase
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"Failed to delete clip: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Opens Windows Explorer with the given clip selected ("Show in folder").
+    /// </summary>
+    [RelayCommand]
+    private void ShowInFolder(ReplayClip? clip)
+    {
+        if (clip == null || !File.Exists(clip.FilePath)) return;
+
+        try
+        {
+            System.Diagnostics.Process.Start("explorer.exe", $"/select,\"{clip.FilePath}\"");
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Failed to show clip in folder: {ex.Message}");
         }
     }
 

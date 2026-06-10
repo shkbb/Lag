@@ -1,0 +1,128 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="using:System">
+
+  <!-- ════════ Shell / Navigation ════════ -->
+  <sys:String x:Key="App_Tagline">Ekrāna ierakstīšana fonā</sys:String>
+  <sys:String x:Key="Nav_Header">NAVIGĀCIJA</sys:String>
+  <sys:String x:Key="Nav_Settings">Iestatījumi</sys:String>
+  <sys:String x:Key="Nav_Library">Bibliotēka</sys:String>
+  <sys:String x:Key="Nav_Player">Atskaņotājs</sys:String>
+  <sys:String x:Key="Btn_StartRecording">Sākt ierakstīšanu</sys:String>
+  <sys:String x:Key="Btn_StopRecording">Apturēt ierakstīšanu</sys:String>
+  <sys:String x:Key="Btn_SaveReplay">Saglabāt atkārtojumu</sys:String>
+
+  <!-- ════════ Settings ════════ -->
+  <sys:String x:Key="Settings_Title">Iestatījumi</sys:String>
+  <sys:String x:Key="Settings_PendingChanges">Izmaiņas stāsies spēkā pēc ierakstīšanas restartēšanas.</sys:String>
+  <sys:String x:Key="Settings_Group_Language">VALODA</sys:String>
+  <sys:String x:Key="Settings_Language">Valoda</sys:String>
+  <sys:String x:Key="Settings_Group_Recording">IERAKSTĪŠANA</sys:String>
+  <sys:String x:Key="Settings_BufferLength">Atkārtojuma bufera ilgums</sys:String>
+  <sys:String x:Key="Settings_Display">Ekrāns</sys:String>
+  <sys:String x:Key="Settings_Microphone">Mikrofons</sys:String>
+  <sys:String x:Key="Settings_FrameRate">Kadru ātrums (FPS)</sys:String>
+  <sys:String x:Key="Settings_MicVolume">Mikrofona skaļums</sys:String>
+  <sys:String x:Key="Settings_OutputResolution">Izvades izšķirtspēja</sys:String>
+  <sys:String x:Key="Settings_Codec">Video kodeks</sys:String>
+  <sys:String x:Key="Settings_AutoCleanup">Automātiska bibliotēkas tīrīšana</sys:String>
+  <sys:String x:Key="Settings_AutoCleanup_Desc">Automātiski dzēš vecākos klipus, kad bibliotēka pārsniedz limitu</sys:String>
+  <sys:String x:Key="Settings_StorageLimit">Bibliotēkas izmēra limits</sys:String>
+  <sys:String x:Key="Tab_Video">Video</sys:String>
+  <sys:String x:Key="Tab_Audio">Audio</sys:String>
+  <sys:String x:Key="Tab_General">Vispārīgi</sys:String>
+  <sys:String x:Key="Settings_Bitrate">Bitu ātrums</sys:String>
+  <sys:String x:Key="Settings_Bitrate_CustomSuffix">Mbps</sys:String>
+  <sys:String x:Key="Settings_Gpu">Ierakstīšanas GPU</sys:String>
+  <sys:String x:Key="Settings_Format">Faila formāts</sys:String>
+  <sys:String x:Key="Settings_Group_Mic">MIKROFONS</sys:String>
+  <sys:String x:Key="Settings_Group_SystemAudio">SISTĒMAS SKAŅA</sys:String>
+  <sys:String x:Key="Settings_AudioMode">Ierakstīšanas režīms</sys:String>
+  <sys:String x:Key="AudioMode_All">Visa datora skaņa</sys:String>
+  <sys:String x:Key="AudioMode_Apps">Izvēlētās programmas</sys:String>
+  <sys:String x:Key="Settings_AppsHint">Programmas šeit parādīsies, kad sāks atskaņot skaņu.</sys:String>
+  <sys:String x:Key="Settings_MicChannels">Kanāli</sys:String>
+  <sys:String x:Key="Channels_Stereo">Stereo</sys:String>
+  <sys:String x:Key="Channels_Mono">Mono</sys:String>
+  <sys:String x:Key="Settings_Ptt">Push-to-talk</sys:String>
+  <sys:String x:Key="Settings_Ptt_Desc">Mikrofons ir aktīvs tikai, kamēr taustiņš ir nospiests</sys:String>
+  <sys:String x:Key="Settings_PttKey">Push-to-talk taustiņš</sys:String>
+  <sys:String x:Key="Settings_SeparateTracks">Atsevišķi audio celiņi</sys:String>
+  <sys:String x:Key="Settings_SeparateTracks_Desc">Sistēmas skaņa un mikrofons failā tiek saglabāti atsevišķos celiņos</sys:String>
+  <sys:String x:Key="Settings_Group_Automation">AUTOMATIZĀCIJA</sys:String>
+  <sys:String x:Key="Settings_StartWithWindows">Palaist kopā ar Windows</sys:String>
+  <sys:String x:Key="Settings_StartWithWindows_Desc">Pievieno programmu sistēmas startēšanai</sys:String>
+  <sys:String x:Key="Settings_AutoStart">Automātiski sākt ierakstīšanu</sys:String>
+  <sys:String x:Key="Settings_AutoStart_Desc">Atkārtojuma buferis startē uzreiz pēc palaišanas</sys:String>
+  <sys:String x:Key="Settings_Group_Hotkey">KARSTAIS TAUSTIŅŠ</sys:String>
+  <sys:String x:Key="Settings_Hotkey_SaveReplay">Saglabāt atkārtojumu</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Desc">Noklikšķiniet pogu un pēc tam nospiediet vēlamo taustiņu kombināciju</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Change">Mainīt</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Listening">Klausos...</sys:String>
+  <sys:String x:Key="Settings_Group_Paths">CEĻI</sys:String>
+  <sys:String x:Key="Settings_LibraryFolder">Bibliotēkas mape</sys:String>
+  <sys:String x:Key="Settings_Browse">Pārlūkot</sys:String>
+  <sys:String x:Key="About_Group">PAR PROGRAMMU</sys:String>
+  <sys:String x:Key="About_Version">Versija</sys:String>
+  <sys:String x:Key="About_CheckUpdates">Pārbaudīt atjauninājumus</sys:String>
+  <sys:String x:Key="Update_Checking">Atjauninājumu pārbaude...</sys:String>
+  <sys:String x:Key="Update_UpToDate">Jums ir jaunākā versija.</sys:String>
+  <sys:String x:Key="Update_Downloading">Atjauninājuma lejupielāde...</sys:String>
+  <sys:String x:Key="Update_DevMode">Atjauninājumi izstrādes režīmā nav pieejami.</sys:String>
+  <sys:String x:Key="Update_Failed">Atjaunināšana neizdevās: {0}</sys:String>
+
+  <!-- ════════ Library ════════ -->
+  <sys:String x:Key="Library_Title">Bibliotēka</sys:String>
+  <sys:String x:Key="Library_Subtitle">Jūsu saglabātie mirkļi</sys:String>
+  <sys:String x:Key="Library_Empty">Atkārtojumu vēl nav. Sāciet ierakstīšanu un nospiediet karsto taustiņu, lai saglabātu atkārtojumu!</sys:String>
+  <sys:String x:Key="Library_Delete">Dzēst</sys:String>
+  <sys:String x:Key="Library_OpenFolder">Atvērt mapi</sys:String>
+  <sys:String x:Key="Library_ShowInFolder">Parādīt mapē</sys:String>
+  <sys:String x:Key="Library_FreeSpace">Brīvā vieta</sys:String>
+
+  <!-- ════════ Player ════════ -->
+  <sys:String x:Key="Player_Replays">ATKĀRTOJUMI</sys:String>
+  <sys:String x:Key="Player_Clips">Klipi</sys:String>
+  <sys:String x:Key="Player_Duration">Ilgums</sys:String>
+  <sys:String x:Key="Player_Placeholder">Video atskaņotājs</sys:String>
+  <sys:String x:Key="Player_NowPlaying">Tiek atskaņots: </sys:String>
+  <sys:String x:Key="Player_ReplayBadge">ATKĀRTOJUMS</sys:String>
+  <sys:String x:Key="Tooltip_Stop">Apturēt</sys:String>
+  <sys:String x:Key="Tooltip_Rewind">Atpakaļ 10 s</sys:String>
+  <sys:String x:Key="Tooltip_PlayPause">Atskaņot / Pauze</sys:String>
+  <sys:String x:Key="Tooltip_Forward">Uz priekšu 10 s</sys:String>
+  <sys:String x:Key="Tooltip_Next">Nākamais atkārtojums</sys:String>
+  <sys:String x:Key="Tooltip_Fullscreen">Pilnekrāns (ESC — iziet)</sys:String>
+  <sys:String x:Key="Tooltip_Volume">Skaļums</sys:String>
+
+  <!-- ════════ Runtime status (ViewModels) ════════ -->
+  <sys:String x:Key="Status_Ready">Gatavs</sys:String>
+  <sys:String x:Key="Status_Starting">Ierakstīšanas sākšana (OBS)...</sys:String>
+  <sys:String x:Key="Status_Recording">Ierakstīšana...</sys:String>
+  <sys:String x:Key="Status_NoMonitor">Ierakstīšanai nav izvēlēts ekrāns.</sys:String>
+  <sys:String x:Key="Status_ObsError">OBS kļūda: {0}</sys:String>
+  <sys:String x:Key="Status_Stopping">Apturēšana...</sys:String>
+  <sys:String x:Key="Status_Stopped">Apturēts</sys:String>
+  <sys:String x:Key="Status_StopError">Apturēšanas kļūda: {0}</sys:String>
+  <sys:String x:Key="Status_SaveError">Saglabāšanas kļūda: {0}</sys:String>
+  <sys:String x:Key="Status_ReplaySaved">Atkārtojums saglabāts: {0}</sys:String>
+  <sys:String x:Key="Status_Saving">Atkārtojuma saglabāšana...</sys:String>
+  <sys:String x:Key="Status_NotRecording">Ierakstīšana nav aktīva — vispirms nospiediet „Sākt ierakstīšanu".</sys:String>
+  <sys:String x:Key="Hotkey_PressCombo">Nospiediet taustiņu kombināciju...</sys:String>
+  <sys:String x:Key="Browse_Title">Izvēlieties mapi atkārtojumu saglabāšanai</sys:String>
+
+  <!-- ════════ Tray menu ════════ -->
+  <sys:String x:Key="Tray_SaveReplay">Saglabāt atkārtojumu</sys:String>
+  <sys:String x:Key="Tray_OpenLibrary">Atvērt bibliotēku</sys:String>
+  <sys:String x:Key="Tray_Open">Atvērt</sys:String>
+  <sys:String x:Key="Tray_Exit">Iziet</sys:String>
+
+  <!-- ════════ Shared option labels (dropdowns) ════════ -->
+  <sys:String x:Key="Time_SecShort">{0} sek.</sys:String>
+  <sys:String x:Key="Time_MinShort">{0} min.</sys:String>
+  <sys:String x:Key="Time_HourMinShort">{0} st. {1} min.</sys:String>
+  <sys:String x:Key="Option_Native">Natīvā</sys:String>
+  <sys:String x:Key="Option_Auto">Automātiski</sys:String>
+  <sys:String x:Key="Option_Custom">Pielāgots</sys:String>
+
+</ResourceDictionary>

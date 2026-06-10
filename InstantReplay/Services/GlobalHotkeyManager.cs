@@ -46,6 +46,29 @@ public sealed class GlobalHotkeyManager : IDisposable
     /// </summary>
     public bool IsCapturing { get; set; }
 
+    // ───────────── Push-to-talk ─────────────
+
+    /// <summary>Whether push-to-talk key tracking is active.</summary>
+    public bool PttEnabled { get; set; }
+
+    /// <summary>The push-to-talk key (held = mic live). Default: V.</summary>
+    public KeyCode PttKey { get; set; } = KeyCode.VcV;
+
+    /// <summary>Fired (possibly repeatedly, due to key auto-repeat) while the PTT key is pressed. Background thread!</summary>
+    public event EventHandler? PttPressed;
+
+    /// <summary>Fired when the PTT key is released. Background thread!</summary>
+    public event EventHandler? PttReleased;
+
+    // ───────────── Global mouse (video click-to-pause) ─────────────
+
+    /// <summary>
+    /// Fired on any global LEFT mouse button press with SCREEN pixel coordinates.
+    /// Used by the player to detect clicks on the native VLC video window, which swallows
+    /// input at the HWND level so Avalonia overlays never see it. Background thread!
+    /// </summary>
+    public event EventHandler<GlobalMouseEventArgs>? LeftMousePressed;
+
     /// <summary>
     /// Starts the global keyboard hook on a background thread.
     /// Must be called once during application startup.
@@ -57,6 +80,8 @@ public sealed class GlobalHotkeyManager : IDisposable
             if (_hook != null) return;
             _hook = new SimpleGlobalHook();
             _hook.KeyPressed += OnKeyPressed;
+            _hook.KeyReleased += OnKeyReleased;
+            _hook.MousePressed += OnMousePressed;
         }
 
         // RunAsync blocks until the hook is disposed, so we fire-and-forget.
@@ -94,10 +119,38 @@ public sealed class GlobalHotkeyManager : IDisposable
             return;
         }
 
+        // --- Push-to-talk: key held → mic live (auto-repeat re-fires; unmute is idempotent) ---
+        if (PttEnabled && key == PttKey)
+        {
+            PttPressed?.Invoke(this, EventArgs.Empty);
+        }
+
         // --- Normal mode: check if the combo matches the configured hotkey ---
         if (key == RequiredKey && (modifiers & RequiredModifiers) == RequiredModifiers)
         {
             HotkeyPressed?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
+    /// <summary>Tracks the PTT key release to re-mute the microphone.</summary>
+    private void OnKeyReleased(object? sender, KeyboardHookEventArgs e)
+    {
+        if (_disposed) return;
+
+        if (PttEnabled && e.Data.KeyCode == PttKey)
+        {
+            PttReleased?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
+    /// <summary>Forwards global left-clicks (screen pixels) to subscribers (player click-to-pause).</summary>
+    private void OnMousePressed(object? sender, MouseHookEventArgs e)
+    {
+        if (_disposed) return;
+
+        if (e.Data.Button == SharpHook.Native.MouseButton.Button1)
+        {
+            LeftMousePressed?.Invoke(this, new GlobalMouseEventArgs(e.Data.X, e.Data.Y));
         }
     }
 
@@ -127,10 +180,25 @@ public sealed class GlobalHotkeyManager : IDisposable
             if (_hook != null)
             {
                 _hook.KeyPressed -= OnKeyPressed;
+                _hook.KeyReleased -= OnKeyReleased;
+                _hook.MousePressed -= OnMousePressed;
                 _hook.Dispose();
                 _hook = null;
             }
         }
+    }
+}
+
+/// <summary>Screen-pixel coordinates of a global mouse press.</summary>
+public sealed class GlobalMouseEventArgs : EventArgs
+{
+    public int X { get; }
+    public int Y { get; }
+
+    public GlobalMouseEventArgs(int x, int y)
+    {
+        X = x;
+        Y = y;
     }
 }
 

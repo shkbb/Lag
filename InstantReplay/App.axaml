@@ -7,6 +7,170 @@
 
   <Application.Resources>
     <core:BoolToStringConverter x:Key="BoolToString" />
+    <core:LanguageToFlagConverter x:Key="LangFlag" />
+
+    <!-- ═══════════ Vector language flags (no emoji/bitmaps — crisp at any DPI) ═══════════ -->
+    <!-- All drawn in a 30×20 coordinate space and stretched by the Image that hosts them. -->
+
+    <!-- English — Union Jack (simplified: diagonals + cross via stroked lines) -->
+    <DrawingImage x:Key="Flag_en">
+      <DrawingGroup>
+        <GeometryDrawing Brush="#012169" Geometry="M0,0 H30 V20 H0 Z" />
+        <GeometryDrawing Geometry="M0,0 L30,20 M30,0 L0,20">
+          <GeometryDrawing.Pen>
+            <Pen Brush="White" Thickness="4.5" />
+          </GeometryDrawing.Pen>
+        </GeometryDrawing>
+        <GeometryDrawing Geometry="M0,0 L30,20 M30,0 L0,20">
+          <GeometryDrawing.Pen>
+            <Pen Brush="#C8102E" Thickness="1.8" />
+          </GeometryDrawing.Pen>
+        </GeometryDrawing>
+        <GeometryDrawing Geometry="M15,0 V20 M0,10 H30">
+          <GeometryDrawing.Pen>
+            <Pen Brush="White" Thickness="6" />
+          </GeometryDrawing.Pen>
+        </GeometryDrawing>
+        <GeometryDrawing Geometry="M15,0 V20 M0,10 H30">
+          <GeometryDrawing.Pen>
+            <Pen Brush="#C8102E" Thickness="3.4" />
+          </GeometryDrawing.Pen>
+        </GeometryDrawing>
+      </DrawingGroup>
+    </DrawingImage>
+
+    <!-- Українська — blue over yellow -->
+    <DrawingImage x:Key="Flag_uk">
+      <DrawingGroup>
+        <GeometryDrawing Brush="#0057B7" Geometry="M0,0 H30 V10 H0 Z" />
+        <GeometryDrawing Brush="#FFD700" Geometry="M0,10 H30 V20 H0 Z" />
+      </DrawingGroup>
+    </DrawingImage>
+
+    <!-- Deutsch — black / red / gold -->
+    <DrawingImage x:Key="Flag_de">
+      <DrawingGroup>
+        <GeometryDrawing Brush="#000000" Geometry="M0,0 H30 V6.67 H0 Z" />
+        <GeometryDrawing Brush="#DD0000" Geometry="M0,6.67 H30 V13.33 H0 Z" />
+        <GeometryDrawing Brush="#FFCE00" Geometry="M0,13.33 H30 V20 H0 Z" />
+      </DrawingGroup>
+    </DrawingImage>
+
+    <!-- Français — blue / white / red -->
+    <DrawingImage x:Key="Flag_fr">
+      <DrawingGroup>
+        <GeometryDrawing Brush="#002395" Geometry="M0,0 H10 V20 H0 Z" />
+        <GeometryDrawing Brush="#FFFFFF" Geometry="M10,0 H20 V20 H10 Z" />
+        <GeometryDrawing Brush="#ED2939" Geometry="M20,0 H30 V20 H20 Z" />
+      </DrawingGroup>
+    </DrawingImage>
+
+    <!-- Беларуская — white / red / white -->
+    <DrawingImage x:Key="Flag_be">
+      <DrawingGroup>
+        <GeometryDrawing Brush="#FFFFFF" Geometry="M0,0 H30 V6.67 H0 Z" />
+        <GeometryDrawing Brush="#E10000" Geometry="M0,6.67 H30 V13.33 H0 Z" />
+        <GeometryDrawing Brush="#FFFFFF" Geometry="M0,13.33 H30 V20 H0 Z" />
+      </DrawingGroup>
+    </DrawingImage>
+
+    <!-- Lietuvių — yellow / green / red -->
+    <DrawingImage x:Key="Flag_lt">
+      <DrawingGroup>
+        <GeometryDrawing Brush="#FDB913" Geometry="M0,0 H30 V6.67 H0 Z" />
+        <GeometryDrawing Brush="#006A44" Geometry="M0,6.67 H30 V13.33 H0 Z" />
+        <GeometryDrawing Brush="#C1272D" Geometry="M0,13.33 H30 V20 H0 Z" />
+      </DrawingGroup>
+    </DrawingImage>
+
+    <!-- Eesti — blue / black / white -->
+    <DrawingImage x:Key="Flag_et">
+      <DrawingGroup>
+        <GeometryDrawing Brush="#0072CE" Geometry="M0,0 H30 V6.67 H0 Z" />
+        <GeometryDrawing Brush="#000000" Geometry="M0,6.67 H30 V13.33 H0 Z" />
+        <GeometryDrawing Brush="#FFFFFF" Geometry="M0,13.33 H30 V20 H0 Z" />
+      </DrawingGroup>
+    </DrawingImage>
+
+    <!-- Latviešu — carmine / white / carmine (2:1:2) -->
+    <DrawingImage x:Key="Flag_lv">
+      <DrawingGroup>
+        <GeometryDrawing Brush="#9E3039" Geometry="M0,0 H30 V8 H0 Z" />
+        <GeometryDrawing Brush="#FFFFFF" Geometry="M0,8 H30 V12 H0 Z" />
+        <GeometryDrawing Brush="#9E3039" Geometry="M0,12 H30 V20 H0 Z" />
+      </DrawingGroup>
+    </DrawingImage>
+
+    <!-- Suomi — white with blue Nordic cross -->
+    <DrawingImage x:Key="Flag_fi">
+      <DrawingGroup>
+        <GeometryDrawing Brush="#FFFFFF" Geometry="M0,0 H30 V20 H0 Z" />
+        <GeometryDrawing Geometry="M11,0 V20 M0,10 H30">
+          <GeometryDrawing.Pen>
+            <Pen Brush="#002F6C" Thickness="5" />
+          </GeometryDrawing.Pen>
+        </GeometryDrawing>
+      </DrawingGroup>
+    </DrawingImage>
+
+    <!-- Svenska — blue with yellow Nordic cross -->
+    <DrawingImage x:Key="Flag_sv">
+      <DrawingGroup>
+        <GeometryDrawing Brush="#006AA7" Geometry="M0,0 H30 V20 H0 Z" />
+        <GeometryDrawing Geometry="M11,0 V20 M0,10 H30">
+          <GeometryDrawing.Pen>
+            <Pen Brush="#FECC00" Thickness="4" />
+          </GeometryDrawing.Pen>
+        </GeometryDrawing>
+      </DrawingGroup>
+    </DrawingImage>
+
+    <!-- Norsk — red with white-bordered blue Nordic cross -->
+    <DrawingImage x:Key="Flag_no">
+      <DrawingGroup>
+        <GeometryDrawing Brush="#BA0C2F" Geometry="M0,0 H30 V20 H0 Z" />
+        <GeometryDrawing Geometry="M11,0 V20 M0,10 H30">
+          <GeometryDrawing.Pen>
+            <Pen Brush="#FFFFFF" Thickness="5.5" />
+          </GeometryDrawing.Pen>
+        </GeometryDrawing>
+        <GeometryDrawing Geometry="M11,0 V20 M0,10 H30">
+          <GeometryDrawing.Pen>
+            <Pen Brush="#00205B" Thickness="2.6" />
+          </GeometryDrawing.Pen>
+        </GeometryDrawing>
+      </DrawingGroup>
+    </DrawingImage>
+
+    <!-- Dansk — red with white Nordic cross -->
+    <DrawingImage x:Key="Flag_da">
+      <DrawingGroup>
+        <GeometryDrawing Brush="#C8102E" Geometry="M0,0 H30 V20 H0 Z" />
+        <GeometryDrawing Geometry="M11,0 V20 M0,10 H30">
+          <GeometryDrawing.Pen>
+            <Pen Brush="#FFFFFF" Thickness="4" />
+          </GeometryDrawing.Pen>
+        </GeometryDrawing>
+      </DrawingGroup>
+    </DrawingImage>
+
+    <!-- Nederlands — red / white / blue -->
+    <DrawingImage x:Key="Flag_nl">
+      <DrawingGroup>
+        <GeometryDrawing Brush="#AE1C28" Geometry="M0,0 H30 V6.67 H0 Z" />
+        <GeometryDrawing Brush="#FFFFFF" Geometry="M0,6.67 H30 V13.33 H0 Z" />
+        <GeometryDrawing Brush="#21468B" Geometry="M0,13.33 H30 V20 H0 Z" />
+      </DrawingGroup>
+    </DrawingImage>
+
+    <!-- Italiano — green / white / red (vertical) -->
+    <DrawingImage x:Key="Flag_it">
+      <DrawingGroup>
+        <GeometryDrawing Brush="#008C45" Geometry="M0,0 H10 V20 H0 Z" />
+        <GeometryDrawing Brush="#FFFFFF" Geometry="M10,0 H20 V20 H10 Z" />
+        <GeometryDrawing Brush="#CD212A" Geometry="M20,0 H30 V20 H20 Z" />
+      </DrawingGroup>
+    </DrawingImage>
 
     <!-- ═══════════ Global "Lag" palette (neon glass) ═══════════ -->
     <!-- Headline accents reused across the redesign -->
@@ -46,7 +210,12 @@
       <TrayIcon Icon="avares://Lag/Assets/icon.ico"
                 ToolTipText="Lag" Clicked="TrayIcon_OpenClicked">
         <TrayIcon.Menu>
+          <!-- Headers are localized in code (App.LocalizeTrayMenu) — NativeMenuItem lives outside
+               the logical tree, so DynamicResource bindings don't reach it. -->
           <NativeMenu>
+            <NativeMenuItem Header="Save Replay" Click="TrayIcon_SaveReplayClicked" />
+            <NativeMenuItem Header="Open Library" Click="TrayIcon_OpenLibraryClicked" />
+            <NativeMenuItemSeparator />
             <NativeMenuItem Header="Open" Click="TrayIcon_OpenClicked" />
             <NativeMenuItem Header="Exit" Click="TrayIcon_ExitClicked" />
           </NativeMenu>

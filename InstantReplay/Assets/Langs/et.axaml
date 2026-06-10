@@ -1,0 +1,128 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="using:System">
+
+  <!-- ════════ Shell / Navigation ════════ -->
+  <sys:String x:Key="App_Tagline">Ekraani salvestamine taustal</sys:String>
+  <sys:String x:Key="Nav_Header">NAVIGEERIMINE</sys:String>
+  <sys:String x:Key="Nav_Settings">Seaded</sys:String>
+  <sys:String x:Key="Nav_Library">Teek</sys:String>
+  <sys:String x:Key="Nav_Player">Mängija</sys:String>
+  <sys:String x:Key="Btn_StartRecording">Alusta salvestamist</sys:String>
+  <sys:String x:Key="Btn_StopRecording">Peata salvestamine</sys:String>
+  <sys:String x:Key="Btn_SaveReplay">Salvesta kordus</sys:String>
+
+  <!-- ════════ Settings ════════ -->
+  <sys:String x:Key="Settings_Title">Seaded</sys:String>
+  <sys:String x:Key="Settings_PendingChanges">Muudatused jõustuvad pärast salvestamise taaskäivitamist.</sys:String>
+  <sys:String x:Key="Settings_Group_Language">KEEL</sys:String>
+  <sys:String x:Key="Settings_Language">Keel</sys:String>
+  <sys:String x:Key="Settings_Group_Recording">SALVESTAMINE</sys:String>
+  <sys:String x:Key="Settings_BufferLength">Korduspuhvri pikkus</sys:String>
+  <sys:String x:Key="Settings_Display">Ekraan</sys:String>
+  <sys:String x:Key="Settings_Microphone">Mikrofon</sys:String>
+  <sys:String x:Key="Settings_FrameRate">Kaadrisagedus (FPS)</sys:String>
+  <sys:String x:Key="Settings_MicVolume">Mikrofoni helitugevus</sys:String>
+  <sys:String x:Key="Settings_OutputResolution">Väljundi eraldusvõime</sys:String>
+  <sys:String x:Key="Settings_Codec">Videokoodek</sys:String>
+  <sys:String x:Key="Settings_AutoCleanup">Teegi automaatne puhastus</sys:String>
+  <sys:String x:Key="Settings_AutoCleanup_Desc">Kustutab automaatselt vanimad klipid, kui teek ületab limiidi</sys:String>
+  <sys:String x:Key="Settings_StorageLimit">Teegi suuruse limiit</sys:String>
+  <sys:String x:Key="Tab_Video">Video</sys:String>
+  <sys:String x:Key="Tab_Audio">Heli</sys:String>
+  <sys:String x:Key="Tab_General">Üldine</sys:String>
+  <sys:String x:Key="Settings_Bitrate">Bitikiirus</sys:String>
+  <sys:String x:Key="Settings_Bitrate_CustomSuffix">Mbps</sys:String>
+  <sys:String x:Key="Settings_Gpu">Salvestamise GPU</sys:String>
+  <sys:String x:Key="Settings_Format">Failivorming</sys:String>
+  <sys:String x:Key="Settings_Group_Mic">MIKROFON</sys:String>
+  <sys:String x:Key="Settings_Group_SystemAudio">SÜSTEEMIHELI</sys:String>
+  <sys:String x:Key="Settings_AudioMode">Salvestusrežiim</sys:String>
+  <sys:String x:Key="AudioMode_All">Kogu arvuti heli</sys:String>
+  <sys:String x:Key="AudioMode_Apps">Valitud rakendused</sys:String>
+  <sys:String x:Key="Settings_AppsHint">Rakendused ilmuvad siia, kui need heli esitama hakkavad.</sys:String>
+  <sys:String x:Key="Settings_MicChannels">Kanalid</sys:String>
+  <sys:String x:Key="Channels_Stereo">Stereo</sys:String>
+  <sys:String x:Key="Channels_Mono">Mono</sys:String>
+  <sys:String x:Key="Settings_Ptt">Push-to-talk</sys:String>
+  <sys:String x:Key="Settings_Ptt_Desc">Mikrofon on aktiivne ainult klahvi all hoides</sys:String>
+  <sys:String x:Key="Settings_PttKey">Push-to-talk klahv</sys:String>
+  <sys:String x:Key="Settings_SeparateTracks">Eraldi helirajad</sys:String>
+  <sys:String x:Key="Settings_SeparateTracks_Desc">Süsteemiheli ja mikrofon salvestatakse failis eraldi radadena</sys:String>
+  <sys:String x:Key="Settings_Group_Automation">AUTOMAATIKA</sys:String>
+  <sys:String x:Key="Settings_StartWithWindows">Käivita koos Windowsiga</sys:String>
+  <sys:String x:Key="Settings_StartWithWindows_Desc">Lisab rakenduse süsteemi käivitusse</sys:String>
+  <sys:String x:Key="Settings_AutoStart">Alusta salvestamist automaatselt</sys:String>
+  <sys:String x:Key="Settings_AutoStart_Desc">Korduspuhver käivitub kohe pärast programmi avamist</sys:String>
+  <sys:String x:Key="Settings_Group_Hotkey">KIIRKLAHV</sys:String>
+  <sys:String x:Key="Settings_Hotkey_SaveReplay">Salvesta kordus</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Desc">Klõpsake nuppu ja seejärel vajutage soovitud klahvikombinatsiooni</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Change">Muuda</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Listening">Kuulan...</sys:String>
+  <sys:String x:Key="Settings_Group_Paths">ASUKOHAD</sys:String>
+  <sys:String x:Key="Settings_LibraryFolder">Teegi kaust</sys:String>
+  <sys:String x:Key="Settings_Browse">Sirvi</sys:String>
+  <sys:String x:Key="About_Group">TEAVE</sys:String>
+  <sys:String x:Key="About_Version">Versioon</sys:String>
+  <sys:String x:Key="About_CheckUpdates">Otsi uuendusi</sys:String>
+  <sys:String x:Key="Update_Checking">Uuenduste otsimine...</sys:String>
+  <sys:String x:Key="Update_UpToDate">Teil on uusim versioon.</sys:String>
+  <sys:String x:Key="Update_Downloading">Uuenduse allalaadimine...</sys:String>
+  <sys:String x:Key="Update_DevMode">Uuendused pole arendusrežiimis saadaval.</sys:String>
+  <sys:String x:Key="Update_Failed">Uuendamine ebaõnnestus: {0}</sys:String>
+
+  <!-- ════════ Library ════════ -->
+  <sys:String x:Key="Library_Title">Teek</sys:String>
+  <sys:String x:Key="Library_Subtitle">Teie salvestatud hetked</sys:String>
+  <sys:String x:Key="Library_Empty">Kordusi pole veel. Alustage salvestamist ja vajutage kiirklahvi, et kordus salvestada!</sys:String>
+  <sys:String x:Key="Library_Delete">Kustuta</sys:String>
+  <sys:String x:Key="Library_OpenFolder">Ava kaust</sys:String>
+  <sys:String x:Key="Library_ShowInFolder">Näita kaustas</sys:String>
+  <sys:String x:Key="Library_FreeSpace">Vaba ruum</sys:String>
+
+  <!-- ════════ Player ════════ -->
+  <sys:String x:Key="Player_Replays">KORDUSED</sys:String>
+  <sys:String x:Key="Player_Clips">Klipid</sys:String>
+  <sys:String x:Key="Player_Duration">Kestus</sys:String>
+  <sys:String x:Key="Player_Placeholder">Videomängija</sys:String>
+  <sys:String x:Key="Player_NowPlaying">Esitamisel: </sys:String>
+  <sys:String x:Key="Player_ReplayBadge">KORDUS</sys:String>
+  <sys:String x:Key="Tooltip_Stop">Peata</sys:String>
+  <sys:String x:Key="Tooltip_Rewind">Tagasi 10 s</sys:String>
+  <sys:String x:Key="Tooltip_PlayPause">Esita / Paus</sys:String>
+  <sys:String x:Key="Tooltip_Forward">Edasi 10 s</sys:String>
+  <sys:String x:Key="Tooltip_Next">Järgmine kordus</sys:String>
+  <sys:String x:Key="Tooltip_Fullscreen">Täisekraan (ESC — välju)</sys:String>
+  <sys:String x:Key="Tooltip_Volume">Helitugevus</sys:String>
+
+  <!-- ════════ Runtime status (ViewModels) ════════ -->
+  <sys:String x:Key="Status_Ready">Valmis</sys:String>
+  <sys:String x:Key="Status_Starting">Salvestamise alustamine (OBS)...</sys:String>
+  <sys:String x:Key="Status_Recording">Salvestamine...</sys:String>
+  <sys:String x:Key="Status_NoMonitor">Salvestamiseks pole ekraani valitud.</sys:String>
+  <sys:String x:Key="Status_ObsError">OBS-i viga: {0}</sys:String>
+  <sys:String x:Key="Status_Stopping">Peatamine...</sys:String>
+  <sys:String x:Key="Status_Stopped">Peatatud</sys:String>
+  <sys:String x:Key="Status_StopError">Peatamise viga: {0}</sys:String>
+  <sys:String x:Key="Status_SaveError">Salvestamise viga: {0}</sys:String>
+  <sys:String x:Key="Status_ReplaySaved">Kordus salvestatud: {0}</sys:String>
+  <sys:String x:Key="Status_Saving">Korduse salvestamine...</sys:String>
+  <sys:String x:Key="Status_NotRecording">Salvestamine pole aktiivne — vajutage esmalt „Alusta salvestamist".</sys:String>
+  <sys:String x:Key="Hotkey_PressCombo">Vajutage klahvikombinatsiooni...</sys:String>
+  <sys:String x:Key="Browse_Title">Valige korduste salvestamise kaust</sys:String>
+
+  <!-- ════════ Tray menu ════════ -->
+  <sys:String x:Key="Tray_SaveReplay">Salvesta kordus</sys:String>
+  <sys:String x:Key="Tray_OpenLibrary">Ava teek</sys:String>
+  <sys:String x:Key="Tray_Open">Ava</sys:String>
+  <sys:String x:Key="Tray_Exit">Välju</sys:String>
+
+  <!-- ════════ Shared option labels (dropdowns) ════════ -->
+  <sys:String x:Key="Time_SecShort">{0} sek</sys:String>
+  <sys:String x:Key="Time_MinShort">{0} min</sys:String>
+  <sys:String x:Key="Time_HourMinShort">{0} h {1} min</sys:String>
+  <sys:String x:Key="Option_Native">Natiivne</sys:String>
+  <sys:String x:Key="Option_Auto">Automaatne</sys:String>
+  <sys:String x:Key="Option_Custom">Kohandatud</sys:String>
+
+</ResourceDictionary>

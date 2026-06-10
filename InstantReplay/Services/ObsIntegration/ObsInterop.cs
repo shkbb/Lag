@@ -199,6 +199,19 @@ public static class ObsInterop
     [DllImport(ObsDll, CallingConvention = CallingConvention.Cdecl)]
     public static extern void obs_source_set_volume(ObsSourceHandle source, float volume);
 
+    // Mutes/unmutes a source at the mixer level. Used for push-to-talk.
+    [DllImport(ObsDll, CallingConvention = CallingConvention.Cdecl)]
+    public static extern void obs_source_set_muted(ObsSourceHandle source, [MarshalAs(UnmanagedType.I1)] bool muted);
+
+    // Bitmask of audio tracks (mixers) this source feeds: bit0 = track 1, bit1 = track 2, ...
+    // Used to route system audio → track 1 and microphone → track 2 for separate-track recording.
+    [DllImport(ObsDll, CallingConvention = CallingConvention.Cdecl)]
+    public static extern void obs_source_set_audio_mixers(ObsSourceHandle source, uint mixers);
+
+    // Source behaviour flags. OBS_SOURCE_FLAG_FORCE_MONO (1<<1) downmixes the source to mono.
+    [DllImport(ObsDll, CallingConvention = CallingConvention.Cdecl)]
+    public static extern void obs_source_set_flags(ObsSourceHandle source, uint flags);
+
     // Encoders (NVENC, AMF, VAAPI, x264)
     [DllImport(ObsDll, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
     public static extern ObsEncoderHandle obs_video_encoder_create(string id, string name, ObsDataHandle settings, IntPtr hotkey_data);

@@ -1,0 +1,128 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="using:System">
+
+  <!-- ════════ Shell / Navigation ════════ -->
+  <sys:String x:Key="App_Tagline">Ekrano įrašymas fone</sys:String>
+  <sys:String x:Key="Nav_Header">NAVIGACIJA</sys:String>
+  <sys:String x:Key="Nav_Settings">Nustatymai</sys:String>
+  <sys:String x:Key="Nav_Library">Biblioteka</sys:String>
+  <sys:String x:Key="Nav_Player">Grotuvas</sys:String>
+  <sys:String x:Key="Btn_StartRecording">Pradėti įrašymą</sys:String>
+  <sys:String x:Key="Btn_StopRecording">Sustabdyti įrašymą</sys:String>
+  <sys:String x:Key="Btn_SaveReplay">Išsaugoti pakartojimą</sys:String>
+
+  <!-- ════════ Settings ════════ -->
+  <sys:String x:Key="Settings_Title">Nustatymai</sys:String>
+  <sys:String x:Key="Settings_PendingChanges">Pakeitimai įsigalios iš naujo paleidus įrašymą.</sys:String>
+  <sys:String x:Key="Settings_Group_Language">KALBA</sys:String>
+  <sys:String x:Key="Settings_Language">Kalba</sys:String>
+  <sys:String x:Key="Settings_Group_Recording">ĮRAŠYMAS</sys:String>
+  <sys:String x:Key="Settings_BufferLength">Pakartojimo buferio trukmė</sys:String>
+  <sys:String x:Key="Settings_Display">Ekranas</sys:String>
+  <sys:String x:Key="Settings_Microphone">Mikrofonas</sys:String>
+  <sys:String x:Key="Settings_FrameRate">Kadrų dažnis (FPS)</sys:String>
+  <sys:String x:Key="Settings_MicVolume">Mikrofono garsumas</sys:String>
+  <sys:String x:Key="Settings_OutputResolution">Išvesties raiška</sys:String>
+  <sys:String x:Key="Settings_Codec">Vaizdo kodekas</sys:String>
+  <sys:String x:Key="Settings_AutoCleanup">Automatinis bibliotekos valymas</sys:String>
+  <sys:String x:Key="Settings_AutoCleanup_Desc">Automatiškai ištrinami seniausi klipai, kai biblioteka viršija limitą</sys:String>
+  <sys:String x:Key="Settings_StorageLimit">Bibliotekos dydžio limitas</sys:String>
+  <sys:String x:Key="Tab_Video">Vaizdas</sys:String>
+  <sys:String x:Key="Tab_Audio">Garsas</sys:String>
+  <sys:String x:Key="Tab_General">Bendra</sys:String>
+  <sys:String x:Key="Settings_Bitrate">Pralaidumas</sys:String>
+  <sys:String x:Key="Settings_Bitrate_CustomSuffix">Mbps</sys:String>
+  <sys:String x:Key="Settings_Gpu">Įrašymo GPU</sys:String>
+  <sys:String x:Key="Settings_Format">Failo formatas</sys:String>
+  <sys:String x:Key="Settings_Group_Mic">MIKROFONAS</sys:String>
+  <sys:String x:Key="Settings_Group_SystemAudio">SISTEMOS GARSAS</sys:String>
+  <sys:String x:Key="Settings_AudioMode">Įrašymo režimas</sys:String>
+  <sys:String x:Key="AudioMode_All">Visas kompiuterio garsas</sys:String>
+  <sys:String x:Key="AudioMode_Apps">Pasirinktos programos</sys:String>
+  <sys:String x:Key="Settings_AppsHint">Programos čia atsiras, kai pradės groti garsą.</sys:String>
+  <sys:String x:Key="Settings_MicChannels">Kanalai</sys:String>
+  <sys:String x:Key="Channels_Stereo">Stereo</sys:String>
+  <sys:String x:Key="Channels_Mono">Mono</sys:String>
+  <sys:String x:Key="Settings_Ptt">Push-to-talk</sys:String>
+  <sys:String x:Key="Settings_Ptt_Desc">Mikrofonas aktyvus tik laikant nuspaustą klavišą</sys:String>
+  <sys:String x:Key="Settings_PttKey">Push-to-talk klavišas</sys:String>
+  <sys:String x:Key="Settings_SeparateTracks">Atskiri garso takeliai</sys:String>
+  <sys:String x:Key="Settings_SeparateTracks_Desc">Sistemos garsas ir mikrofonas faile išsaugomi atskirais takeliais</sys:String>
+  <sys:String x:Key="Settings_Group_Automation">AUTOMATIZAVIMAS</sys:String>
+  <sys:String x:Key="Settings_StartWithWindows">Paleisti kartu su Windows</sys:String>
+  <sys:String x:Key="Settings_StartWithWindows_Desc">Prideda programą prie sistemos paleisties</sys:String>
+  <sys:String x:Key="Settings_AutoStart">Automatiškai pradėti įrašymą</sys:String>
+  <sys:String x:Key="Settings_AutoStart_Desc">Pakartojimo buferis paleidžiamas iškart po programos paleidimo</sys:String>
+  <sys:String x:Key="Settings_Group_Hotkey">SPARTUSIS KLAVIŠAS</sys:String>
+  <sys:String x:Key="Settings_Hotkey_SaveReplay">Išsaugoti pakartojimą</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Desc">Spustelėkite mygtuką, tada paspauskite norimą klavišų kombinaciją</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Change">Keisti</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Listening">Laukiama...</sys:String>
+  <sys:String x:Key="Settings_Group_Paths">KELIAI</sys:String>
+  <sys:String x:Key="Settings_LibraryFolder">Bibliotekos aplankas</sys:String>
+  <sys:String x:Key="Settings_Browse">Naršyti</sys:String>
+  <sys:String x:Key="About_Group">APIE</sys:String>
+  <sys:String x:Key="About_Version">Versija</sys:String>
+  <sys:String x:Key="About_CheckUpdates">Tikrinti atnaujinimus</sys:String>
+  <sys:String x:Key="Update_Checking">Tikrinami atnaujinimai...</sys:String>
+  <sys:String x:Key="Update_UpToDate">Turite naujausią versiją.</sys:String>
+  <sys:String x:Key="Update_Downloading">Atsiunčiamas atnaujinimas...</sys:String>
+  <sys:String x:Key="Update_DevMode">Atnaujinimai kūrimo režimu nepasiekiami.</sys:String>
+  <sys:String x:Key="Update_Failed">Atnaujinimas nepavyko: {0}</sys:String>
+
+  <!-- ════════ Library ════════ -->
+  <sys:String x:Key="Library_Title">Biblioteka</sys:String>
+  <sys:String x:Key="Library_Subtitle">Jūsų išsaugotos akimirkos</sys:String>
+  <sys:String x:Key="Library_Empty">Pakartojimų dar nėra. Pradėkite įrašymą ir paspauskite spartųjį klavišą, kad išsaugotumėte pakartojimą!</sys:String>
+  <sys:String x:Key="Library_Delete">Ištrinti</sys:String>
+  <sys:String x:Key="Library_OpenFolder">Atidaryti aplanką</sys:String>
+  <sys:String x:Key="Library_ShowInFolder">Rodyti aplanke</sys:String>
+  <sys:String x:Key="Library_FreeSpace">Laisva vieta</sys:String>
+
+  <!-- ════════ Player ════════ -->
+  <sys:String x:Key="Player_Replays">PAKARTOJIMAI</sys:String>
+  <sys:String x:Key="Player_Clips">Klipai</sys:String>
+  <sys:String x:Key="Player_Duration">Trukmė</sys:String>
+  <sys:String x:Key="Player_Placeholder">Vaizdo grotuvas</sys:String>
+  <sys:String x:Key="Player_NowPlaying">Grojama: </sys:String>
+  <sys:String x:Key="Player_ReplayBadge">PAKARTOJIMAS</sys:String>
+  <sys:String x:Key="Tooltip_Stop">Stabdyti</sys:String>
+  <sys:String x:Key="Tooltip_Rewind">Atgal 10 s</sys:String>
+  <sys:String x:Key="Tooltip_PlayPause">Groti / Pauzė</sys:String>
+  <sys:String x:Key="Tooltip_Forward">Pirmyn 10 s</sys:String>
+  <sys:String x:Key="Tooltip_Next">Kitas pakartojimas</sys:String>
+  <sys:String x:Key="Tooltip_Fullscreen">Visas ekranas (ESC — išeiti)</sys:String>
+  <sys:String x:Key="Tooltip_Volume">Garsumas</sys:String>
+
+  <!-- ════════ Runtime status (ViewModels) ════════ -->
+  <sys:String x:Key="Status_Ready">Pasiruošęs</sys:String>
+  <sys:String x:Key="Status_Starting">Pradedamas įrašymas (OBS)...</sys:String>
+  <sys:String x:Key="Status_Recording">Įrašoma...</sys:String>
+  <sys:String x:Key="Status_NoMonitor">Nepasirinktas ekranas įrašymui.</sys:String>
+  <sys:String x:Key="Status_ObsError">OBS klaida: {0}</sys:String>
+  <sys:String x:Key="Status_Stopping">Stabdoma...</sys:String>
+  <sys:String x:Key="Status_Stopped">Sustabdyta</sys:String>
+  <sys:String x:Key="Status_StopError">Stabdymo klaida: {0}</sys:String>
+  <sys:String x:Key="Status_SaveError">Išsaugojimo klaida: {0}</sys:String>
+  <sys:String x:Key="Status_ReplaySaved">Pakartojimas išsaugotas: {0}</sys:String>
+  <sys:String x:Key="Status_Saving">Išsaugomas pakartojimas...</sys:String>
+  <sys:String x:Key="Status_NotRecording">Įrašymas neaktyvus — pirmiausia paspauskite „Pradėti įrašymą".</sys:String>
+  <sys:String x:Key="Hotkey_PressCombo">Paspauskite klavišų kombinaciją...</sys:String>
+  <sys:String x:Key="Browse_Title">Pasirinkite aplanką pakartojimams saugoti</sys:String>
+
+  <!-- ════════ Tray menu ════════ -->
+  <sys:String x:Key="Tray_SaveReplay">Išsaugoti pakartojimą</sys:String>
+  <sys:String x:Key="Tray_OpenLibrary">Atidaryti biblioteką</sys:String>
+  <sys:String x:Key="Tray_Open">Atidaryti</sys:String>
+  <sys:String x:Key="Tray_Exit">Išeiti</sys:String>
+
+  <!-- ════════ Shared option labels (dropdowns) ════════ -->
+  <sys:String x:Key="Time_SecShort">{0} sek.</sys:String>
+  <sys:String x:Key="Time_MinShort">{0} min.</sys:String>
+  <sys:String x:Key="Time_HourMinShort">{0} val. {1} min.</sys:String>
+  <sys:String x:Key="Option_Native">Natyvi</sys:String>
+  <sys:String x:Key="Option_Auto">Automatinis</sys:String>
+  <sys:String x:Key="Option_Custom">Pasirinktinis</sys:String>
+
+</ResourceDictionary>

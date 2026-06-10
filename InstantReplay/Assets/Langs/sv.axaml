@@ -1,0 +1,128 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="using:System">
+
+  <!-- ════════ Shell / Navigation ════════ -->
+  <sys:String x:Key="App_Tagline">Skärminspelning i bakgrunden</sys:String>
+  <sys:String x:Key="Nav_Header">NAVIGERING</sys:String>
+  <sys:String x:Key="Nav_Settings">Inställningar</sys:String>
+  <sys:String x:Key="Nav_Library">Bibliotek</sys:String>
+  <sys:String x:Key="Nav_Player">Spelare</sys:String>
+  <sys:String x:Key="Btn_StartRecording">Starta inspelning</sys:String>
+  <sys:String x:Key="Btn_StopRecording">Stoppa inspelning</sys:String>
+  <sys:String x:Key="Btn_SaveReplay">Spara repris</sys:String>
+
+  <!-- ════════ Settings ════════ -->
+  <sys:String x:Key="Settings_Title">Inställningar</sys:String>
+  <sys:String x:Key="Settings_PendingChanges">Ändringarna träder i kraft när inspelningen startas om.</sys:String>
+  <sys:String x:Key="Settings_Group_Language">SPRÅK</sys:String>
+  <sys:String x:Key="Settings_Language">Språk</sys:String>
+  <sys:String x:Key="Settings_Group_Recording">INSPELNING</sys:String>
+  <sys:String x:Key="Settings_BufferLength">Reprisbuffertens längd</sys:String>
+  <sys:String x:Key="Settings_Display">Skärm</sys:String>
+  <sys:String x:Key="Settings_Microphone">Mikrofon</sys:String>
+  <sys:String x:Key="Settings_FrameRate">Bildfrekvens (FPS)</sys:String>
+  <sys:String x:Key="Settings_MicVolume">Mikrofonvolym</sys:String>
+  <sys:String x:Key="Settings_OutputResolution">Utdataupplösning</sys:String>
+  <sys:String x:Key="Settings_Codec">Videokodek</sys:String>
+  <sys:String x:Key="Settings_AutoCleanup">Automatisk biblioteksrensning</sys:String>
+  <sys:String x:Key="Settings_AutoCleanup_Desc">Tar automatiskt bort de äldsta klippen när biblioteket överskrider gränsen</sys:String>
+  <sys:String x:Key="Settings_StorageLimit">Storleksgräns för biblioteket</sys:String>
+  <sys:String x:Key="Tab_Video">Video</sys:String>
+  <sys:String x:Key="Tab_Audio">Ljud</sys:String>
+  <sys:String x:Key="Tab_General">Allmänt</sys:String>
+  <sys:String x:Key="Settings_Bitrate">Bithastighet</sys:String>
+  <sys:String x:Key="Settings_Bitrate_CustomSuffix">Mbps</sys:String>
+  <sys:String x:Key="Settings_Gpu">Inspelnings-GPU</sys:String>
+  <sys:String x:Key="Settings_Format">Filformat</sys:String>
+  <sys:String x:Key="Settings_Group_Mic">MIKROFON</sys:String>
+  <sys:String x:Key="Settings_Group_SystemAudio">SYSTEMLJUD</sys:String>
+  <sys:String x:Key="Settings_AudioMode">Inspelningsläge</sys:String>
+  <sys:String x:Key="AudioMode_All">Allt ljud från datorn</sys:String>
+  <sys:String x:Key="AudioMode_Apps">Specifika appar</sys:String>
+  <sys:String x:Key="Settings_AppsHint">Appar visas här när de börjar spela upp ljud.</sys:String>
+  <sys:String x:Key="Settings_MicChannels">Kanaler</sys:String>
+  <sys:String x:Key="Channels_Stereo">Stereo</sys:String>
+  <sys:String x:Key="Channels_Mono">Mono</sys:String>
+  <sys:String x:Key="Settings_Ptt">Push-to-talk</sys:String>
+  <sys:String x:Key="Settings_Ptt_Desc">Mikrofonen är aktiv endast medan tangenten hålls nedtryckt</sys:String>
+  <sys:String x:Key="Settings_PttKey">Push-to-talk-tangent</sys:String>
+  <sys:String x:Key="Settings_SeparateTracks">Separata ljudspår</sys:String>
+  <sys:String x:Key="Settings_SeparateTracks_Desc">Systemljud och mikrofon sparas som separata spår i filen</sys:String>
+  <sys:String x:Key="Settings_Group_Automation">AUTOMATISERING</sys:String>
+  <sys:String x:Key="Settings_StartWithWindows">Starta med Windows</sys:String>
+  <sys:String x:Key="Settings_StartWithWindows_Desc">Lägger till appen i systemstarten</sys:String>
+  <sys:String x:Key="Settings_AutoStart">Starta inspelning automatiskt</sys:String>
+  <sys:String x:Key="Settings_AutoStart_Desc">Reprisbufferten startar direkt efter programstart</sys:String>
+  <sys:String x:Key="Settings_Group_Hotkey">SNABBTANGENT</sys:String>
+  <sys:String x:Key="Settings_Hotkey_SaveReplay">Spara repris</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Desc">Klicka på knappen och tryck sedan på önskad tangentkombination</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Change">Ändra</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Listening">Lyssnar...</sys:String>
+  <sys:String x:Key="Settings_Group_Paths">SÖKVÄGAR</sys:String>
+  <sys:String x:Key="Settings_LibraryFolder">Biblioteksmapp</sys:String>
+  <sys:String x:Key="Settings_Browse">Bläddra</sys:String>
+  <sys:String x:Key="About_Group">OM</sys:String>
+  <sys:String x:Key="About_Version">Version</sys:String>
+  <sys:String x:Key="About_CheckUpdates">Sök efter uppdateringar</sys:String>
+  <sys:String x:Key="Update_Checking">Söker efter uppdateringar...</sys:String>
+  <sys:String x:Key="Update_UpToDate">Du har den senaste versionen.</sys:String>
+  <sys:String x:Key="Update_Downloading">Laddar ner uppdatering...</sys:String>
+  <sys:String x:Key="Update_DevMode">Uppdateringar är inte tillgängliga i utvecklingsläge.</sys:String>
+  <sys:String x:Key="Update_Failed">Uppdateringen misslyckades: {0}</sys:String>
+
+  <!-- ════════ Library ════════ -->
+  <sys:String x:Key="Library_Title">Bibliotek</sys:String>
+  <sys:String x:Key="Library_Subtitle">Dina sparade ögonblick</sys:String>
+  <sys:String x:Key="Library_Empty">Inga repriser ännu. Starta inspelningen och tryck på snabbtangenten för att spara en repris!</sys:String>
+  <sys:String x:Key="Library_Delete">Ta bort</sys:String>
+  <sys:String x:Key="Library_OpenFolder">Öppna mapp</sys:String>
+  <sys:String x:Key="Library_ShowInFolder">Visa i mapp</sys:String>
+  <sys:String x:Key="Library_FreeSpace">Ledigt utrymme</sys:String>
+
+  <!-- ════════ Player ════════ -->
+  <sys:String x:Key="Player_Replays">REPRISER</sys:String>
+  <sys:String x:Key="Player_Clips">Klipp</sys:String>
+  <sys:String x:Key="Player_Duration">Längd</sys:String>
+  <sys:String x:Key="Player_Placeholder">Videospelare</sys:String>
+  <sys:String x:Key="Player_NowPlaying">Spelar nu: </sys:String>
+  <sys:String x:Key="Player_ReplayBadge">REPRIS</sys:String>
+  <sys:String x:Key="Tooltip_Stop">Stoppa</sys:String>
+  <sys:String x:Key="Tooltip_Rewind">Bakåt 10 s</sys:String>
+  <sys:String x:Key="Tooltip_PlayPause">Spela / Paus</sys:String>
+  <sys:String x:Key="Tooltip_Forward">Framåt 10 s</sys:String>
+  <sys:String x:Key="Tooltip_Next">Nästa repris</sys:String>
+  <sys:String x:Key="Tooltip_Fullscreen">Helskärm (ESC för att avsluta)</sys:String>
+  <sys:String x:Key="Tooltip_Volume">Volym</sys:String>
+
+  <!-- ════════ Runtime status (ViewModels) ════════ -->
+  <sys:String x:Key="Status_Ready">Redo</sys:String>
+  <sys:String x:Key="Status_Starting">Startar inspelning (OBS)...</sys:String>
+  <sys:String x:Key="Status_Recording">Spelar in...</sys:String>
+  <sys:String x:Key="Status_NoMonitor">Ingen skärm vald för inspelning.</sys:String>
+  <sys:String x:Key="Status_ObsError">OBS-fel: {0}</sys:String>
+  <sys:String x:Key="Status_Stopping">Stoppar...</sys:String>
+  <sys:String x:Key="Status_Stopped">Stoppad</sys:String>
+  <sys:String x:Key="Status_StopError">Stoppfel: {0}</sys:String>
+  <sys:String x:Key="Status_SaveError">Sparfel: {0}</sys:String>
+  <sys:String x:Key="Status_ReplaySaved">Repris sparad: {0}</sys:String>
+  <sys:String x:Key="Status_Saving">Sparar repris...</sys:String>
+  <sys:String x:Key="Status_NotRecording">Inspelningen är inte aktiv — tryck först på ”Starta inspelning”.</sys:String>
+  <sys:String x:Key="Hotkey_PressCombo">Tryck på en tangentkombination...</sys:String>
+  <sys:String x:Key="Browse_Title">Välj en mapp för att spara repriser</sys:String>
+
+  <!-- ════════ Tray menu ════════ -->
+  <sys:String x:Key="Tray_SaveReplay">Spara repris</sys:String>
+  <sys:String x:Key="Tray_OpenLibrary">Öppna bibliotek</sys:String>
+  <sys:String x:Key="Tray_Open">Öppna</sys:String>
+  <sys:String x:Key="Tray_Exit">Avsluta</sys:String>
+
+  <!-- ════════ Shared option labels (dropdowns) ════════ -->
+  <sys:String x:Key="Time_SecShort">{0} sek</sys:String>
+  <sys:String x:Key="Time_MinShort">{0} min</sys:String>
+  <sys:String x:Key="Time_HourMinShort">{0} tim {1} min</sys:String>
+  <sys:String x:Key="Option_Native">Nativ</sys:String>
+  <sys:String x:Key="Option_Auto">Auto</sys:String>
+  <sys:String x:Key="Option_Custom">Anpassad</sys:String>
+
+</ResourceDictionary>

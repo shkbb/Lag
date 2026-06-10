@@ -98,10 +98,18 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
             _mediaPlayer.Volume = value;
     }
 
-    public PlayerViewModel(LibraryViewModel library)
+    /// <summary>
+    /// Global input hook, exposed for the view: clicks on the native VLC video window never
+    /// reach Avalonia (HWND-level input routing), so PlayerView detects them via this hook
+    /// by hit-testing the global click position against the video's screen bounds.
+    /// </summary>
+    public Lag.Services.GlobalHotkeyManager HotkeyManager { get; }
+
+    public PlayerViewModel(LibraryViewModel library, Lag.Services.GlobalHotkeyManager hotkeyManager)
     {
         Title = "Player";
         _library = library;
+        HotkeyManager = hotkeyManager;
 
         // Keep the sidebar stats live as the shared clip collection changes (refresh, save, delete).
         _library.Clips.CollectionChanged += OnClipsCollectionChanged;
@@ -119,16 +127,16 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
         });
     }
 
-    /// <summary>Formats the summed clip durations as "X год Y хв" (with sensible smaller-unit fallbacks).</summary>
+    /// <summary>Formats the summed clip durations using localized unit labels (e.g. "2 h 15 min").</summary>
     private string FormatTotalDuration()
     {
         var total = TimeSpan.FromTicks(Clips.Sum(c => c.Duration.Ticks));
 
         if (total.TotalHours >= 1)
-            return $"{(int)total.TotalHours} год {total.Minutes} хв";
+            return Lag.Core.Localizer.Format("Time_HourMinShort", (int)total.TotalHours, total.Minutes);
         if (total.TotalMinutes >= 1)
-            return $"{total.Minutes} хв";
-        return $"{total.Seconds} с";
+            return Lag.Core.Localizer.Format("Time_MinShort", (int)total.TotalMinutes);
+        return Lag.Core.Localizer.Format("Time_SecShort", total.Seconds);
     }
 
     /// <summary>

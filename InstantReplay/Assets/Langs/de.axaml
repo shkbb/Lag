@@ -1,0 +1,128 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="using:System">
+
+  <!-- ════════ Shell / Navigation ════════ -->
+  <sys:String x:Key="App_Tagline">Bildschirmaufnahme im Hintergrund</sys:String>
+  <sys:String x:Key="Nav_Header">NAVIGATION</sys:String>
+  <sys:String x:Key="Nav_Settings">Einstellungen</sys:String>
+  <sys:String x:Key="Nav_Library">Bibliothek</sys:String>
+  <sys:String x:Key="Nav_Player">Player</sys:String>
+  <sys:String x:Key="Btn_StartRecording">Aufnahme starten</sys:String>
+  <sys:String x:Key="Btn_StopRecording">Aufnahme stoppen</sys:String>
+  <sys:String x:Key="Btn_SaveReplay">Replay speichern</sys:String>
+
+  <!-- ════════ Settings ════════ -->
+  <sys:String x:Key="Settings_Title">Einstellungen</sys:String>
+  <sys:String x:Key="Settings_PendingChanges">Änderungen werden nach dem Neustart der Aufnahme wirksam.</sys:String>
+  <sys:String x:Key="Settings_Group_Language">SPRACHE</sys:String>
+  <sys:String x:Key="Settings_Language">Sprache</sys:String>
+  <sys:String x:Key="Settings_Group_Recording">AUFNAHME</sys:String>
+  <sys:String x:Key="Settings_BufferLength">Länge des Replay-Puffers</sys:String>
+  <sys:String x:Key="Settings_Display">Bildschirm</sys:String>
+  <sys:String x:Key="Settings_Microphone">Mikrofon</sys:String>
+  <sys:String x:Key="Settings_FrameRate">Bildrate (FPS)</sys:String>
+  <sys:String x:Key="Settings_MicVolume">Mikrofonlautstärke</sys:String>
+  <sys:String x:Key="Settings_OutputResolution">Ausgabeauflösung</sys:String>
+  <sys:String x:Key="Settings_Codec">Videocodec</sys:String>
+  <sys:String x:Key="Settings_AutoCleanup">Bibliothek automatisch bereinigen</sys:String>
+  <sys:String x:Key="Settings_AutoCleanup_Desc">Löscht automatisch die ältesten Clips, wenn die Bibliothek das Limit überschreitet</sys:String>
+  <sys:String x:Key="Settings_StorageLimit">Größenlimit der Bibliothek</sys:String>
+  <sys:String x:Key="Tab_Video">Video</sys:String>
+  <sys:String x:Key="Tab_Audio">Audio</sys:String>
+  <sys:String x:Key="Tab_General">Allgemein</sys:String>
+  <sys:String x:Key="Settings_Bitrate">Bitrate</sys:String>
+  <sys:String x:Key="Settings_Bitrate_CustomSuffix">Mbit/s</sys:String>
+  <sys:String x:Key="Settings_Gpu">Aufnahme-GPU</sys:String>
+  <sys:String x:Key="Settings_Format">Dateiformat</sys:String>
+  <sys:String x:Key="Settings_Group_Mic">MIKROFON</sys:String>
+  <sys:String x:Key="Settings_Group_SystemAudio">SYSTEMTON</sys:String>
+  <sys:String x:Key="Settings_AudioMode">Aufnahmemodus</sys:String>
+  <sys:String x:Key="AudioMode_All">Gesamter PC-Ton</sys:String>
+  <sys:String x:Key="AudioMode_Apps">Bestimmte Apps</sys:String>
+  <sys:String x:Key="Settings_AppsHint">Apps erscheinen hier, sobald sie Ton wiedergeben.</sys:String>
+  <sys:String x:Key="Settings_MicChannels">Kanäle</sys:String>
+  <sys:String x:Key="Channels_Stereo">Stereo</sys:String>
+  <sys:String x:Key="Channels_Mono">Mono</sys:String>
+  <sys:String x:Key="Settings_Ptt">Push-to-Talk</sys:String>
+  <sys:String x:Key="Settings_Ptt_Desc">Das Mikrofon ist nur aktiv, solange die Taste gedrückt wird</sys:String>
+  <sys:String x:Key="Settings_PttKey">Push-to-Talk-Taste</sys:String>
+  <sys:String x:Key="Settings_SeparateTracks">Getrennte Audiospuren</sys:String>
+  <sys:String x:Key="Settings_SeparateTracks_Desc">Systemton und Mikrofon werden als separate Spuren in der Datei gespeichert</sys:String>
+  <sys:String x:Key="Settings_Group_Automation">AUTOMATISIERUNG</sys:String>
+  <sys:String x:Key="Settings_StartWithWindows">Mit Windows starten</sys:String>
+  <sys:String x:Key="Settings_StartWithWindows_Desc">Fügt die App dem Systemstart hinzu</sys:String>
+  <sys:String x:Key="Settings_AutoStart">Aufnahme automatisch starten</sys:String>
+  <sys:String x:Key="Settings_AutoStart_Desc">Der Replay-Puffer startet direkt nach dem Programmstart</sys:String>
+  <sys:String x:Key="Settings_Group_Hotkey">TASTENKÜRZEL</sys:String>
+  <sys:String x:Key="Settings_Hotkey_SaveReplay">Replay speichern</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Desc">Klicken Sie auf die Schaltfläche und drücken Sie dann die gewünschte Tastenkombination</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Change">Ändern</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Listening">Warte auf Eingabe...</sys:String>
+  <sys:String x:Key="Settings_Group_Paths">PFADE</sys:String>
+  <sys:String x:Key="Settings_LibraryFolder">Bibliotheksordner</sys:String>
+  <sys:String x:Key="Settings_Browse">Durchsuchen</sys:String>
+  <sys:String x:Key="About_Group">ÜBER</sys:String>
+  <sys:String x:Key="About_Version">Version</sys:String>
+  <sys:String x:Key="About_CheckUpdates">Nach Updates suchen</sys:String>
+  <sys:String x:Key="Update_Checking">Suche nach Updates...</sys:String>
+  <sys:String x:Key="Update_UpToDate">Sie haben die neueste Version.</sys:String>
+  <sys:String x:Key="Update_Downloading">Update wird heruntergeladen...</sys:String>
+  <sys:String x:Key="Update_DevMode">Updates sind im Entwicklermodus nicht verfügbar.</sys:String>
+  <sys:String x:Key="Update_Failed">Update fehlgeschlagen: {0}</sys:String>
+
+  <!-- ════════ Library ════════ -->
+  <sys:String x:Key="Library_Title">Bibliothek</sys:String>
+  <sys:String x:Key="Library_Subtitle">Ihre gespeicherten Momente</sys:String>
+  <sys:String x:Key="Library_Empty">Noch keine Replays. Starten Sie die Aufnahme und drücken Sie das Tastenkürzel, um ein Replay zu speichern!</sys:String>
+  <sys:String x:Key="Library_Delete">Löschen</sys:String>
+  <sys:String x:Key="Library_OpenFolder">Ordner öffnen</sys:String>
+  <sys:String x:Key="Library_ShowInFolder">Im Ordner anzeigen</sys:String>
+  <sys:String x:Key="Library_FreeSpace">Freier Speicher</sys:String>
+
+  <!-- ════════ Player ════════ -->
+  <sys:String x:Key="Player_Replays">REPLAYS</sys:String>
+  <sys:String x:Key="Player_Clips">Clips</sys:String>
+  <sys:String x:Key="Player_Duration">Dauer</sys:String>
+  <sys:String x:Key="Player_Placeholder">Videoplayer</sys:String>
+  <sys:String x:Key="Player_NowPlaying">Wiedergabe: </sys:String>
+  <sys:String x:Key="Player_ReplayBadge">REPLAY</sys:String>
+  <sys:String x:Key="Tooltip_Stop">Stopp</sys:String>
+  <sys:String x:Key="Tooltip_Rewind">10 s zurück</sys:String>
+  <sys:String x:Key="Tooltip_PlayPause">Wiedergabe / Pause</sys:String>
+  <sys:String x:Key="Tooltip_Forward">10 s vor</sys:String>
+  <sys:String x:Key="Tooltip_Next">Nächstes Replay</sys:String>
+  <sys:String x:Key="Tooltip_Fullscreen">Vollbild (ESC zum Beenden)</sys:String>
+  <sys:String x:Key="Tooltip_Volume">Lautstärke</sys:String>
+
+  <!-- ════════ Runtime status (ViewModels) ════════ -->
+  <sys:String x:Key="Status_Ready">Bereit</sys:String>
+  <sys:String x:Key="Status_Starting">Aufnahme wird gestartet (OBS)...</sys:String>
+  <sys:String x:Key="Status_Recording">Aufnahme läuft...</sys:String>
+  <sys:String x:Key="Status_NoMonitor">Kein Bildschirm für die Aufnahme ausgewählt.</sys:String>
+  <sys:String x:Key="Status_ObsError">OBS-Fehler: {0}</sys:String>
+  <sys:String x:Key="Status_Stopping">Wird gestoppt...</sys:String>
+  <sys:String x:Key="Status_Stopped">Gestoppt</sys:String>
+  <sys:String x:Key="Status_StopError">Fehler beim Stoppen: {0}</sys:String>
+  <sys:String x:Key="Status_SaveError">Fehler beim Speichern: {0}</sys:String>
+  <sys:String x:Key="Status_ReplaySaved">Replay gespeichert: {0}</sys:String>
+  <sys:String x:Key="Status_Saving">Replay wird gespeichert...</sys:String>
+  <sys:String x:Key="Status_NotRecording">Aufnahme ist nicht aktiv — drücken Sie zuerst „Aufnahme starten".</sys:String>
+  <sys:String x:Key="Hotkey_PressCombo">Drücken Sie eine Tastenkombination...</sys:String>
+  <sys:String x:Key="Browse_Title">Ordner zum Speichern der Replays auswählen</sys:String>
+
+  <!-- ════════ Tray menu ════════ -->
+  <sys:String x:Key="Tray_SaveReplay">Replay speichern</sys:String>
+  <sys:String x:Key="Tray_OpenLibrary">Bibliothek öffnen</sys:String>
+  <sys:String x:Key="Tray_Open">Öffnen</sys:String>
+  <sys:String x:Key="Tray_Exit">Beenden</sys:String>
+
+  <!-- ════════ Shared option labels (dropdowns) ════════ -->
+  <sys:String x:Key="Time_SecShort">{0} Sek.</sys:String>
+  <sys:String x:Key="Time_MinShort">{0} Min.</sys:String>
+  <sys:String x:Key="Time_HourMinShort">{0} Std. {1} Min.</sys:String>
+  <sys:String x:Key="Option_Native">Nativ</sys:String>
+  <sys:String x:Key="Option_Auto">Auto</sys:String>
+  <sys:String x:Key="Option_Custom">Benutzerdefiniert</sys:String>
+
+</ResourceDictionary>

@@ -1,0 +1,128 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="using:System">
+
+  <!-- ════════ Shell / Navigation ════════ -->
+  <sys:String x:Key="App_Tagline">Näytön tallennus taustalla</sys:String>
+  <sys:String x:Key="Nav_Header">NAVIGOINTI</sys:String>
+  <sys:String x:Key="Nav_Settings">Asetukset</sys:String>
+  <sys:String x:Key="Nav_Library">Kirjasto</sys:String>
+  <sys:String x:Key="Nav_Player">Soitin</sys:String>
+  <sys:String x:Key="Btn_StartRecording">Aloita tallennus</sys:String>
+  <sys:String x:Key="Btn_StopRecording">Lopeta tallennus</sys:String>
+  <sys:String x:Key="Btn_SaveReplay">Tallenna uusinta</sys:String>
+
+  <!-- ════════ Settings ════════ -->
+  <sys:String x:Key="Settings_Title">Asetukset</sys:String>
+  <sys:String x:Key="Settings_PendingChanges">Muutokset tulevat voimaan, kun tallennus käynnistetään uudelleen.</sys:String>
+  <sys:String x:Key="Settings_Group_Language">KIELI</sys:String>
+  <sys:String x:Key="Settings_Language">Kieli</sys:String>
+  <sys:String x:Key="Settings_Group_Recording">TALLENNUS</sys:String>
+  <sys:String x:Key="Settings_BufferLength">Uusintapuskurin pituus</sys:String>
+  <sys:String x:Key="Settings_Display">Näyttö</sys:String>
+  <sys:String x:Key="Settings_Microphone">Mikrofoni</sys:String>
+  <sys:String x:Key="Settings_FrameRate">Kuvataajuus (FPS)</sys:String>
+  <sys:String x:Key="Settings_MicVolume">Mikrofonin äänenvoimakkuus</sys:String>
+  <sys:String x:Key="Settings_OutputResolution">Lähtöresoluutio</sys:String>
+  <sys:String x:Key="Settings_Codec">Videokoodekki</sys:String>
+  <sys:String x:Key="Settings_AutoCleanup">Kirjaston automaattinen siivous</sys:String>
+  <sys:String x:Key="Settings_AutoCleanup_Desc">Poistaa vanhimmat klipit automaattisesti, kun kirjasto ylittää rajan</sys:String>
+  <sys:String x:Key="Settings_StorageLimit">Kirjaston kokoraja</sys:String>
+  <sys:String x:Key="Tab_Video">Video</sys:String>
+  <sys:String x:Key="Tab_Audio">Ääni</sys:String>
+  <sys:String x:Key="Tab_General">Yleiset</sys:String>
+  <sys:String x:Key="Settings_Bitrate">Bittinopeus</sys:String>
+  <sys:String x:Key="Settings_Bitrate_CustomSuffix">Mbps</sys:String>
+  <sys:String x:Key="Settings_Gpu">Tallennus-GPU</sys:String>
+  <sys:String x:Key="Settings_Format">Tiedostomuoto</sys:String>
+  <sys:String x:Key="Settings_Group_Mic">MIKROFONI</sys:String>
+  <sys:String x:Key="Settings_Group_SystemAudio">JÄRJESTELMÄN ÄÄNI</sys:String>
+  <sys:String x:Key="Settings_AudioMode">Tallennustila</sys:String>
+  <sys:String x:Key="AudioMode_All">Kaikki tietokoneen äänet</sys:String>
+  <sys:String x:Key="AudioMode_Apps">Valitut sovellukset</sys:String>
+  <sys:String x:Key="Settings_AppsHint">Sovellukset ilmestyvät tänne, kun ne alkavat toistaa ääntä.</sys:String>
+  <sys:String x:Key="Settings_MicChannels">Kanavat</sys:String>
+  <sys:String x:Key="Channels_Stereo">Stereo</sys:String>
+  <sys:String x:Key="Channels_Mono">Mono</sys:String>
+  <sys:String x:Key="Settings_Ptt">Push-to-talk</sys:String>
+  <sys:String x:Key="Settings_Ptt_Desc">Mikrofoni on käytössä vain näppäintä painettaessa</sys:String>
+  <sys:String x:Key="Settings_PttKey">Push-to-talk-näppäin</sys:String>
+  <sys:String x:Key="Settings_SeparateTracks">Erilliset ääniraidat</sys:String>
+  <sys:String x:Key="Settings_SeparateTracks_Desc">Järjestelmän ääni ja mikrofoni tallennetaan tiedostoon erillisinä raitoina</sys:String>
+  <sys:String x:Key="Settings_Group_Automation">AUTOMAATIO</sys:String>
+  <sys:String x:Key="Settings_StartWithWindows">Käynnistä Windowsin mukana</sys:String>
+  <sys:String x:Key="Settings_StartWithWindows_Desc">Lisää sovelluksen järjestelmän käynnistykseen</sys:String>
+  <sys:String x:Key="Settings_AutoStart">Aloita tallennus automaattisesti</sys:String>
+  <sys:String x:Key="Settings_AutoStart_Desc">Uusintapuskuri käynnistyy heti ohjelman avauduttua</sys:String>
+  <sys:String x:Key="Settings_Group_Hotkey">PIKANÄPPÄIN</sys:String>
+  <sys:String x:Key="Settings_Hotkey_SaveReplay">Tallenna uusinta</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Desc">Napsauta painiketta ja paina sitten haluamaasi näppäinyhdistelmää</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Change">Muuta</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Listening">Kuunnellaan...</sys:String>
+  <sys:String x:Key="Settings_Group_Paths">POLUT</sys:String>
+  <sys:String x:Key="Settings_LibraryFolder">Kirjastokansio</sys:String>
+  <sys:String x:Key="Settings_Browse">Selaa</sys:String>
+  <sys:String x:Key="About_Group">TIETOJA</sys:String>
+  <sys:String x:Key="About_Version">Versio</sys:String>
+  <sys:String x:Key="About_CheckUpdates">Tarkista päivitykset</sys:String>
+  <sys:String x:Key="Update_Checking">Tarkistetaan päivityksiä...</sys:String>
+  <sys:String x:Key="Update_UpToDate">Sinulla on uusin versio.</sys:String>
+  <sys:String x:Key="Update_Downloading">Ladataan päivitystä...</sys:String>
+  <sys:String x:Key="Update_DevMode">Päivitykset eivät ole käytettävissä kehitystilassa.</sys:String>
+  <sys:String x:Key="Update_Failed">Päivitys epäonnistui: {0}</sys:String>
+
+  <!-- ════════ Library ════════ -->
+  <sys:String x:Key="Library_Title">Kirjasto</sys:String>
+  <sys:String x:Key="Library_Subtitle">Tallennetut hetkesi</sys:String>
+  <sys:String x:Key="Library_Empty">Ei vielä uusintoja. Aloita tallennus ja paina pikanäppäintä tallentaaksesi uusinnan!</sys:String>
+  <sys:String x:Key="Library_Delete">Poista</sys:String>
+  <sys:String x:Key="Library_OpenFolder">Avaa kansio</sys:String>
+  <sys:String x:Key="Library_ShowInFolder">Näytä kansiossa</sys:String>
+  <sys:String x:Key="Library_FreeSpace">Vapaa tila</sys:String>
+
+  <!-- ════════ Player ════════ -->
+  <sys:String x:Key="Player_Replays">UUSINNAT</sys:String>
+  <sys:String x:Key="Player_Clips">Klipit</sys:String>
+  <sys:String x:Key="Player_Duration">Kesto</sys:String>
+  <sys:String x:Key="Player_Placeholder">Videosoitin</sys:String>
+  <sys:String x:Key="Player_NowPlaying">Toistetaan: </sys:String>
+  <sys:String x:Key="Player_ReplayBadge">UUSINTA</sys:String>
+  <sys:String x:Key="Tooltip_Stop">Pysäytä</sys:String>
+  <sys:String x:Key="Tooltip_Rewind">Taaksepäin 10 s</sys:String>
+  <sys:String x:Key="Tooltip_PlayPause">Toista / Tauko</sys:String>
+  <sys:String x:Key="Tooltip_Forward">Eteenpäin 10 s</sys:String>
+  <sys:String x:Key="Tooltip_Next">Seuraava uusinta</sys:String>
+  <sys:String x:Key="Tooltip_Fullscreen">Koko näyttö (ESC — poistu)</sys:String>
+  <sys:String x:Key="Tooltip_Volume">Äänenvoimakkuus</sys:String>
+
+  <!-- ════════ Runtime status (ViewModels) ════════ -->
+  <sys:String x:Key="Status_Ready">Valmis</sys:String>
+  <sys:String x:Key="Status_Starting">Tallennus käynnistyy (OBS)...</sys:String>
+  <sys:String x:Key="Status_Recording">Tallennetaan...</sys:String>
+  <sys:String x:Key="Status_NoMonitor">Tallennukseen ei ole valittu näyttöä.</sys:String>
+  <sys:String x:Key="Status_ObsError">OBS-virhe: {0}</sys:String>
+  <sys:String x:Key="Status_Stopping">Pysäytetään...</sys:String>
+  <sys:String x:Key="Status_Stopped">Pysäytetty</sys:String>
+  <sys:String x:Key="Status_StopError">Pysäytysvirhe: {0}</sys:String>
+  <sys:String x:Key="Status_SaveError">Tallennusvirhe: {0}</sys:String>
+  <sys:String x:Key="Status_ReplaySaved">Uusinta tallennettu: {0}</sys:String>
+  <sys:String x:Key="Status_Saving">Tallennetaan uusintaa...</sys:String>
+  <sys:String x:Key="Status_NotRecording">Tallennus ei ole käynnissä — paina ensin ”Aloita tallennus”.</sys:String>
+  <sys:String x:Key="Hotkey_PressCombo">Paina näppäinyhdistelmää...</sys:String>
+  <sys:String x:Key="Browse_Title">Valitse kansio uusintojen tallentamiseen</sys:String>
+
+  <!-- ════════ Tray menu ════════ -->
+  <sys:String x:Key="Tray_SaveReplay">Tallenna uusinta</sys:String>
+  <sys:String x:Key="Tray_OpenLibrary">Avaa kirjasto</sys:String>
+  <sys:String x:Key="Tray_Open">Avaa</sys:String>
+  <sys:String x:Key="Tray_Exit">Lopeta</sys:String>
+
+  <!-- ════════ Shared option labels (dropdowns) ════════ -->
+  <sys:String x:Key="Time_SecShort">{0} s</sys:String>
+  <sys:String x:Key="Time_MinShort">{0} min</sys:String>
+  <sys:String x:Key="Time_HourMinShort">{0} t {1} min</sys:String>
+  <sys:String x:Key="Option_Native">Natiivi</sys:String>
+  <sys:String x:Key="Option_Auto">Automaattinen</sys:String>
+  <sys:String x:Key="Option_Custom">Mukautettu</sys:String>
+
+</ResourceDictionary>

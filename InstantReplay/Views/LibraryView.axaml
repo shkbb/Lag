@@ -8,12 +8,47 @@
 
   <Grid RowDefinitions="Auto,*">
 
-    <!-- Header -->
-    <StackPanel Grid.Row="0" Margin="30,22,30,0" Spacing="2">
-      <TextBlock Classes="page-title" Text="{DynamicResource Library_Title}" />
-      <TextBlock Text="{DynamicResource Library_Subtitle}"
-                 FontSize="12" Foreground="{StaticResource TextDimBrush}" />
-    </StackPanel>
+    <!-- Header: title left, free-space indicator + "Open folder" right -->
+    <DockPanel Grid.Row="0" Margin="30,22,30,0">
+
+      <!-- Open Folder button (far right) -->
+      <Button DockPanel.Dock="Right" Classes="btn-save"
+              Command="{Binding OpenLibraryFolderCommand}"
+              Height="36" Padding="14,0" VerticalAlignment="Center"
+              HorizontalAlignment="Right" Margin="10,0,0,0">
+        <StackPanel Orientation="Horizontal" Spacing="7" HorizontalAlignment="Center">
+          <materialIcons:MaterialIcon Kind="FolderOpenOutline" Width="15" Height="15"
+                                      VerticalAlignment="Center" />
+          <TextBlock Text="{DynamicResource Library_OpenFolder}" FontSize="12" VerticalAlignment="Center" />
+        </StackPanel>
+      </Button>
+
+      <!-- Free space indicator (glass pill) -->
+      <Border DockPanel.Dock="Right" VerticalAlignment="Center"
+              Background="{StaticResource GlassFillBrush}"
+              BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="1"
+              CornerRadius="10" Padding="12,7">
+        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <materialIcons:MaterialIcon Kind="HarddiskPlus" Width="14" Height="14"
+                                      Foreground="{StaticResource AccentCyanBrush}"
+                                      VerticalAlignment="Center" />
+          <TextBlock FontSize="11" VerticalAlignment="Center" Foreground="#8FFFFFFF">
+            <Run Text="{DynamicResource Library_FreeSpace}" /><Run Text=": " />
+            <Run Text="{Binding FreeSpaceDisplay}" Foreground="{StaticResource AccentCyanBrush}" />
+          </TextBlock>
+          <ProgressBar Minimum="0" Maximum="100" Value="{Binding UsedSpacePercent}"
+                       Width="64" Height="4" VerticalAlignment="Center"
+                       Foreground="{StaticResource AccentCyanBrush}" Background="#1FFFFFFF" />
+        </StackPanel>
+      </Border>
+
+      <!-- Title -->
+      <StackPanel Spacing="2" VerticalAlignment="Center">
+        <TextBlock Classes="page-title" Text="{DynamicResource Library_Title}" />
+        <TextBlock Text="{DynamicResource Library_Subtitle}"
+                   FontSize="12" Foreground="{StaticResource TextDimBrush}" />
+      </StackPanel>
+    </DockPanel>
 
     <!-- Loading indicator -->
     <ProgressBar Grid.Row="0" IsIndeterminate="True"
@@ -48,6 +83,26 @@
               <Button Command="{Binding $parent[UserControl].((vm:LibraryViewModel)DataContext).PlayClipCommand}"
                       CommandParameter="{Binding}"
                       Padding="0" Background="Transparent" BorderThickness="0" Cursor="Hand">
+
+                <!-- Right-click actions. MenuItem clicks are routed through code-behind because
+                     bindings inside a ContextMenu popup can't reliably reach the view-model. -->
+                <Button.ContextMenu>
+                  <ContextMenu>
+                    <MenuItem Header="{DynamicResource Library_ShowInFolder}"
+                              Click="OnShowInFolderClick">
+                      <MenuItem.Icon>
+                        <materialIcons:MaterialIcon Kind="FolderSearchOutline" Width="16" Height="16" />
+                      </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Header="{DynamicResource Library_Delete}"
+                              Click="OnDeleteClipClick">
+                      <MenuItem.Icon>
+                        <materialIcons:MaterialIcon Kind="TrashCanOutline" Width="16" Height="16" />
+                      </MenuItem.Icon>
+                    </MenuItem>
+                  </ContextMenu>
+                </Button.ContextMenu>
+
                 <Border Classes="replay-card" Width="204" Margin="8">
                 <StackPanel>
 

@@ -1,0 +1,128 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="using:System">
+
+  <!-- ════════ Shell / Navigation ════════ -->
+  <sys:String x:Key="App_Tagline">Schermopname op de achtergrond</sys:String>
+  <sys:String x:Key="Nav_Header">NAVIGATIE</sys:String>
+  <sys:String x:Key="Nav_Settings">Instellingen</sys:String>
+  <sys:String x:Key="Nav_Library">Bibliotheek</sys:String>
+  <sys:String x:Key="Nav_Player">Speler</sys:String>
+  <sys:String x:Key="Btn_StartRecording">Opname starten</sys:String>
+  <sys:String x:Key="Btn_StopRecording">Opname stoppen</sys:String>
+  <sys:String x:Key="Btn_SaveReplay">Replay opslaan</sys:String>
+
+  <!-- ════════ Settings ════════ -->
+  <sys:String x:Key="Settings_Title">Instellingen</sys:String>
+  <sys:String x:Key="Settings_PendingChanges">Wijzigingen worden van kracht na het herstarten van de opname.</sys:String>
+  <sys:String x:Key="Settings_Group_Language">TAAL</sys:String>
+  <sys:String x:Key="Settings_Language">Taal</sys:String>
+  <sys:String x:Key="Settings_Group_Recording">OPNAME</sys:String>
+  <sys:String x:Key="Settings_BufferLength">Lengte van de replaybuffer</sys:String>
+  <sys:String x:Key="Settings_Display">Scherm</sys:String>
+  <sys:String x:Key="Settings_Microphone">Microfoon</sys:String>
+  <sys:String x:Key="Settings_FrameRate">Framerate (FPS)</sys:String>
+  <sys:String x:Key="Settings_MicVolume">Microfoonvolume</sys:String>
+  <sys:String x:Key="Settings_OutputResolution">Uitvoerresolutie</sys:String>
+  <sys:String x:Key="Settings_Codec">Videocodec</sys:String>
+  <sys:String x:Key="Settings_AutoCleanup">Bibliotheek automatisch opschonen</sys:String>
+  <sys:String x:Key="Settings_AutoCleanup_Desc">Verwijdert automatisch de oudste clips wanneer de bibliotheek de limiet overschrijdt</sys:String>
+  <sys:String x:Key="Settings_StorageLimit">Groottelimiet van de bibliotheek</sys:String>
+  <sys:String x:Key="Tab_Video">Video</sys:String>
+  <sys:String x:Key="Tab_Audio">Audio</sys:String>
+  <sys:String x:Key="Tab_General">Algemeen</sys:String>
+  <sys:String x:Key="Settings_Bitrate">Bitrate</sys:String>
+  <sys:String x:Key="Settings_Bitrate_CustomSuffix">Mbps</sys:String>
+  <sys:String x:Key="Settings_Gpu">Opname-GPU</sys:String>
+  <sys:String x:Key="Settings_Format">Bestandsformaat</sys:String>
+  <sys:String x:Key="Settings_Group_Mic">MICROFOON</sys:String>
+  <sys:String x:Key="Settings_Group_SystemAudio">SYSTEEMGELUID</sys:String>
+  <sys:String x:Key="Settings_AudioMode">Opnamemodus</sys:String>
+  <sys:String x:Key="AudioMode_All">Al het pc-geluid</sys:String>
+  <sys:String x:Key="AudioMode_Apps">Specifieke apps</sys:String>
+  <sys:String x:Key="Settings_AppsHint">Apps verschijnen hier zodra ze geluid afspelen.</sys:String>
+  <sys:String x:Key="Settings_MicChannels">Kanalen</sys:String>
+  <sys:String x:Key="Channels_Stereo">Stereo</sys:String>
+  <sys:String x:Key="Channels_Mono">Mono</sys:String>
+  <sys:String x:Key="Settings_Ptt">Push-to-talk</sys:String>
+  <sys:String x:Key="Settings_Ptt_Desc">De microfoon is alleen actief zolang de toets ingedrukt wordt gehouden</sys:String>
+  <sys:String x:Key="Settings_PttKey">Push-to-talk-toets</sys:String>
+  <sys:String x:Key="Settings_SeparateTracks">Gescheiden audiosporen</sys:String>
+  <sys:String x:Key="Settings_SeparateTracks_Desc">Systeemgeluid en microfoon worden als aparte sporen in het bestand opgeslagen</sys:String>
+  <sys:String x:Key="Settings_Group_Automation">AUTOMATISERING</sys:String>
+  <sys:String x:Key="Settings_StartWithWindows">Starten met Windows</sys:String>
+  <sys:String x:Key="Settings_StartWithWindows_Desc">Voegt de app toe aan het opstarten van het systeem</sys:String>
+  <sys:String x:Key="Settings_AutoStart">Opname automatisch starten</sys:String>
+  <sys:String x:Key="Settings_AutoStart_Desc">De replaybuffer start direct na het opstarten</sys:String>
+  <sys:String x:Key="Settings_Group_Hotkey">SNELTOETS</sys:String>
+  <sys:String x:Key="Settings_Hotkey_SaveReplay">Replay opslaan</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Desc">Klik op de knop en druk vervolgens op de gewenste toetsencombinatie</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Change">Wijzigen</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Listening">Luisteren...</sys:String>
+  <sys:String x:Key="Settings_Group_Paths">PADEN</sys:String>
+  <sys:String x:Key="Settings_LibraryFolder">Bibliotheekmap</sys:String>
+  <sys:String x:Key="Settings_Browse">Bladeren</sys:String>
+  <sys:String x:Key="About_Group">OVER</sys:String>
+  <sys:String x:Key="About_Version">Versie</sys:String>
+  <sys:String x:Key="About_CheckUpdates">Controleren op updates</sys:String>
+  <sys:String x:Key="Update_Checking">Controleren op updates...</sys:String>
+  <sys:String x:Key="Update_UpToDate">U heeft de nieuwste versie.</sys:String>
+  <sys:String x:Key="Update_Downloading">Update downloaden...</sys:String>
+  <sys:String x:Key="Update_DevMode">Updates zijn niet beschikbaar in ontwikkelmodus.</sys:String>
+  <sys:String x:Key="Update_Failed">Update mislukt: {0}</sys:String>
+
+  <!-- ════════ Library ════════ -->
+  <sys:String x:Key="Library_Title">Bibliotheek</sys:String>
+  <sys:String x:Key="Library_Subtitle">Uw opgeslagen momenten</sys:String>
+  <sys:String x:Key="Library_Empty">Nog geen replays. Start de opname en druk op de sneltoets om een replay op te slaan!</sys:String>
+  <sys:String x:Key="Library_Delete">Verwijderen</sys:String>
+  <sys:String x:Key="Library_OpenFolder">Map openen</sys:String>
+  <sys:String x:Key="Library_ShowInFolder">Tonen in map</sys:String>
+  <sys:String x:Key="Library_FreeSpace">Vrije ruimte</sys:String>
+
+  <!-- ════════ Player ════════ -->
+  <sys:String x:Key="Player_Replays">REPLAYS</sys:String>
+  <sys:String x:Key="Player_Clips">Clips</sys:String>
+  <sys:String x:Key="Player_Duration">Duur</sys:String>
+  <sys:String x:Key="Player_Placeholder">Videospeler</sys:String>
+  <sys:String x:Key="Player_NowPlaying">Nu aan het afspelen: </sys:String>
+  <sys:String x:Key="Player_ReplayBadge">REPLAY</sys:String>
+  <sys:String x:Key="Tooltip_Stop">Stoppen</sys:String>
+  <sys:String x:Key="Tooltip_Rewind">10 s terug</sys:String>
+  <sys:String x:Key="Tooltip_PlayPause">Afspelen / Pauze</sys:String>
+  <sys:String x:Key="Tooltip_Forward">10 s vooruit</sys:String>
+  <sys:String x:Key="Tooltip_Next">Volgende replay</sys:String>
+  <sys:String x:Key="Tooltip_Fullscreen">Volledig scherm (ESC om af te sluiten)</sys:String>
+  <sys:String x:Key="Tooltip_Volume">Volume</sys:String>
+
+  <!-- ════════ Runtime status (ViewModels) ════════ -->
+  <sys:String x:Key="Status_Ready">Gereed</sys:String>
+  <sys:String x:Key="Status_Starting">Opname starten (OBS)...</sys:String>
+  <sys:String x:Key="Status_Recording">Opnemen...</sys:String>
+  <sys:String x:Key="Status_NoMonitor">Geen scherm geselecteerd voor opname.</sys:String>
+  <sys:String x:Key="Status_ObsError">OBS-fout: {0}</sys:String>
+  <sys:String x:Key="Status_Stopping">Stoppen...</sys:String>
+  <sys:String x:Key="Status_Stopped">Gestopt</sys:String>
+  <sys:String x:Key="Status_StopError">Stopfout: {0}</sys:String>
+  <sys:String x:Key="Status_SaveError">Opslagfout: {0}</sys:String>
+  <sys:String x:Key="Status_ReplaySaved">Replay opgeslagen: {0}</sys:String>
+  <sys:String x:Key="Status_Saving">Replay opslaan...</sys:String>
+  <sys:String x:Key="Status_NotRecording">Opname is niet actief — druk eerst op "Opname starten".</sys:String>
+  <sys:String x:Key="Hotkey_PressCombo">Druk op een toetsencombinatie...</sys:String>
+  <sys:String x:Key="Browse_Title">Selecteer een map om replays op te slaan</sys:String>
+
+  <!-- ════════ Tray menu ════════ -->
+  <sys:String x:Key="Tray_SaveReplay">Replay opslaan</sys:String>
+  <sys:String x:Key="Tray_OpenLibrary">Bibliotheek openen</sys:String>
+  <sys:String x:Key="Tray_Open">Openen</sys:String>
+  <sys:String x:Key="Tray_Exit">Afsluiten</sys:String>
+
+  <!-- ════════ Shared option labels (dropdowns) ════════ -->
+  <sys:String x:Key="Time_SecShort">{0} sec</sys:String>
+  <sys:String x:Key="Time_MinShort">{0} min</sys:String>
+  <sys:String x:Key="Time_HourMinShort">{0} u {1} min</sys:String>
+  <sys:String x:Key="Option_Native">Native</sys:String>
+  <sys:String x:Key="Option_Auto">Auto</sys:String>
+  <sys:String x:Key="Option_Custom">Aangepast</sys:String>
+
+</ResourceDictionary>

@@ -1,0 +1,128 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="using:System">
+
+  <!-- ════════ Shell / Navigation ════════ -->
+  <sys:String x:Key="App_Tagline">Skærmoptagelse i baggrunden</sys:String>
+  <sys:String x:Key="Nav_Header">NAVIGATION</sys:String>
+  <sys:String x:Key="Nav_Settings">Indstillinger</sys:String>
+  <sys:String x:Key="Nav_Library">Bibliotek</sys:String>
+  <sys:String x:Key="Nav_Player">Afspiller</sys:String>
+  <sys:String x:Key="Btn_StartRecording">Start optagelse</sys:String>
+  <sys:String x:Key="Btn_StopRecording">Stop optagelse</sys:String>
+  <sys:String x:Key="Btn_SaveReplay">Gem replay</sys:String>
+
+  <!-- ════════ Settings ════════ -->
+  <sys:String x:Key="Settings_Title">Indstillinger</sys:String>
+  <sys:String x:Key="Settings_PendingChanges">Ændringerne træder i kraft, når optagelsen genstartes.</sys:String>
+  <sys:String x:Key="Settings_Group_Language">SPROG</sys:String>
+  <sys:String x:Key="Settings_Language">Sprog</sys:String>
+  <sys:String x:Key="Settings_Group_Recording">OPTAGELSE</sys:String>
+  <sys:String x:Key="Settings_BufferLength">Replay-bufferens længde</sys:String>
+  <sys:String x:Key="Settings_Display">Skærm</sys:String>
+  <sys:String x:Key="Settings_Microphone">Mikrofon</sys:String>
+  <sys:String x:Key="Settings_FrameRate">Billedfrekvens (FPS)</sys:String>
+  <sys:String x:Key="Settings_MicVolume">Mikrofonlydstyrke</sys:String>
+  <sys:String x:Key="Settings_OutputResolution">Outputopløsning</sys:String>
+  <sys:String x:Key="Settings_Codec">Videocodec</sys:String>
+  <sys:String x:Key="Settings_AutoCleanup">Automatisk biblioteksoprydning</sys:String>
+  <sys:String x:Key="Settings_AutoCleanup_Desc">Sletter automatisk de ældste klip, når biblioteket overskrider grænsen</sys:String>
+  <sys:String x:Key="Settings_StorageLimit">Størrelsesgrænse for biblioteket</sys:String>
+  <sys:String x:Key="Tab_Video">Video</sys:String>
+  <sys:String x:Key="Tab_Audio">Lyd</sys:String>
+  <sys:String x:Key="Tab_General">Generelt</sys:String>
+  <sys:String x:Key="Settings_Bitrate">Bitrate</sys:String>
+  <sys:String x:Key="Settings_Bitrate_CustomSuffix">Mbps</sys:String>
+  <sys:String x:Key="Settings_Gpu">Optagelses-GPU</sys:String>
+  <sys:String x:Key="Settings_Format">Filformat</sys:String>
+  <sys:String x:Key="Settings_Group_Mic">MIKROFON</sys:String>
+  <sys:String x:Key="Settings_Group_SystemAudio">SYSTEMLYD</sys:String>
+  <sys:String x:Key="Settings_AudioMode">Optagelsestilstand</sys:String>
+  <sys:String x:Key="AudioMode_All">Al lyd fra pc'en</sys:String>
+  <sys:String x:Key="AudioMode_Apps">Bestemte apps</sys:String>
+  <sys:String x:Key="Settings_AppsHint">Apps vises her, når de begynder at afspille lyd.</sys:String>
+  <sys:String x:Key="Settings_MicChannels">Kanaler</sys:String>
+  <sys:String x:Key="Channels_Stereo">Stereo</sys:String>
+  <sys:String x:Key="Channels_Mono">Mono</sys:String>
+  <sys:String x:Key="Settings_Ptt">Push-to-talk</sys:String>
+  <sys:String x:Key="Settings_Ptt_Desc">Mikrofonen er kun aktiv, mens tasten holdes nede</sys:String>
+  <sys:String x:Key="Settings_PttKey">Push-to-talk-tast</sys:String>
+  <sys:String x:Key="Settings_SeparateTracks">Separate lydspor</sys:String>
+  <sys:String x:Key="Settings_SeparateTracks_Desc">Systemlyd og mikrofon gemmes som separate spor i filen</sys:String>
+  <sys:String x:Key="Settings_Group_Automation">AUTOMATISERING</sys:String>
+  <sys:String x:Key="Settings_StartWithWindows">Start sammen med Windows</sys:String>
+  <sys:String x:Key="Settings_StartWithWindows_Desc">Tilføjer appen til systemstart</sys:String>
+  <sys:String x:Key="Settings_AutoStart">Start optagelse automatisk</sys:String>
+  <sys:String x:Key="Settings_AutoStart_Desc">Replay-bufferen starter straks efter programstart</sys:String>
+  <sys:String x:Key="Settings_Group_Hotkey">GENVEJSTAST</sys:String>
+  <sys:String x:Key="Settings_Hotkey_SaveReplay">Gem replay</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Desc">Klik på knappen, og tryk derefter på den ønskede tastekombination</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Change">Skift</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Listening">Lytter...</sys:String>
+  <sys:String x:Key="Settings_Group_Paths">STIER</sys:String>
+  <sys:String x:Key="Settings_LibraryFolder">Biblioteksmappe</sys:String>
+  <sys:String x:Key="Settings_Browse">Gennemse</sys:String>
+  <sys:String x:Key="About_Group">OM</sys:String>
+  <sys:String x:Key="About_Version">Version</sys:String>
+  <sys:String x:Key="About_CheckUpdates">Søg efter opdateringer</sys:String>
+  <sys:String x:Key="Update_Checking">Søger efter opdateringer...</sys:String>
+  <sys:String x:Key="Update_UpToDate">Du har den nyeste version.</sys:String>
+  <sys:String x:Key="Update_Downloading">Downloader opdatering...</sys:String>
+  <sys:String x:Key="Update_DevMode">Opdateringer er ikke tilgængelige i udviklingstilstand.</sys:String>
+  <sys:String x:Key="Update_Failed">Opdateringen mislykkedes: {0}</sys:String>
+
+  <!-- ════════ Library ════════ -->
+  <sys:String x:Key="Library_Title">Bibliotek</sys:String>
+  <sys:String x:Key="Library_Subtitle">Dine gemte øjeblikke</sys:String>
+  <sys:String x:Key="Library_Empty">Ingen replays endnu. Start optagelsen og tryk på genvejstasten for at gemme et replay!</sys:String>
+  <sys:String x:Key="Library_Delete">Slet</sys:String>
+  <sys:String x:Key="Library_OpenFolder">Åbn mappe</sys:String>
+  <sys:String x:Key="Library_ShowInFolder">Vis i mappe</sys:String>
+  <sys:String x:Key="Library_FreeSpace">Ledig plads</sys:String>
+
+  <!-- ════════ Player ════════ -->
+  <sys:String x:Key="Player_Replays">REPLAYS</sys:String>
+  <sys:String x:Key="Player_Clips">Klip</sys:String>
+  <sys:String x:Key="Player_Duration">Varighed</sys:String>
+  <sys:String x:Key="Player_Placeholder">Videoafspiller</sys:String>
+  <sys:String x:Key="Player_NowPlaying">Afspiller nu: </sys:String>
+  <sys:String x:Key="Player_ReplayBadge">REPLAY</sys:String>
+  <sys:String x:Key="Tooltip_Stop">Stop</sys:String>
+  <sys:String x:Key="Tooltip_Rewind">Tilbage 10 s</sys:String>
+  <sys:String x:Key="Tooltip_PlayPause">Afspil / Pause</sys:String>
+  <sys:String x:Key="Tooltip_Forward">Frem 10 s</sys:String>
+  <sys:String x:Key="Tooltip_Next">Næste replay</sys:String>
+  <sys:String x:Key="Tooltip_Fullscreen">Fuld skærm (ESC for at afslutte)</sys:String>
+  <sys:String x:Key="Tooltip_Volume">Lydstyrke</sys:String>
+
+  <!-- ════════ Runtime status (ViewModels) ════════ -->
+  <sys:String x:Key="Status_Ready">Klar</sys:String>
+  <sys:String x:Key="Status_Starting">Starter optagelse (OBS)...</sys:String>
+  <sys:String x:Key="Status_Recording">Optager...</sys:String>
+  <sys:String x:Key="Status_NoMonitor">Ingen skærm valgt til optagelse.</sys:String>
+  <sys:String x:Key="Status_ObsError">OBS-fejl: {0}</sys:String>
+  <sys:String x:Key="Status_Stopping">Stopper...</sys:String>
+  <sys:String x:Key="Status_Stopped">Stoppet</sys:String>
+  <sys:String x:Key="Status_StopError">Stopfejl: {0}</sys:String>
+  <sys:String x:Key="Status_SaveError">Gemmefejl: {0}</sys:String>
+  <sys:String x:Key="Status_ReplaySaved">Replay gemt: {0}</sys:String>
+  <sys:String x:Key="Status_Saving">Gemmer replay...</sys:String>
+  <sys:String x:Key="Status_NotRecording">Optagelsen er ikke aktiv — tryk først på "Start optagelse".</sys:String>
+  <sys:String x:Key="Hotkey_PressCombo">Tryk på en tastekombination...</sys:String>
+  <sys:String x:Key="Browse_Title">Vælg en mappe til at gemme replays</sys:String>
+
+  <!-- ════════ Tray menu ════════ -->
+  <sys:String x:Key="Tray_SaveReplay">Gem replay</sys:String>
+  <sys:String x:Key="Tray_OpenLibrary">Åbn bibliotek</sys:String>
+  <sys:String x:Key="Tray_Open">Åbn</sys:String>
+  <sys:String x:Key="Tray_Exit">Afslut</sys:String>
+
+  <!-- ════════ Shared option labels (dropdowns) ════════ -->
+  <sys:String x:Key="Time_SecShort">{0} sek.</sys:String>
+  <sys:String x:Key="Time_MinShort">{0} min.</sys:String>
+  <sys:String x:Key="Time_HourMinShort">{0} t {1} min.</sys:String>
+  <sys:String x:Key="Option_Native">Nativ</sys:String>
+  <sys:String x:Key="Option_Auto">Auto</sys:String>
+  <sys:String x:Key="Option_Custom">Brugerdefineret</sys:String>
+
+</ResourceDictionary>

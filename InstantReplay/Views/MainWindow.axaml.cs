@@ -26,7 +26,12 @@ public partial class MainWindow : Window
                 return;
             }
 
-            // Otherwise, hide it to tray
+            // Otherwise, hide it to tray. Stop video playback first — the window is only
+            // hidden (the view stays attached), so without this VLC keeps playing and its
+            // audio remains audible from the tray.
+            if (DataContext is MainViewModel mainVm)
+                mainVm.Player.StopPlayback();
+
             e.Cancel = true;
             Hide();
         };

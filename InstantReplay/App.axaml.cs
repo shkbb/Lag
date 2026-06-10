@@ -55,15 +55,19 @@ public class App : Application
 
     private static IResourceProvider? _currentLanguage;
 
+    /// <summary>Language codes with a dictionary in Assets/Langs. "en" is the fallback.</summary>
+    private static readonly string[] SupportedLanguages =
+        ["en", "uk", "de", "fr", "be", "lt", "et", "lv", "fi", "sv", "no", "da", "nl", "it"];
+
     /// <summary>
     /// Swaps the active language ResourceDictionary in the application's merged dictionaries.
-    /// Supported codes: "en" (default) and "uk". All {DynamicResource} bindings update live.
+    /// Unsupported/unknown codes fall back to English. All {DynamicResource} bindings update live.
     /// </summary>
     public static void SetLanguage(string? code)
     {
         if (Current is null) return;
 
-        string lang = code == "uk" ? "uk" : "en";
+        string lang = SupportedLanguages.Contains(code) ? code! : "en";
         var uri = new Uri($"avares://Lag/Assets/Langs/{lang}.axaml");
         var include = new ResourceInclude(uri) { Source = uri };
 
@@ -118,9 +122,37 @@ public class App : Application
             {
                 _serviceProvider?.Dispose();
             };
+
+            // Apply the persisted UI language to the tray menu (SettingsViewModel has already
+            // loaded it as a side effect of constructing MainViewModel above).
+            LocalizeTrayMenu();
         }
 
         base.OnFrameworkInitializationCompleted();
+    }
+
+    /// <summary>
+    /// Localizes the tray menu headers via Localizer. Done in code because NativeMenuItem is not
+    /// part of the logical tree, so {DynamicResource} cannot reach it from XAML.
+    /// </summary>
+    private void LocalizeTrayMenu()
+    {
+        try
+        {
+            var icons = TrayIcon.GetIcons(this);
+            if (icons is not { Count: > 0 } || icons[0].Menu is not { } menu) return;
+
+            string[] keys = ["Tray_SaveReplay", "Tray_OpenLibrary", "", "Tray_Open", "Tray_Exit"];
+            for (int i = 0; i < menu.Items.Count && i < keys.Length; i++)
+            {
+                if (menu.Items[i] is NativeMenuItem item && keys[i].Length > 0)
+                    item.Header = Core.Localizer.Get(keys[i]);
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Tray menu localization failed: {ex.Message}");
+        }
     }
 
     /// <summary>
@@ -153,6 +185,24 @@ public class App : Application
             desktop.MainWindow.WindowState = Avalonia.Controls.WindowState.Normal;
             desktop.MainWindow.Activate();
         }
+    }
+
+    /// <summary>Tray → "Save Replay": triggers the same command as the global hotkey / sidebar button.</summary>
+    private void TrayIcon_SaveReplayClicked(object? sender, EventArgs e)
+    {
+        var vm = _serviceProvider?.GetService<MainViewModel>();
+        if (vm != null && vm.SaveReplayCommand.CanExecute(null))
+            vm.SaveReplayCommand.Execute(null);
+    }
+
+    /// <summary>Tray → "Open Library": restores the window and navigates to the Library view.</summary>
+    private void TrayIcon_OpenLibraryClicked(object? sender, EventArgs e)
+    {
+        TrayIcon_OpenClicked(sender, e);
+
+        var vm = _serviceProvider?.GetService<MainViewModel>();
+        if (vm != null && vm.NavigateToLibraryCommand.CanExecute(null))
+            vm.NavigateToLibraryCommand.Execute(null);
     }
 
     private void TrayIcon_ExitClicked(object? sender, EventArgs e)

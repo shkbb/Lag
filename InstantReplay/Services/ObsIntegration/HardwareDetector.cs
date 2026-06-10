@@ -100,6 +100,47 @@ public sealed partial class HardwareDetector
         }
     }
 
+    // ────────────────────── GPU Adapter Detection ────────────────────── //
+
+    /// <summary>A physical GPU adapter as seen by DXGI (Index matches obs_video_info.adapter).</summary>
+    public record GpuInfo(int Index, string Name)
+    {
+        public override string ToString() => Name;
+    }
+
+    /// <summary>
+    /// Enumerates hardware GPU adapters via DXGI (same ordering libobs uses for the `adapter`
+    /// field). Software adapters (Microsoft Basic Render Driver) are skipped.
+    /// </summary>
+    public IReadOnlyList<GpuInfo> GetGpuAdapters()
+    {
+        var gpus = new List<GpuInfo>();
+        try
+        {
+            using var factory = new SharpDX.DXGI.Factory1();
+            int count = factory.GetAdapterCount1();
+            for (int i = 0; i < count; i++)
+            {
+                using var adapter = factory.GetAdapter1(i);
+                var desc = adapter.Description1;
+
+                // 0x1414 = Microsoft (Basic Render Driver) — not a real GPU.
+                if (desc.VendorId == 0x1414) continue;
+
+                gpus.Add(new GpuInfo(i, desc.Description.TrimEnd('\0')));
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[HardwareDetector] DXGI adapter enumeration failed: {ex.Message}");
+        }
+
+        if (gpus.Count == 0)
+            gpus.Add(new GpuInfo(0, "Default GPU"));
+
+        return gpus;
+    }
+
     // ────────────────────── Monitor Detection ────────────────────── //
 
     /// <summary>

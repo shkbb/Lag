@@ -23,6 +23,32 @@
   <sys:String x:Key="Settings_Microphone">Мікрофон</sys:String>
   <sys:String x:Key="Settings_FrameRate">Частота кадрів (FPS)</sys:String>
   <sys:String x:Key="Settings_MicVolume">Гучність мікрофона</sys:String>
+  <sys:String x:Key="Settings_OutputResolution">Роздільність виводу</sys:String>
+  <sys:String x:Key="Settings_Codec">Відеокодек</sys:String>
+  <sys:String x:Key="Settings_AutoCleanup">Автоочищення бібліотеки</sys:String>
+  <sys:String x:Key="Settings_AutoCleanup_Desc">Автоматично видаляти найстаріші кліпи, коли бібліотека перевищує ліміт</sys:String>
+  <sys:String x:Key="Settings_StorageLimit">Ліміт розміру бібліотеки</sys:String>
+  <sys:String x:Key="Tab_Video">Відео</sys:String>
+  <sys:String x:Key="Tab_Audio">Аудіо</sys:String>
+  <sys:String x:Key="Tab_General">Загальні</sys:String>
+  <sys:String x:Key="Settings_Bitrate">Бітрейт</sys:String>
+  <sys:String x:Key="Settings_Bitrate_CustomSuffix">Мбіт/с</sys:String>
+  <sys:String x:Key="Settings_Gpu">GPU для запису</sys:String>
+  <sys:String x:Key="Settings_Format">Формат файлу</sys:String>
+  <sys:String x:Key="Settings_Group_Mic">МІКРОФОН</sys:String>
+  <sys:String x:Key="Settings_Group_SystemAudio">СИСТЕМНИЙ ЗВУК</sys:String>
+  <sys:String x:Key="Settings_AudioMode">Режим запису</sys:String>
+  <sys:String x:Key="AudioMode_All">Весь звук ПК</sys:String>
+  <sys:String x:Key="AudioMode_Apps">Обрані програми</sys:String>
+  <sys:String x:Key="Settings_AppsHint">Програми з'являться тут, коли почнуть відтворювати звук.</sys:String>
+  <sys:String x:Key="Settings_MicChannels">Канали</sys:String>
+  <sys:String x:Key="Channels_Stereo">Стерео</sys:String>
+  <sys:String x:Key="Channels_Mono">Моно</sys:String>
+  <sys:String x:Key="Settings_Ptt">Push-to-talk</sys:String>
+  <sys:String x:Key="Settings_Ptt_Desc">Мікрофон активний лише доки затиснута клавіша</sys:String>
+  <sys:String x:Key="Settings_PttKey">Клавіша push-to-talk</sys:String>
+  <sys:String x:Key="Settings_SeparateTracks">Окремі аудіодоріжки</sys:String>
+  <sys:String x:Key="Settings_SeparateTracks_Desc">Системний звук і мікрофон зберігаються окремими доріжками у файлі</sys:String>
   <sys:String x:Key="Settings_Group_Automation">АВТОМАТИЗАЦІЯ</sys:String>
   <sys:String x:Key="Settings_StartWithWindows">Запускати разом із Windows</sys:String>
   <sys:String x:Key="Settings_StartWithWindows_Desc">Додає застосунок до автозавантаження системи</sys:String>
@@ -50,6 +76,9 @@
   <sys:String x:Key="Library_Subtitle">Ваші збережені моменти</sys:String>
   <sys:String x:Key="Library_Empty">Поки немає повторів. Почніть запис і натисніть гарячу клавішу, щоб зберегти повтор!</sys:String>
   <sys:String x:Key="Library_Delete">Видалити</sys:String>
+  <sys:String x:Key="Library_OpenFolder">Відкрити папку</sys:String>
+  <sys:String x:Key="Library_ShowInFolder">Показати в папці</sys:String>
+  <sys:String x:Key="Library_FreeSpace">Вільно</sys:String>
 
   <!-- ════════ Player ════════ -->
   <sys:String x:Key="Player_Replays">ПОВТОРИ</sys:String>
@@ -81,5 +110,19 @@
   <sys:String x:Key="Status_NotRecording">Запис не активний — спочатку натисніть 'Почати запис'.</sys:String>
   <sys:String x:Key="Hotkey_PressCombo">Натисніть комбінацію клавіш...</sys:String>
   <sys:String x:Key="Browse_Title">Виберіть папку для збереження повторів</sys:String>
+
+  <!-- ════════ Tray menu ════════ -->
+  <sys:String x:Key="Tray_SaveReplay">Зберегти повтор</sys:String>
+  <sys:String x:Key="Tray_OpenLibrary">Відкрити бібліотеку</sys:String>
+  <sys:String x:Key="Tray_Open">Відкрити</sys:String>
+  <sys:String x:Key="Tray_Exit">Вихід</sys:String>
+
+  <!-- ════════ Shared option labels (dropdowns) ════════ -->
+  <sys:String x:Key="Time_SecShort">{0} с</sys:String>
+  <sys:String x:Key="Time_MinShort">{0} хв</sys:String>
+  <sys:String x:Key="Time_HourMinShort">{0} год {1} хв</sys:String>
+  <sys:String x:Key="Option_Native">Нативна</sys:String>
+  <sys:String x:Key="Option_Auto">Авто</sys:String>
+  <sys:String x:Key="Option_Custom">Власний</sys:String>
 
 </ResourceDictionary>

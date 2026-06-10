@@ -47,6 +47,11 @@ public partial class PlayerView : UserControl
             vm.PropertyChanged += OnPlayerVmPropertyChanged;
             vm.StartPlayback();
             MainVideoView.MediaPlayer = vm.Player;
+
+            // Click-to-pause: the native VLC HWND swallows mouse input before Avalonia ever
+            // sees it, so overlays/events can't work. Instead we listen to the GLOBAL mouse
+            // hook and hit-test the click position against the video's screen rectangle.
+            vm.HotkeyManager.LeftMousePressed += OnGlobalLeftMouseDown;
         }
 
         // Observe global fullscreen (the Window's DataContext is MainViewModel).
@@ -66,6 +71,7 @@ public partial class PlayerView : UserControl
         MainVideoView.MediaPlayer = null;
         if (_playerVm != null)
         {
+            _playerVm.HotkeyManager.LeftMousePressed -= OnGlobalLeftMouseDown;
             _playerVm.PropertyChanged -= OnPlayerVmPropertyChanged;
             _playerVm.StopPlayback();
             _playerVm = null;
@@ -140,16 +146,37 @@ public partial class PlayerView : UserControl
     }
 
     /// <summary>
-    /// Toggles play/pause on click of the high-ZIndex transparent overlay. Uses PointerReleased
-    /// (more reliable than Tapped/Pressed over the native host); works because libVLC mouse input
-    /// is disabled in PlayerViewModel, so the native window forwards events to this overlay.
+    /// Global-hook click-to-pause. Fires on EVERY left click system-wide (background thread),
+    /// so we marshal to the UI thread and accept the click only when:
+    ///   • our window is active (clicks in other apps must not toggle playback),
+    ///   • the player view & video are actually visible,
+    ///   • the click's screen position lies inside the video's screen rectangle.
+    /// This bypasses the native VLC HWND entirely — the OS-level hook sees the click even
+    /// though the child window swallows it before Avalonia's input pipeline.
     /// </summary>
-    private void OnVideoSurfaceReleased(object? sender, PointerReleasedEventArgs e)
+    private void OnGlobalLeftMouseDown(object? sender, Lag.Services.GlobalMouseEventArgs e)
     {
-        if (e.InitialPressMouseButton != MouseButton.Left) return;
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (_playerVm == null) return;
+            if (TopLevel.GetTopLevel(this) is not Window { IsActive: true } window) return;
+            if (!MainVideoView.IsEffectivelyVisible) return;
 
-        Focus();
-        if (DataContext is PlayerViewModel vm && vm.PlayPauseCommand.CanExecute(null))
-            vm.PlayPauseCommand.Execute(null);
+            // Video rectangle in physical screen pixels (same space as the hook coordinates).
+            var origin = MainVideoView.PointToScreen(new Avalonia.Point(0, 0));
+            double scale = window.RenderScaling;
+            int width = (int)Math.Round(MainVideoView.Bounds.Width * scale);
+            int height = (int)Math.Round(MainVideoView.Bounds.Height * scale);
+
+            bool inside = e.X >= origin.X && e.X < origin.X + width &&
+                          e.Y >= origin.Y && e.Y < origin.Y + height;
+            if (!inside) return;
+
+            if (_playerVm.PlayPauseCommand.CanExecute(null))
+                _playerVm.PlayPauseCommand.Execute(null);
+
+            // Keep keyboard focus on the view so the Space shortcut continues to work.
+            Focus();
+        });
     }
 }

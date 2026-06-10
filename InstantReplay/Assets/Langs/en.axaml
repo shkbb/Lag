@@ -23,6 +23,32 @@
   <sys:String x:Key="Settings_Microphone">Microphone</sys:String>
   <sys:String x:Key="Settings_FrameRate">Frame rate (FPS)</sys:String>
   <sys:String x:Key="Settings_MicVolume">Mic volume</sys:String>
+  <sys:String x:Key="Settings_OutputResolution">Output resolution</sys:String>
+  <sys:String x:Key="Settings_Codec">Video codec</sys:String>
+  <sys:String x:Key="Settings_AutoCleanup">Auto-clean library</sys:String>
+  <sys:String x:Key="Settings_AutoCleanup_Desc">Automatically delete the oldest clips when the library exceeds the limit</sys:String>
+  <sys:String x:Key="Settings_StorageLimit">Library size limit</sys:String>
+  <sys:String x:Key="Tab_Video">Video</sys:String>
+  <sys:String x:Key="Tab_Audio">Audio</sys:String>
+  <sys:String x:Key="Tab_General">General</sys:String>
+  <sys:String x:Key="Settings_Bitrate">Bitrate</sys:String>
+  <sys:String x:Key="Settings_Bitrate_CustomSuffix">Mbps</sys:String>
+  <sys:String x:Key="Settings_Gpu">Recording GPU</sys:String>
+  <sys:String x:Key="Settings_Format">File format</sys:String>
+  <sys:String x:Key="Settings_Group_Mic">MICROPHONE</sys:String>
+  <sys:String x:Key="Settings_Group_SystemAudio">SYSTEM SOUND</sys:String>
+  <sys:String x:Key="Settings_AudioMode">Recording mode</sys:String>
+  <sys:String x:Key="AudioMode_All">All PC audio</sys:String>
+  <sys:String x:Key="AudioMode_Apps">Specific apps</sys:String>
+  <sys:String x:Key="Settings_AppsHint">Apps will appear here when they start playing audio.</sys:String>
+  <sys:String x:Key="Settings_MicChannels">Channels</sys:String>
+  <sys:String x:Key="Channels_Stereo">Stereo</sys:String>
+  <sys:String x:Key="Channels_Mono">Mono</sys:String>
+  <sys:String x:Key="Settings_Ptt">Push-to-talk</sys:String>
+  <sys:String x:Key="Settings_Ptt_Desc">Microphone is live only while the key is held</sys:String>
+  <sys:String x:Key="Settings_PttKey">Push-to-talk key</sys:String>
+  <sys:String x:Key="Settings_SeparateTracks">Separate audio tracks</sys:String>
+  <sys:String x:Key="Settings_SeparateTracks_Desc">System sound and microphone are saved as separate tracks in the file</sys:String>
   <sys:String x:Key="Settings_Group_Automation">AUTOMATION</sys:String>
   <sys:String x:Key="Settings_StartWithWindows">Start with Windows</sys:String>
   <sys:String x:Key="Settings_StartWithWindows_Desc">Adds the app to system startup</sys:String>
@@ -50,6 +76,9 @@
   <sys:String x:Key="Library_Subtitle">Your saved moments</sys:String>
   <sys:String x:Key="Library_Empty">No replays yet. Start recording and press the hotkey to save a replay!</sys:String>
   <sys:String x:Key="Library_Delete">Delete</sys:String>
+  <sys:String x:Key="Library_OpenFolder">Open folder</sys:String>
+  <sys:String x:Key="Library_ShowInFolder">Show in folder</sys:String>
+  <sys:String x:Key="Library_FreeSpace">Free space</sys:String>
 
   <!-- ════════ Player ════════ -->
   <sys:String x:Key="Player_Replays">REPLAYS</sys:String>
@@ -81,5 +110,19 @@
   <sys:String x:Key="Status_NotRecording">Recording is not active — press 'Start Recording' first.</sys:String>
   <sys:String x:Key="Hotkey_PressCombo">Press a key combination...</sys:String>
   <sys:String x:Key="Browse_Title">Select a folder for saving replays</sys:String>
+
+  <!-- ════════ Tray menu ════════ -->
+  <sys:String x:Key="Tray_SaveReplay">Save Replay</sys:String>
+  <sys:String x:Key="Tray_OpenLibrary">Open Library</sys:String>
+  <sys:String x:Key="Tray_Open">Open</sys:String>
+  <sys:String x:Key="Tray_Exit">Exit</sys:String>
+
+  <!-- ════════ Shared option labels (dropdowns) ════════ -->
+  <sys:String x:Key="Time_SecShort">{0} sec</sys:String>
+  <sys:String x:Key="Time_MinShort">{0} min</sys:String>
+  <sys:String x:Key="Time_HourMinShort">{0} h {1} min</sys:String>
+  <sys:String x:Key="Option_Native">Native</sys:String>
+  <sys:String x:Key="Option_Auto">Auto</sys:String>
+  <sys:String x:Key="Option_Custom">Custom</sys:String>
 
 </ResourceDictionary>

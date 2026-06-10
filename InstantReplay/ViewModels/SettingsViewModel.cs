@@ -39,47 +39,25 @@ public partial class SettingsViewModel : ViewModelBase
 
     // ───────────── Buffer Duration ─────────────
 
-    /// <summary>Available replay buffer duration options.</summary>
-    public IReadOnlyList<BufferOption> BufferOptions { get; } = new[]
-    {
-        new BufferOption("30 секунд", TimeSpan.FromSeconds(30)),
-        new BufferOption("1 хвилина", TimeSpan.FromMinutes(1)),
-        new BufferOption("2 хвилини", TimeSpan.FromMinutes(2)),
-        new BufferOption("5 хвилин", TimeSpan.FromMinutes(5)),
-        new BufferOption("10 хвилин", TimeSpan.FromMinutes(10)),
-        new BufferOption("15 хвилин", TimeSpan.FromMinutes(15))
-    };
+    /// <summary>
+    /// Replay buffer duration options. Labels are LOCALIZED, so the list is (re)built by
+    /// <see cref="RebuildLocalizedOptions"/> at startup and on every language switch.
+    /// </summary>
+    public System.Collections.ObjectModel.ObservableCollection<BufferOption> BufferOptions { get; } = new();
 
     [ObservableProperty]
-    private BufferOption _selectedBuffer;
+    private BufferOption _selectedBuffer = null!;
 
     partial void OnSelectedBufferChanged(BufferOption value)
     {
         SaveSettings();
     }
 
-    /// <summary>Reliably gets the selected buffer length in seconds (supports sub-minute values).</summary>
-    public int BufferSeconds => ParseBufferToSeconds(SelectedBuffer);
-
     /// <summary>
-    /// Converts a buffer option to seconds. Parses the human label per spec — "30 секунд" → 30,
-    /// "5 хвилин" → 300 — instead of assuming minutes (which truncated 30 s to 0). Falls back to the
-    /// option's authoritative <see cref="TimeSpan"/> if the label can't be parsed.
+    /// Selected buffer length in seconds. Duration is the authoritative value — labels are
+    /// localized display-only strings (the old label-parsing approach broke on translation).
     /// </summary>
-    private static int ParseBufferToSeconds(BufferOption option)
-    {
-        string label = option.Display;
-        var match = System.Text.RegularExpressions.Regex.Match(label, @"\d+");
-
-        if (match.Success && int.TryParse(match.Value, out int n))
-        {
-            if (label.Contains("секунд")) return n;
-            if (label.Contains("хвилин")) return n * 60;
-        }
-
-        // Safety net: the option always carries a real TimeSpan.
-        return (int)option.Duration.TotalSeconds;
-    }
+    public int BufferSeconds => (int)SelectedBuffer.Duration.TotalSeconds;
 
     // ───────────── Monitors ─────────────
     
@@ -145,15 +123,213 @@ public partial class SettingsViewModel : ViewModelBase
 
     // ───────────── Frame Rate ─────────────
 
-    public IReadOnlyList<int> FrameRateOptions { get; } = new[] { 24, 30, 60 };
+    /// <summary>FPS presets; Value = 0 means "Custom" (label localized → rebuilt on language switch).</summary>
+    public System.Collections.ObjectModel.ObservableCollection<FpsOption> FpsOptions { get; } = new();
 
     [ObservableProperty]
-    private int _selectedFrameRate = 30;
+    private FpsOption _selectedFps = null!;
 
-    partial void OnSelectedFrameRateChanged(int value)
+    partial void OnSelectedFpsChanged(FpsOption value)
+    {
+        OnPropertyChanged(nameof(IsCustomFps));
+        SaveSettings();
+    }
+
+    /// <summary>Custom frame rate (used when the "Custom" preset is selected).</summary>
+    [ObservableProperty]
+    private int _customFps = 60;
+
+    partial void OnCustomFpsChanged(int value)
     {
         SaveSettings();
     }
+
+    public bool IsCustomFps => SelectedFps.Value == 0;
+
+    /// <summary>The frame rate that actually goes to the engine.</summary>
+    public int EffectiveFps =>
+        SelectedFps.Value > 0 ? SelectedFps.Value : Math.Clamp(CustomFps, 1, 1000);
+
+    // ───────────── Output File Format ─────────────
+
+    /// <summary>Container formats for saved replays.</summary>
+    public IReadOnlyList<string> FormatOptions { get; } = new[] { "mp4", "mkv", "mov", "avi" };
+
+    [ObservableProperty]
+    private string _selectedFormat = "mp4";
+
+    partial void OnSelectedFormatChanged(string value)
+    {
+        SaveSettings();
+    }
+
+    // ───────────── Output Resolution (render downscale) ─────────────
+
+    /// <summary>
+    /// Output (render/encode) resolution presets. Capture always stays at the native screen
+    /// resolution; this only downscales the encoded output (TargetHeight = 0 means "Native").
+    /// The "Native" label is localized → list is rebuilt by <see cref="RebuildLocalizedOptions"/>.
+    /// </summary>
+    public System.Collections.ObjectModel.ObservableCollection<ResolutionOption> ResolutionOptions { get; } = new();
+
+    [ObservableProperty]
+    private ResolutionOption _selectedResolution = null!;
+
+    partial void OnSelectedResolutionChanged(ResolutionOption value)
+    {
+        SaveSettings();
+    }
+
+    // ───────────── Video Codec ─────────────
+
+    /// <summary>
+    /// Encoder choice. "Auto" (empty id, default) keeps the automatic hardware-fallback chain
+    /// (NVENC → AMF → QSV → x264). Picking a specific codec makes it the preferred encoder —
+    /// the engine tries it first and only falls back to the chain if it can't be created.
+    /// </summary>
+    public System.Collections.ObjectModel.ObservableCollection<CodecOption> CodecOptions { get; } = new();
+
+    [ObservableProperty]
+    private CodecOption _selectedCodec = null!;
+
+    partial void OnSelectedCodecChanged(CodecOption value)
+    {
+        SaveSettings();
+    }
+
+    // ───────────── Library Auto-Cleanup (opt-in) ─────────────
+
+    /// <summary>When enabled, the oldest clips are auto-deleted once the library exceeds the limit.</summary>
+    [ObservableProperty]
+    private bool _autoCleanupEnabled;
+
+    partial void OnAutoCleanupEnabledChanged(bool value)
+    {
+        SaveSettings();
+    }
+
+    /// <summary>Available library size limits for the auto-cleanup feature.</summary>
+    public IReadOnlyList<StorageLimitOption> StorageLimitOptions { get; } = new[]
+    {
+        new StorageLimitOption(10),
+        new StorageLimitOption(25),
+        new StorageLimitOption(50),
+        new StorageLimitOption(100),
+        new StorageLimitOption(200),
+        new StorageLimitOption(500)
+    };
+
+    [ObservableProperty]
+    private StorageLimitOption _selectedStorageLimit;
+
+    partial void OnSelectedStorageLimitChanged(StorageLimitOption value)
+    {
+        SaveSettings();
+    }
+
+    // ───────────── Video Bitrate ─────────────
+
+    /// <summary>Bitrate presets; Kbps = 0 means "Custom" (label localized → rebuilt on language switch).</summary>
+    public System.Collections.ObjectModel.ObservableCollection<BitrateOption> BitrateOptions { get; } = new();
+
+    [ObservableProperty]
+    private BitrateOption _selectedBitrate = null!;
+
+    partial void OnSelectedBitrateChanged(BitrateOption value)
+    {
+        OnPropertyChanged(nameof(IsCustomBitrate));
+        SaveSettings();
+    }
+
+    /// <summary>Custom bitrate in Mbps (used when the "Custom" preset is selected).</summary>
+    [ObservableProperty]
+    private int _customBitrateMbps = 20;
+
+    partial void OnCustomBitrateMbpsChanged(int value)
+    {
+        SaveSettings();
+    }
+
+    public bool IsCustomBitrate => SelectedBitrate.Kbps == 0;
+
+    /// <summary>The bitrate that actually goes to the encoder, in kbps.</summary>
+    public int EffectiveBitrateKbps =>
+        SelectedBitrate.Kbps > 0 ? SelectedBitrate.Kbps : Math.Clamp(CustomBitrateMbps, 1, 300) * 1000;
+
+    // ───────────── Recording GPU ─────────────
+
+    /// <summary>Available GPU adapters: "Auto (name of primary)" + each physical adapter.</summary>
+    public IReadOnlyList<GpuOption> GpuOptions { get; private set; } = [];
+
+    [ObservableProperty]
+    private GpuOption _selectedGpu;
+
+    partial void OnSelectedGpuChanged(GpuOption value)
+    {
+        SaveSettings();
+    }
+
+    private IReadOnlyList<GpuOption> BuildGpuOptions()
+    {
+        var gpus = _hardwareDetector.GetGpuAdapters();
+        var list = new List<GpuOption> { new(-1, $"Auto ({gpus[0].Name})") };
+        foreach (var gpu in gpus)
+            list.Add(new GpuOption(gpu.Index, $"GPU {gpu.Index}: {gpu.Name}"));
+        return list;
+    }
+
+    // ───────────── System Audio Capture (all / specific apps) ─────────────
+
+    /// <summary>0 = all PC audio, 1 = specific apps only (drives the ComboBox).</summary>
+    [ObservableProperty]
+    private int _audioModeIndex;
+
+    partial void OnAudioModeIndexChanged(int value)
+    {
+        OnPropertyChanged(nameof(IsAppsMode));
+        SaveSettings();
+    }
+
+    public bool IsAppsMode => AudioModeIndex == 1;
+
+    /// <summary>Live list of apps playing audio (auto-refreshed) merged with saved selections.</summary>
+    public System.Collections.ObjectModel.ObservableCollection<AppAudioItem> AudioApps { get; } = new();
+
+    private Avalonia.Threading.DispatcherTimer? _audioAppsTimer;
+
+    /// <summary>Kicks off a background scan of active audio sessions and merges the result.</summary>
+    private void RefreshAudioAppsNow()
+    {
+        _ = Task.Run(AudioSessionService.GetActiveAudioApps).ContinueWith(t =>
+        {
+            if (t.IsCompletedSuccessfully)
+                Avalonia.Threading.Dispatcher.UIThread.Post(() => MergeAudioApps(t.Result));
+        });
+    }
+
+    /// <summary>
+    /// Merges the freshly scanned audio apps into the visible list: new apps are appended,
+    /// vanished apps are dropped UNLESS the user has them enabled (so selections survive
+    /// the target app being closed temporarily).
+    /// </summary>
+    private void MergeAudioApps(List<AudioSessionService.AudioApp> live)
+    {
+        foreach (var app in live)
+        {
+            if (!AudioApps.Any(a => a.Exe.Equals(app.ExeName, StringComparison.OrdinalIgnoreCase)))
+                AudioApps.Add(new AppAudioItem(app.ExeName, app.DisplayName, OnAppAudioChanged));
+        }
+
+        for (int i = AudioApps.Count - 1; i >= 0; i--)
+        {
+            var item = AudioApps[i];
+            bool stillLive = live.Any(l => l.ExeName.Equals(item.Exe, StringComparison.OrdinalIgnoreCase));
+            if (!stillLive && !item.IsEnabled)
+                AudioApps.RemoveAt(i);
+        }
+    }
+
+    private void OnAppAudioChanged() => SaveSettings();
 
     // ───────────── Microphone Volume ─────────────
 
@@ -162,6 +338,67 @@ public partial class SettingsViewModel : ViewModelBase
     private int _micVolume = 100;
 
     partial void OnMicVolumeChanged(int value)
+    {
+        SaveSettings();
+    }
+
+    // ───────────── Microphone Channels (stereo / mono) ─────────────
+
+    /// <summary>0 = stereo, 1 = mono (drives the ComboBox).</summary>
+    [ObservableProperty]
+    private int _micChannelIndex;
+
+    partial void OnMicChannelIndexChanged(int value)
+    {
+        SaveSettings();
+    }
+
+    public bool MicMono => MicChannelIndex == 1;
+
+    // ───────────── Push-to-talk ─────────────
+
+    /// <summary>When on, the mic is muted and live only while the PTT key is held.</summary>
+    [ObservableProperty]
+    private bool _pushToTalkEnabled;
+
+    partial void OnPushToTalkEnabledChanged(bool value)
+    {
+        ApplyPttToManager();
+        SaveSettings();
+    }
+
+    private KeyCode _pttKey = KeyCode.VcV;
+
+    [ObservableProperty]
+    private string _pttKeyDisplayText = "V";
+
+    [ObservableProperty]
+    private bool _isCapturingPttKey;
+
+    /// <summary>True while the next captured key should be bound as the PTT key (not the save hotkey).</summary>
+    private bool _pttCaptureMode;
+
+    [RelayCommand]
+    private void CapturePttKey()
+    {
+        _pttCaptureMode = true;
+        IsCapturingPttKey = true;
+        _hotkeyManager.IsCapturing = true;
+    }
+
+    private void ApplyPttToManager()
+    {
+        _hotkeyManager.PttEnabled = PushToTalkEnabled;
+        _hotkeyManager.PttKey = _pttKey;
+    }
+
+    // ───────────── Separate Audio Tracks ─────────────
+
+    /// <summary>Save system audio (track 1) and mic (track 2) as separate tracks in the file.</summary>
+    [ObservableProperty]
+    private bool _separateAudioTracks;
+
+    partial void OnSeparateAudioTracksChanged(bool value)
     {
         SaveSettings();
     }
@@ -224,11 +461,23 @@ public partial class SettingsViewModel : ViewModelBase
 
     // ───────────── Language ─────────────
 
-    /// <summary>Available UI languages. English is the default.</summary>
+    /// <summary>Available UI languages (each name shown in its own language). English is the default.</summary>
     public IReadOnlyList<LanguageOption> LanguageOptions { get; } = new[]
     {
         new LanguageOption("en", "English"),
-        new LanguageOption("uk", "Українська")
+        new LanguageOption("uk", "Українська"),
+        new LanguageOption("de", "Deutsch"),
+        new LanguageOption("fr", "Français"),
+        new LanguageOption("be", "Беларуская"),
+        new LanguageOption("lt", "Lietuvių"),
+        new LanguageOption("et", "Eesti"),
+        new LanguageOption("lv", "Latviešu"),
+        new LanguageOption("fi", "Suomi"),
+        new LanguageOption("sv", "Svenska"),
+        new LanguageOption("no", "Norsk"),
+        new LanguageOption("da", "Dansk"),
+        new LanguageOption("nl", "Nederlands"),
+        new LanguageOption("it", "Italiano")
     };
 
     [ObservableProperty]
@@ -236,9 +485,81 @@ public partial class SettingsViewModel : ViewModelBase
 
     partial void OnSelectedLanguageChanged(LanguageOption value)
     {
-        // Switch the live UI language immediately (applies even while loading the persisted value).
+        // Switch the live UI language immediately (applies even while loading the persisted value),
+        // then rebuild every dropdown whose item labels are localized strings.
         Lag.App.SetLanguage(value.Code);
+        RebuildLocalizedOptions();
         SaveSettings();
+    }
+
+    /// <summary>
+    /// (Re)builds all option lists whose item LABELS are localized ("5 хв" / "5 min", "Auto",
+    /// "Native", "Custom"). XAML {DynamicResource} can't reach inside data items, so on a language
+    /// switch we regenerate the items and re-select the entry with the same underlying value.
+    /// SaveSettings is suppressed during the churn — selections are value-identical.
+    /// </summary>
+    private void RebuildLocalizedOptions()
+    {
+        bool wasInitializing = _isInitializing;
+        _isInitializing = true;
+        try
+        {
+            // ── Buffer durations (default: 5 min) ──
+            int selBufSec = (int)(_selectedBuffer?.Duration.TotalSeconds ?? 300);
+            BufferOptions.Clear();
+            foreach (var d in new[]
+                     {
+                         TimeSpan.FromSeconds(30), TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(2),
+                         TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(10), TimeSpan.FromMinutes(15)
+                     })
+            {
+                string label = d.TotalSeconds < 60
+                    ? Localizer.Format("Time_SecShort", (int)d.TotalSeconds)
+                    : Localizer.Format("Time_MinShort", (int)d.TotalMinutes);
+                BufferOptions.Add(new BufferOption(label, d));
+            }
+            SelectedBuffer = BufferOptions.FirstOrDefault(b => (int)b.Duration.TotalSeconds == selBufSec)
+                             ?? BufferOptions[3];
+
+            // ── Output resolution (default: Native) ──
+            int selRes = _selectedResolution?.TargetHeight ?? 0;
+            ResolutionOptions.Clear();
+            ResolutionOptions.Add(new ResolutionOption(Localizer.Get("Option_Native"), 0));
+            ResolutionOptions.Add(new ResolutionOption("1080p", 1080));
+            ResolutionOptions.Add(new ResolutionOption("720p", 720));
+            SelectedResolution = ResolutionOptions.FirstOrDefault(r => r.TargetHeight == selRes)
+                                 ?? ResolutionOptions[0];
+
+            // ── Codec (default: Auto) ──
+            string selCodec = _selectedCodec?.EncoderId ?? "";
+            CodecOptions.Clear();
+            CodecOptions.Add(new CodecOption(Localizer.Get("Option_Auto"), ""));
+            CodecOptions.Add(new CodecOption("NVIDIA NVENC", "ffmpeg_nvenc"));
+            CodecOptions.Add(new CodecOption("AMD AMF", "ffmpeg_amf"));
+            CodecOptions.Add(new CodecOption("Intel QuickSync", "obs_qsv11"));
+            CodecOptions.Add(new CodecOption("x264 (CPU)", "obs_x264"));
+            SelectedCodec = CodecOptions.FirstOrDefault(c => c.EncoderId == selCodec) ?? CodecOptions[0];
+
+            // ── Bitrate (default: 20 Mbps) ──
+            int selKbps = _selectedBitrate?.Kbps ?? 20000;
+            BitrateOptions.Clear();
+            foreach (int kbps in new[] { 5000, 10000, 20000, 30000, 50000 })
+                BitrateOptions.Add(new BitrateOption($"{kbps / 1000} Mbps", kbps));
+            BitrateOptions.Add(new BitrateOption(Localizer.Get("Option_Custom"), 0));
+            SelectedBitrate = BitrateOptions.FirstOrDefault(b => b.Kbps == selKbps) ?? BitrateOptions[2];
+
+            // ── FPS (default: 30) ──
+            int selFps = _selectedFps?.Value ?? 30;
+            FpsOptions.Clear();
+            foreach (int fps in new[] { 24, 30, 60, 120, 240, 360 })
+                FpsOptions.Add(new FpsOption(fps.ToString(), fps));
+            FpsOptions.Add(new FpsOption(Localizer.Get("Option_Custom"), 0));
+            SelectedFps = FpsOptions.FirstOrDefault(f => f.Value == selFps) ?? FpsOptions[1];
+        }
+        finally
+        {
+            _isInitializing = wasInitializing;
+        }
     }
 
     // ───────────── About / Auto-Update (Velopack) ─────────────
@@ -336,9 +657,15 @@ public partial class SettingsViewModel : ViewModelBase
         _isInitializing = true;
         try
         {
-            // Establish safe defaults FIRST (direct field writes, no PropertyChanged / no save).
-            _selectedBuffer = BufferOptions.FirstOrDefault(b => (int)b.Duration.TotalMinutes == 5) ?? BufferOptions[1]; // 5 minutes
+            // Establish safe defaults FIRST (saves are suppressed by _isInitializing).
             _selectedLanguage = LanguageOptions[0]; // English by default
+            _selectedStorageLimit = StorageLimitOptions[2]; // 50 GB (used only when cleanup is enabled)
+            GpuOptions = BuildGpuOptions();
+            _selectedGpu = GpuOptions[0];               // Auto by default
+
+            // Build the localized dropdown lists (buffer 5 min, Native, Auto, 20 Mbps, 30 fps).
+            RebuildLocalizedOptions();
+
             _appVersion = ResolveAppVersion();
             _libraryPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyVideos), "Lag");
 
@@ -357,8 +684,17 @@ public partial class SettingsViewModel : ViewModelBase
         // Register the persisted (or default) hotkey with the active Win32 service at startup.
         ApplyHotkeyToGlobalService();
 
+        // Mirror the persisted push-to-talk state onto the global hook.
+        ApplyPttToManager();
+
         // Listen for hotkey capture events
         _hotkeyManager.HotkeyCaptured += OnHotkeyCaptured;
+
+        // Live "apps playing audio" scanner (Medal-style picker): scan now, then every 4 s.
+        RefreshAudioAppsNow();
+        _audioAppsTimer = new Avalonia.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(4) };
+        _audioAppsTimer.Tick += (_, _) => RefreshAudioAppsNow();
+        _audioAppsTimer.Start();
     }
 
     /// <summary>
@@ -394,6 +730,19 @@ public partial class SettingsViewModel : ViewModelBase
     /// </summary>
     private void OnHotkeyCaptured(object? sender, HotkeyCapturedEventArgs e)
     {
+        // Push-to-talk capture takes the SINGLE key only (modifiers ignored — PTT is a held key).
+        if (_pttCaptureMode)
+        {
+            _pttCaptureMode = false;
+            _pttKey = e.Key;
+            PttKeyDisplayText = e.Key.ToString().Replace("Vc", "");
+            IsCapturingPttKey = false;
+
+            ApplyPttToManager();
+            SaveSettings();
+            return;
+        }
+
         _hotkeyManager.RequiredKey = e.Key;
         _hotkeyManager.RequiredModifiers = e.Modifiers;
 
@@ -470,13 +819,29 @@ public partial class SettingsViewModel : ViewModelBase
                 HotkeyKey = _hotkeyManager.RequiredKey.ToString(),
                 HotkeyModifiers = _hotkeyManager.RequiredModifiers.ToString(),
                 LibraryPath = LibraryPath,
-                FrameRate = SelectedFrameRate,
+                FrameRate = EffectiveFps,
+                FileFormat = SelectedFormat,
                 MonitorDeviceName = SelectedMonitor?.DeviceName ?? string.Empty,
                 MicrophoneId = SelectedMicrophone?.Id ?? string.Empty,
                 StartWithWindows = StartWithWindows,
                 AutoStartRecording = AutoStartRecording,
                 Language = SelectedLanguage.Code,
-                MicVolume = MicVolume
+                MicVolume = MicVolume,
+                OutputResolutionHeight = SelectedResolution.TargetHeight,
+                CodecName = SelectedCodec.EncoderId,
+                AutoCleanupEnabled = AutoCleanupEnabled,
+                MaxLibrarySizeGb = SelectedStorageLimit.Gb,
+                BitrateKbps = EffectiveBitrateKbps,
+                GpuIndex = SelectedGpu.Index,
+                AudioCaptureMode = IsAppsMode ? "apps" : "all",
+                AudioApps = AudioApps
+                    .Where(a => a.IsEnabled || a.Volume != 100)
+                    .Select(a => new AppAudioSetting { Exe = a.Exe, Enabled = a.IsEnabled, Volume = a.Volume })
+                    .ToList(),
+                PttEnabled = PushToTalkEnabled,
+                PttKey = _pttKey.ToString(),
+                MicMono = MicMono,
+                SeparateAudioTracks = SeparateAudioTracks
             };
 
             string dir = Path.GetDirectoryName(SettingsFilePath)!;
@@ -515,9 +880,74 @@ public partial class SettingsViewModel : ViewModelBase
             HotkeyDisplayText = FormatHotkey(_hotkeyManager.RequiredModifiers, _hotkeyManager.RequiredKey);
             
             LibraryPath = settings.LibraryPath ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyVideos), "Lag");
-            SelectedFrameRate = FrameRateOptions.Contains(settings.FrameRate)
-                ? settings.FrameRate : 30;
+            // FPS: match a preset, otherwise restore as "Custom".
+            if (settings.FrameRate > 0)
+            {
+                var fpsPreset = FpsOptions.FirstOrDefault(f => f.Value == settings.FrameRate);
+                if (fpsPreset != null)
+                {
+                    SelectedFps = fpsPreset;
+                }
+                else
+                {
+                    CustomFps = Math.Clamp(settings.FrameRate, 1, 1000);
+                    SelectedFps = FpsOptions.First(f => f.Value == 0); // Custom
+                }
+            }
+
+            SelectedFormat = FormatOptions.Contains(settings.FileFormat) ? settings.FileFormat : "mp4";
             MicVolume = Math.Clamp(settings.MicVolume, 0, 100);
+            SelectedResolution = ResolutionOptions.FirstOrDefault(r =>
+                r.TargetHeight == settings.OutputResolutionHeight) ?? ResolutionOptions[0];
+            SelectedCodec = CodecOptions.FirstOrDefault(c =>
+                c.EncoderId == settings.CodecName) ?? CodecOptions[0];
+            AutoCleanupEnabled = settings.AutoCleanupEnabled;
+            SelectedStorageLimit = StorageLimitOptions.FirstOrDefault(l =>
+                l.Gb == settings.MaxLibrarySizeGb) ?? StorageLimitOptions[2];
+
+            // Bitrate: match a preset, otherwise restore as "Custom".
+            if (settings.BitrateKbps > 0)
+            {
+                var preset = BitrateOptions.FirstOrDefault(b => b.Kbps == settings.BitrateKbps);
+                if (preset != null)
+                {
+                    SelectedBitrate = preset;
+                }
+                else
+                {
+                    CustomBitrateMbps = Math.Clamp(settings.BitrateKbps / 1000, 1, 300);
+                    SelectedBitrate = BitrateOptions.First(b => b.Kbps == 0); // Custom
+                }
+            }
+
+            // GPU adapter (falls back to Auto when the saved adapter no longer exists).
+            SelectedGpu = GpuOptions.FirstOrDefault(g => g.Index == settings.GpuIndex) ?? GpuOptions[0];
+
+            // System audio capture mode + saved per-app selections.
+            AudioModeIndex = settings.AudioCaptureMode == "apps" ? 1 : 0;
+            foreach (var saved in settings.AudioApps)
+            {
+                if (string.IsNullOrWhiteSpace(saved.Exe)) continue;
+                if (AudioApps.Any(a => a.Exe.Equals(saved.Exe, StringComparison.OrdinalIgnoreCase))) continue;
+
+                string display = saved.Exe.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)
+                    ? saved.Exe[..^4] : saved.Exe;
+                AudioApps.Add(new AppAudioItem(saved.Exe, display, OnAppAudioChanged)
+                {
+                    IsEnabled = saved.Enabled,
+                    Volume = Math.Clamp(saved.Volume, 0, 100)
+                });
+            }
+
+            // Push-to-talk + mic channels + tracks.
+            PushToTalkEnabled = settings.PttEnabled;
+            if (Enum.TryParse<KeyCode>(settings.PttKey, out var pttKey))
+            {
+                _pttKey = pttKey;
+                PttKeyDisplayText = pttKey.ToString().Replace("Vc", "");
+            }
+            MicChannelIndex = settings.MicMono ? 1 : 0;
+            SeparateAudioTracks = settings.SeparateAudioTracks;
 
             // Restore the persisted monitor/microphone by matching against the enumerated devices.
             if (!string.IsNullOrEmpty(settings.MonitorDeviceName))
@@ -568,6 +998,51 @@ public partial class SettingsViewModel : ViewModelBase
 
         /// <summary>Microphone volume in percent (0–100).</summary>
         public int MicVolume { get; set; } = 100;
+
+        /// <summary>Encoded output height (0 = native, 1080 = 1080p, 720 = 720p).</summary>
+        public int OutputResolutionHeight { get; set; }
+
+        /// <summary>Preferred encoder id ("" = automatic hardware fallback chain).</summary>
+        public string CodecName { get; set; } = "";
+
+        /// <summary>Opt-in: auto-delete oldest clips when the library exceeds the limit.</summary>
+        public bool AutoCleanupEnabled { get; set; }
+
+        /// <summary>Library size limit in GB for the auto-cleanup feature.</summary>
+        public int MaxLibrarySizeGb { get; set; } = 50;
+
+        /// <summary>Video encoder bitrate in kbps.</summary>
+        public int BitrateKbps { get; set; } = 20000;
+
+        /// <summary>DXGI adapter index for capture/render (-1 = Auto/primary).</summary>
+        public int GpuIndex { get; set; } = -1;
+
+        /// <summary>"all" = whole desktop audio; "apps" = selected applications only.</summary>
+        public string AudioCaptureMode { get; set; } = "all";
+
+        /// <summary>Per-application audio selections (checked apps and custom volumes).</summary>
+        public List<AppAudioSetting> AudioApps { get; set; } = new();
+
+        /// <summary>Push-to-talk enabled + its key.</summary>
+        public bool PttEnabled { get; set; }
+        public string PttKey { get; set; } = "VcV";
+
+        /// <summary>Downmix microphone to mono.</summary>
+        public bool MicMono { get; set; }
+
+        /// <summary>Save system audio and mic as separate tracks in the file.</summary>
+        public bool SeparateAudioTracks { get; set; }
+
+        /// <summary>Output container format: mp4 (default), mkv, mov or avi.</summary>
+        public string FileFormat { get; set; } = "mp4";
+    }
+
+    /// <summary>Persisted per-application audio selection.</summary>
+    public class AppAudioSetting
+    {
+        public string Exe { get; set; } = "";
+        public bool Enabled { get; set; }
+        public int Volume { get; set; } = 100;
     }
 }
 
@@ -581,4 +1056,73 @@ public record BufferOption(string Display, TimeSpan Duration)
 public record LanguageOption(string Code, string Display)
 {
     public override string ToString() => Display;
+}
+
+/// <summary>Output resolution preset (TargetHeight = 0 means native screen resolution).</summary>
+public record ResolutionOption(string Display, int TargetHeight)
+{
+    public override string ToString() => Display;
+}
+
+/// <summary>Video codec option (EncoderId = "" means automatic selection).</summary>
+public record CodecOption(string Display, string EncoderId)
+{
+    public override string ToString() => Display;
+}
+
+/// <summary>Library size limit option for auto-cleanup.</summary>
+public record StorageLimitOption(int Gb)
+{
+    public override string ToString() => $"{Gb} GB";
+}
+
+/// <summary>Video bitrate preset (Kbps = 0 means "Custom").</summary>
+public record BitrateOption(string Display, int Kbps)
+{
+    public override string ToString() => Display;
+}
+
+/// <summary>Frame-rate preset (Value = 0 means "Custom").</summary>
+public record FpsOption(string Display, int Value)
+{
+    public override string ToString() => Display;
+}
+
+/// <summary>GPU adapter option (Index = -1 means Auto/primary).</summary>
+public record GpuOption(int Index, string Display)
+{
+    public override string ToString() => Display;
+}
+
+/// <summary>
+/// One row of the Medal-style "record audio from these apps" list: checkbox + per-app volume.
+/// Raises the supplied callback on every change so selections persist immediately.
+/// </summary>
+public partial class AppAudioItem : ObservableObject
+{
+    /// <summary>Executable name used to match the OBS application-audio capture (e.g. "Discord.exe").</summary>
+    public string Exe { get; }
+
+    /// <summary>Friendly name shown in the UI (process name without extension).</summary>
+    public string DisplayName { get; }
+
+    private readonly Action _onChanged;
+
+    [ObservableProperty]
+    private bool _isEnabled;
+
+    partial void OnIsEnabledChanged(bool value) => _onChanged();
+
+    /// <summary>Per-application capture volume in percent (0–100).</summary>
+    [ObservableProperty]
+    private int _volume = 100;
+
+    partial void OnVolumeChanged(int value) => _onChanged();
+
+    public AppAudioItem(string exe, string displayName, Action onChanged)
+    {
+        Exe = exe;
+        DisplayName = displayName;
+        _onChanged = onChanged;
+    }
 }

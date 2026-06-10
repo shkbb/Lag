@@ -1,0 +1,128 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="using:System">
+
+  <!-- ════════ Shell / Navigation ════════ -->
+  <sys:String x:Key="App_Tagline">Фонавы запіс экрана</sys:String>
+  <sys:String x:Key="Nav_Header">НАВІГАЦЫЯ</sys:String>
+  <sys:String x:Key="Nav_Settings">Налады</sys:String>
+  <sys:String x:Key="Nav_Library">Бібліятэка</sys:String>
+  <sys:String x:Key="Nav_Player">Прайгравальнік</sys:String>
+  <sys:String x:Key="Btn_StartRecording">Пачаць запіс</sys:String>
+  <sys:String x:Key="Btn_StopRecording">Спыніць запіс</sys:String>
+  <sys:String x:Key="Btn_SaveReplay">Захаваць паўтор</sys:String>
+
+  <!-- ════════ Settings ════════ -->
+  <sys:String x:Key="Settings_Title">Налады</sys:String>
+  <sys:String x:Key="Settings_PendingChanges">Змены ўступяць у сілу пасля перазапуску запісу.</sys:String>
+  <sys:String x:Key="Settings_Group_Language">МОВА</sys:String>
+  <sys:String x:Key="Settings_Language">Мова</sys:String>
+  <sys:String x:Key="Settings_Group_Recording">ЗАПІС</sys:String>
+  <sys:String x:Key="Settings_BufferLength">Даўжыня буфера паўтору</sys:String>
+  <sys:String x:Key="Settings_Display">Экран</sys:String>
+  <sys:String x:Key="Settings_Microphone">Мікрафон</sys:String>
+  <sys:String x:Key="Settings_FrameRate">Частата кадраў (FPS)</sys:String>
+  <sys:String x:Key="Settings_MicVolume">Гучнасць мікрафона</sys:String>
+  <sys:String x:Key="Settings_OutputResolution">Раздзяляльнасць вываду</sys:String>
+  <sys:String x:Key="Settings_Codec">Відэакодэк</sys:String>
+  <sys:String x:Key="Settings_AutoCleanup">Аўтаачыстка бібліятэкі</sys:String>
+  <sys:String x:Key="Settings_AutoCleanup_Desc">Аўтаматычна выдаляць найстарэйшыя кліпы, калі бібліятэка перавышае ліміт</sys:String>
+  <sys:String x:Key="Settings_StorageLimit">Ліміт памеру бібліятэкі</sys:String>
+  <sys:String x:Key="Tab_Video">Відэа</sys:String>
+  <sys:String x:Key="Tab_Audio">Аўдыя</sys:String>
+  <sys:String x:Key="Tab_General">Агульныя</sys:String>
+  <sys:String x:Key="Settings_Bitrate">Бітрэйт</sys:String>
+  <sys:String x:Key="Settings_Bitrate_CustomSuffix">Мбіт/с</sys:String>
+  <sys:String x:Key="Settings_Gpu">GPU для запісу</sys:String>
+  <sys:String x:Key="Settings_Format">Фармат файла</sys:String>
+  <sys:String x:Key="Settings_Group_Mic">МІКРАФОН</sys:String>
+  <sys:String x:Key="Settings_Group_SystemAudio">СІСТЭМНЫ ГУК</sys:String>
+  <sys:String x:Key="Settings_AudioMode">Рэжым запісу</sys:String>
+  <sys:String x:Key="AudioMode_All">Увесь гук ПК</sys:String>
+  <sys:String x:Key="AudioMode_Apps">Абраныя праграмы</sys:String>
+  <sys:String x:Key="Settings_AppsHint">Праграмы з'явяцца тут, калі пачнуць прайграваць гук.</sys:String>
+  <sys:String x:Key="Settings_MicChannels">Каналы</sys:String>
+  <sys:String x:Key="Channels_Stereo">Стэрэа</sys:String>
+  <sys:String x:Key="Channels_Mono">Мона</sys:String>
+  <sys:String x:Key="Settings_Ptt">Push-to-talk</sys:String>
+  <sys:String x:Key="Settings_Ptt_Desc">Мікрафон актыўны толькі пакуль заціснута клавіша</sys:String>
+  <sys:String x:Key="Settings_PttKey">Клавіша push-to-talk</sys:String>
+  <sys:String x:Key="Settings_SeparateTracks">Асобныя аўдыядарожкі</sys:String>
+  <sys:String x:Key="Settings_SeparateTracks_Desc">Сістэмны гук і мікрафон захоўваюцца асобнымі дарожкамі ў файле</sys:String>
+  <sys:String x:Key="Settings_Group_Automation">АЎТАМАТЫЗАЦЫЯ</sys:String>
+  <sys:String x:Key="Settings_StartWithWindows">Запускаць разам з Windows</sys:String>
+  <sys:String x:Key="Settings_StartWithWindows_Desc">Дадае праграму ў аўтазагрузку сістэмы</sys:String>
+  <sys:String x:Key="Settings_AutoStart">Аўтаматычна пачынаць запіс</sys:String>
+  <sys:String x:Key="Settings_AutoStart_Desc">Буфер паўтору стартуе адразу пасля запуску</sys:String>
+  <sys:String x:Key="Settings_Group_Hotkey">ГАРАЧЫЯ КЛАВІШЫ</sys:String>
+  <sys:String x:Key="Settings_Hotkey_SaveReplay">Захаваць паўтор</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Desc">Націсніце кнопку, а потым патрэбную камбінацыю клавіш</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Change">Змяніць</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Listening">Слухаю...</sys:String>
+  <sys:String x:Key="Settings_Group_Paths">ШЛЯХІ</sys:String>
+  <sys:String x:Key="Settings_LibraryFolder">Тэчка бібліятэкі</sys:String>
+  <sys:String x:Key="Settings_Browse">Агляд</sys:String>
+  <sys:String x:Key="About_Group">ПРА ПРАГРАМУ</sys:String>
+  <sys:String x:Key="About_Version">Версія</sys:String>
+  <sys:String x:Key="About_CheckUpdates">Праверыць абнаўленні</sys:String>
+  <sys:String x:Key="Update_Checking">Праверка абнаўленняў...</sys:String>
+  <sys:String x:Key="Update_UpToDate">У вас найноўшая версія.</sys:String>
+  <sys:String x:Key="Update_Downloading">Спампоўка абнаўлення...</sys:String>
+  <sys:String x:Key="Update_DevMode">Абнаўленні недаступныя ў рэжыме распрацоўкі.</sys:String>
+  <sys:String x:Key="Update_Failed">Памылка абнаўлення: {0}</sys:String>
+
+  <!-- ════════ Library ════════ -->
+  <sys:String x:Key="Library_Title">Бібліятэка</sys:String>
+  <sys:String x:Key="Library_Subtitle">Вашы захаваныя моманты</sys:String>
+  <sys:String x:Key="Library_Empty">Пакуль няма паўтораў. Пачніце запіс і націсніце гарачую клавішу, каб захаваць паўтор!</sys:String>
+  <sys:String x:Key="Library_Delete">Выдаліць</sys:String>
+  <sys:String x:Key="Library_OpenFolder">Адкрыць тэчку</sys:String>
+  <sys:String x:Key="Library_ShowInFolder">Паказаць у тэчцы</sys:String>
+  <sys:String x:Key="Library_FreeSpace">Вольна</sys:String>
+
+  <!-- ════════ Player ════════ -->
+  <sys:String x:Key="Player_Replays">ПАЎТОРЫ</sys:String>
+  <sys:String x:Key="Player_Clips">Кліпы</sys:String>
+  <sys:String x:Key="Player_Duration">Працягласць</sys:String>
+  <sys:String x:Key="Player_Placeholder">Відэапрайгравальнік</sys:String>
+  <sys:String x:Key="Player_NowPlaying">Прайграецца: </sys:String>
+  <sys:String x:Key="Player_ReplayBadge">ПАЎТОР</sys:String>
+  <sys:String x:Key="Tooltip_Stop">Спыніць</sys:String>
+  <sys:String x:Key="Tooltip_Rewind">Назад 10 с</sys:String>
+  <sys:String x:Key="Tooltip_PlayPause">Прайграць / Паўза</sys:String>
+  <sys:String x:Key="Tooltip_Forward">Наперад 10 с</sys:String>
+  <sys:String x:Key="Tooltip_Next">Наступны паўтор</sys:String>
+  <sys:String x:Key="Tooltip_Fullscreen">Поўны экран (ESC — выхад)</sys:String>
+  <sys:String x:Key="Tooltip_Volume">Гучнасць</sys:String>
+
+  <!-- ════════ Runtime status (ViewModels) ════════ -->
+  <sys:String x:Key="Status_Ready">Гатовы</sys:String>
+  <sys:String x:Key="Status_Starting">Пачатак запісу (OBS)...</sys:String>
+  <sys:String x:Key="Status_Recording">Запіс...</sys:String>
+  <sys:String x:Key="Status_NoMonitor">Экран для запісу не абраны.</sys:String>
+  <sys:String x:Key="Status_ObsError">Памылка OBS: {0}</sys:String>
+  <sys:String x:Key="Status_Stopping">Спыненне...</sys:String>
+  <sys:String x:Key="Status_Stopped">Спынена</sys:String>
+  <sys:String x:Key="Status_StopError">Памылка спынення: {0}</sys:String>
+  <sys:String x:Key="Status_SaveError">Памылка захавання: {0}</sys:String>
+  <sys:String x:Key="Status_ReplaySaved">Паўтор захаваны: {0}</sys:String>
+  <sys:String x:Key="Status_Saving">Захаванне паўтору...</sys:String>
+  <sys:String x:Key="Status_NotRecording">Запіс не актыўны — спачатку націсніце «Пачаць запіс».</sys:String>
+  <sys:String x:Key="Hotkey_PressCombo">Націсніце камбінацыю клавіш...</sys:String>
+  <sys:String x:Key="Browse_Title">Абярыце тэчку для захавання паўтораў</sys:String>
+
+  <!-- ════════ Tray menu ════════ -->
+  <sys:String x:Key="Tray_SaveReplay">Захаваць паўтор</sys:String>
+  <sys:String x:Key="Tray_OpenLibrary">Адкрыць бібліятэку</sys:String>
+  <sys:String x:Key="Tray_Open">Адкрыць</sys:String>
+  <sys:String x:Key="Tray_Exit">Выхад</sys:String>
+
+  <!-- ════════ Shared option labels (dropdowns) ════════ -->
+  <sys:String x:Key="Time_SecShort">{0} с</sys:String>
+  <sys:String x:Key="Time_MinShort">{0} хв</sys:String>
+  <sys:String x:Key="Time_HourMinShort">{0} гадз {1} хв</sys:String>
+  <sys:String x:Key="Option_Native">Натыўная</sys:String>
+  <sys:String x:Key="Option_Auto">Аўта</sys:String>
+  <sys:String x:Key="Option_Custom">Уласны</sys:String>
+
+</ResourceDictionary>

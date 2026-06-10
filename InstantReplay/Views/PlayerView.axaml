@@ -141,21 +141,14 @@
             </Border.Background>
           </Border>
 
-          <!-- VideoView + transparent click-catcher. The native video corners are rounded at the OS
-               level via Win32 SetWindowRgn in code-behind (Avalonia visuals can't clip a native
-               window — they render beneath it). The click-catcher works because libVLC mouse input
-               is disabled (see PlayerViewModel), so pointer events reach this overlay. -->
-          <Grid>
-            <vlc:VideoView x:Name="MainVideoView"
-                           MediaPlayer="{Binding Player}"
-                           HorizontalAlignment="Stretch"
-                           VerticalAlignment="Stretch" />
-            <Border x:Name="VideoClickSurface"
-                    Background="Transparent"
-                    IsHitTestVisible="True"
-                    ZIndex="100"
-                    PointerReleased="OnVideoSurfaceReleased" />
-          </Grid>
+          <!-- VideoView. Corners are rounded at the OS level via Win32 SetWindowRgn (Avalonia
+               visuals can't clip a native window). Click-to-pause is handled by the GLOBAL mouse
+               hook in code-behind — the native HWND swallows input before Avalonia sees it, so
+               transparent overlays can never receive these clicks. -->
+          <vlc:VideoView x:Name="MainVideoView"
+                         MediaPlayer="{Binding Player}"
+                         HorizontalAlignment="Stretch"
+                         VerticalAlignment="Stretch" />
 
           <!-- Replay Badge -->
           <Border Background="#CCD85A30" CornerRadius="6"

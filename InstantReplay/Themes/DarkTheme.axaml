@@ -338,4 +338,24 @@
     <Setter Property="Width" Value="8" />
   </Style>
 
+  <!-- ═══════════════ Tabs (Settings categories) ═══════════════ -->
+  <Style Selector="TabControl">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Padding" Value="0" />
+  </Style>
+  <Style Selector="TabItem">
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="{StaticResource TextDimBrush}" />
+    <Setter Property="Padding" Value="16,6" />
+    <Setter Property="MinHeight" Value="38" />
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+  <Style Selector="TabItem:pointerover">
+    <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+  </Style>
+  <Style Selector="TabItem:selected">
+    <Setter Property="Foreground" Value="{StaticResource AccentCyanBrush}" />
+  </Style>
+
 </Styles>

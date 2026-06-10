@@ -28,6 +28,42 @@ public sealed class ObsRecorderService : IDisposable
     /// <summary>Linear microphone volume applied to the mic source (1.0 = 100%). Set in Initialize.</summary>
     private float _micVolume = 1.0f;
 
+    /// <summary>User-preferred encoder id (null/empty = fully automatic fallback chain).</summary>
+    private string? _preferredEncoder;
+
+    /// <summary>Video encoder bitrate in kbps (user-configurable; default 20 Mbps).</summary>
+    private int _videoBitrateKbps = 20000;
+
+    /// <summary>DXGI adapter index used for capture/render (multi-GPU systems).</summary>
+    private int _adapterIndex;
+
+    /// <summary>Route system audio → track 1, mic → track 2 as separate tracks in the file.</summary>
+    private bool _separateTracks;
+
+    /// <summary>Downmix the microphone to mono (OBS_SOURCE_FLAG_FORCE_MONO).</summary>
+    private bool _micMono;
+
+    /// <summary>Push-to-talk: create the mic muted; unmuted only while the PTT key is held.</summary>
+    private bool _micStartMuted;
+
+    /// <summary>"all" = desktop loopback; "apps" = per-application capture sources.</summary>
+    private string _audioMode = "all";
+
+    /// <summary>Output container extension (whitelisted in Initialize; default "mp4").</summary>
+    private string _fileFormat = "mp4";
+
+    /// <summary>Per-application audio capture entries (when <see cref="_audioMode"/> is "apps").</summary>
+    private IReadOnlyList<AppAudioCapture> _audioApps = [];
+
+    /// <summary>Live per-application capture sources (released on teardown).</summary>
+    private readonly List<ObsSourceHandle> _appAudioSources = new();
+
+    /// <summary>Second AAC encoder feeding audio track 2 (mic) when separate tracks are enabled.</summary>
+    private ObsEncoderHandle? _audioEncoder2;
+
+    /// <summary>OBS source flag: force the source's audio to mono (1 &lt;&lt; 1).</summary>
+    private const uint ObsSourceFlagForceMono = 1u << 1;
+
     // SafeHandles for unmanaged resources to prevent memory leaks during GC
     private ObsSourceHandle? _captureSource;
     private ObsEncoderHandle? _videoEncoder;
@@ -112,11 +148,49 @@ public sealed class ObsRecorderService : IDisposable
     /// is torn down on every Stop via <see cref="Teardown"/>; the core is only shut down on real app
     /// exit via <see cref="Dispose"/> (invoked by the DI container on ShutdownRequested).
     /// </summary>
-    public void Initialize(int bufferSeconds, int frameRate, uint width, uint height, string? microphoneId = null, string? monitorId = null, string? libraryPath = null, float micVolume = 1.0f)
+    public void Initialize(int bufferSeconds, int frameRate, uint width, uint height, string? microphoneId = null, string? monitorId = null, string? libraryPath = null, float micVolume = 1.0f, uint outputWidth = 0, uint outputHeight = 0, string? preferredEncoder = null)
     {
+        // Legacy convenience overload — builds a RecorderOptions snapshot with defaults.
+        Initialize(new RecorderOptions
+        {
+            BufferSeconds = bufferSeconds,
+            FrameRate = frameRate,
+            Width = width,
+            Height = height,
+            OutputWidth = outputWidth,
+            OutputHeight = outputHeight,
+            MicrophoneId = microphoneId,
+            MonitorId = monitorId,
+            LibraryPath = libraryPath,
+            MicVolume = micVolume,
+            PreferredEncoder = preferredEncoder
+        });
+    }
+
+    /// <summary>Initializes a recording session from a full options snapshot (the primary entry point).</summary>
+    public void Initialize(RecorderOptions options)
+    {
+        int bufferSeconds = options.BufferSeconds;
+        int frameRate = options.FrameRate;
+        uint width = options.Width;
+        uint height = options.Height;
+        uint outputWidth = options.OutputWidth;
+        uint outputHeight = options.OutputHeight;
+        string? microphoneId = options.MicrophoneId;
+        string? monitorId = options.MonitorId;
+
         // Refresh the destination path so a changed library folder is honoured on every Start.
-        _libraryPath = libraryPath;
-        _micVolume = micVolume;
+        _libraryPath = options.LibraryPath;
+        _micVolume = options.MicVolume;
+        _preferredEncoder = options.PreferredEncoder;
+        _videoBitrateKbps = options.VideoBitrateKbps > 0 ? options.VideoBitrateKbps : 20000;
+        _adapterIndex = Math.Max(0, options.AdapterIndex);
+        _separateTracks = options.SeparateAudioTracks;
+        _micMono = options.MicForceMono;
+        _micStartMuted = options.MicStartMuted;
+        _audioMode = options.AudioCaptureMode == "apps" ? "apps" : "all";
+        _audioApps = options.AudioApps;
+        _fileFormat = options.FileFormat is "mkv" or "mov" or "avi" ? options.FileFormat : "mp4";
 
         // Defensive: if a previous session was not explicitly stopped, release its pipeline first
         // so we never leak or double-attach native objects. (Core stays resident.)
@@ -134,8 +208,8 @@ public sealed class ObsRecorderService : IDisposable
 
             // ── Per-Start pipeline (rebuilt every time so new settings apply) ──
 
-            // Configure raw base audio and video (matched to exact UI bounds + FPS)
-            ConfigureVideoAndAudio(width, height, (uint)frameRate, microphoneId);
+            // Configure raw base audio and video (base = native capture, output = scaled render)
+            ConfigureVideoAndAudio(width, height, outputWidth, outputHeight, (uint)frameRate, microphoneId);
 
             // Load libobs modules (plugins, encoders, sources) — process-once, must run after the
             // first video reset, matching the original working initialization order.
@@ -411,10 +485,18 @@ public sealed class ObsRecorderService : IDisposable
 
     // ────────────────────── Video & Audio Configuration ────────────────────── //
 
-    private void ConfigureVideoAndAudio(uint width, uint height, uint fps, string? microphoneId)
+    private void ConfigureVideoAndAudio(uint width, uint height, uint outputWidth, uint outputHeight, uint fps, string? microphoneId)
     {
         uint safeWidth = width == 0 ? 1920 : width;
         uint safeHeight = height == 0 ? 1080 : height;
+
+        // Output (render/encode) resolution: defaults to native; when the user picks a downscale
+        // preset (1080p/720p) we render smaller to save GPU encode cost and disk space.
+        // base_* stays NATIVE so the capture is never cropped — libobs scales base → output
+        // with the bicubic scaler (scale_type below). Encoders require even dimensions.
+        uint safeOutW = outputWidth == 0 ? safeWidth : Math.Min(outputWidth, safeWidth) & ~1u;
+        uint safeOutH = outputHeight == 0 ? safeHeight : Math.Min(outputHeight, safeHeight) & ~1u;
+        if (safeOutW == 0 || safeOutH == 0) { safeOutW = safeWidth; safeOutH = safeHeight; }
 
         // Windows MUST include the .dll extension for libobs-d3d11 to load as a plugin engine.
         string graphicsModule = "libobs-d3d11.dll";
@@ -426,12 +508,12 @@ public sealed class ObsRecorderService : IDisposable
             fps_den = 1,
             base_width = safeWidth,
             base_height = safeHeight,
-            output_width = safeWidth,
-            output_height = safeHeight,
+            output_width = safeOutW,
+            output_height = safeOutH,
             output_format = 2, // VIDEO_FORMAT_NV12 (Required for DXGI/NVENC hardware texture mapping)
             colorspace = 2,    // CS_709
             range = 0,         // RANGE_PARTIAL
-            adapter = 0,       // Primary GPU
+            adapter = (uint)_adapterIndex, // User-selected GPU (0 = primary)
             gpu_conversion = true,
             scale_type = 2     // SCALE_BICUBIC
         };
@@ -469,7 +551,7 @@ public sealed class ObsRecorderService : IDisposable
             }
         }
 
-        Debug.WriteLine($"[ObsRecorderService] Video initialized: {graphicsModule}, {safeWidth}x{safeHeight}@{fps}fps");
+        Debug.WriteLine($"[ObsRecorderService] Video initialized: {graphicsModule}, base {safeWidth}x{safeHeight} → output {safeOutW}x{safeOutH} @{fps}fps");
 
         var oai = new ObsAudioInfo
         {
@@ -610,15 +692,56 @@ public sealed class ObsRecorderService : IDisposable
         string desktopSourceId = "wasapi_output_capture";
         string micSourceId = "wasapi_input_capture";
 
-        // 1. Desktop Audio (Output loopback)
-        using (var desktopSettings = ObsInterop.obs_data_create())
+        // Track routing masks (only applied when separate-tracks mode is on):
+        // system audio → track 1 (bit 0), microphone → track 2 (bit 1).
+        const uint SystemTrackMask = 0x1;
+        const uint MicTrackMask = 0x2;
+
+        // 1. System audio — either the whole desktop loopback, or per-application capture.
+        if (_audioMode == "apps" && _audioApps.Count > 0)
         {
+            // Per-application capture (Medal-style). One wasapi_process_output_capture per app,
+            // matched by executable name. Sources live in the SCENE (not output channels), which
+            // sidesteps the 6-channel limit and lets each one carry its own volume.
+            foreach (var app in _audioApps)
+            {
+                using var appSettings = ObsInterop.obs_data_create();
+                // "window" format is "Title:Class:Executable"; priority 2 = match by executable.
+                ObsInterop.obs_data_set_string(appSettings, "window", $"::{app.ExeName}");
+                ObsInterop.obs_data_set_int(appSettings, "priority", 2);
+
+                var appSource = ObsInterop.obs_source_create(
+                    "wasapi_process_output_capture", $"AppAudio_{app.ExeName}", appSettings, IntPtr.Zero);
+
+                if (appSource != null && !appSource.IsInvalid)
+                {
+                    ObsInterop.obs_source_set_volume(appSource, Math.Clamp(app.Volume, 0f, 1f));
+                    if (_separateTracks)
+                        ObsInterop.obs_source_set_audio_mixers(appSource, SystemTrackMask);
+
+                    ObsInterop.obs_scene_add(_scene, appSource);
+                    _appAudioSources.Add(appSource);
+                    Console.WriteLine($"[ObsRecorderService] App audio source active: {app.ExeName} (volume: {app.Volume:P0})");
+                }
+                else
+                {
+                    Console.WriteLine($"[ObsRecorderService] WARNING: Failed to create app audio source for {app.ExeName}");
+                }
+            }
+        }
+        else
+        {
+            // Whole-desktop loopback (default).
+            using var desktopSettings = ObsInterop.obs_data_create();
             string desktopDeviceId = "default";
             ObsInterop.obs_data_set_string(desktopSettings, "device_id", desktopDeviceId);
             _desktopAudioSource = ObsInterop.obs_source_create(desktopSourceId, "DesktopAudio", desktopSettings, IntPtr.Zero);
 
             if (_desktopAudioSource != null && !_desktopAudioSource.IsInvalid)
             {
+                if (_separateTracks)
+                    ObsInterop.obs_source_set_audio_mixers(_desktopAudioSource, SystemTrackMask);
+
                 ObsInterop.obs_set_output_source(1, _desktopAudioSource); // Channel 1: Desktop
                 Console.WriteLine($"[ObsRecorderService] Desktop audio source active: {desktopSourceId} (device: {desktopDeviceId})");
             }
@@ -642,14 +765,44 @@ public sealed class ObsRecorderService : IDisposable
                 {
                     // Apply the user-configured microphone volume (linear, 1.0 = 100%).
                     ObsInterop.obs_source_set_volume(_micAudioSource, _micVolume);
+
+                    // Mono downmix on request.
+                    if (_micMono)
+                        ObsInterop.obs_source_set_flags(_micAudioSource, ObsSourceFlagForceMono);
+
+                    // Route the mic to its own track when separate tracks are enabled.
+                    if (_separateTracks)
+                        ObsInterop.obs_source_set_audio_mixers(_micAudioSource, MicTrackMask);
+
+                    // Push-to-talk: start muted; the PTT key handler unmutes while held.
+                    if (_micStartMuted)
+                        ObsInterop.obs_source_set_muted(_micAudioSource, true);
+
                     ObsInterop.obs_set_output_source(2, _micAudioSource); // Channel 2: Mic
-                    Console.WriteLine($"[ObsRecorderService] Microphone source active: {micSourceId} (device: {resolvedMicId}, volume: {_micVolume:P0})");
+                    Console.WriteLine($"[ObsRecorderService] Microphone source active: {micSourceId} (device: {resolvedMicId}, volume: {_micVolume:P0}, mono: {_micMono}, ptt-muted: {_micStartMuted})");
                 }
                 else
                 {
                     Console.WriteLine($"[ObsRecorderService] WARNING: Failed to create microphone source: {micSourceId}");
                 }
             }
+        }
+    }
+
+    /// <summary>
+    /// Mutes/unmutes the microphone source at runtime (push-to-talk). Safe to call from any
+    /// thread and while not recording (no-op when the mic source doesn't exist).
+    /// </summary>
+    public void SetMicMuted(bool muted)
+    {
+        try
+        {
+            if (_micAudioSource != null && !_micAudioSource.IsInvalid)
+                ObsInterop.obs_source_set_muted(_micAudioSource, muted);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[ObsRecorderService] SetMicMuted failed: {ex.Message}");
         }
     }
 
@@ -663,16 +816,29 @@ public sealed class ObsRecorderService : IDisposable
     private void CreateVideoEncoder(uint width, uint height)
     {
         // Automatic encoder fallback: NVIDIA → AMD → Intel → CPU. The first one that creates
-        // successfully (and isn't a libobs dummy) is used. No manual codec selection in the UI.
-        string[] candidates = ["ffmpeg_nvenc", "ffmpeg_amf", "obs_qsv11", "obs_x264"];
+        // successfully (and isn't a libobs dummy) is used. If the user explicitly picked a codec
+        // in Settings, it is tried FIRST; the automatic chain stays as a safety net so recording
+        // still works when the chosen encoder isn't available on this machine.
+        string[] autoChain = ["ffmpeg_nvenc", "ffmpeg_amf", "obs_qsv11", "obs_x264"];
+
+        var candidates = new List<string>();
+        if (!string.IsNullOrEmpty(_preferredEncoder))
+        {
+            candidates.Add(_preferredEncoder);
+            Console.WriteLine($"[Encoder Fallback] User preference: trying '{_preferredEncoder}' first.");
+        }
+        foreach (var id in autoChain)
+        {
+            if (!candidates.Contains(id)) candidates.Add(id);
+        }
 
         foreach (var encoderId in candidates)
         {
             using var settings = ObsInterop.obs_data_create();
             
-            // Configure targeting 20 Mbps VBR
+            // VBR at the user-configured bitrate (kbps)
             ObsInterop.obs_data_set_string(settings, "rate_control", "VBR");
-            ObsInterop.obs_data_set_int(settings, "bitrate", 20000);
+            ObsInterop.obs_data_set_int(settings, "bitrate", _videoBitrateKbps);
 
             if (encoderId == "obs_x264")
             {
@@ -713,10 +879,21 @@ public sealed class ObsRecorderService : IDisposable
         using var settings = ObsInterop.obs_data_create();
         ObsInterop.obs_data_set_int(settings, "bitrate", 192);
 
+        // Track 1 (system audio — or the full mix when separate tracks are off).
         _audioEncoder = ObsInterop.obs_audio_encoder_create("ffmpeg_aac", "AudioEncoder", settings, 0, IntPtr.Zero);
-        
+
         // Map the OBS core audio pipeline to the encoder
         ObsInterop.obs_encoder_set_audio(_audioEncoder, ObsInterop.obs_get_audio());
+
+        // Track 2 (microphone) — only when the user wants separate tracks in the file.
+        if (_separateTracks)
+        {
+            using var settings2 = ObsInterop.obs_data_create();
+            ObsInterop.obs_data_set_int(settings2, "bitrate", 192);
+
+            _audioEncoder2 = ObsInterop.obs_audio_encoder_create("ffmpeg_aac", "AudioEncoderMic", settings2, 1, IntPtr.Zero);
+            ObsInterop.obs_encoder_set_audio(_audioEncoder2, ObsInterop.obs_get_audio());
+        }
     }
 
     // ────────────────────── Replay Buffer ────────────────────── //
@@ -733,14 +910,15 @@ public sealed class ObsRecorderService : IDisposable
         // Use the injected path
         ObsInterop.obs_data_set_string(settings, "directory", videoDir);
         ObsInterop.obs_data_set_string(settings, "format", "%CCYY-%MM-%DD_%hh-%mm-%ss-Replay");
-        ObsInterop.obs_data_set_string(settings, "extension", "mp4");
+        ObsInterop.obs_data_set_string(settings, "extension", _fileFormat);
 
-        // MP4 muxer settings: movflags=+faststart moves the moov atom to the beginning
-        // of the file, which is critical for:
-        //  1. Immediate playability (no need to download/read the entire file first)
-        //  2. Preventing "corrupt" files when the muxer exits before full finalization
-        //  3. Compatibility with media players that don't support streaming moov
-        ObsInterop.obs_data_set_string(settings, "muxer_settings", "movflags=+faststart");
+        // movflags=+faststart moves the moov atom to the beginning of the file (immediate
+        // playability, resilience to early muxer exit). It is an MP4/MOV-family option —
+        // MKV/AVI muxers don't understand it, so it is applied only for mp4/mov.
+        if (_fileFormat is "mp4" or "mov")
+        {
+            ObsInterop.obs_data_set_string(settings, "muxer_settings", "movflags=+faststart");
+        }
 
         // Explicit muxer path override to fix ERROR_FILE_NOT_FOUND (code 2)
         string muxerFullPath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "obs-core", "obs-ffmpeg-mux.exe")).Replace("\\", "/");
@@ -757,6 +935,13 @@ public sealed class ObsRecorderService : IDisposable
         ObsInterop.obs_output_set_video_encoder(_replayBuffer, _videoEncoder!);
         ObsInterop.obs_output_set_audio_encoder(_replayBuffer, _audioEncoder!, 0);
 
+        // Second audio track (microphone) when separate tracks are enabled.
+        if (_separateTracks && _audioEncoder2 != null && !_audioEncoder2.IsInvalid)
+        {
+            ObsInterop.obs_output_set_audio_encoder(_replayBuffer, _audioEncoder2, 1);
+            Console.WriteLine("[ObsRecorderService] Separate audio tracks: mic routed to track 2.");
+        }
+
         // Connect native signal handler to harvest physical MP4 path on completion
         IntPtr handler = ObsInterop.obs_output_get_signal_handler(_replayBuffer);
         if (handler != IntPtr.Zero)
@@ -770,7 +955,7 @@ public sealed class ObsRecorderService : IDisposable
             Console.WriteLine("[ObsRecorderService] WARNING: Could not get signal handler — saved event will not fire.");
         }
 
-        Console.WriteLine($"[ObsRecorderService] Replay buffer configured: {bufferSeconds}s max, muxer=movflags=+faststart, saving to {videoDir}");
+        Console.WriteLine($"[ObsRecorderService] Replay buffer configured: {bufferSeconds}s max, format={_fileFormat}, saving to {videoDir}");
         Console.Out.Flush();
     }
 
@@ -1009,7 +1194,8 @@ public sealed class ObsRecorderService : IDisposable
                 try
                 {
                     var recentFiles = Directory.GetFiles(scanDir, "*.*")
-                        .Where(f => f.EndsWith(".mp4") || f.EndsWith(".mp4.tmp") || f.EndsWith(".mkv"))
+                        .Where(f => f.EndsWith(".mp4") || f.EndsWith(".mp4.tmp") || f.EndsWith(".mkv")
+                                 || f.EndsWith(".mov") || f.EndsWith(".avi"))
                         .Select(f => new FileInfo(f))
                         .Where(fi => fi.LastWriteTime > DateTime.Now.AddSeconds(-10))
                         .ToList();
@@ -1116,6 +1302,8 @@ public sealed class ObsRecorderService : IDisposable
                 _videoEncoder = null;
                 _audioEncoder?.Dispose();
                 _audioEncoder = null;
+                _audioEncoder2?.Dispose();
+                _audioEncoder2 = null;
                 Console.WriteLine("[Teardown Step 3] Encoders disposed.");
                 Console.Out.Flush();
             }
@@ -1148,6 +1336,13 @@ public sealed class ObsRecorderService : IDisposable
                 _desktopAudioSource = null;
                 _micAudioSource?.Dispose();
                 _micAudioSource = null;
+
+                // Per-application audio sources (scene release below drops the scene's refs).
+                foreach (var appSource in _appAudioSources)
+                {
+                    try { appSource.Dispose(); } catch { /* non-fatal */ }
+                }
+                _appAudioSources.Clear();
 
                 if (_scene != IntPtr.Zero)
                 {

@@ -92,6 +92,19 @@ public partial class MainViewModel : ViewModelBase
             }
         };
 
+        // Push-to-talk: mic is live only while the PTT key is held (no-ops when not recording
+        // or when PTT is disabled; engine ignores the call if the mic source doesn't exist).
+        _hotkeyManager.PttPressed += (_, _) =>
+        {
+            if (IsRecording && Settings.PushToTalkEnabled)
+                _engine.SetMicMuted(false);
+        };
+        _hotkeyManager.PttReleased += (_, _) =>
+        {
+            if (IsRecording && Settings.PushToTalkEnabled)
+                _engine.SetMicMuted(true);
+        };
+
         // Library clip play navigation
         Library.PlayClipRequested += (_, clip) =>
         {
@@ -153,7 +166,7 @@ public partial class MainViewModel : ViewModelBase
         {
             StatusText = Localizer.Get("Status_Starting");
             int bufferSeconds = Settings.BufferSeconds;
-            int fps = Settings.SelectedFrameRate;
+            int fps = Settings.EffectiveFps;
 
             if (Settings.SelectedMonitor == null)
                 throw new InvalidOperationException(Localizer.Get("Status_NoMonitor"));
@@ -163,12 +176,49 @@ public partial class MainViewModel : ViewModelBase
             string? micId = Settings.SelectedMicrophone?.Id;
             string? monitorId = Settings.SelectedMonitor.DeviceName;
 
+            // Output (render/encode) resolution: capture stays native; encode can be downscaled.
+            // Aspect ratio is preserved from the native monitor; encoders need even dimensions.
+            uint outputWidth = 0, outputHeight = 0;
+            int targetHeight = Settings.SelectedResolution.TargetHeight;
+            if (targetHeight > 0 && targetHeight < height)
+            {
+                outputHeight = (uint)targetHeight & ~1u;
+                outputWidth = (uint)Math.Round((double)width * outputHeight / height) & ~1u;
+            }
+
+            // Full options snapshot for this session (cold-restart re-reads everything).
+            var options = new RecorderOptions
+            {
+                BufferSeconds = bufferSeconds,
+                FrameRate = fps,
+                Width = width,
+                Height = height,
+                OutputWidth = outputWidth,
+                OutputHeight = outputHeight,
+                MicrophoneId = micId,
+                MonitorId = monitorId,
+                LibraryPath = Settings.LibraryPath,
+                FileFormat = Settings.SelectedFormat,
+                MicVolume = Settings.MicVolume / 100f,
+                // "Auto" has an empty encoder id → null lets the engine run its automatic chain.
+                PreferredEncoder = string.IsNullOrEmpty(Settings.SelectedCodec.EncoderId)
+                    ? null : Settings.SelectedCodec.EncoderId,
+                VideoBitrateKbps = Settings.EffectiveBitrateKbps,
+                AdapterIndex = Settings.SelectedGpu.Index < 0 ? 0 : Settings.SelectedGpu.Index,
+                SeparateAudioTracks = Settings.SeparateAudioTracks,
+                MicForceMono = Settings.MicMono,
+                MicStartMuted = Settings.PushToTalkEnabled,
+                AudioCaptureMode = Settings.IsAppsMode ? "apps" : "all",
+                AudioApps = Settings.AudioApps
+                    .Where(a => a.IsEnabled)
+                    .Select(a => new AppAudioCapture(a.Exe, a.Volume / 100f))
+                    .ToList()
+            };
+
             // Shift heavy native initialization to a background thread to prevent UI freezing/crashing
-            string? libPath = Settings.LibraryPath;
-            float micVolume = Settings.MicVolume / 100f;
             await Task.Run(() =>
             {
-                _engine.Initialize(bufferSeconds, fps, width, height, micId, monitorId, libPath, micVolume);
+                _engine.Initialize(options);
                 _engine.StartBuffer();
             });
             
