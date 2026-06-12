@@ -52,6 +52,29 @@
   <sys:String x:Key="Settings_Group_Automation">АВТОМАТИЗАЦІЯ</sys:String>
   <sys:String x:Key="Settings_StartWithWindows">Запускати разом із Windows</sys:String>
   <sys:String x:Key="Settings_StartWithWindows_Desc">Додає застосунок до автозавантаження системи</sys:String>
+  <sys:String x:Key="Settings_StartMinimized">Запускати згорнутим</sys:String>
+  <sys:String x:Key="Settings_StartMinimized_Desc">Застосунок стартує прихованим у треї</sys:String>
+  <sys:String x:Key="Editor_Title">Редактор</sys:String>
+  <sys:String x:Key="Editor_Edit">Редагувати</sys:String>
+  <sys:String x:Key="Editor_Back">Назад</sys:String>
+  <sys:String x:Key="Editor_Export">Експортувати</sys:String>
+  <sys:String x:Key="Editor_Exporting">Експорт… {0}%</sys:String>
+  <sys:String x:Key="Editor_ExportDone">Збережено: {0}</sys:String>
+  <sys:String x:Key="Editor_ExportError">Помилка експорту: {0}</sys:String>
+  <sys:String x:Key="Editor_Speed">Швидкість</sys:String>
+  <sys:String x:Key="Editor_Format">Формат</sys:String>
+  <sys:String x:Key="Editor_TabClip">Кліп</sys:String>
+  <sys:String x:Key="Editor_TabFilters">Фільтри</sys:String>
+  <sys:String x:Key="Editor_Tracks">АУДІОДОРІЖКИ</sys:String>
+  <sys:String x:Key="Editor_TrackSystem">Системний звук</sys:String>
+  <sys:String x:Key="Editor_TrackMic">Мікрофон</sys:String>
+  <sys:String x:Key="Editor_TrackAudio">Звук</sys:String>
+  <sys:String x:Key="Editor_SetStart">Встановити початок кліпу на поточний момент</sys:String>
+  <sys:String x:Key="Editor_SetEnd">Встановити кінець кліпу на поточний момент</sys:String>
+  <sys:String x:Key="Editor_ResetTrim">Скинути обрізку</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Screenshot">Скріншот</sys:String>
+  <sys:String x:Key="Toast_ReplaySaved">Повтор збережено</sys:String>
+  <sys:String x:Key="Toast_ScreenshotSaved">Скріншот збережено</sys:String>
   <sys:String x:Key="Settings_AutoStart">Автоматично починати запис</sys:String>
   <sys:String x:Key="Settings_AutoStart_Desc">Запис у буфер повтору стартує одразу після запуску</sys:String>
   <sys:String x:Key="Settings_Group_Hotkey">ГАРЯЧІ КЛАВІШІ</sys:String>
@@ -125,4 +148,9 @@
   <sys:String x:Key="Option_Auto">Авто</sys:String>
   <sys:String x:Key="Option_Custom">Власний</sys:String>
 
+  <sys:String x:Key="Sidebar_Buffer">Буфер</sys:String>
+  <sys:String x:Key="Library_Stats">{0} кліпів · вільно {1}</sys:String>
+  <sys:String x:Key="Player_Used">Зайнято</sys:String>
+
+  <sys:String x:Key="Library_EmptyTitle">Поки що немає повторів</sys:String>
 </ResourceDictionary>

@@ -57,7 +57,7 @@ public class App : Application
 
     /// <summary>Language codes with a dictionary in Assets/Langs. "en" is the fallback.</summary>
     private static readonly string[] SupportedLanguages =
-        ["en", "uk", "de", "fr", "be", "lt", "et", "lv", "fi", "sv", "no", "da", "nl", "it"];
+        ["en", "uk", "de", "fr", "be", "lt", "et", "lv", "fi", "sv", "no", "da", "nl", "it", "es", "pt", "ja"];
 
     /// <summary>
     /// Swaps the active language ResourceDictionary in the application's merged dictionaries.
@@ -92,10 +92,31 @@ public class App : Application
         {
             var mainViewModel = _serviceProvider.GetRequiredService<MainViewModel>();
 
-            desktop.MainWindow = new MainWindow
+            var mainWindow = new MainWindow
             {
                 DataContext = mainViewModel
             };
+
+            // "Start minimized": the desktop lifetime always shows MainWindow right after
+            // initialization, so suppress the flash by starting minimized with no taskbar
+            // button and hiding on the first Opened. The tray "Open" handler restores
+            // WindowState to Normal, so we don't touch it here (setting WindowState on a
+            // hidden Win32 window can re-show it).
+            if (mainViewModel.Settings.StartMinimized)
+            {
+                mainWindow.WindowState = Avalonia.Controls.WindowState.Minimized;
+                mainWindow.ShowInTaskbar = false;
+                EventHandler? hideOnce = null;
+                hideOnce = (_, _) =>
+                {
+                    mainWindow.Opened -= hideOnce;
+                    mainWindow.Hide();
+                    mainWindow.ShowInTaskbar = true;
+                };
+                mainWindow.Opened += hideOnce;
+            }
+
+            desktop.MainWindow = mainWindow;
 
             // Start the global hotkey listener (SharpHook - legacy, keeping for Settings capture if needed)
             var hotkeyManager = _serviceProvider.GetRequiredService<GlobalHotkeyManager>();
@@ -110,10 +131,25 @@ public class App : Application
                 // Must marshal to UI thread because HotkeyPressed fires from a background thread
                 Avalonia.Threading.Dispatcher.UIThread.Post(() =>
                 {
+                    // Ignore while the user is rebinding hotkeys in Settings (the old
+                    // registration is still live and would fire mid-capture).
+                    if (mainViewModel.Settings.AreHotkeysSuppressed) return;
+
                     if (mainViewModel.SaveReplayCommand.CanExecute(null))
                     {
                         mainViewModel.SaveReplayCommand.Execute(null);
                     }
+                });
+            };
+
+            // Screenshot hotkey (separate combo, configured in Settings → General).
+            globalHotkeyService.ScreenshotPressed += (_, _) =>
+            {
+                Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                {
+                    if (mainViewModel.Settings.AreHotkeysSuppressed) return;
+                    if (mainViewModel.TakeScreenshotCommand.CanExecute(null))
+                        mainViewModel.TakeScreenshotCommand.Execute(null);
                 });
             };
 
@@ -173,6 +209,7 @@ public class App : Application
         services.AddSingleton<SettingsViewModel>();
         services.AddSingleton<LibraryViewModel>();
         services.AddSingleton<PlayerViewModel>();
+        services.AddSingleton<EditorViewModel>();
         services.AddSingleton<MainViewModel>();
     }
 

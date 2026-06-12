@@ -28,6 +28,10 @@ public partial class SettingsViewModel : ViewModelBase
     [ObservableProperty]
     private bool _hasPendingChanges;
 
+    /// <summary>Active settings tab (0 = Video, 1 = Audio, 2 = General). UI state only.</summary>
+    [ObservableProperty]
+    private int _selectedSettingsTab;
+
     /// <summary>
     /// True while the constructor is populating collections and loading persisted settings.
     /// SaveSettings() is suppressed during this window — otherwise RefreshMonitors()/
@@ -108,8 +112,57 @@ public partial class SettingsViewModel : ViewModelBase
     [ObservableProperty]
     private string _hotkeyDisplayText = "Alt + F10";
 
+    partial void OnHotkeyDisplayTextChanged(string value)
+    {
+        OnPropertyChanged(nameof(HotkeyParts));
+    }
+
+    /// <summary>Hotkey split into kbd-chip parts for the Figma design ("Ctrl","Shift","S").</summary>
+    public IReadOnlyList<string> HotkeyParts =>
+        HotkeyDisplayText.Split('+', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+
     [ObservableProperty]
     private bool _isCapturingHotkey;
+
+    // ───────────── Screenshot hotkey ─────────────
+
+    private KeyCode _screenshotKey = KeyCode.VcF9;
+    private ModifierMask _screenshotModifiers = ModifierMask.LeftAlt;
+
+    [ObservableProperty]
+    private string _screenshotHotkeyDisplayText = "Alt + F9";
+
+    partial void OnScreenshotHotkeyDisplayTextChanged(string value) =>
+        OnPropertyChanged(nameof(ScreenshotHotkeyParts));
+
+    /// <summary>Screenshot hotkey split into kbd-chip parts ("Alt","F9").</summary>
+    public IReadOnlyList<string> ScreenshotHotkeyParts =>
+        ScreenshotHotkeyDisplayText.Split('+', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+
+    [ObservableProperty]
+    private bool _isCapturingScreenshotKey;
+
+    private bool _screenshotCaptureMode;
+
+    [RelayCommand]
+    private void CaptureScreenshotHotkey()
+    {
+        _screenshotCaptureMode = true;
+        IsCapturingScreenshotKey = true;
+        _hotkeyManager.IsCapturing = true;
+    }
+
+    private void ApplyScreenshotHotkeyToService()
+    {
+        try
+        {
+            _hotkeyService.UpdateScreenshotHotkey(_screenshotModifiers, _screenshotKey);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Failed to apply screenshot hotkey: {ex.Message}");
+        }
+    }
 
     // ───────────── Paths ─────────────
 
@@ -255,6 +308,27 @@ public partial class SettingsViewModel : ViewModelBase
     /// <summary>The bitrate that actually goes to the encoder, in kbps.</summary>
     public int EffectiveBitrateKbps =>
         SelectedBitrate.Kbps > 0 ? SelectedBitrate.Kbps : Math.Clamp(CustomBitrateMbps, 1, 300) * 1000;
+
+    /// <summary>
+    /// Figma-style bitrate slider (Mbps). Reads the effective bitrate; writing snaps the
+    /// selection to "Custom" with the chosen value, so the engine always gets exactly it.
+    /// </summary>
+    public double BitrateSliderValue
+    {
+        get => EffectiveBitrateKbps / 1000.0;
+        set
+        {
+            int mbps = Math.Clamp((int)Math.Round(value), 1, 150);
+            CustomBitrateMbps = mbps;
+            var preset = BitrateOptions.FirstOrDefault(b => b.Kbps == mbps * 1000);
+            SelectedBitrate = preset ?? BitrateOptions.First(b => b.Kbps == 0);
+            OnPropertyChanged(nameof(BitrateSliderValue));
+            OnPropertyChanged(nameof(BitrateDisplayMbps));
+        }
+    }
+
+    /// <summary>Right-side readout for the bitrate row ("50").</summary>
+    public int BitrateDisplayMbps => EffectiveBitrateKbps / 1000;
 
     // ───────────── Recording GPU ─────────────
 
@@ -430,6 +504,15 @@ public partial class SettingsViewModel : ViewModelBase
         SaveSettings();
     }
 
+    /// <summary>Launch hidden in the system tray instead of showing the main window.</summary>
+    [ObservableProperty]
+    private bool _startMinimized;
+
+    partial void OnStartMinimizedChanged(bool value)
+    {
+        SaveSettings();
+    }
+
     /// <summary>
     /// Adds or removes the application from the Windows startup (Run) registry key so it launches
     /// automatically at logon. Uses <see cref="Environment.ProcessPath"/> as the target executable.
@@ -477,7 +560,10 @@ public partial class SettingsViewModel : ViewModelBase
         new LanguageOption("no", "Norsk"),
         new LanguageOption("da", "Dansk"),
         new LanguageOption("nl", "Nederlands"),
-        new LanguageOption("it", "Italiano")
+        new LanguageOption("it", "Italiano"),
+        new LanguageOption("es", "Español"),
+        new LanguageOption("pt", "Português"),
+        new LanguageOption("ja", "日本語")
     };
 
     [ObservableProperty]
@@ -683,6 +769,7 @@ public partial class SettingsViewModel : ViewModelBase
 
         // Register the persisted (or default) hotkey with the active Win32 service at startup.
         ApplyHotkeyToGlobalService();
+        ApplyScreenshotHotkeyToService();
 
         // Mirror the persisted push-to-talk state onto the global hook.
         ApplyPttToManager();
@@ -725,11 +812,40 @@ public partial class SettingsViewModel : ViewModelBase
     }
 
     /// <summary>
+    /// Hotkey ACTIONS are ignored while a capture is in progress and for a short grace
+    /// period right after it. Without this, the combo being typed fires immediately:
+    /// the old Win32 registration is still live during capture, and re-registering the
+    /// new combo while its keys are physically held lets keyboard auto-repeat trigger it.
+    /// Checked by MainViewModel and the Win32 hotkey handler in App.
+    /// </summary>
+    public bool AreHotkeysSuppressed =>
+        IsCapturingHotkey || IsCapturingPttKey || IsCapturingScreenshotKey ||
+        DateTime.UtcNow < _hotkeySuppressedUntil;
+
+    private DateTime _hotkeySuppressedUntil = DateTime.MinValue;
+
+    /// <summary>
     /// Handles the captured hotkey event from the GlobalHotkeyManager.
     /// Updates the display and saves the new binding.
     /// </summary>
     private void OnHotkeyCaptured(object? sender, HotkeyCapturedEventArgs e)
     {
+        // Swallow the keys the user is still holding (auto-repeat, late releases).
+        _hotkeySuppressedUntil = DateTime.UtcNow.AddMilliseconds(800);
+
+        if (_screenshotCaptureMode)
+        {
+            _screenshotCaptureMode = false;
+            _screenshotKey = e.Key;
+            _screenshotModifiers = e.Modifiers;
+            ScreenshotHotkeyDisplayText = FormatHotkey(e.Modifiers, e.Key);
+            IsCapturingScreenshotKey = false;
+
+            ApplyScreenshotHotkeyToService();
+            SaveSettings();
+            return;
+        }
+
         // Push-to-talk capture takes the SINGLE key only (modifiers ignored — PTT is a held key).
         if (_pttCaptureMode)
         {
@@ -818,6 +934,8 @@ public partial class SettingsViewModel : ViewModelBase
                 BufferSeconds = BufferSeconds,
                 HotkeyKey = _hotkeyManager.RequiredKey.ToString(),
                 HotkeyModifiers = _hotkeyManager.RequiredModifiers.ToString(),
+                ScreenshotKey = _screenshotKey.ToString(),
+                ScreenshotModifiers = _screenshotModifiers.ToString(),
                 LibraryPath = LibraryPath,
                 FrameRate = EffectiveFps,
                 FileFormat = SelectedFormat,
@@ -825,6 +943,7 @@ public partial class SettingsViewModel : ViewModelBase
                 MicrophoneId = SelectedMicrophone?.Id ?? string.Empty,
                 StartWithWindows = StartWithWindows,
                 AutoStartRecording = AutoStartRecording,
+                StartMinimized = StartMinimized,
                 Language = SelectedLanguage.Code,
                 MicVolume = MicVolume,
                 OutputResolutionHeight = SelectedResolution.TargetHeight,
@@ -878,7 +997,14 @@ public partial class SettingsViewModel : ViewModelBase
                 _hotkeyManager.RequiredModifiers = mod;
 
             HotkeyDisplayText = FormatHotkey(_hotkeyManager.RequiredModifiers, _hotkeyManager.RequiredKey);
-            
+
+            if (Enum.TryParse<KeyCode>(settings.ScreenshotKey, out var shotKey))
+                _screenshotKey = shotKey;
+            if (Enum.TryParse<ModifierMask>(settings.ScreenshotModifiers, out var shotMod))
+                _screenshotModifiers = shotMod;
+            ScreenshotHotkeyDisplayText = FormatHotkey(_screenshotModifiers, _screenshotKey);
+
+
             LibraryPath = settings.LibraryPath ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyVideos), "Lag");
             // FPS: match a preset, otherwise restore as "Custom".
             if (settings.FrameRate > 0)
@@ -965,6 +1091,7 @@ public partial class SettingsViewModel : ViewModelBase
             // Automation flags (registry side-effects are suppressed during init via _isInitializing).
             StartWithWindows = settings.StartWithWindows;
             AutoStartRecording = settings.AutoStartRecording;
+            StartMinimized = settings.StartMinimized;
 
             // Language (applies the persisted UI language via OnSelectedLanguageChanged).
             SelectedLanguage = LanguageOptions.FirstOrDefault(l => l.Code == settings.Language) ?? LanguageOptions[0];
@@ -985,6 +1112,10 @@ public partial class SettingsViewModel : ViewModelBase
         public int MonitorIndex { get; set; }
         public string HotkeyKey { get; set; } = "VcF10";
         public string HotkeyModifiers { get; set; } = "LeftAlt";
+
+        /// <summary>Screenshot hotkey (separate from the save-replay one). Default Alt+F9.</summary>
+        public string ScreenshotKey { get; set; } = "VcF9";
+        public string ScreenshotModifiers { get; set; } = "LeftAlt";
         public string FFmpegPath { get; set; } = "ffmpeg";
         public string LibraryPath { get; set; } = "";
         public int FrameRate { get; set; } = 30;
@@ -992,6 +1123,9 @@ public partial class SettingsViewModel : ViewModelBase
         public string MicrophoneId { get; set; } = "";
         public bool StartWithWindows { get; set; }
         public bool AutoStartRecording { get; set; }
+
+        /// <summary>Launch hidden in the system tray (window not shown until requested).</summary>
+        public bool StartMinimized { get; set; }
 
         /// <summary>UI language code: "en" (default) or "uk".</summary>
         public string Language { get; set; } = "en";

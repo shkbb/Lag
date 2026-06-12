@@ -1,30 +1,14 @@
 using System;
 using System.ComponentModel;
-using System.Runtime.InteropServices;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
-using Avalonia.Threading;
 using Lag.ViewModels;
 
 namespace Lag.Views;
 
 public partial class PlayerView : UserControl
 {
-    // ── Win32 interop: round the native VLC window at the OS level ──
-    // Avalonia visuals can't clip a NativeControlHost (it's composited above the Avalonia surface),
-    // so the only real way to round the video is to apply a rounded HRGN to the native window.
-    [DllImport("gdi32.dll", SetLastError = true)]
-    private static extern IntPtr CreateRoundRectRgn(int x1, int y1, int x2, int y2, int w, int h);
-
-    [DllImport("user32.dll", SetLastError = true)]
-    private static extern int SetWindowRgn(IntPtr hWnd, IntPtr hRgn, bool bRedraw);
-
-    [DllImport("gdi32.dll")]
-    private static extern bool DeleteObject(IntPtr hObject);
-
-    private const double CornerRadiusDip = 14.0;
-
     private MainViewModel? _mainVm;
     private PlayerViewModel? _playerVm;
 
@@ -35,8 +19,56 @@ public partial class PlayerView : UserControl
         AttachedToVisualTree += OnAttached;
         DetachedFromVisualTree += OnDetached;
 
-        // Re-round the native window whenever the video surface is resized.
-        MainVideoView.SizeChanged += (_, _) => ApplyVideoCornerRegion();
+        // Fullscreen: the control bar hides until the cursor approaches the bottom edge,
+        // the replays panel — until it approaches the right edge. Listening on the root
+        // grid keeps the overlays open while the pointer is over them (events bubble).
+        PlayerArea.PointerMoved += OnAreaPointerMoved;
+        PlayerArea.PointerExited += OnAreaPointerExited;
+    }
+
+    /// <summary>Height of the bottom zone (in DIPs) that reveals the controls in fullscreen.</summary>
+    private const double RevealZoneHeight = 140;
+
+    /// <summary>Width of the right-edge zone (in DIPs) that reveals the replays panel in fullscreen.</summary>
+    private const double ReplaysZoneWidth = 280;
+
+    private void SetControlsVisible(bool visible)
+    {
+        ControlsBar.Classes.Set("hidden", !visible);
+        ControlsBar.IsHitTestVisible = visible;
+    }
+
+    private void SetReplaysVisible(bool visible)
+    {
+        ReplayPanel.Classes.Set("hiddenR", !visible);
+        ReplayPanel.IsHitTestVisible = visible;
+    }
+
+    private void OnAreaPointerMoved(object? sender, PointerEventArgs e)
+    {
+        if (!(_mainVm?.IsFullscreen ?? false))
+        {
+            SetControlsVisible(true);
+            SetReplaysVisible(true);
+            return;
+        }
+
+        // The bottom strip belongs to the control bar; the right zone stops above it so the
+        // two overlays (and their reveal zones) never fight over the bottom-right corner.
+        var p = e.GetPosition(PlayerArea);
+        bool inBottomZone = p.Y >= PlayerArea.Bounds.Height - RevealZoneHeight;
+        bool inRightZone = p.X >= PlayerArea.Bounds.Width - ReplaysZoneWidth && !inBottomZone;
+        SetControlsVisible(inBottomZone);
+        SetReplaysVisible(inRightZone);
+    }
+
+    private void OnAreaPointerExited(object? sender, PointerEventArgs e)
+    {
+        if (_mainVm?.IsFullscreen ?? false)
+        {
+            SetControlsVisible(false);
+            SetReplaysVisible(false);
+        }
     }
 
     private void OnAttached(object? sender, EventArgs e)
@@ -44,14 +76,15 @@ public partial class PlayerView : UserControl
         if (DataContext is PlayerViewModel vm)
         {
             _playerVm = vm;
-            vm.PropertyChanged += OnPlayerVmPropertyChanged;
-            vm.StartPlayback();
-            MainVideoView.MediaPlayer = vm.Player;
 
-            // Click-to-pause: the native VLC HWND swallows mouse input before Avalonia ever
-            // sees it, so overlays/events can't work. Instead we listen to the GLOBAL mouse
-            // hook and hit-test the click position against the video's screen rectangle.
-            vm.HotkeyManager.LeftMousePressed += OnGlobalLeftMouseDown;
+            // Video frames arrive in an Avalonia bitmap — wire it to the Image and repaint
+            // on every rendered frame (the bitmap reference doesn't change per frame).
+            vm.VideoRenderer.BitmapChanged += OnVideoBitmapChanged;
+            vm.VideoRenderer.FrameRendered += OnVideoFrameRendered;
+            vm.PropertyChanged += OnPlayerVmPropertyChanged;
+            UpdateVideoSource();
+
+            vm.StartPlayback();
         }
 
         // Observe global fullscreen (the Window's DataContext is MainViewModel).
@@ -68,14 +101,16 @@ public partial class PlayerView : UserControl
 
     private void OnDetached(object? sender, EventArgs e)
     {
-        MainVideoView.MediaPlayer = null;
         if (_playerVm != null)
         {
-            _playerVm.HotkeyManager.LeftMousePressed -= OnGlobalLeftMouseDown;
+            _playerVm.VideoRenderer.BitmapChanged -= OnVideoBitmapChanged;
+            _playerVm.VideoRenderer.FrameRendered -= OnVideoFrameRendered;
             _playerVm.PropertyChanged -= OnPlayerVmPropertyChanged;
             _playerVm.StopPlayback();
             _playerVm = null;
         }
+        VideoImage.Source = null;
+
         if (_mainVm != null)
         {
             _mainVm.PropertyChanged -= OnMainVmPropertyChanged;
@@ -83,11 +118,36 @@ public partial class PlayerView : UserControl
         }
     }
 
+    private void OnVideoBitmapChanged() => UpdateVideoSource();
+
+    private void OnVideoFrameRendered() => VideoImage.InvalidateVisual();
+
     private void OnPlayerVmPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        // The native vout is created when playback starts — re-apply the region a tick later.
-        if (e.PropertyName == nameof(PlayerViewModel.IsPlaying))
-            Dispatcher.UIThread.Post(ApplyVideoCornerRegion, DispatcherPriority.Background);
+        if (e.PropertyName is nameof(PlayerViewModel.StillImage) or nameof(PlayerViewModel.IsViewingImage))
+            UpdateVideoSource();
+    }
+
+    /// <summary>The video area shows either the live VLC frame bitmap or a screenshot.</summary>
+    private void UpdateVideoSource()
+    {
+        if (_playerVm == null) return;
+        VideoImage.Source = _playerVm.IsViewingImage
+            ? _playerVm.StillImage
+            : _playerVm.VideoRenderer.Bitmap;
+    }
+
+    /// <summary>Click anywhere on the video toggles play/pause (now a plain Avalonia event).</summary>
+    private void OnVideoSurfacePressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (_playerVm == null) return;
+        if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) return;
+
+        if (_playerVm.PlayPauseCommand.CanExecute(null))
+            _playerVm.PlayPauseCommand.Execute(null);
+
+        Focus(); // keep the Space shortcut working
+        e.Handled = true;
     }
 
     private void OnMainVmPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -96,87 +156,37 @@ public partial class PlayerView : UserControl
             UpdateFullscreenLayout();
     }
 
-    /// <summary>In fullscreen the video is full-bleed and square; windowed it sits in a rounded glass frame.</summary>
+    /// <summary>In fullscreen the video is full-bleed and square; windowed it matches the design frame.</summary>
     private void UpdateFullscreenLayout()
     {
         bool fs = _mainVm?.IsFullscreen ?? false;
 
-        PlayerArea.Margin = fs ? new Thickness(0) : new Thickness(14);
-        VideoFrame.CornerRadius = new CornerRadius(fs ? 0 : 16);
-        VideoFrame.BorderThickness = new Thickness(fs ? 0 : 1);
+        PlayerArea.Margin = fs ? new Thickness(0) : new Thickness(24, 20, 24, 24);
+        VideoFrame.CornerRadius = new CornerRadius(fs ? 0 : 12);
 
-        ApplyVideoCornerRegion();
-    }
-
-    /// <summary>
-    /// Applies (or clears) a rounded rectangular region on the native VLC window so its corners
-    /// match the glass frame. Cleared in fullscreen (square, full-screen video).
-    /// </summary>
-    private void ApplyVideoCornerRegion()
-    {
-        try
+        // The replays panel switches between an inline column (windowed) and an overlay
+        // pinned to the right edge of the video (fullscreen).
+        if (fs)
         {
-            IntPtr hwnd = MainVideoView.MediaPlayer?.Hwnd ?? IntPtr.Zero;
-            if (hwnd == IntPtr.Zero) return;
-
-            bool fs = _mainVm?.IsFullscreen ?? false;
-            double scaling = TopLevel.GetTopLevel(this)?.RenderScaling ?? 1.0;
-
-            int w = (int)Math.Round(MainVideoView.Bounds.Width * scaling);
-            int h = (int)Math.Round(MainVideoView.Bounds.Height * scaling);
-
-            if (fs || w <= 0 || h <= 0)
-            {
-                // No rounding in fullscreen (or before layout) — clear any existing region.
-                SetWindowRgn(hwnd, IntPtr.Zero, true);
-                return;
-            }
-
-            int diameter = (int)Math.Round(CornerRadiusDip * 2 * scaling);
-            IntPtr rgn = CreateRoundRectRgn(0, 0, w + 1, h + 1, diameter, diameter);
-
-            // SetWindowRgn takes ownership of the region on success; only free it on failure.
-            if (SetWindowRgn(hwnd, rgn, true) == 0)
-                DeleteObject(rgn);
+            Grid.SetColumn(ReplayPanel, 0);
+            ReplayPanel.HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right;
+            // Large bottom margin keeps the panel clear of the floating control bar
+            // (so the fullscreen-exit button is never covered).
+            ReplayPanel.Margin = new Thickness(0, 12, 12, 118);
         }
-        catch (Exception ex)
+        else
         {
-            System.Diagnostics.Debug.WriteLine($"[PlayerView] Failed to round native video: {ex.Message}");
+            Grid.SetColumn(ReplayPanel, 1);
+            ReplayPanel.HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch;
+            ReplayPanel.Margin = new Thickness(16, 0, 0, 0);
         }
-    }
 
-    /// <summary>
-    /// Global-hook click-to-pause. Fires on EVERY left click system-wide (background thread),
-    /// so we marshal to the UI thread and accept the click only when:
-    ///   • our window is active (clicks in other apps must not toggle playback),
-    ///   • the player view & video are actually visible,
-    ///   • the click's screen position lies inside the video's screen rectangle.
-    /// This bypasses the native VLC HWND entirely — the OS-level hook sees the click even
-    /// though the child window swallows it before Avalonia's input pipeline.
-    /// </summary>
-    private void OnGlobalLeftMouseDown(object? sender, Lag.Services.GlobalMouseEventArgs e)
-    {
-        Dispatcher.UIThread.Post(() =>
-        {
-            if (_playerVm == null) return;
-            if (TopLevel.GetTopLevel(this) is not Window { IsActive: true } window) return;
-            if (!MainVideoView.IsEffectivelyVisible) return;
+        // Entering fullscreen: overlays start hidden (slide in on cursor approach).
+        // Leaving it: everything visible again.
+        SetControlsVisible(!fs);
+        SetReplaysVisible(!fs);
 
-            // Video rectangle in physical screen pixels (same space as the hook coordinates).
-            var origin = MainVideoView.PointToScreen(new Avalonia.Point(0, 0));
-            double scale = window.RenderScaling;
-            int width = (int)Math.Round(MainVideoView.Bounds.Width * scale);
-            int height = (int)Math.Round(MainVideoView.Bounds.Height * scale);
-
-            bool inside = e.X >= origin.X && e.X < origin.X + width &&
-                          e.Y >= origin.Y && e.Y < origin.Y + height;
-            if (!inside) return;
-
-            if (_playerVm.PlayPauseCommand.CanExecute(null))
-                _playerVm.PlayPauseCommand.Execute(null);
-
-            // Keep keyboard focus on the view so the Space shortcut continues to work.
-            Focus();
-        });
+        // Pull keyboard focus back to the view so SPACE keeps meaning play/pause.
+        Focus();
     }
 }

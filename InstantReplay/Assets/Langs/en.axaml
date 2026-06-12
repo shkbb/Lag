@@ -52,6 +52,29 @@
   <sys:String x:Key="Settings_Group_Automation">AUTOMATION</sys:String>
   <sys:String x:Key="Settings_StartWithWindows">Start with Windows</sys:String>
   <sys:String x:Key="Settings_StartWithWindows_Desc">Adds the app to system startup</sys:String>
+  <sys:String x:Key="Settings_StartMinimized">Start minimized</sys:String>
+  <sys:String x:Key="Settings_StartMinimized_Desc">Launches hidden in the system tray</sys:String>
+  <sys:String x:Key="Editor_Title">Editor</sys:String>
+  <sys:String x:Key="Editor_Edit">Edit</sys:String>
+  <sys:String x:Key="Editor_Back">Back</sys:String>
+  <sys:String x:Key="Editor_Export">Export</sys:String>
+  <sys:String x:Key="Editor_Exporting">Exporting… {0}%</sys:String>
+  <sys:String x:Key="Editor_ExportDone">Saved: {0}</sys:String>
+  <sys:String x:Key="Editor_ExportError">Export failed: {0}</sys:String>
+  <sys:String x:Key="Editor_Speed">Speed</sys:String>
+  <sys:String x:Key="Editor_Format">Format</sys:String>
+  <sys:String x:Key="Editor_TabClip">Clip</sys:String>
+  <sys:String x:Key="Editor_TabFilters">Filters</sys:String>
+  <sys:String x:Key="Editor_Tracks">AUDIO TRACKS</sys:String>
+  <sys:String x:Key="Editor_TrackSystem">System sound</sys:String>
+  <sys:String x:Key="Editor_TrackMic">Microphone</sys:String>
+  <sys:String x:Key="Editor_TrackAudio">Audio</sys:String>
+  <sys:String x:Key="Editor_SetStart">Set clip start to the current moment</sys:String>
+  <sys:String x:Key="Editor_SetEnd">Set clip end to the current moment</sys:String>
+  <sys:String x:Key="Editor_ResetTrim">Reset trim</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Screenshot">Screenshot</sys:String>
+  <sys:String x:Key="Toast_ReplaySaved">Replay saved</sys:String>
+  <sys:String x:Key="Toast_ScreenshotSaved">Screenshot saved</sys:String>
   <sys:String x:Key="Settings_AutoStart">Start recording automatically</sys:String>
   <sys:String x:Key="Settings_AutoStart_Desc">The replay buffer starts right after launch</sys:String>
   <sys:String x:Key="Settings_Group_Hotkey">HOTKEY</sys:String>
@@ -125,4 +148,9 @@
   <sys:String x:Key="Option_Auto">Auto</sys:String>
   <sys:String x:Key="Option_Custom">Custom</sys:String>
 
+  <sys:String x:Key="Sidebar_Buffer">Buffer</sys:String>
+  <sys:String x:Key="Library_Stats">{0} clips · {1} free</sys:String>
+  <sys:String x:Key="Player_Used">Used</sys:String>
+
+  <sys:String x:Key="Library_EmptyTitle">No replays yet</sys:String>
 </ResourceDictionary>

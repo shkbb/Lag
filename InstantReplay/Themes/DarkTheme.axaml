@@ -1,361 +1,839 @@
 <Styles xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:mi="using:Material.Icons.Avalonia">
 
-  <!-- ═══════════════════════════════════════════
-       "Lag" — Glassmorphism dark theme
-       Deep translucent surfaces · neon cyan/purple/teal accents · soft glow & depth
-       (All resource KEYS and style CLASS names are preserved so bindings / code-behind
-        class toggling keep working — only the visuals changed.)
-       ═══════════════════════════════════════════ -->
+  <!-- ═══════════════════════════════════════════════════════════════
+       "Lag" theme — 1:1 port of the Figma file «Lag — UI mockup»
+       (file VzxvjXtHHCysySbqehHoaf). Every color/size below is taken
+       from the design tokens; do not "improve" values ad hoc.
+       ═══════════════════════════════════════════════════════════════ -->
 
   <Style>
     <Style.Resources>
-      <!-- ── Base surfaces ── -->
-      <Color x:Key="BgDark">#E60A0D15</Color>      <!-- content/player veil over Mica -->
-      <Color x:Key="BgMedium">#CC10141F</Color>     <!-- sidebar fallback -->
-      <Color x:Key="BgLight">#FF161A24</Color>
-      <Color x:Key="BgCard">#14FFFFFF</Color>       <!-- glass fill -->
-      <Color x:Key="BgHover">#22FFFFFF</Color>
+      <!-- ── Surfaces ── -->
+      <Color x:Key="ClrSidebar">#0C0E11</Color>
+      <Color x:Key="ClrMain">#12151A</Color>
+      <Color x:Key="ClrSurface">#20252D</Color>
+      <Color x:Key="ClrSurfaceHover">#272D36</Color>
+      <Color x:Key="ClrCard">#181C23</Color>
+      <Color x:Key="ClrCardHover">#1C2129</Color>
+      <Color x:Key="ClrSegSel">#2A313B</Color>
+      <Color x:Key="ClrVideo">#07090C</Color>
 
-      <!-- ── Accents (neon) ── -->
-      <Color x:Key="AccentGreen">#FF22C55E</Color>
-      <Color x:Key="AccentGreenHover">#FF16A34A</Color>
-      <Color x:Key="StopRed">#FFEF4444</Color>
-      <Color x:Key="StopRedHover">#FFDC2626</Color>
-      <Color x:Key="AccentPurple">#FF9D8CFF</Color>
-      <Color x:Key="AccentPurpleText">#FFE3DEFF</Color>
-      <Color x:Key="AccentPurpleBg">#338B7CF6</Color>
-      <Color x:Key="AmberAccent">#FFF5B14B</Color>
-      <Color x:Key="AccentCyan">#FF22D3EE</Color>
-      <Color x:Key="AccentTeal">#FF2DD4BF</Color>
+      <!-- ── Accent / status ── -->
+      <Color x:Key="ClrAccent">#22D3EE</Color>
+      <Color x:Key="ClrAccentHover">#4ADDF2</Color>
+      <Color x:Key="ClrOnAccent">#0A0C0F</Color>
+      <Color x:Key="ClrDanger">#F0464C</Color>
+      <Color x:Key="ClrDangerHover">#F35F64</Color>
 
       <!-- ── Text ── -->
-      <Color x:Key="TextPrimary">#F2FFFFFF</Color>
-      <Color x:Key="TextSecondary">#C2FFFFFF</Color>
-      <Color x:Key="TextDim">#59FFFFFF</Color>
-      <Color x:Key="TextMuted">#8FFFFFFF</Color>
+      <Color x:Key="ClrFg">#E7EAEE</Color>
+      <Color x:Key="ClrFg2">#9AA3AD</Color>
+      <Color x:Key="ClrFg3">#6A7380</Color>
+      <Color x:Key="ClrEmptyIcon">#3E4754</Color>
 
-      <!-- ── Glass borders ── -->
-      <Color x:Key="BorderSubtle">#1AFFFFFF</Color>
-      <Color x:Key="BorderMedium">#2AFFFFFF</Color>
-      <Color x:Key="BorderLight">#3DFFFFFF</Color>
+      <SolidColorBrush x:Key="SidebarBrush" Color="{StaticResource ClrSidebar}" />
+      <SolidColorBrush x:Key="MainBrush" Color="{StaticResource ClrMain}" />
+      <SolidColorBrush x:Key="SurfaceBrush" Color="{StaticResource ClrSurface}" />
+      <SolidColorBrush x:Key="SurfaceHoverBrush" Color="{StaticResource ClrSurfaceHover}" />
+      <SolidColorBrush x:Key="CardBrush" Color="{StaticResource ClrCard}" />
+      <SolidColorBrush x:Key="CardHoverBrush" Color="{StaticResource ClrCardHover}" />
+      <SolidColorBrush x:Key="SegSelBrush" Color="{StaticResource ClrSegSel}" />
+      <SolidColorBrush x:Key="VideoBrush" Color="{StaticResource ClrVideo}" />
+      <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource ClrAccent}" />
+      <SolidColorBrush x:Key="AccentHoverBrush" Color="{StaticResource ClrAccentHover}" />
+      <SolidColorBrush x:Key="OnAccentBrush" Color="{StaticResource ClrOnAccent}" />
+      <SolidColorBrush x:Key="DangerBrush" Color="{StaticResource ClrDanger}" />
+      <SolidColorBrush x:Key="DangerHoverBrush" Color="{StaticResource ClrDangerHover}" />
+      <SolidColorBrush x:Key="FgBrush" Color="{StaticResource ClrFg}" />
+      <SolidColorBrush x:Key="Fg2Brush" Color="{StaticResource ClrFg2}" />
+      <SolidColorBrush x:Key="Fg3Brush" Color="{StaticResource ClrFg3}" />
+      <SolidColorBrush x:Key="EmptyIconBrush" Color="{StaticResource ClrEmptyIcon}" />
 
-      <!-- ── Status ── -->
-      <Color x:Key="StatusRecording">#FFFF5A5A</Color>
-      <Color x:Key="StatusReady">#FF34D399</Color>
-      <Color x:Key="StatusSaving">#FFFBBF24</Color>
+      <!-- Dividers / overlays / tracks (alpha-on-white & alpha-on-ink) -->
+      <SolidColorBrush x:Key="Divider6Brush" Color="#0FFFFFFF" />
+      <SolidColorBrush x:Key="Divider5Brush" Color="#0DFFFFFF" />
+      <SolidColorBrush x:Key="Overlay85Brush" Color="#D90A0C0F" />
+      <SolidColorBrush x:Key="Overlay88Brush" Color="#E00A0C0F" />
+      <SolidColorBrush x:Key="HoverVeilBrush" Color="#0AFFFFFF" />
+      <SolidColorBrush x:Key="Track14Brush" Color="#24FFFFFF" />
+      <SolidColorBrush x:Key="VolumeFillBrush" Color="#AEB6C0" />
 
-      <!-- ── Solid Brushes (keys preserved) ── -->
-      <SolidColorBrush x:Key="BgDarkBrush" Color="{StaticResource BgDark}" />
-      <SolidColorBrush x:Key="BgMediumBrush" Color="{StaticResource BgMedium}" />
-      <SolidColorBrush x:Key="BgLightBrush" Color="{StaticResource BgLight}" />
-      <SolidColorBrush x:Key="BgCardBrush" Color="{StaticResource BgCard}" />
-      <SolidColorBrush x:Key="BgHoverBrush" Color="{StaticResource BgHover}" />
-      <SolidColorBrush x:Key="AccentGreenBrush" Color="{StaticResource AccentGreen}" />
-      <SolidColorBrush x:Key="AccentGreenHoverBrush" Color="{StaticResource AccentGreenHover}" />
-      <SolidColorBrush x:Key="StopRedBrush" Color="{StaticResource StopRed}" />
-      <SolidColorBrush x:Key="StopRedHoverBrush" Color="{StaticResource StopRedHover}" />
-      <SolidColorBrush x:Key="AccentPurpleBrush" Color="{StaticResource AccentPurple}" />
-      <SolidColorBrush x:Key="AccentPurpleTextBrush" Color="{StaticResource AccentPurpleText}" />
-      <SolidColorBrush x:Key="AccentPurpleBgBrush" Color="{StaticResource AccentPurpleBg}" />
-      <SolidColorBrush x:Key="AmberAccentBrush" Color="{StaticResource AmberAccent}" />
-      <SolidColorBrush x:Key="AccentCyanBrush" Color="{StaticResource AccentCyan}" />
-      <SolidColorBrush x:Key="AccentTealBrush" Color="{StaticResource AccentTeal}" />
-      <SolidColorBrush x:Key="TextPrimaryBrush" Color="{StaticResource TextPrimary}" />
-      <SolidColorBrush x:Key="TextSecondaryBrush" Color="{StaticResource TextSecondary}" />
-      <SolidColorBrush x:Key="TextDimBrush" Color="{StaticResource TextDim}" />
-      <SolidColorBrush x:Key="TextMutedBrush" Color="{StaticResource TextMuted}" />
-      <SolidColorBrush x:Key="BorderSubtleBrush" Color="{StaticResource BorderSubtle}" />
-      <SolidColorBrush x:Key="BorderMediumBrush" Color="{StaticResource BorderMedium}" />
-      <SolidColorBrush x:Key="BorderLightBrush" Color="{StaticResource BorderLight}" />
-      <SolidColorBrush x:Key="StatusRecordingBrush" Color="{StaticResource StatusRecording}" />
-      <SolidColorBrush x:Key="StatusReadyBrush" Color="{StaticResource StatusReady}" />
-      <SolidColorBrush x:Key="StatusSavingBrush" Color="{StaticResource StatusSaving}" />
+      <!-- Legacy aliases still referenced by code-behind/status -->
+      <SolidColorBrush x:Key="StatusReadyBrush" Color="{StaticResource ClrAccent}" />
+      <SolidColorBrush x:Key="StatusRecordingBrush" Color="{StaticResource ClrDanger}" />
+      <SolidColorBrush x:Key="TextPrimaryBrush" Color="{StaticResource ClrFg}" />
+      <SolidColorBrush x:Key="TextSecondaryBrush" Color="{StaticResource ClrFg2}" />
+      <SolidColorBrush x:Key="TextDimBrush" Color="{StaticResource ClrFg3}" />
+      <SolidColorBrush x:Key="BgDarkBrush" Color="{StaticResource ClrMain}" />
+      <SolidColorBrush x:Key="AccentCyanBrush" Color="{StaticResource ClrAccent}" />
 
-      <!-- Glass surface brushes (new, used by the redesign) -->
-      <SolidColorBrush x:Key="GlassFillBrush" Color="#14FFFFFF" />
-      <SolidColorBrush x:Key="GlassFillStrongBrush" Color="#1FFFFFFF" />
-      <SolidColorBrush x:Key="GlassBorderBrush" Color="#2EFFFFFF" />
-
-      <!-- Legacy aliases -->
-      <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentGreen}" />
-      <SolidColorBrush x:Key="AccentHoverBrush" Color="{StaticResource AccentGreenHover}" />
-      <SolidColorBrush x:Key="AccentDimBrush" Color="#40FFFFFF" />
-
-      <CornerRadius x:Key="SmallRadius">8</CornerRadius>
-      <CornerRadius x:Key="MediumRadius">12</CornerRadius>
-      <CornerRadius x:Key="LargeRadius">16</CornerRadius>
+      <!-- Brand mark — rewind-clock from the Figma logo (22×22 viewbox, stroked) -->
+      <StreamGeometry x:Key="LogoArcGeometry">M2.75 11C2.75 12.6317 3.23385 14.2267 4.14038 15.5835C5.0469 16.9402 6.33537 17.9976 7.84286 18.622C9.35035 19.2464 11.0092 19.4098 12.6095 19.0915C14.2098 18.7732 15.6798 17.9874 16.8336 16.8336C17.9874 15.6798 18.7732 14.2098 19.0915 12.6095C19.4098 11.0092 19.2464 9.35035 18.622 7.84286C17.9976 6.33537 16.9402 5.0469 15.5835 4.14038C14.2267 3.23385 12.6317 2.75 11 2.75C8.69362 2.75868 6.47989 3.65862 4.82167 5.26167L2.75 7.33333</StreamGeometry>
+      <StreamGeometry x:Key="LogoCornerGeometry">M2.75 2.75V7.33333H7.33333</StreamGeometry>
+      <StreamGeometry x:Key="LogoHandsGeometry">M11 6.41667V11L14.6667 12.8333</StreamGeometry>
     </Style.Resources>
   </Style>
 
-  <!-- ═══════════════ Global Text ═══════════════ -->
+  <!-- ═══════════════ Global text ═══════════════ -->
   <Style Selector="TextBlock">
-    <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+    <Setter Property="Foreground" Value="{StaticResource FgBrush}" />
     <Setter Property="FontFamily" Value="Inter, Segoe UI, sans-serif" />
   </Style>
 
-  <!-- ═══════════════ Buttons ═══════════════ -->
-
-  <!-- Record button (green) -->
-  <Style Selector="Button.btn-record">
-    <Setter Property="Background" Value="{StaticResource AccentGreenBrush}" />
-    <Setter Property="Foreground" Value="White" />
-    <Setter Property="CornerRadius" Value="10" />
-    <Setter Property="Padding" Value="0" />
-    <Setter Property="Height" Value="40" />
-    <Setter Property="FontSize" Value="13" />
-    <Setter Property="FontWeight" Value="SemiBold" />
-    <Setter Property="Cursor" Value="Hand" />
-    <Setter Property="BorderThickness" Value="0" />
-    <Setter Property="HorizontalAlignment" Value="Stretch" />
-    <Setter Property="HorizontalContentAlignment" Value="Center" />
-  </Style>
-  <Style Selector="Button.btn-record:pointerover /template/ ContentPresenter">
-    <Setter Property="Background" Value="{StaticResource AccentGreenHoverBrush}" />
-  </Style>
-
-  <!-- Stop button (red) -->
-  <Style Selector="Button.btn-stop">
-    <Setter Property="Background" Value="{StaticResource StopRedBrush}" />
-    <Setter Property="Foreground" Value="White" />
-    <Setter Property="CornerRadius" Value="10" />
-    <Setter Property="Padding" Value="0" />
-    <Setter Property="Height" Value="40" />
-    <Setter Property="FontSize" Value="13" />
-    <Setter Property="FontWeight" Value="SemiBold" />
-    <Setter Property="Cursor" Value="Hand" />
-    <Setter Property="BorderThickness" Value="0" />
-    <Setter Property="HorizontalAlignment" Value="Stretch" />
-    <Setter Property="HorizontalContentAlignment" Value="Center" />
-  </Style>
-  <Style Selector="Button.btn-stop:pointerover /template/ ContentPresenter">
-    <Setter Property="Background" Value="{StaticResource StopRedHoverBrush}" />
-  </Style>
-
-  <!-- Save button (glass) -->
-  <Style Selector="Button.btn-save">
-    <Setter Property="Background" Value="{StaticResource GlassFillBrush}" />
-    <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
-    <Setter Property="CornerRadius" Value="10" />
-    <Setter Property="Padding" Value="0" />
-    <Setter Property="Height" Value="40" />
-    <Setter Property="FontSize" Value="13" />
-    <Setter Property="FontWeight" Value="Medium" />
-    <Setter Property="Cursor" Value="Hand" />
-    <Setter Property="BorderThickness" Value="1" />
-    <Setter Property="BorderBrush" Value="{StaticResource GlassBorderBrush}" />
-    <Setter Property="HorizontalAlignment" Value="Stretch" />
-    <Setter Property="HorizontalContentAlignment" Value="Center" />
-  </Style>
-  <Style Selector="Button.btn-save:pointerover /template/ ContentPresenter">
-    <Setter Property="Background" Value="{StaticResource GlassFillStrongBrush}" />
-    <Setter Property="TextBlock.Foreground" Value="{StaticResource TextPrimaryBrush}" />
-  </Style>
-
-  <!-- Nav items (pill) -->
-  <Style Selector="Button.nav">
-    <Setter Property="Background" Value="Transparent" />
-    <Setter Property="Foreground" Value="{StaticResource TextDimBrush}" />
-    <Setter Property="CornerRadius" Value="10" />
-    <Setter Property="Padding" Value="12,0" />
-    <Setter Property="Height" Value="40" />
-    <Setter Property="HorizontalContentAlignment" Value="Left" />
-    <Setter Property="HorizontalAlignment" Value="Stretch" />
-    <Setter Property="Cursor" Value="Hand" />
-    <Setter Property="BorderThickness" Value="1" />
-    <Setter Property="BorderBrush" Value="Transparent" />
-    <Setter Property="FontSize" Value="13" />
-    <Setter Property="FontWeight" Value="Medium" />
-  </Style>
-  <Style Selector="Button.nav:pointerover /template/ ContentPresenter">
-    <Setter Property="Background" Value="{StaticResource GlassFillBrush}" />
-    <Setter Property="TextBlock.Foreground" Value="{StaticResource TextPrimaryBrush}" />
-  </Style>
-
-  <!-- Active nav item (purple glass highlight) -->
-  <Style Selector="Button.nav-active">
-    <Setter Property="Background" Value="{StaticResource AccentPurpleBgBrush}" />
-    <Setter Property="Foreground" Value="{StaticResource AccentPurpleTextBrush}" />
-    <Setter Property="CornerRadius" Value="10" />
-    <Setter Property="Padding" Value="12,0" />
-    <Setter Property="Height" Value="40" />
-    <Setter Property="HorizontalContentAlignment" Value="Left" />
-    <Setter Property="HorizontalAlignment" Value="Stretch" />
-    <Setter Property="Cursor" Value="Hand" />
-    <Setter Property="BorderThickness" Value="1" />
-    <Setter Property="BorderBrush" Value="#558B7CF6" />
-    <Setter Property="FontSize" Value="13" />
-    <Setter Property="FontWeight" Value="SemiBold" />
-  </Style>
-  <Style Selector="Button.nav-active:pointerover /template/ ContentPresenter">
-    <Setter Property="Background" Value="#4D8B7CF6" />
-  </Style>
-
-  <!-- Accent button (cyan glow, for hotkey change) -->
-  <Style Selector="Button.accent">
-    <Setter Property="Background" Value="#1F22D3EE" />
-    <Setter Property="Foreground" Value="{StaticResource AccentCyanBrush}" />
-    <Setter Property="CornerRadius" Value="9" />
-    <Setter Property="Padding" Value="16,7" />
-    <Setter Property="FontSize" Value="12" />
-    <Setter Property="FontWeight" Value="SemiBold" />
-    <Setter Property="Cursor" Value="Hand" />
-    <Setter Property="BorderThickness" Value="1" />
-    <Setter Property="BorderBrush" Value="#5522D3EE" />
-  </Style>
-  <Style Selector="Button.accent:pointerover /template/ ContentPresenter">
-    <Setter Property="Background" Value="#3322D3EE" />
-  </Style>
-
-  <!-- Icon button -->
-  <Style Selector="Button.icon">
-    <Setter Property="Background" Value="Transparent" />
-    <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
-    <Setter Property="Padding" Value="8" />
-    <Setter Property="MinWidth" Value="36" />
-    <Setter Property="MinHeight" Value="36" />
-    <Setter Property="CornerRadius" Value="8" />
-    <Setter Property="Cursor" Value="Hand" />
-    <Setter Property="BorderThickness" Value="0" />
-  </Style>
-  <Style Selector="Button.icon:pointerover /template/ ContentPresenter">
-    <Setter Property="Background" Value="{StaticResource BgHoverBrush}" />
-    <Setter Property="TextBlock.Foreground" Value="{StaticResource TextPrimaryBrush}" />
-  </Style>
-
-  <!-- ═══════════════ ComboBox ═══════════════ -->
-  <Style Selector="ComboBox">
-    <Setter Property="Background" Value="{StaticResource GlassFillBrush}" />
-    <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
-    <Setter Property="CornerRadius" Value="10" />
-    <Setter Property="Padding" Value="12,7" />
-    <Setter Property="MinWidth" Value="110" />
-    <Setter Property="BorderBrush" Value="{StaticResource GlassBorderBrush}" />
-    <Setter Property="BorderThickness" Value="1" />
-    <Setter Property="FontSize" Value="12" />
-  </Style>
-  <Style Selector="ComboBox:pointerover /template/ Border#Background">
-    <Setter Property="Background" Value="{StaticResource GlassFillStrongBrush}" />
-    <Setter Property="BorderBrush" Value="#5522D3EE" />
-  </Style>
-
-  <!-- ═══════════════ TextBox ═══════════════ -->
-  <Style Selector="TextBox">
-    <Setter Property="Background" Value="{StaticResource GlassFillBrush}" />
-    <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
-    <Setter Property="CornerRadius" Value="10" />
-    <Setter Property="Padding" Value="13,9" />
-    <Setter Property="BorderBrush" Value="{StaticResource GlassBorderBrush}" />
-    <Setter Property="BorderThickness" Value="1" />
-    <Setter Property="FontFamily" Value="Consolas, monospace" />
-    <Setter Property="FontSize" Value="12" />
-    <Setter Property="CaretBrush" Value="{StaticResource AccentCyanBrush}" />
-  </Style>
-  <Style Selector="TextBox:focus /template/ Border#PART_BorderElement">
-    <Setter Property="BorderBrush" Value="{StaticResource AccentCyanBrush}" />
-  </Style>
-
-  <!-- ═══════════════ ToggleSwitch ═══════════════ -->
-  <Style Selector="ToggleSwitch">
-    <Setter Property="Cursor" Value="Hand" />
-    <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
-  </Style>
-  <!-- Recolor the "on" track to the cyan accent (Fluent template parts) -->
-  <Style Selector="ToggleSwitch:checked /template/ Border#OuterBorder">
-    <Setter Property="Background" Value="{StaticResource AccentCyanBrush}" />
-    <Setter Property="BorderBrush" Value="{StaticResource AccentCyanBrush}" />
-  </Style>
-  <Style Selector="ToggleSwitch:checked /template/ Border#SwitchKnobBounds">
-    <Setter Property="Background" Value="{StaticResource AccentCyanBrush}" />
-  </Style>
-
-  <!-- ═══════════════ Section Headers / Typography ═══════════════ -->
-  <Style Selector="TextBlock.section-header">
-    <Setter Property="FontSize" Value="10" />
-    <Setter Property="FontWeight" Value="SemiBold" />
-    <Setter Property="Foreground" Value="{StaticResource TextDimBrush}" />
-    <Setter Property="Margin" Value="0,0,0,6" />
-    <Setter Property="LetterSpacing" Value="1.2" />
-  </Style>
-
-  <Style Selector="TextBlock.group-label">
+  <Style Selector="TextBlock.section">
     <Setter Property="FontSize" Value="11" />
-    <Setter Property="FontWeight" Value="SemiBold" />
-    <Setter Property="Foreground" Value="{StaticResource AccentCyanBrush}" />
-    <Setter Property="Margin" Value="2,0,0,8" />
-    <Setter Property="LetterSpacing" Value="1.4" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="Foreground" Value="{StaticResource Fg3Brush}" />
+    <Setter Property="LetterSpacing" Value="0.7" />
   </Style>
 
-  <Style Selector="TextBlock.page-title">
-    <Setter Property="FontSize" Value="24" />
-    <Setter Property="FontWeight" Value="Bold" />
-    <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
-    <Setter Property="Margin" Value="0,0,0,0" />
+  <!-- Hairline divider between settings rows -->
+  <Style Selector="Border.divider">
+    <Setter Property="Height" Value="1" />
+    <Setter Property="Background" Value="{StaticResource Divider5Brush}" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
   </Style>
 
-  <!-- ═══════════════ Glass Card ═══════════════ -->
-  <Style Selector="Border.card">
-    <Setter Property="Background" Value="{StaticResource GlassFillBrush}" />
-    <Setter Property="CornerRadius" Value="14" />
-    <Setter Property="Padding" Value="0" />
-    <Setter Property="BorderBrush" Value="{StaticResource GlassBorderBrush}" />
-    <Setter Property="BorderThickness" Value="1" />
-    <Setter Property="BoxShadow" Value="0 12 34 0 #4D000000" />
-  </Style>
-
-  <!-- ═══════════════ Replay Card (Library) ═══════════════ -->
-  <Style Selector="Border.replay-card">
-    <Setter Property="Background" Value="{StaticResource GlassFillBrush}" />
-    <Setter Property="CornerRadius" Value="14" />
-    <Setter Property="Padding" Value="0" />
-    <Setter Property="BorderBrush" Value="{StaticResource GlassBorderBrush}" />
-    <Setter Property="BorderThickness" Value="1" />
-    <Setter Property="Cursor" Value="Hand" />
-    <Setter Property="ClipToBounds" Value="True" />
-    <Setter Property="BoxShadow" Value="0 10 26 0 #40000000" />
+  <!-- ═══════════════ Buttons (shared animated base) ═══════════════ -->
+  <Style Selector="Button">
     <Setter Property="RenderTransform" Value="scale(1)" />
     <Setter Property="Transitions">
       <Transitions>
-        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.16" />
-        <BoxShadowsTransition Property="BoxShadow" Duration="0:0:0.16" />
+        <BrushTransition Property="Background" Duration="0:0:0.15" />
+        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.08" />
       </Transitions>
     </Setter>
   </Style>
-  <Style Selector="Border.replay-card:pointerover">
-    <Setter Property="BorderBrush" Value="#6622D3EE" />
-    <Setter Property="RenderTransform" Value="scale(1.035)" />
-    <Setter Property="BoxShadow" Value="0 16 40 0 #6622D3EE" />
+  <Style Selector="Button:pressed">
+    <Setter Property="RenderTransform" Value="scale(0.97)" />
   </Style>
 
-  <!-- ═══════════════ Slider ═══════════════ -->
+  <!-- Primary CTA (Start = cyan, gets .rec class when recording = red) -->
+  <Style Selector="Button.cta">
+    <Setter Property="Background" Value="{StaticResource AccentBrush}" />
+    <Setter Property="Foreground" Value="{StaticResource OnAccentBrush}" />
+    <Setter Property="Height" Value="36" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+  <Style Selector="Button.cta /template/ ContentPresenter">
+    <Setter Property="Transitions">
+      <Transitions><BrushTransition Property="Background" Duration="0:0:0.15" /></Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.cta:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{StaticResource AccentHoverBrush}" />
+  </Style>
+  <Style Selector="Button.cta.rec">
+    <Setter Property="Background" Value="{StaticResource DangerBrush}" />
+    <Setter Property="Foreground" Value="White" />
+  </Style>
+  <Style Selector="Button.cta.rec:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{StaticResource DangerHoverBrush}" />
+  </Style>
+
+  <!-- Dark surface button (Save replay, h34) -->
+  <Style Selector="Button.surface">
+    <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
+    <Setter Property="Foreground" Value="{StaticResource FgBrush}" />
+    <Setter Property="Height" Value="34" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+  <Style Selector="Button.surface /template/ ContentPresenter">
+    <Setter Property="Transitions">
+      <Transitions><BrushTransition Property="Background" Duration="0:0:0.15" /></Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.surface:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{StaticResource SurfaceHoverBrush}" />
+  </Style>
+
+  <!-- Small surface chip-button (Open folder / Change / Check updates; px12 py7) -->
+  <Style Selector="Button.chip">
+    <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
+    <Setter Property="Foreground" Value="{StaticResource FgBrush}" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Padding" Value="12,7" />
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+  <Style Selector="Button.chip /template/ ContentPresenter">
+    <Setter Property="Transitions">
+      <Transitions><BrushTransition Property="Background" Duration="0:0:0.15" /></Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.chip:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{StaticResource SurfaceHoverBrush}" />
+  </Style>
+  <!-- Destructive chip variant (bulk delete in the library header) -->
+  <Style Selector="Button.chip.danger">
+    <Setter Property="Background" Value="{StaticResource DangerBrush}" />
+    <Setter Property="Foreground" Value="White" />
+  </Style>
+  <Style Selector="Button.chip.danger:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{StaticResource DangerHoverBrush}" />
+  </Style>
+
+  <!-- ═══════════════ Sidebar navigation (classes managed by code-behind) ═══════════════ -->
+  <Style Selector="Button.nav, Button.nav-active">
+    <Setter Property="Height" Value="32" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Padding" Value="10,0" />
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Left" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+  <Style Selector="Button.nav">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{StaticResource Fg2Brush}" />
+    <Setter Property="FontWeight" Value="Normal" />
+  </Style>
+  <Style Selector="Button.nav /template/ ContentPresenter">
+    <Setter Property="Transitions">
+      <Transitions><BrushTransition Property="Background" Duration="0:0:0.15" /></Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.nav:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="#14181E" />
+  </Style>
+  <Style Selector="Button.nav-active">
+    <Setter Property="Background" Value="{StaticResource CardBrush}" />
+    <Setter Property="Foreground" Value="{StaticResource FgBrush}" />
+    <Setter Property="FontWeight" Value="Medium" />
+  </Style>
+  <Style Selector="Button.nav mi|MaterialIcon">
+    <Setter Property="Foreground" Value="{StaticResource Fg2Brush}" />
+    <Setter Property="Transitions">
+      <Transitions><BrushTransition Property="Foreground" Duration="0:0:0.15" /></Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.nav-active mi|MaterialIcon">
+    <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
+    <!-- Springy pop when a section becomes active -->
+    <Style.Animations>
+      <Animation Duration="0:0:0.25" Easing="CubicEaseOut" FillMode="Forward">
+        <KeyFrame Cue="0%">
+          <Setter Property="ScaleTransform.ScaleX" Value="0.7" />
+          <Setter Property="ScaleTransform.ScaleY" Value="0.7" />
+        </KeyFrame>
+        <KeyFrame Cue="60%">
+          <Setter Property="ScaleTransform.ScaleX" Value="1.12" />
+          <Setter Property="ScaleTransform.ScaleY" Value="1.12" />
+        </KeyFrame>
+        <KeyFrame Cue="100%">
+          <Setter Property="ScaleTransform.ScaleX" Value="1" />
+          <Setter Property="ScaleTransform.ScaleY" Value="1" />
+        </KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+
+  <!-- ═══════════════ Window controls (custom chrome) ═══════════════ -->
+  <Style Selector="Button.winctl">
+    <Setter Property="Width" Value="34" />
+    <Setter Property="Height" Value="26" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{StaticResource Fg2Brush}" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.winctl /template/ ContentPresenter">
+    <Setter Property="Transitions">
+      <Transitions><BrushTransition Property="Background" Duration="0:0:0.12" /></Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.winctl:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
+  </Style>
+  <Style Selector="Button.winctl:pointerover">
+    <Setter Property="Foreground" Value="{StaticResource FgBrush}" />
+  </Style>
+  <Style Selector="Button.winctl.close:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{StaticResource DangerBrush}" />
+  </Style>
+  <Style Selector="Button.winctl.close:pointerover">
+    <Setter Property="Foreground" Value="White" />
+  </Style>
+
+  <!-- ═══════════════ Settings tabs (text + animated 2px underline) ═══════════════ -->
+  <Style Selector="Button.tab">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+  <Style Selector="Button.tab:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="Button.tab TextBlock.tabtxt">
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="Foreground" Value="{StaticResource Fg2Brush}" />
+    <Setter Property="FontWeight" Value="Normal" />
+    <Setter Property="Transitions">
+      <Transitions><BrushTransition Property="Foreground" Duration="0:0:0.15" /></Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.tab.sel TextBlock.tabtxt">
+    <Setter Property="Foreground" Value="{StaticResource FgBrush}" />
+    <Setter Property="FontWeight" Value="Medium" />
+  </Style>
+  <Style Selector="Button.tab Border.tabline">
+    <Setter Property="Height" Value="2" />
+    <Setter Property="CornerRadius" Value="1" />
+    <Setter Property="Background" Value="{StaticResource AccentBrush}" />
+    <Setter Property="Margin" Value="0,7,0,0" />
+    <Setter Property="RenderTransformOrigin" Value="50%,50%" />
+    <Setter Property="RenderTransform" Value="scaleX(0)" />
+    <Setter Property="Transitions">
+      <Transitions><TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.20" Easing="CubicEaseOut" /></Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.tab.sel Border.tabline">
+    <Setter Property="RenderTransform" Value="scaleX(1)" />
+  </Style>
+
+  <!-- ═══════════════ Segmented control ═══════════════ -->
+  <Style Selector="Border.segment">
+    <Setter Property="Background" Value="{StaticResource CardBrush}" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Padding" Value="3" />
+  </Style>
+  <Style Selector="Button.seg">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{StaticResource Fg2Brush}" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="FontWeight" Value="Normal" />
+    <Setter Property="Padding" Value="10,4" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Cursor" Value="Hand" />
+    <!-- Replaces the base Button transitions, so re-declare the pressed-scale one too -->
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Foreground" Duration="0:0:0.15" />
+        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.08" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.seg /template/ ContentPresenter">
+    <Setter Property="Transitions">
+      <Transitions><BrushTransition Property="Background" Duration="0:0:0.15" /></Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.seg:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="#20262E" />
+  </Style>
+  <Style Selector="Button.seg.sel">
+    <Setter Property="Background" Value="{StaticResource SegSelBrush}" />
+    <Setter Property="Foreground" Value="{StaticResource FgBrush}" />
+    <Setter Property="FontWeight" Value="Medium" />
+  </Style>
+  <Style Selector="Button.seg.sel /template/ ContentPresenter">
+    <!-- Same pop as the segctl pill when this side becomes selected -->
+    <Style.Animations>
+      <Animation Duration="0:0:0.2" Easing="CubicEaseOut" FillMode="Forward">
+        <KeyFrame Cue="0%">
+          <Setter Property="ScaleTransform.ScaleX" Value="0.85" />
+          <Setter Property="ScaleTransform.ScaleY" Value="0.85" />
+        </KeyFrame>
+        <KeyFrame Cue="100%">
+          <Setter Property="ScaleTransform.ScaleX" Value="1" />
+          <Setter Property="ScaleTransform.ScaleY" Value="1" />
+        </KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+
+  <!-- ═══════════════ Segmented as ListBox (object-typed options: FPS, codec) ═══════════════ -->
+  <Style Selector="ListBox.segctl">
+    <Setter Property="Background" Value="{StaticResource CardBrush}" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Padding" Value="3" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="ItemsPanel">
+      <ItemsPanelTemplate>
+        <StackPanel Orientation="Horizontal" Spacing="2" />
+      </ItemsPanelTemplate>
+    </Setter>
+  </Style>
+  <Style Selector="ListBox.segctl ListBoxItem">
+    <Setter Property="Padding" Value="10,4" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="Foreground" Value="{StaticResource Fg2Brush}" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="RenderTransform" Value="scale(1)" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Foreground" Duration="0:0:0.15" />
+        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.08" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="ListBox.segctl ListBoxItem:pressed">
+    <Setter Property="RenderTransform" Value="scale(0.95)" />
+  </Style>
+  <Style Selector="ListBox.segctl ListBoxItem /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="Transitions">
+      <Transitions><BrushTransition Property="Background" Duration="0:0:0.15" /></Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="ListBox.segctl ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="#20262E" />
+  </Style>
+  <Style Selector="ListBox.segctl ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{StaticResource SegSelBrush}" />
+    <!-- Pill "pop" each time the selection lands on this item (FPS/codec switch) -->
+    <Style.Animations>
+      <Animation Duration="0:0:0.2" Easing="CubicEaseOut" FillMode="Forward">
+        <KeyFrame Cue="0%">
+          <Setter Property="ScaleTransform.ScaleX" Value="0.85" />
+          <Setter Property="ScaleTransform.ScaleY" Value="0.85" />
+        </KeyFrame>
+        <KeyFrame Cue="100%">
+          <Setter Property="ScaleTransform.ScaleX" Value="1" />
+          <Setter Property="ScaleTransform.ScaleY" Value="1" />
+        </KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+  <Style Selector="ListBox.segctl ListBoxItem:selected">
+    <Setter Property="Foreground" Value="{StaticResource FgBrush}" />
+    <Setter Property="FontWeight" Value="Medium" />
+  </Style>
+
+  <!-- App-list row label color follows the checkbox state -->
+  <Style Selector="CheckBox.app TextBlock">
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="Foreground" Value="{StaticResource Fg2Brush}" />
+    <Setter Property="Transitions">
+      <Transitions><BrushTransition Property="Foreground" Duration="0:0:0.15" /></Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="CheckBox.app:checked TextBlock">
+    <Setter Property="Foreground" Value="{StaticResource FgBrush}" />
+  </Style>
+
+  <!-- ═══════════════ Kbd chip ═══════════════ -->
+  <Style Selector="Border.kbd">
+    <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="Padding" Value="8,4" />
+  </Style>
+  <Style Selector="Border.kbd TextBlock">
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="Foreground" Value="{StaticResource FgBrush}" />
+  </Style>
+  <!-- "Bare" buttons wrap a kbd chip (hotkey / PTT capture). Fluent's :disabled state
+       paints a square gray plate behind them — neutralize it and dim the chip instead. -->
+  <Style Selector="Button.bare:disabled /template/ ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="Button.bare:disabled">
+    <Setter Property="Opacity" Value="0.45" />
+  </Style>
+
+  <!-- Pulsing chip while waiting for a key press (hotkey / PTT capture) -->
+  <Style Selector="Border.kbd.listening">
+    <Style.Animations>
+      <Animation Duration="0:0:1" IterationCount="Infinite" Easing="SineEaseInOut">
+        <KeyFrame Cue="0%"><Setter Property="Opacity" Value="1" /></KeyFrame>
+        <KeyFrame Cue="50%"><Setter Property="Opacity" Value="0.45" /></KeyFrame>
+        <KeyFrame Cue="100%"><Setter Property="Opacity" Value="1" /></KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+
+  <!-- ═══════════════ ComboBox (design dropdown) ═══════════════ -->
+  <Style Selector="ComboBox">
+    <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
+    <Setter Property="Foreground" Value="{StaticResource FgBrush}" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="MinHeight" Value="30" />
+    <Setter Property="Padding" Value="12,5,8,5" />
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="PlaceholderForeground" Value="{StaticResource Fg2Brush}" />
+  </Style>
+  <Style Selector="ComboBox /template/ Border#Background">
+    <Setter Property="Transitions">
+      <Transitions><BrushTransition Property="Background" Duration="0:0:0.15" /></Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="ComboBox:pointerover /template/ Border#Background">
+    <Setter Property="Background" Value="{StaticResource SurfaceHoverBrush}" />
+  </Style>
+  <!-- Chevron: dim, rotates 180° while the dropdown is open -->
+  <Style Selector="ComboBox /template/ PathIcon#DropDownGlyph">
+    <Setter Property="Foreground" Value="{StaticResource Fg2Brush}" />
+    <Setter Property="RenderTransform" Value="rotate(0deg)" />
+    <Setter Property="Transitions">
+      <Transitions><TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.18" Easing="CubicEaseOut" /></Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="ComboBox:dropdownopen /template/ PathIcon#DropDownGlyph">
+    <Setter Property="RenderTransform" Value="rotate(180deg)" />
+  </Style>
+
+  <!-- Dropdown popup: colors/radius come from resource overrides in App.axaml
+       (the Fluent template hardcodes DynamicResource keys there). No open animation:
+       the popup's OS window becomes visible before the first animation frame paints,
+       which reads as an ugly blink — instant open is the clean option. -->
+
+  <Style Selector="ComboBoxItem">
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="Foreground" Value="{StaticResource Fg2Brush}" />
+    <Setter Property="Padding" Value="10,6" />
+    <Setter Property="Margin" Value="0,1" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+  <Style Selector="ComboBoxItem /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Transitions">
+      <Transitions><BrushTransition Property="Background" Duration="0:0:0.12" /></Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="ComboBoxItem:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
+  </Style>
+  <Style Selector="ComboBoxItem:selected /template/ ContentPresenter">
+    <Setter Property="Background" Value="{StaticResource SegSelBrush}" />
+    <Setter Property="TextBlock.Foreground" Value="{StaticResource FgBrush}" />
+  </Style>
+
+  <!-- ═══════════════ Menus: library context menu + tray menu ═══════════════
+       The tray menu on Windows is rendered by Avalonia itself (TrayIconMenuFlyoutPresenter
+       extends MenuFlyoutPresenter), so MenuFlyoutPresenter/MenuItem styles cover it too.
+       Hover/pressed colors come from resource overrides in App.axaml (the Fluent MenuItem
+       template hardcodes those DynamicResource keys). -->
+  <!-- No open animations on menus: like the ComboBox dropdown, the popup's OS window
+       shows before the first animation frame, producing a blink instead of a fade. -->
+  <Style Selector="ContextMenu">
+    <Setter Property="Background" Value="{StaticResource CardBrush}" />
+    <Setter Property="BorderBrush" Value="#1FFFFFFF" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="10" />
+    <Setter Property="Padding" Value="4" />
+  </Style>
+  <Style Selector="MenuFlyoutPresenter">
+    <Setter Property="Background" Value="{StaticResource CardBrush}" />
+    <Setter Property="BorderBrush" Value="#1FFFFFFF" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="10" />
+    <Setter Property="Padding" Value="4" />
+  </Style>
+  <Style Selector="MenuItem">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{StaticResource FgBrush}" />
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="Padding" Value="10,7" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="Margin" Value="0,1" />
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+  <Style Selector="MenuItem /template/ Border#PART_LayoutRoot">
+    <Setter Property="Transitions">
+      <Transitions><BrushTransition Property="Background" Duration="0:0:0.12" /></Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="MenuItem mi|MaterialIcon">
+    <Setter Property="Foreground" Value="{StaticResource Fg2Brush}" />
+    <Setter Property="Transitions">
+      <Transitions><BrushTransition Property="Foreground" Duration="0:0:0.12" /></Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="MenuItem:selected mi|MaterialIcon">
+    <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
+  </Style>
+  <!-- Menu separators (only menus use Separator in this app) -->
+  <Style Selector="Separator">
+    <Setter Property="Background" Value="{StaticResource Divider6Brush}" />
+    <Setter Property="Height" Value="1" />
+    <Setter Property="Margin" Value="8,4" />
+  </Style>
+
+  <!-- ═══════════════ ToolTip (design surface + fade-in) ═══════════════ -->
+  <Style Selector="ToolTip">
+    <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
+    <Setter Property="Foreground" Value="{StaticResource FgBrush}" />
+    <Setter Property="BorderBrush" Value="#1FFFFFFF" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Padding" Value="10,6" />
+    <Setter Property="FontSize" Value="12" />
+    <Style.Animations>
+      <Animation Duration="0:0:0.14" Easing="CubicEaseOut" FillMode="Forward">
+        <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0" /></KeyFrame>
+        <KeyFrame Cue="100%"><Setter Property="Opacity" Value="1" /></KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+
+  <!-- ═══════════════ TextBox (custom fps/bitrate inputs) ═══════════════ -->
+  <Style Selector="TextBox">
+    <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
+    <Setter Property="Foreground" Value="{StaticResource FgBrush}" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="MinHeight" Value="30" />
+    <Setter Property="Padding" Value="9,4" />
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="CaretBrush" Value="{StaticResource AccentBrush}" />
+    <Setter Property="SelectionBrush" Value="#5922D3EE" />
+  </Style>
+  <!-- Kill Fluent's light hover/focus chrome and animate ours (cyan focus ring) -->
+  <Style Selector="TextBox /template/ Border#PART_BorderElement">
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="0:0:0.15" />
+        <BrushTransition Property="BorderBrush" Duration="0:0:0.15" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="TextBox:pointerover /template/ Border#PART_BorderElement">
+    <Setter Property="Background" Value="{StaticResource SurfaceHoverBrush}" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+  </Style>
+  <Style Selector="TextBox:focus /template/ Border#PART_BorderElement">
+    <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
+    <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}" />
+  </Style>
+
+  <!-- ═══════════════ App-audio checkbox (16px, design) ═══════════════ -->
+  <Style Selector="CheckBox.app">
+    <Setter Property="Template">
+      <ControlTemplate>
+        <StackPanel Orientation="Horizontal" Spacing="10" Background="Transparent">
+          <Border Width="16" Height="16" CornerRadius="4"
+                  Background="{StaticResource SurfaceBrush}"
+                  VerticalAlignment="Center">
+            <Border.Transitions>
+              <Transitions><BrushTransition Property="Background" Duration="0:0:0.15" /></Transitions>
+            </Border.Transitions>
+            <Path x:Name="PART_Check"
+                  Data="M2 5.5 L4.2 8 L8.5 2.5"
+                  Stroke="{StaticResource OnAccentBrush}" StrokeThickness="1.8"
+                  StrokeLineCap="Round" StrokeJoin="Round"
+                  Width="10" Height="10" Stretch="Uniform"
+                  HorizontalAlignment="Center" VerticalAlignment="Center"
+                  Opacity="0" RenderTransform="scale(0.4)">
+              <Path.Transitions>
+                <Transitions>
+                  <DoubleTransition Property="Opacity" Duration="0:0:0.12" />
+                  <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.15" Easing="CubicEaseOut" />
+                </Transitions>
+              </Path.Transitions>
+            </Path>
+          </Border>
+          <ContentPresenter Content="{TemplateBinding Content}" VerticalAlignment="Center" />
+        </StackPanel>
+      </ControlTemplate>
+    </Setter>
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+  <Style Selector="CheckBox.app:checked /template/ Border">
+    <Setter Property="Background" Value="{StaticResource AccentBrush}" />
+  </Style>
+  <Style Selector="CheckBox.app:checked /template/ Path#PART_Check">
+    <Setter Property="Opacity" Value="1" />
+    <Setter Property="RenderTransform" Value="scale(1)" />
+  </Style>
+
+  <!-- ═══════════════ Slider (cyan fill, white 12px thumb, 4px track) ═══════════════
+       Keeps the FLUENT template (its grid centers the thumb/track correctly) and only
+       reskins it. In that template: filled part = Slider.Foreground, remaining track +
+       backplate = Slider.Background; thumb size/shape/colors and the 20px compact
+       height come from resource overrides in App.axaml. Replacing the template via
+       styles is a trap: Fluent assigns it inside ^:horizontal (StyleTrigger priority).
+       The :pointerover/:pressed styles below pin the colors that Fluent's own state
+       styles would otherwise flip back to the accent palette. -->
   <Style Selector="Slider">
-    <Setter Property="Foreground" Value="{StaticResource AccentCyanBrush}" />
-    <Setter Property="Background" Value="#1FFFFFFF" />
+    <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
+    <Setter Property="Background" Value="{StaticResource Track14Brush}" />
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+  <Style Selector="Slider:horizontal">
+    <Setter Property="Height" Value="20" />
+    <Setter Property="MinHeight" Value="20" />
+  </Style>
+  <Style Selector="Slider:pointerover /template/ RepeatButton#PART_DecreaseButton">
+    <Setter Property="Background" Value="{StaticResource AccentBrush}" />
+  </Style>
+  <Style Selector="Slider:pressed /template/ RepeatButton#PART_DecreaseButton">
+    <Setter Property="Background" Value="{StaticResource AccentBrush}" />
+  </Style>
+  <Style Selector="Slider:pointerover /template/ RepeatButton#PART_IncreaseButton">
+    <Setter Property="Background" Value="{StaticResource Track14Brush}" />
+  </Style>
+  <Style Selector="Slider:pressed /template/ RepeatButton#PART_IncreaseButton">
+    <Setter Property="Background" Value="{StaticResource Track14Brush}" />
+  </Style>
+  <!-- Thumb grows slightly on hover -->
+  <Style Selector="Slider /template/ Thumb">
+    <Setter Property="RenderTransform" Value="scale(1)" />
+    <Setter Property="Transitions">
+      <Transitions><TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.12" Easing="CubicEaseOut" /></Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Slider:pointerover /template/ Thumb">
+    <Setter Property="RenderTransform" Value="scale(1.25)" />
+  </Style>
+  <Style Selector="Slider:disabled">
+    <Setter Property="Opacity" Value="0.45" />
+  </Style>
+  <!-- Gray (volume) variant — the fill follows Foreground -->
+  <Style Selector="Slider.volume">
+    <Setter Property="Foreground" Value="{StaticResource VolumeFillBrush}" />
+  </Style>
+  <Style Selector="Slider.volume:pointerover /template/ RepeatButton#PART_DecreaseButton">
+    <Setter Property="Background" Value="{StaticResource VolumeFillBrush}" />
+  </Style>
+  <Style Selector="Slider.volume:pressed /template/ RepeatButton#PART_DecreaseButton">
+    <Setter Property="Background" Value="{StaticResource VolumeFillBrush}" />
   </Style>
 
-  <!-- ═══════════════ ScrollBar (slim glass) ═══════════════ -->
+  <!-- ═══════════════ Player replay list ═══════════════ -->
+  <Style Selector="ListBox.replays">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="0" />
+  </Style>
+  <Style Selector="ListBox.replays ListBoxItem">
+    <Setter Property="Padding" Value="6" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Margin" Value="0,0,0,8" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+  <Style Selector="ListBox.replays ListBoxItem /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Transitions">
+      <Transitions><BrushTransition Property="Background" Duration="0:0:0.15" /></Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="ListBox.replays ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="#14181E" />
+  </Style>
+  <Style Selector="ListBox.replays ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
+  </Style>
+
+  <!-- ═══════════════ Library clip card (hover veil + delete reveal) ═══════════════ -->
+  <Style Selector="Button.clipcard">
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Background" Value="{StaticResource CardBrush}" />
+    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="VerticalContentAlignment" Value="Stretch" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="ClipToBounds" Value="True" />
+  </Style>
+  <Style Selector="Button.clipcard /template/ ContentPresenter">
+    <Setter Property="Transitions">
+      <Transitions><BrushTransition Property="Background" Duration="0:0:0.15" /></Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.clipcard:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{StaticResource CardHoverBrush}" />
+  </Style>
+  <Style Selector="Button.clipcard Border#HoverVeil">
+    <Setter Property="Opacity" Value="0" />
+    <Setter Property="Transitions">
+      <Transitions><DoubleTransition Property="Opacity" Duration="0:0:0.15" /></Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.clipcard:pointerover Border#HoverVeil">
+    <Setter Property="Opacity" Value="1" />
+  </Style>
+  <Style Selector="Button.clipcard Button#SelectBtn">
+    <Setter Property="Opacity" Value="0" />
+    <Setter Property="IsHitTestVisible" Value="False" />
+    <Setter Property="Transitions">
+      <Transitions><DoubleTransition Property="Opacity" Duration="0:0:0.15" /></Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.clipcard:pointerover Button#SelectBtn">
+    <Setter Property="Opacity" Value="1" />
+    <Setter Property="IsHitTestVisible" Value="True" />
+  </Style>
+  <!-- A selected card keeps its toggle visible and gets an accent outline -->
+  <Style Selector="Button.clipcard Button#SelectBtn.checked">
+    <Setter Property="Opacity" Value="1" />
+    <Setter Property="IsHitTestVisible" Value="True" />
+  </Style>
+  <Style Selector="Button.clipcard.selected /template/ ContentPresenter">
+    <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}" />
+    <Setter Property="BorderThickness" Value="2" />
+  </Style>
+
+  <!-- Player transport icon buttons (borderless, subtle hover).
+       Focusable=False: a focused button re-activates on SPACE, hijacking the
+       view-level "Space = play/pause" key binding (e.g. fullscreen toggle loop). -->
+  <Style Selector="Button.transport">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{StaticResource FgBrush}" />
+    <Setter Property="Padding" Value="4" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Focusable" Value="False" />
+  </Style>
+  <Style Selector="Button.transport /template/ ContentPresenter">
+    <Setter Property="Transitions">
+      <Transitions><BrushTransition Property="Background" Duration="0:0:0.12" /></Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.transport:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="#1AFFFFFF" />
+  </Style>
+
+  <!-- ═══════════════ ScrollBar (slim) ═══════════════ -->
   <Style Selector="ScrollBar:vertical">
     <Setter Property="Width" Value="8" />
   </Style>
 
-  <!-- ═══════════════ Tabs (Settings categories) ═══════════════ -->
-  <Style Selector="TabControl">
-    <Setter Property="Background" Value="Transparent" />
-    <Setter Property="Padding" Value="0" />
-  </Style>
-  <Style Selector="TabItem">
-    <Setter Property="FontSize" Value="13" />
-    <Setter Property="FontWeight" Value="SemiBold" />
-    <Setter Property="Foreground" Value="{StaticResource TextDimBrush}" />
-    <Setter Property="Padding" Value="16,6" />
-    <Setter Property="MinHeight" Value="38" />
-    <Setter Property="Cursor" Value="Hand" />
-  </Style>
-  <Style Selector="TabItem:pointerover">
-    <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
-  </Style>
-  <Style Selector="TabItem:selected">
-    <Setter Property="Foreground" Value="{StaticResource AccentCyanBrush}" />
+  <!-- ═══════════════ ProgressBar (sidebar buffer track) ═══════════════ -->
+  <Style Selector="ProgressBar.buffer">
+    <Setter Property="Height" Value="4" />
+    <Setter Property="MinHeight" Value="4" />
+    <Setter Property="CornerRadius" Value="2" />
+    <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
+    <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
+    <!-- The ticker updates once per second — glide between values instead of stepping -->
+    <Setter Property="Transitions">
+      <Transitions><DoubleTransition Property="Value" Duration="0:0:0.45" Easing="CubicEaseOut" /></Transitions>
+    </Setter>
   </Style>
 
 </Styles>

@@ -23,6 +23,7 @@ public partial class MainViewModel : ViewModelBase
     public SettingsViewModel Settings { get; }
     public LibraryViewModel Library { get; }
     public PlayerViewModel Player { get; }
+    public EditorViewModel Editor { get; }
 
     /// <summary>The currently displayed view (bound to ContentControl).</summary>
     [ObservableProperty]
@@ -39,6 +40,45 @@ public partial class MainViewModel : ViewModelBase
     /// <summary>Buffer fill indicator text (e.g., "2:35 / 5:00").</summary>
     [ObservableProperty]
     private string _bufferStatus = "0:00";
+
+    /// <summary>Sidebar buffer-bar fill, 0–100. Animates up once while the ring buffer fills.</summary>
+    [ObservableProperty]
+    private double _bufferFillPercent;
+
+    private Avalonia.Threading.DispatcherTimer? _bufferTimer;
+    private int _bufferElapsedSec;
+    private int _bufferTotalSec;
+
+    private static string FmtSec(int s) => $"{s / 60}:{s % 60:00}";
+
+    /// <summary>Starts the once-per-second buffer fill ticker (design: "3:12 / 5:00" + bar).</summary>
+    private void StartBufferTicker(int totalSeconds)
+    {
+        _bufferTotalSec = Math.Max(1, totalSeconds);
+        _bufferElapsedSec = 0;
+        BufferFillPercent = 0;
+        BufferStatus = $"{FmtSec(0)} / {FmtSec(_bufferTotalSec)}";
+
+        _bufferTimer ??= new Avalonia.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+        _bufferTimer.Tick -= OnBufferTick;
+        _bufferTimer.Tick += OnBufferTick;
+        _bufferTimer.Start();
+    }
+
+    private void OnBufferTick(object? sender, EventArgs e)
+    {
+        if (_bufferElapsedSec < _bufferTotalSec) _bufferElapsedSec++;
+        BufferFillPercent = 100.0 * _bufferElapsedSec / _bufferTotalSec;
+        BufferStatus = $"{FmtSec(_bufferElapsedSec)} / {FmtSec(_bufferTotalSec)}";
+        if (_bufferElapsedSec >= _bufferTotalSec) _bufferTimer?.Stop();
+    }
+
+    private void StopBufferTicker()
+    {
+        _bufferTimer?.Stop();
+        BufferFillPercent = 0;
+        BufferStatus = "0:00";
+    }
 
     /// <summary>Whether a replay save is currently in progress.</summary>
     [ObservableProperty]
@@ -57,7 +97,8 @@ public partial class MainViewModel : ViewModelBase
         GlobalHotkeyManager hotkeyManager,
         SettingsViewModel settings,
         LibraryViewModel library,
-        PlayerViewModel player)
+        PlayerViewModel player,
+        EditorViewModel editor)
     {
         Title = "Lag";
         _engine = engine;
@@ -66,6 +107,7 @@ public partial class MainViewModel : ViewModelBase
         Settings = settings;
         Library = library;
         Player = player;
+        Editor = editor;
         _currentView = settings; // Default to Settings view
 
         // Wire up events
@@ -73,17 +115,24 @@ public partial class MainViewModel : ViewModelBase
         {
             IsSaving = false;
             StatusText = Localizer.Format("Status_ReplaySaved", Path.GetFileName(outputVideoPath));
-            
+
             // Auto-refresh library
             _ = Library.RefreshCommand.ExecuteAsync(null);
+
+            // On-screen toast (topmost, visible over games) + the save sound.
+            Lag.Services.ToastService.Show(
+                Localizer.Get("Toast_ReplaySaved"), Path.GetFileName(outputVideoPath));
 
             // Play the custom "replay saved" sound (replaces the old system beep).
             PlaySaveSound();
         };
 
-        // Global hotkey → save replay
+        // Global hotkey → save replay. Ignored while the user is REBINDING keys in
+        // Settings (and briefly after) — otherwise the combo being typed fires instantly.
         _hotkeyManager.HotkeyPressed += (_, _) =>
         {
+            if (Settings.AreHotkeysSuppressed) return;
+
             if (IsRecording && !IsSaving)
             {
                 IsSaving = true;
@@ -96,11 +145,13 @@ public partial class MainViewModel : ViewModelBase
         // or when PTT is disabled; engine ignores the call if the mic source doesn't exist).
         _hotkeyManager.PttPressed += (_, _) =>
         {
+            if (Settings.AreHotkeysSuppressed) return;
             if (IsRecording && Settings.PushToTalkEnabled)
                 _engine.SetMicMuted(false);
         };
         _hotkeyManager.PttReleased += (_, _) =>
         {
+            if (Settings.AreHotkeysSuppressed) return;
             if (IsRecording && Settings.PushToTalkEnabled)
                 _engine.SetMicMuted(true);
         };
@@ -111,6 +162,9 @@ public partial class MainViewModel : ViewModelBase
             Player.LoadAndPlay(clip);
             CurrentView = Player;
         };
+
+        // Library clip edit navigation (context menu → Edit)
+        Library.EditClipRequested += (_, clip) => OpenEditor(clip);
 
         // Auto-start recording on launch if the user enabled it. Deferred to the UI loop (Background
         // priority) so it runs after the window and framework finish initializing, not mid-construction.
@@ -153,6 +207,45 @@ public partial class MainViewModel : ViewModelBase
     /// </summary>
     [RelayCommand]
     private void ToggleFullscreen() => IsFullscreen = !IsFullscreen;
+
+    /// <summary>Opens a clip in the built-in editor (view teardown stops any active playback).</summary>
+    private void OpenEditor(Lag.Models.ReplayClip clip)
+    {
+        if (clip.IsImage) return; // screenshots have nothing to trim
+        Editor.OpenClip(clip);
+        CurrentView = Editor;
+    }
+
+    /// <summary>Player → "Edit clip": sends the currently playing clip to the editor.</summary>
+    [RelayCommand]
+    private void OpenEditorFromPlayer()
+    {
+        if (Player.CurrentClip is { } clip)
+            OpenEditor(clip);
+    }
+
+    /// <summary>
+    /// Global screenshot hotkey: grabs the configured display into the library folder,
+    /// then shows the toast and plays the save sound. Capture runs off the UI thread
+    /// (a 1440p GDI blit takes tens of milliseconds).
+    /// </summary>
+    [RelayCommand]
+    private void TakeScreenshot()
+    {
+        string? deviceName = Settings.SelectedMonitor?.DeviceName;
+        string outputDir = Settings.LibraryPath;
+        string toastTitle = Localizer.Get("Toast_ScreenshotSaved");
+
+        _ = Task.Run(() =>
+        {
+            string? path = Lag.Services.ScreenshotService.Capture(deviceName, outputDir);
+            if (path != null)
+            {
+                Lag.Services.ToastService.Show(toastTitle, Path.GetFileName(path));
+                PlayScreenshotSound();
+            }
+        });
+    }
 
     // ───────────── Recording Commands ─────────────
 
@@ -225,7 +318,7 @@ public partial class MainViewModel : ViewModelBase
             IsRecording = true;
             Console.WriteLine($"[DEBUG] Recording started! IsRecording={IsRecording}");
             StatusText = Localizer.Get("Status_Recording");
-            BufferStatus = Settings.SelectedBuffer.Display;
+            StartBufferTicker(bufferSeconds);
         }
         catch (Exception ex)
         {
@@ -249,7 +342,7 @@ public partial class MainViewModel : ViewModelBase
             _engine.Teardown();
             IsRecording = false;
             StatusText = Localizer.Get("Status_Stopped");
-            BufferStatus = "0:00";
+            StopBufferTicker();
             Settings.HasPendingChanges = false;
         }
         catch (Exception ex)
@@ -259,7 +352,7 @@ public partial class MainViewModel : ViewModelBase
             // leaving IsRecording=true after a failed stop would lock out the user.
             IsRecording = false;
             StatusText = Localizer.Format("Status_StopError", ex.Message);
-            BufferStatus = "0:00";
+            StopBufferTicker();
             Settings.HasPendingChanges = false;
         }
     }
@@ -314,15 +407,21 @@ public partial class MainViewModel : ViewModelBase
         });
     }
 
+    /// <summary>Plays the "replay saved" chime (Assets/save.wav).</summary>
+    private static void PlaySaveSound() => PlaySound("save.wav");
+
+    /// <summary>Plays the camera-shutter sound for screenshots (Assets/screenshot.wav).</summary>
+    private static void PlayScreenshotSound() => PlaySound("screenshot.wav");
+
     /// <summary>
-    /// Plays the custom "replay saved" sound (Assets/save.wav, copied next to the executable).
+    /// Plays a feedback sound from the Assets folder next to the executable.
     /// Runs on a background thread with PlaySync so the clip plays in full without blocking the UI,
     /// and the SoundPlayer is disposed only after playback completes (Play() + immediate dispose
     /// would truncate the audio).
     /// </summary>
-    private static void PlaySaveSound()
+    private static void PlaySound(string fileName)
     {
-        string soundPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "save.wav");
+        string soundPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", fileName);
         if (!File.Exists(soundPath)) return;
 
         _ = Task.Run(() =>
@@ -334,7 +433,7 @@ public partial class MainViewModel : ViewModelBase
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[MainViewModel] Failed to play save sound: {ex.Message}");
+                Console.WriteLine($"[MainViewModel] Failed to play sound '{fileName}': {ex.Message}");
             }
         });
     }

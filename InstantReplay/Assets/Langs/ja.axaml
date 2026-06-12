@@ -1,0 +1,156 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="using:System">
+
+  <!-- ════════ Shell / Navigation ════════ -->
+  <sys:String x:Key="App_Tagline">バックグラウンド画面録画</sys:String>
+  <sys:String x:Key="Nav_Header">ナビゲーション</sys:String>
+  <sys:String x:Key="Nav_Settings">設定</sys:String>
+  <sys:String x:Key="Nav_Library">ライブラリ</sys:String>
+  <sys:String x:Key="Nav_Player">プレーヤー</sys:String>
+  <sys:String x:Key="Btn_StartRecording">録画を開始</sys:String>
+  <sys:String x:Key="Btn_StopRecording">録画を停止</sys:String>
+  <sys:String x:Key="Btn_SaveReplay">リプレイを保存</sys:String>
+
+  <!-- ════════ Settings ════════ -->
+  <sys:String x:Key="Settings_Title">設定</sys:String>
+  <sys:String x:Key="Settings_PendingChanges">変更は録画の再開後に有効になります。</sys:String>
+  <sys:String x:Key="Settings_Group_Language">言語</sys:String>
+  <sys:String x:Key="Settings_Language">言語</sys:String>
+  <sys:String x:Key="Settings_Group_Recording">録画</sys:String>
+  <sys:String x:Key="Settings_BufferLength">リプレイバッファの長さ</sys:String>
+  <sys:String x:Key="Settings_Display">ディスプレイ</sys:String>
+  <sys:String x:Key="Settings_Microphone">マイク</sys:String>
+  <sys:String x:Key="Settings_FrameRate">フレームレート（FPS）</sys:String>
+  <sys:String x:Key="Settings_MicVolume">マイク音量</sys:String>
+  <sys:String x:Key="Settings_OutputResolution">出力解像度</sys:String>
+  <sys:String x:Key="Settings_Codec">ビデオコーデック</sys:String>
+  <sys:String x:Key="Settings_AutoCleanup">ライブラリの自動クリーンアップ</sys:String>
+  <sys:String x:Key="Settings_AutoCleanup_Desc">ライブラリが上限を超えたとき、最も古いクリップを自動的に削除します</sys:String>
+  <sys:String x:Key="Settings_StorageLimit">ライブラリのサイズ上限</sys:String>
+  <sys:String x:Key="Tab_Video">ビデオ</sys:String>
+  <sys:String x:Key="Tab_Audio">オーディオ</sys:String>
+  <sys:String x:Key="Tab_General">一般</sys:String>
+  <sys:String x:Key="Settings_Bitrate">ビットレート</sys:String>
+  <sys:String x:Key="Settings_Bitrate_CustomSuffix">Mbps</sys:String>
+  <sys:String x:Key="Settings_Gpu">録画用GPU</sys:String>
+  <sys:String x:Key="Settings_Format">ファイル形式</sys:String>
+  <sys:String x:Key="Settings_Group_Mic">マイク</sys:String>
+  <sys:String x:Key="Settings_Group_SystemAudio">システム音声</sys:String>
+  <sys:String x:Key="Settings_AudioMode">録音モード</sys:String>
+  <sys:String x:Key="AudioMode_All">PCの全音声</sys:String>
+  <sys:String x:Key="AudioMode_Apps">特定のアプリ</sys:String>
+  <sys:String x:Key="Settings_AppsHint">アプリが音声を再生し始めると、ここに表示されます。</sys:String>
+  <sys:String x:Key="Settings_MicChannels">チャンネル</sys:String>
+  <sys:String x:Key="Channels_Stereo">ステレオ</sys:String>
+  <sys:String x:Key="Channels_Mono">モノラル</sys:String>
+  <sys:String x:Key="Settings_Ptt">プッシュトゥトーク</sys:String>
+  <sys:String x:Key="Settings_Ptt_Desc">キーを押している間のみマイクが有効になります</sys:String>
+  <sys:String x:Key="Settings_PttKey">プッシュトゥトークキー</sys:String>
+  <sys:String x:Key="Settings_SeparateTracks">オーディオトラックを分離</sys:String>
+  <sys:String x:Key="Settings_SeparateTracks_Desc">システム音声とマイクをファイル内の別々のトラックとして保存します</sys:String>
+  <sys:String x:Key="Settings_Group_Automation">自動化</sys:String>
+  <sys:String x:Key="Settings_StartWithWindows">Windowsと同時に起動</sys:String>
+  <sys:String x:Key="Settings_StartWithWindows_Desc">アプリをシステムのスタートアップに追加します</sys:String>
+  <sys:String x:Key="Settings_StartMinimized">最小化して起動</sys:String>
+  <sys:String x:Key="Settings_StartMinimized_Desc">システムトレイに隠れた状態で起動します</sys:String>
+  <sys:String x:Key="Editor_Title">エディター</sys:String>
+  <sys:String x:Key="Editor_Edit">編集</sys:String>
+  <sys:String x:Key="Editor_Back">戻る</sys:String>
+  <sys:String x:Key="Editor_Export">エクスポート</sys:String>
+  <sys:String x:Key="Editor_Exporting">エクスポート中… {0}%</sys:String>
+  <sys:String x:Key="Editor_ExportDone">保存しました: {0}</sys:String>
+  <sys:String x:Key="Editor_ExportError">エクスポートに失敗しました: {0}</sys:String>
+  <sys:String x:Key="Editor_Speed">速度</sys:String>
+  <sys:String x:Key="Editor_Format">アスペクト比</sys:String>
+  <sys:String x:Key="Editor_TabClip">クリップ</sys:String>
+  <sys:String x:Key="Editor_TabFilters">フィルター</sys:String>
+  <sys:String x:Key="Editor_Tracks">オーディオトラック</sys:String>
+  <sys:String x:Key="Editor_TrackSystem">システム音声</sys:String>
+  <sys:String x:Key="Editor_TrackMic">マイク</sys:String>
+  <sys:String x:Key="Editor_TrackAudio">オーディオ</sys:String>
+  <sys:String x:Key="Editor_SetStart">クリップの開始位置を現在の位置に設定</sys:String>
+  <sys:String x:Key="Editor_SetEnd">クリップの終了位置を現在の位置に設定</sys:String>
+  <sys:String x:Key="Editor_ResetTrim">トリミングをリセット</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Screenshot">スクリーンショット</sys:String>
+  <sys:String x:Key="Toast_ReplaySaved">リプレイを保存しました</sys:String>
+  <sys:String x:Key="Toast_ScreenshotSaved">スクリーンショットを保存しました</sys:String>
+  <sys:String x:Key="Settings_AutoStart">録画を自動的に開始</sys:String>
+  <sys:String x:Key="Settings_AutoStart_Desc">起動直後にリプレイバッファが開始されます</sys:String>
+  <sys:String x:Key="Settings_Group_Hotkey">ホットキー</sys:String>
+  <sys:String x:Key="Settings_Hotkey_SaveReplay">リプレイを保存</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Desc">ボタンをクリックして、希望のキーの組み合わせを押してください</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Change">変更</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Listening">入力待ち...</sys:String>
+  <sys:String x:Key="Settings_Group_Paths">保存先</sys:String>
+  <sys:String x:Key="Settings_LibraryFolder">ライブラリフォルダー</sys:String>
+  <sys:String x:Key="Settings_Browse">参照</sys:String>
+  <sys:String x:Key="About_Group">情報</sys:String>
+  <sys:String x:Key="About_Version">バージョン</sys:String>
+  <sys:String x:Key="About_CheckUpdates">更新を確認</sys:String>
+  <sys:String x:Key="Update_Checking">更新を確認しています...</sys:String>
+  <sys:String x:Key="Update_UpToDate">最新バージョンです。</sys:String>
+  <sys:String x:Key="Update_Downloading">更新をダウンロードしています...</sys:String>
+  <sys:String x:Key="Update_DevMode">開発モードでは更新は利用できません。</sys:String>
+  <sys:String x:Key="Update_Failed">更新に失敗しました: {0}</sys:String>
+
+  <!-- ════════ Library ════════ -->
+  <sys:String x:Key="Library_Title">ライブラリ</sys:String>
+  <sys:String x:Key="Library_Subtitle">保存した瞬間</sys:String>
+  <sys:String x:Key="Library_Empty">まだリプレイがありません。録画を開始してホットキーを押すと、リプレイが保存されます！</sys:String>
+  <sys:String x:Key="Library_Delete">削除</sys:String>
+  <sys:String x:Key="Library_OpenFolder">フォルダーを開く</sys:String>
+  <sys:String x:Key="Library_ShowInFolder">フォルダーで表示</sys:String>
+  <sys:String x:Key="Library_FreeSpace">空き容量</sys:String>
+
+  <!-- ════════ Player ════════ -->
+  <sys:String x:Key="Player_Replays">リプレイ</sys:String>
+  <sys:String x:Key="Player_Clips">クリップ</sys:String>
+  <sys:String x:Key="Player_Duration">合計時間</sys:String>
+  <sys:String x:Key="Player_Placeholder">ビデオプレーヤー</sys:String>
+  <sys:String x:Key="Player_NowPlaying">再生中: </sys:String>
+  <sys:String x:Key="Player_ReplayBadge">リプレイ</sys:String>
+  <sys:String x:Key="Tooltip_Stop">停止</sys:String>
+  <sys:String x:Key="Tooltip_Rewind">10秒戻る</sys:String>
+  <sys:String x:Key="Tooltip_PlayPause">再生 / 一時停止</sys:String>
+  <sys:String x:Key="Tooltip_Forward">10秒進む</sys:String>
+  <sys:String x:Key="Tooltip_Next">次のリプレイ</sys:String>
+  <sys:String x:Key="Tooltip_Fullscreen">全画面表示（ESCで終了）</sys:String>
+  <sys:String x:Key="Tooltip_Volume">音量</sys:String>
+
+  <!-- ════════ Runtime status (ViewModels) ════════ -->
+  <sys:String x:Key="Status_Ready">準備完了</sys:String>
+  <sys:String x:Key="Status_Starting">録画を開始しています（OBS）...</sys:String>
+  <sys:String x:Key="Status_Recording">録画中...</sys:String>
+  <sys:String x:Key="Status_NoMonitor">録画するディスプレイが選択されていません。</sys:String>
+  <sys:String x:Key="Status_ObsError">OBSエラー: {0}</sys:String>
+  <sys:String x:Key="Status_Stopping">停止しています...</sys:String>
+  <sys:String x:Key="Status_Stopped">停止しました</sys:String>
+  <sys:String x:Key="Status_StopError">停止エラー: {0}</sys:String>
+  <sys:String x:Key="Status_SaveError">保存エラー: {0}</sys:String>
+  <sys:String x:Key="Status_ReplaySaved">リプレイを保存しました: {0}</sys:String>
+  <sys:String x:Key="Status_Saving">リプレイを保存しています...</sys:String>
+  <sys:String x:Key="Status_NotRecording">録画が有効ではありません。まず「録画を開始」を押してください。</sys:String>
+  <sys:String x:Key="Hotkey_PressCombo">キーの組み合わせを押してください...</sys:String>
+  <sys:String x:Key="Browse_Title">リプレイの保存先フォルダーを選択</sys:String>
+
+  <!-- ════════ Tray menu ════════ -->
+  <sys:String x:Key="Tray_SaveReplay">リプレイを保存</sys:String>
+  <sys:String x:Key="Tray_OpenLibrary">ライブラリを開く</sys:String>
+  <sys:String x:Key="Tray_Open">開く</sys:String>
+  <sys:String x:Key="Tray_Exit">終了</sys:String>
+
+  <!-- ════════ Shared option labels (dropdowns) ════════ -->
+  <sys:String x:Key="Time_SecShort">{0}秒</sys:String>
+  <sys:String x:Key="Time_MinShort">{0}分</sys:String>
+  <sys:String x:Key="Time_HourMinShort">{0}時間{1}分</sys:String>
+  <sys:String x:Key="Option_Native">ネイティブ</sys:String>
+  <sys:String x:Key="Option_Auto">自動</sys:String>
+  <sys:String x:Key="Option_Custom">カスタム</sys:String>
+
+  <sys:String x:Key="Sidebar_Buffer">バッファ</sys:String>
+  <sys:String x:Key="Library_Stats">{0}個のクリップ · 空き{1}</sys:String>
+  <sys:String x:Key="Player_Used">使用容量</sys:String>
+
+  <sys:String x:Key="Library_EmptyTitle">まだリプレイがありません</sys:String>
+</ResourceDictionary>

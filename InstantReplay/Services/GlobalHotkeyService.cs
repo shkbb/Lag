@@ -20,7 +20,8 @@ public sealed class GlobalHotkeyService : IDisposable
     private const int MOD_NOREPEAT = 0x4000;
     private const uint WM_QUIT = 0x0012;
 
-    private const int HOTKEY_ID = 9000;
+    private const int HOTKEY_ID = 9000;        // save replay
+    private const int SCREENSHOT_ID = 9001;    // take screenshot
 
     [DllImport("user32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
@@ -71,14 +72,31 @@ public sealed class GlobalHotkeyService : IDisposable
     private uint _threadId;
     private bool _isDisposed;
 
+    // Registered combos (read by the loop thread; written only while the loop is stopped).
+    private uint _saveModifiers, _saveVk;
+    private uint _shotModifiers, _shotVk; // vk 0 = screenshot hotkey not registered
+
+    /// <summary>Save-replay hotkey pressed.</summary>
     public event EventHandler? HotkeyPressed;
+
+    /// <summary>Screenshot hotkey pressed.</summary>
+    public event EventHandler? ScreenshotPressed;
 
     public void Start(uint modifiers, uint virtualKey)
     {
         if (_messageLoopThread != null)
             return;
 
-        _messageLoopThread = new Thread(() => MessageLoop(modifiers, virtualKey))
+        _saveModifiers = modifiers;
+        _saveVk = virtualKey;
+        StartLoop();
+    }
+
+    private void StartLoop()
+    {
+        if (_messageLoopThread != null) return;
+
+        _messageLoopThread = new Thread(MessageLoop)
         {
             IsBackground = true,
             Name = "Win32HotkeyThread"
@@ -87,14 +105,16 @@ public sealed class GlobalHotkeyService : IDisposable
     }
 
     /// <summary>
-    /// Re-registers the global hotkey with a new combination, cleanly stopping the previous
-    /// message-loop thread first. Safe to call repeatedly (e.g. each time the user rebinds).
+    /// Re-registers the global hotkeys with a new save-replay combination, cleanly stopping
+    /// the previous message-loop thread first. Safe to call repeatedly (e.g. on rebinds).
     /// </summary>
     public void UpdateHotkey(uint modifiers, uint virtualKey)
     {
         if (_isDisposed) return;
         StopMessageLoop();
-        Start(modifiers, virtualKey);
+        _saveModifiers = modifiers;
+        _saveVk = virtualKey;
+        StartLoop();
     }
 
     /// <summary>
@@ -107,6 +127,27 @@ public sealed class GlobalHotkeyService : IDisposable
         if (vk == 0) return false;
 
         UpdateHotkey(ModifiersToWin32(modifiers), vk);
+        return true;
+    }
+
+    /// <summary>
+    /// Sets/re-registers the screenshot hotkey (restarting the message loop when it is
+    /// already running). Returns false if the key cannot be mapped to a virtual-key code.
+    /// </summary>
+    public bool UpdateScreenshotHotkey(ModifierMask modifiers, KeyCode key)
+    {
+        if (_isDisposed) return false;
+
+        uint vk = VirtualKeyFromKeyCode(key);
+        if (vk == 0) return false;
+
+        bool wasRunning = _messageLoopThread != null;
+        if (wasRunning) StopMessageLoop();
+
+        _shotModifiers = ModifiersToWin32(modifiers);
+        _shotVk = vk;
+
+        if (wasRunning) StartLoop();
         return true;
     }
 
@@ -179,19 +220,25 @@ public sealed class GlobalHotkeyService : IDisposable
         _threadId = 0;
     }
 
-    private void MessageLoop(uint modifiers, uint virtualKey)
+    private void MessageLoop()
     {
         // Capture the native thread id so UpdateHotkey/Dispose can post WM_QUIT to this loop.
         _threadId = GetCurrentThreadId();
 
-        // hWnd = IntPtr.Zero means the hotkey is associated with the current thread
-        if (!RegisterHotKey(IntPtr.Zero, HOTKEY_ID, modifiers | MOD_NOREPEAT, virtualKey))
-        {
-            Console.WriteLine($"[GlobalHotkeyService] Failed to register hotkey. Error: {Marshal.GetLastWin32Error()}");
-            return;
-        }
+        // hWnd = IntPtr.Zero means the hotkeys are associated with the current thread
+        bool saveRegistered = RegisterHotKey(IntPtr.Zero, HOTKEY_ID, _saveModifiers | MOD_NOREPEAT, _saveVk);
+        if (!saveRegistered)
+            Console.WriteLine($"[GlobalHotkeyService] Failed to register save hotkey. Error: {Marshal.GetLastWin32Error()}");
 
-        Console.WriteLine($"[GlobalHotkeyService] Registered Win32 Hotkey: Mod={modifiers}, Key={virtualKey}");
+        bool shotRegistered = _shotVk != 0 &&
+            RegisterHotKey(IntPtr.Zero, SCREENSHOT_ID, _shotModifiers | MOD_NOREPEAT, _shotVk);
+        if (_shotVk != 0 && !shotRegistered)
+            Console.WriteLine($"[GlobalHotkeyService] Failed to register screenshot hotkey. Error: {Marshal.GetLastWin32Error()}");
+
+        if (!saveRegistered && !shotRegistered)
+            return;
+
+        Console.WriteLine($"[GlobalHotkeyService] Registered Win32 hotkeys: save(Mod={_saveModifiers}, Key={_saveVk}), shot(Mod={_shotModifiers}, Key={_shotVk})");
 
         MSG msg;
         int retVal;
@@ -204,17 +251,26 @@ public sealed class GlobalHotkeyService : IDisposable
                 break;
             }
 
-            if (msg.message == WM_HOTKEY && msg.wParam.ToInt32() == HOTKEY_ID)
+            if (msg.message == WM_HOTKEY)
             {
-                HotkeyPressed?.Invoke(this, EventArgs.Empty);
+                switch (msg.wParam.ToInt32())
+                {
+                    case HOTKEY_ID:
+                        HotkeyPressed?.Invoke(this, EventArgs.Empty);
+                        break;
+                    case SCREENSHOT_ID:
+                        ScreenshotPressed?.Invoke(this, EventArgs.Empty);
+                        break;
+                }
             }
 
             TranslateMessage(ref msg);
             DispatchMessage(ref msg);
         }
 
-        UnregisterHotKey(IntPtr.Zero, HOTKEY_ID);
-        Console.WriteLine("[GlobalHotkeyService] Message loop exited and hotkey unregistered.");
+        if (saveRegistered) UnregisterHotKey(IntPtr.Zero, HOTKEY_ID);
+        if (shotRegistered) UnregisterHotKey(IntPtr.Zero, SCREENSHOT_ID);
+        Console.WriteLine("[GlobalHotkeyService] Message loop exited and hotkeys unregistered.");
     }
 
     public void Dispose()

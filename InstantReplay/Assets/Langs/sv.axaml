@@ -52,6 +52,29 @@
   <sys:String x:Key="Settings_Group_Automation">AUTOMATISERING</sys:String>
   <sys:String x:Key="Settings_StartWithWindows">Starta med Windows</sys:String>
   <sys:String x:Key="Settings_StartWithWindows_Desc">Lägger till appen i systemstarten</sys:String>
+  <sys:String x:Key="Settings_StartMinimized">Starta minimerad</sys:String>
+  <sys:String x:Key="Settings_StartMinimized_Desc">Startar dold i systemfältet</sys:String>
+  <sys:String x:Key="Editor_Title">Redigerare</sys:String>
+  <sys:String x:Key="Editor_Edit">Redigera</sys:String>
+  <sys:String x:Key="Editor_Back">Tillbaka</sys:String>
+  <sys:String x:Key="Editor_Export">Exportera</sys:String>
+  <sys:String x:Key="Editor_Exporting">Exporterar… {0}%</sys:String>
+  <sys:String x:Key="Editor_ExportDone">Sparad: {0}</sys:String>
+  <sys:String x:Key="Editor_ExportError">Export misslyckades: {0}</sys:String>
+  <sys:String x:Key="Editor_Speed">Hastighet</sys:String>
+  <sys:String x:Key="Editor_Format">Format</sys:String>
+  <sys:String x:Key="Editor_TabClip">Klipp</sys:String>
+  <sys:String x:Key="Editor_TabFilters">Filter</sys:String>
+  <sys:String x:Key="Editor_Tracks">LJUDSPÅR</sys:String>
+  <sys:String x:Key="Editor_TrackSystem">Systemljud</sys:String>
+  <sys:String x:Key="Editor_TrackMic">Mikrofon</sys:String>
+  <sys:String x:Key="Editor_TrackAudio">Ljud</sys:String>
+  <sys:String x:Key="Editor_SetStart">Sätt klippets början till aktuellt ögonblick</sys:String>
+  <sys:String x:Key="Editor_SetEnd">Sätt klippets slut till aktuellt ögonblick</sys:String>
+  <sys:String x:Key="Editor_ResetTrim">Återställ trimning</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Screenshot">Skärmbild</sys:String>
+  <sys:String x:Key="Toast_ReplaySaved">Repris sparad</sys:String>
+  <sys:String x:Key="Toast_ScreenshotSaved">Skärmbild sparad</sys:String>
   <sys:String x:Key="Settings_AutoStart">Starta inspelning automatiskt</sys:String>
   <sys:String x:Key="Settings_AutoStart_Desc">Reprisbufferten startar direkt efter programstart</sys:String>
   <sys:String x:Key="Settings_Group_Hotkey">SNABBTANGENT</sys:String>
@@ -125,4 +148,9 @@
   <sys:String x:Key="Option_Auto">Auto</sys:String>
   <sys:String x:Key="Option_Custom">Anpassad</sys:String>
 
+  <sys:String x:Key="Sidebar_Buffer">Buffert</sys:String>
+  <sys:String x:Key="Library_Stats">{0} klipp · {1} ledigt</sys:String>
+  <sys:String x:Key="Player_Used">Använt</sys:String>
+
+  <sys:String x:Key="Library_EmptyTitle">Inga repriser ännu</sys:String>
 </ResourceDictionary>

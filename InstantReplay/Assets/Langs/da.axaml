@@ -52,6 +52,29 @@
   <sys:String x:Key="Settings_Group_Automation">AUTOMATISERING</sys:String>
   <sys:String x:Key="Settings_StartWithWindows">Start sammen med Windows</sys:String>
   <sys:String x:Key="Settings_StartWithWindows_Desc">Tilføjer appen til systemstart</sys:String>
+  <sys:String x:Key="Settings_StartMinimized">Start minimeret</sys:String>
+  <sys:String x:Key="Settings_StartMinimized_Desc">Starter skjult i systembakken</sys:String>
+  <sys:String x:Key="Editor_Title">Editor</sys:String>
+  <sys:String x:Key="Editor_Edit">Rediger</sys:String>
+  <sys:String x:Key="Editor_Back">Tilbage</sys:String>
+  <sys:String x:Key="Editor_Export">Eksportér</sys:String>
+  <sys:String x:Key="Editor_Exporting">Eksporterer… {0}%</sys:String>
+  <sys:String x:Key="Editor_ExportDone">Gemt: {0}</sys:String>
+  <sys:String x:Key="Editor_ExportError">Eksport mislykkedes: {0}</sys:String>
+  <sys:String x:Key="Editor_Speed">Hastighed</sys:String>
+  <sys:String x:Key="Editor_Format">Format</sys:String>
+  <sys:String x:Key="Editor_TabClip">Klip</sys:String>
+  <sys:String x:Key="Editor_TabFilters">Filtre</sys:String>
+  <sys:String x:Key="Editor_Tracks">LYDSPOR</sys:String>
+  <sys:String x:Key="Editor_TrackSystem">Systemlyd</sys:String>
+  <sys:String x:Key="Editor_TrackMic">Mikrofon</sys:String>
+  <sys:String x:Key="Editor_TrackAudio">Lyd</sys:String>
+  <sys:String x:Key="Editor_SetStart">Sæt klipstart til nuværende øjeblik</sys:String>
+  <sys:String x:Key="Editor_SetEnd">Sæt klipslut til nuværende øjeblik</sys:String>
+  <sys:String x:Key="Editor_ResetTrim">Nulstil trimning</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Screenshot">Skærmbillede</sys:String>
+  <sys:String x:Key="Toast_ReplaySaved">Replay gemt</sys:String>
+  <sys:String x:Key="Toast_ScreenshotSaved">Skærmbillede gemt</sys:String>
   <sys:String x:Key="Settings_AutoStart">Start optagelse automatisk</sys:String>
   <sys:String x:Key="Settings_AutoStart_Desc">Replay-bufferen starter straks efter programstart</sys:String>
   <sys:String x:Key="Settings_Group_Hotkey">GENVEJSTAST</sys:String>
@@ -125,4 +148,9 @@
   <sys:String x:Key="Option_Auto">Auto</sys:String>
   <sys:String x:Key="Option_Custom">Brugerdefineret</sys:String>
 
+  <sys:String x:Key="Sidebar_Buffer">Buffer</sys:String>
+  <sys:String x:Key="Library_Stats">{0} klip · {1} ledig</sys:String>
+  <sys:String x:Key="Player_Used">Brugt</sys:String>
+
+  <sys:String x:Key="Library_EmptyTitle">Ingen replays endnu</sys:String>
 </ResourceDictionary>

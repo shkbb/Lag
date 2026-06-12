@@ -52,6 +52,29 @@
   <sys:String x:Key="Settings_Group_Automation">AUTOMATIZAVIMAS</sys:String>
   <sys:String x:Key="Settings_StartWithWindows">Paleisti kartu su Windows</sys:String>
   <sys:String x:Key="Settings_StartWithWindows_Desc">Prideda programą prie sistemos paleisties</sys:String>
+  <sys:String x:Key="Settings_StartMinimized">Paleisti sumažintą</sys:String>
+  <sys:String x:Key="Settings_StartMinimized_Desc">Paleidžiama paslėpta sistemos dėkle</sys:String>
+  <sys:String x:Key="Editor_Title">Redaktorius</sys:String>
+  <sys:String x:Key="Editor_Edit">Redaguoti</sys:String>
+  <sys:String x:Key="Editor_Back">Atgal</sys:String>
+  <sys:String x:Key="Editor_Export">Eksportuoti</sys:String>
+  <sys:String x:Key="Editor_Exporting">Eksportuojama… {0}%</sys:String>
+  <sys:String x:Key="Editor_ExportDone">Išsaugota: {0}</sys:String>
+  <sys:String x:Key="Editor_ExportError">Eksportavimo klaida: {0}</sys:String>
+  <sys:String x:Key="Editor_Speed">Greitis</sys:String>
+  <sys:String x:Key="Editor_Format">Formatas</sys:String>
+  <sys:String x:Key="Editor_TabClip">Klipas</sys:String>
+  <sys:String x:Key="Editor_TabFilters">Filtrai</sys:String>
+  <sys:String x:Key="Editor_Tracks">GARSO TAKELIAI</sys:String>
+  <sys:String x:Key="Editor_TrackSystem">Sistemos garsas</sys:String>
+  <sys:String x:Key="Editor_TrackMic">Mikrofonas</sys:String>
+  <sys:String x:Key="Editor_TrackAudio">Garsas</sys:String>
+  <sys:String x:Key="Editor_SetStart">Nustatyti klipo pradžią į dabartinį momentą</sys:String>
+  <sys:String x:Key="Editor_SetEnd">Nustatyti klipo pabaigą į dabartinį momentą</sys:String>
+  <sys:String x:Key="Editor_ResetTrim">Atstatyti apkarpymą</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Screenshot">Ekrano nuotrauka</sys:String>
+  <sys:String x:Key="Toast_ReplaySaved">Pakartojimas išsaugotas</sys:String>
+  <sys:String x:Key="Toast_ScreenshotSaved">Ekrano nuotrauka išsaugota</sys:String>
   <sys:String x:Key="Settings_AutoStart">Automatiškai pradėti įrašymą</sys:String>
   <sys:String x:Key="Settings_AutoStart_Desc">Pakartojimo buferis paleidžiamas iškart po programos paleidimo</sys:String>
   <sys:String x:Key="Settings_Group_Hotkey">SPARTUSIS KLAVIŠAS</sys:String>
@@ -125,4 +148,9 @@
   <sys:String x:Key="Option_Auto">Automatinis</sys:String>
   <sys:String x:Key="Option_Custom">Pasirinktinis</sys:String>
 
+  <sys:String x:Key="Sidebar_Buffer">Buferis</sys:String>
+  <sys:String x:Key="Library_Stats">{0} klipai · laisva {1}</sys:String>
+  <sys:String x:Key="Player_Used">Užimta</sys:String>
+
+  <sys:String x:Key="Library_EmptyTitle">Pakartojimų dar nėra</sys:String>
 </ResourceDictionary>

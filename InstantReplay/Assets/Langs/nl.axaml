@@ -52,6 +52,29 @@
   <sys:String x:Key="Settings_Group_Automation">AUTOMATISERING</sys:String>
   <sys:String x:Key="Settings_StartWithWindows">Starten met Windows</sys:String>
   <sys:String x:Key="Settings_StartWithWindows_Desc">Voegt de app toe aan het opstarten van het systeem</sys:String>
+  <sys:String x:Key="Settings_StartMinimized">Geminimaliseerd starten</sys:String>
+  <sys:String x:Key="Settings_StartMinimized_Desc">Start verborgen in het systeemvak</sys:String>
+  <sys:String x:Key="Editor_Title">Editor</sys:String>
+  <sys:String x:Key="Editor_Edit">Bewerken</sys:String>
+  <sys:String x:Key="Editor_Back">Terug</sys:String>
+  <sys:String x:Key="Editor_Export">Exporteren</sys:String>
+  <sys:String x:Key="Editor_Exporting">Exporteren… {0}%</sys:String>
+  <sys:String x:Key="Editor_ExportDone">Opgeslagen: {0}</sys:String>
+  <sys:String x:Key="Editor_ExportError">Export mislukt: {0}</sys:String>
+  <sys:String x:Key="Editor_Speed">Snelheid</sys:String>
+  <sys:String x:Key="Editor_Format">Formaat</sys:String>
+  <sys:String x:Key="Editor_TabClip">Clip</sys:String>
+  <sys:String x:Key="Editor_TabFilters">Filters</sys:String>
+  <sys:String x:Key="Editor_Tracks">AUDIOSPOREN</sys:String>
+  <sys:String x:Key="Editor_TrackSystem">Systeemgeluid</sys:String>
+  <sys:String x:Key="Editor_TrackMic">Microfoon</sys:String>
+  <sys:String x:Key="Editor_TrackAudio">Audio</sys:String>
+  <sys:String x:Key="Editor_SetStart">Clipbegin op huidig moment zetten</sys:String>
+  <sys:String x:Key="Editor_SetEnd">Clipeinde op huidig moment zetten</sys:String>
+  <sys:String x:Key="Editor_ResetTrim">Bijsnijden resetten</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Screenshot">Schermafbeelding</sys:String>
+  <sys:String x:Key="Toast_ReplaySaved">Replay opgeslagen</sys:String>
+  <sys:String x:Key="Toast_ScreenshotSaved">Schermafbeelding opgeslagen</sys:String>
   <sys:String x:Key="Settings_AutoStart">Opname automatisch starten</sys:String>
   <sys:String x:Key="Settings_AutoStart_Desc">De replaybuffer start direct na het opstarten</sys:String>
   <sys:String x:Key="Settings_Group_Hotkey">SNELTOETS</sys:String>
@@ -125,4 +148,9 @@
   <sys:String x:Key="Option_Auto">Auto</sys:String>
   <sys:String x:Key="Option_Custom">Aangepast</sys:String>
 
+  <sys:String x:Key="Sidebar_Buffer">Buffer</sys:String>
+  <sys:String x:Key="Library_Stats">{0} clips · {1} vrij</sys:String>
+  <sys:String x:Key="Player_Used">Gebruikt</sys:String>
+
+  <sys:String x:Key="Library_EmptyTitle">Nog geen replays</sys:String>
 </ResourceDictionary>

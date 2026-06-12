@@ -52,6 +52,29 @@
   <sys:String x:Key="Settings_Group_Automation">AUTOMAATIKA</sys:String>
   <sys:String x:Key="Settings_StartWithWindows">Käivita koos Windowsiga</sys:String>
   <sys:String x:Key="Settings_StartWithWindows_Desc">Lisab rakenduse süsteemi käivitusse</sys:String>
+  <sys:String x:Key="Settings_StartMinimized">Käivita minimeerituna</sys:String>
+  <sys:String x:Key="Settings_StartMinimized_Desc">Käivitub peidetuna süsteemisalves</sys:String>
+  <sys:String x:Key="Editor_Title">Redaktor</sys:String>
+  <sys:String x:Key="Editor_Edit">Muuda</sys:String>
+  <sys:String x:Key="Editor_Back">Tagasi</sys:String>
+  <sys:String x:Key="Editor_Export">Ekspordi</sys:String>
+  <sys:String x:Key="Editor_Exporting">Eksportimine… {0}%</sys:String>
+  <sys:String x:Key="Editor_ExportDone">Salvestatud: {0}</sys:String>
+  <sys:String x:Key="Editor_ExportError">Ekspordi viga: {0}</sys:String>
+  <sys:String x:Key="Editor_Speed">Kiirus</sys:String>
+  <sys:String x:Key="Editor_Format">Formaat</sys:String>
+  <sys:String x:Key="Editor_TabClip">Klipp</sys:String>
+  <sys:String x:Key="Editor_TabFilters">Filtrid</sys:String>
+  <sys:String x:Key="Editor_Tracks">HELIRAJAD</sys:String>
+  <sys:String x:Key="Editor_TrackSystem">Süsteemiheli</sys:String>
+  <sys:String x:Key="Editor_TrackMic">Mikrofon</sys:String>
+  <sys:String x:Key="Editor_TrackAudio">Heli</sys:String>
+  <sys:String x:Key="Editor_SetStart">Määra klipi algus praegusele hetkele</sys:String>
+  <sys:String x:Key="Editor_SetEnd">Määra klipi lõpp praegusele hetkele</sys:String>
+  <sys:String x:Key="Editor_ResetTrim">Lähtesta kärpimine</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Screenshot">Ekraanipilt</sys:String>
+  <sys:String x:Key="Toast_ReplaySaved">Kordus salvestatud</sys:String>
+  <sys:String x:Key="Toast_ScreenshotSaved">Ekraanipilt salvestatud</sys:String>
   <sys:String x:Key="Settings_AutoStart">Alusta salvestamist automaatselt</sys:String>
   <sys:String x:Key="Settings_AutoStart_Desc">Korduspuhver käivitub kohe pärast programmi avamist</sys:String>
   <sys:String x:Key="Settings_Group_Hotkey">KIIRKLAHV</sys:String>
@@ -125,4 +148,9 @@
   <sys:String x:Key="Option_Auto">Automaatne</sys:String>
   <sys:String x:Key="Option_Custom">Kohandatud</sys:String>
 
+  <sys:String x:Key="Sidebar_Buffer">Puhver</sys:String>
+  <sys:String x:Key="Library_Stats">{0} klippi · vaba {1}</sys:String>
+  <sys:String x:Key="Player_Used">Kasutusel</sys:String>
+
+  <sys:String x:Key="Library_EmptyTitle">Kordusi pole veel</sys:String>
 </ResourceDictionary>

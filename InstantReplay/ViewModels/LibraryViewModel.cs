@@ -29,14 +29,38 @@ public partial class LibraryViewModel : ViewModelBase
     /// </summary>
     public event EventHandler<ReplayClip>? PlayClipRequested;
 
+    /// <summary>
+    /// Fired when the user wants to edit a clip (context menu → Edit).
+    /// The MainViewModel handles navigation to the Editor view.
+    /// </summary>
+    public event EventHandler<ReplayClip>? EditClipRequested;
+
+    /// <summary>Raises <see cref="EditClipRequested"/> (called from the view's context menu).</summary>
+    public void RequestEdit(ReplayClip clip)
+    {
+        if (clip.IsImage) return; // screenshots have nothing to trim
+        EditClipRequested?.Invoke(this, clip);
+    }
+
+
     private readonly SettingsViewModel _settings;
 
     /// <summary>All container formats the recorder can produce (must match SettingsViewModel.FormatOptions).</summary>
     private static readonly string[] VideoPatterns = ["*.mp4", "*.mkv", "*.mov", "*.avi"];
 
+    /// <summary>Screenshot formats produced by the screenshot hotkey (shown as image cards).</summary>
+    private static readonly string[] ImagePatterns = ["*.png", "*.jpg", "*.jpeg"];
+
     /// <summary>Enumerates every saved replay regardless of its container format.</summary>
     private static IEnumerable<string> GetVideoFiles(string dir) =>
         VideoPatterns.SelectMany(p => Directory.GetFiles(dir, p));
+
+    /// <summary>Enumerates replays AND screenshots living in the library folder.</summary>
+    private static IEnumerable<string> GetMediaFiles(string dir) =>
+        VideoPatterns.Concat(ImagePatterns).SelectMany(p => Directory.GetFiles(dir, p));
+
+    private static bool IsImageFile(string path) =>
+        Path.GetExtension(path).ToLowerInvariant() is ".png" or ".jpg" or ".jpeg";
 
     /// <summary>
     /// Persistent thumbnail cache. Lives in %LocalAppData%\Lag\thumbnails — NOT inside the
@@ -73,6 +97,9 @@ public partial class LibraryViewModel : ViewModelBase
     /// <summary>Used percentage of the library drive (0–100), drives the indicator bar.</summary>
     [ObservableProperty]
     private double _usedSpacePercent;
+
+    /// <summary>Header subtitle per the design: "24 кліпи · вільно 412 GB" (localized).</summary>
+    public string LibraryStats => Lag.Core.Localizer.Format("Library_Stats", Clips.Count, FreeSpaceDisplay);
 
     /// <summary>
     /// Refreshes the free-space indicator from the drive that hosts the library folder.
@@ -192,7 +219,7 @@ public partial class LibraryViewModel : ViewModelBase
             Directory.CreateDirectory(ThumbnailCacheDir);
             CleanupLegacyThumbnailFolder(libraryDir);
 
-            var files = GetVideoFiles(libraryDir)
+            var files = GetMediaFiles(libraryDir)
                 .OrderByDescending(File.GetCreationTime);
 
             foreach (var filePath in files)
@@ -200,39 +227,56 @@ public partial class LibraryViewModel : ViewModelBase
                 var fileInfo = new FileInfo(filePath);
                 Avalonia.Media.Imaging.Bitmap? avaloniaBitmap = null;
                 TimeSpan duration = TimeSpan.Zero;
-                string thumbPath = GetThumbnailCachePath(filePath);
+                bool isImage = IsImageFile(filePath);
+                string thumbPath = isImage ? filePath : GetThumbnailCachePath(filePath);
 
-                // ── Step 1: Get duration via FFProbe ──
-                try
+                if (isImage)
                 {
-                    var mediaInfo = await FFProbe.AnalyseAsync(filePath);
-                    duration = mediaInfo.Duration;
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine($"[FFProbe] Failed to get duration for {filePath}: {ex.Message}");
-                }
-
-                // ── Step 2: Generate or load cached thumbnail ──
-                try
-                {
-                    // If cached thumbnail doesn't exist or is older than the video, regenerate
-                    if (!File.Exists(thumbPath) || File.GetLastWriteTime(thumbPath) < fileInfo.LastWriteTime)
+                    // Screenshots are their own thumbnail — just decode them downscaled.
+                    try
                     {
-                        // Extract a frame at the 2-second mark (or at 0s for very short clips)
-                        var snapshotTime = duration.TotalSeconds > 3 ? TimeSpan.FromSeconds(2) : TimeSpan.Zero;
-                        await FFMpeg.SnapshotAsync(filePath, thumbPath, new Size(320, 180), snapshotTime);
+                        await using var fs = File.OpenRead(filePath);
+                        avaloniaBitmap = Avalonia.Media.Imaging.Bitmap.DecodeToWidth(fs, 640);
                     }
-
-                    if (File.Exists(thumbPath))
+                    catch (Exception ex)
                     {
-                        await using var fs = File.OpenRead(thumbPath);
-                        avaloniaBitmap = new Avalonia.Media.Imaging.Bitmap(fs);
+                        System.Diagnostics.Debug.WriteLine($"[Library] Failed to load screenshot {filePath}: {ex.Message}");
                     }
                 }
-                catch (Exception ex)
+                else
                 {
-                    System.Diagnostics.Debug.WriteLine($"[FFMpeg] Failed to generate thumbnail for {filePath}: {ex.Message}");
+                    // ── Step 1: Get duration via FFProbe ──
+                    try
+                    {
+                        var mediaInfo = await FFProbe.AnalyseAsync(filePath);
+                        duration = mediaInfo.Duration;
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[FFProbe] Failed to get duration for {filePath}: {ex.Message}");
+                    }
+
+                    // ── Step 2: Generate or load cached thumbnail ──
+                    try
+                    {
+                        // If cached thumbnail doesn't exist or is older than the video, regenerate
+                        if (!File.Exists(thumbPath) || File.GetLastWriteTime(thumbPath) < fileInfo.LastWriteTime)
+                        {
+                            // Extract a frame at the 2-second mark (or at 0s for very short clips)
+                            var snapshotTime = duration.TotalSeconds > 3 ? TimeSpan.FromSeconds(2) : TimeSpan.Zero;
+                            await FFMpeg.SnapshotAsync(filePath, thumbPath, new Size(320, 180), snapshotTime);
+                        }
+
+                        if (File.Exists(thumbPath))
+                        {
+                            await using var fs = File.OpenRead(thumbPath);
+                            avaloniaBitmap = new Avalonia.Media.Imaging.Bitmap(fs);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[FFMpeg] Failed to generate thumbnail for {filePath}: {ex.Message}");
+                    }
                 }
 
                 Clips.Add(new ReplayClip
@@ -242,13 +286,16 @@ public partial class LibraryViewModel : ViewModelBase
                     Thumbnail = avaloniaBitmap,
                     Duration = duration,
                     CreatedDate = fileInfo.CreationTime,
-                    FileSize = fileInfo.Length
+                    FileSize = fileInfo.Length,
+                    IsImage = isImage
                 });
             }
         }
         finally
         {
             UpdateFreeSpace();
+            OnPropertyChanged(nameof(LibraryStats));
+            NotifySelectionChanged(); // rebuilt list starts with nothing selected
             IsLoading = false;
         }
     }
@@ -271,8 +318,9 @@ public partial class LibraryViewModel : ViewModelBase
     [RelayCommand]
     private void PlayClip(ReplayClip? clip)
     {
-        if (clip != null)
-            PlayClipRequested?.Invoke(this, clip);
+        if (clip == null) return;
+        // Videos play, screenshots display — the player view handles both.
+        PlayClipRequested?.Invoke(this, clip);
     }
 
     /// <summary>
@@ -297,6 +345,40 @@ public partial class LibraryViewModel : ViewModelBase
         {
             System.Diagnostics.Debug.WriteLine($"Failed to delete clip: {ex.Message}");
         }
+
+        NotifySelectionChanged();
+    }
+
+    // ───────────── Multi-select (bulk delete) ─────────────
+
+    /// <summary>Any cards selected → the bulk "Delete (N)" button is shown in the header.</summary>
+    public bool HasSelection => Clips.Any(c => c.IsSelected);
+
+    /// <summary>Header button caption, e.g. "Delete (3)" (reuses the Library_Delete string).</summary>
+    public string DeleteSelectedLabel =>
+        $"{Lag.Core.Localizer.Get("Library_Delete")} ({Clips.Count(c => c.IsSelected)})";
+
+    private void NotifySelectionChanged()
+    {
+        OnPropertyChanged(nameof(HasSelection));
+        OnPropertyChanged(nameof(DeleteSelectedLabel));
+    }
+
+    /// <summary>Card hover button: toggles the clip's membership in the selection.</summary>
+    [RelayCommand]
+    private void ToggleSelect(ReplayClip? clip)
+    {
+        if (clip == null) return;
+        clip.IsSelected = !clip.IsSelected;
+        NotifySelectionChanged();
+    }
+
+    /// <summary>Header button: deletes every selected clip (files + thumbnails).</summary>
+    [RelayCommand]
+    private async Task DeleteSelectedAsync()
+    {
+        foreach (var clip in Clips.Where(c => c.IsSelected).ToList())
+            await DeleteClipAsync(clip);
     }
 
     /// <summary>

@@ -44,6 +44,18 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
     /// <summary>Sum of all clip durations, formatted as "X год Y хв" (sidebar stat).</summary>
     public string TotalDurationDisplay => FormatTotalDuration();
 
+    /// <summary>Total disk size of all clips (e.g., "38.4 GB") for the sidebar stats.</summary>
+    public string TotalSizeDisplay
+    {
+        get
+        {
+            long bytes = Clips.Sum(c => c.FileSize);
+            return bytes >= 1_073_741_824
+                ? $"{bytes / 1_073_741_824.0:F1} GB"
+                : $"{bytes / 1_048_576.0:F0} MB";
+        }
+    }
+
     /// <summary>
     /// The clip currently selected in the sidebar list. Selecting one immediately plays it.
     /// </summary>
@@ -57,9 +69,20 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
         StartPlayback();
     }
 
-    /// <summary>The LibVLCSharp MediaPlayer instance, bound to the VideoView.</summary>
+    /// <summary>The LibVLCSharp MediaPlayer instance.</summary>
     [ObservableProperty]
     private MediaPlayer? _player;
+
+    /// <summary>Renders decoded frames into an Avalonia bitmap (no native HWND).</summary>
+    public Lag.Services.VlcVideoRenderer VideoRenderer { get; } = new();
+
+    /// <summary>True while a screenshot (image clip) is displayed instead of video.</summary>
+    [ObservableProperty]
+    private bool _isViewingImage;
+
+    /// <summary>The decoded screenshot shown in the video area when <see cref="IsViewingImage"/>.</summary>
+    [ObservableProperty]
+    private Avalonia.Media.Imaging.Bitmap? _stillImage;
 
     /// <summary>The clip currently being played.</summary>
     [ObservableProperty]
@@ -73,13 +96,12 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private double _position;
 
-    /// <summary>When set by the user (via slider), seeks to the new position.</summary>
+    /// <summary>When set by the user (via slider), seeks to the new position (throttled).</summary>
     partial void OnPositionChanged(double value)
     {
-        if (_mediaPlayer != null && !_isUpdatingPosition)
-        {
-            _mediaPlayer.Position = (float)value;
-        }
+        if (_isUpdatingPosition) return;
+        _pendingSeekPosition = (float)Math.Clamp(value, 0.0, 1.0);
+        StartVlcApplyTimer();
     }
 
     private bool _isUpdatingPosition;
@@ -94,8 +116,68 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
 
     partial void OnVolumeChanged(int value)
     {
-        if (_mediaPlayer != null)
-            _mediaPlayer.Volume = value;
+        _pendingVolume = Math.Clamp(value, 0, 100);
+        StartVlcApplyTimer();
+    }
+
+    // ── Throttled writes into libvlc ──
+    // Dragging a slider produces dozens of property changes per second; pushing each one
+    // straight into libvlc (volume/seek) floods its audio/input threads — the UI starts
+    // stuttering and libvlc eventually crashes the process. Instead the latest value is
+    // parked here and flushed at most every 80ms (the first change applies immediately).
+    private DispatcherTimer? _vlcApplyTimer;
+    private int? _pendingVolume;
+    private float? _pendingSeekPosition;
+
+    private void StartVlcApplyTimer()
+    {
+        if (_vlcApplyTimer == null)
+        {
+            _vlcApplyTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(80) };
+            _vlcApplyTimer.Tick += (_, _) => ApplyPendingVlcWrites();
+        }
+
+        if (!_vlcApplyTimer.IsEnabled)
+        {
+            ApplyPendingVlcWrites(); // leading edge — the first change feels instant
+            _vlcApplyTimer.Start();  // trailing ticks pick up whatever arrives while dragging
+        }
+    }
+
+    private void ApplyPendingVlcWrites()
+    {
+        if (_mediaPlayer == null || _disposed)
+        {
+            _pendingVolume = null;
+            _pendingSeekPosition = null;
+            _vlcApplyTimer?.Stop();
+            return;
+        }
+
+        bool appliedAnything = false;
+        try
+        {
+            if (_pendingVolume is int vol)
+            {
+                _pendingVolume = null;
+                _mediaPlayer.Volume = vol;
+                appliedAnything = true;
+            }
+            if (_pendingSeekPosition is float pos)
+            {
+                _pendingSeekPosition = null;
+                if (_mediaPlayer.IsSeekable)
+                    _mediaPlayer.Position = pos;
+                appliedAnything = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"VLC write failed: {ex.Message}");
+        }
+
+        if (!appliedAnything)
+            _vlcApplyTimer?.Stop();
     }
 
     /// <summary>
@@ -124,6 +206,7 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
         {
             OnPropertyChanged(nameof(TotalClips));
             OnPropertyChanged(nameof(TotalDurationDisplay));
+            OnPropertyChanged(nameof(TotalSizeDisplay));
         });
     }
 
@@ -147,25 +230,28 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
         try
         {
             LibVLCSharp.Shared.Core.Initialize();
-            // Added --avcodec-hw=none to prevent hardware acceleration crashes when Avalonia detaches the NativeControlHost
-            _libVLC = new LibVLC(new string[] { "--no-video-title-show", "--no-osd", "--vout=direct3d11", "--avcodec-hw=none" });
+            _libVLC = new LibVLC(new string[] { "--no-video-title-show", "--no-osd", "--avcodec-hw=none" });
             _mediaPlayer = new MediaPlayer(_libVLC);
-            Player = _mediaPlayer;
 
-            // ── Click-to-pause fix ──
-            // The native VLC video window normally grabs mouse/keyboard input, so a transparent
-            // Avalonia overlay never receives clicks. Telling libVLC NOT to handle input makes the
-            // native surface pass events through to the host → our overlay's PointerPressed fires,
-            // and the Space key binding keeps working over the video.
-            _mediaPlayer.EnableMouseInput = false;
-            _mediaPlayer.EnableKeyInput = false;
+            // Frames are rendered into an Avalonia bitmap (vmem callbacks) instead of a native
+            // HWND — the video becomes a normal visual: clipping, overlays and clicks just work.
+            VideoRenderer.Attach(_mediaPlayer);
+
+            Player = _mediaPlayer;
 
             // Position update timer (fires every 250ms to update the timeline)
             _positionTimer = new System.Timers.Timer(250);
             _positionTimer.Elapsed += (_, _) => UpdatePlaybackPosition();
 
             // LibVLC raises these on its own threads — marshal all bound-property writes to the UI.
-            _mediaPlayer.Playing += (_, _) => Dispatcher.UIThread.Post(() => { IsPlaying = true; _positionTimer?.Start(); });
+            _mediaPlayer.Playing += (_, _) => Dispatcher.UIThread.Post(() =>
+            {
+                IsPlaying = true;
+                _positionTimer?.Start();
+                // libvlc applies volume per audio output instance — re-assert ours on each start.
+                _pendingVolume = Volume;
+                StartVlcApplyTimer();
+            });
             _mediaPlayer.Paused += (_, _) => Dispatcher.UIThread.Post(() => { IsPlaying = false; _positionTimer?.Stop(); });
             _mediaPlayer.Stopped += (_, _) => Dispatcher.UIThread.Post(() =>
             {
@@ -175,6 +261,16 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
                 Position = 0;
                 _isUpdatingPosition = false;
                 TimeDisplay = "0:00 / 0:00";
+            });
+            // Natural end of the clip: show the play button and park the timeline at 100%
+            // (PlayPause restarts from zero in this state).
+            _mediaPlayer.EndReached += (_, _) => Dispatcher.UIThread.Post(() =>
+            {
+                IsPlaying = false;
+                _positionTimer?.Stop();
+                _isUpdatingPosition = true;
+                Position = 1;
+                _isUpdatingPosition = false;
             });
         }
         catch (Exception ex)
@@ -197,8 +293,44 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
         ActiveSidebarClip = clip;
         _suppressSidebarAutoPlay = false;
 
+        // Screenshots: stop any playback and show the image in the video area.
+        if (clip.IsImage)
+        {
+            StopPlayback();
+            try
+            {
+                // Full-resolution decode — screenshots are lossless PNGs and must stay sharp.
+                using var fs = File.OpenRead(clip.FilePath);
+                var old = StillImage;
+                StillImage = new Avalonia.Media.Imaging.Bitmap(fs);
+                old?.Dispose();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[Player] Failed to load screenshot: {ex.Message}");
+            }
+            IsViewingImage = true;
+            IsPlaying = false;
+            TimeDisplay = "";
+            return;
+        }
+
+        // Back to video mode: drop the still image.
+        if (IsViewingImage)
+        {
+            IsViewingImage = false;
+            var oldStill = StillImage;
+            StillImage = null;
+            oldStill?.Dispose();
+        }
+
+        var oldMedia = _mediaPlayer.Media;
         var media = new Media(_libVLC, new Uri(clip.FilePath));
         _mediaPlayer.Media = media;
+        // The player keeps its own native reference — release ours (and the previous one)
+        // so switching clips doesn't leak native Media handles.
+        media.Dispose();
+        oldMedia?.Dispose();
         // DO NOT call Play() here to prevent the VLC popup.
         // The View will call StartPlayback() when the VideoView is loaded.
     }
@@ -212,15 +344,22 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
         StartPlayback();
     }
 
-    /// <summary>Skips to and plays the next clip in the library list (wraps to the first).</summary>
+    /// <summary>Skips to and plays the next VIDEO clip in the library list (screenshots are skipped).</summary>
     [RelayCommand]
     private void PlayNext()
     {
         if (Clips.Count == 0) return;
 
         int currentIndex = CurrentClip != null ? Clips.IndexOf(CurrentClip) : -1;
-        int nextIndex = (currentIndex + 1) % Clips.Count;
-        PlayClip(Clips[nextIndex]);
+        for (int step = 1; step <= Clips.Count; step++)
+        {
+            var candidate = Clips[(currentIndex + step) % Clips.Count];
+            if (!candidate.IsImage)
+            {
+                PlayClip(candidate);
+                return;
+            }
+        }
     }
 
     /// <summary>
@@ -228,14 +367,24 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
     /// </summary>
     public void StartPlayback()
     {
+        if (IsViewingImage) return; // a screenshot is on display — nothing to play
         _mediaPlayer?.Play();
     }
 
-    /// <summary>Toggles between play and pause states.</summary>
+    /// <summary>Toggles between play and pause states; replays from the start after the end.</summary>
     [RelayCommand]
     private void PlayPause()
     {
-        if (_mediaPlayer == null) return;
+        if (_mediaPlayer == null || IsViewingImage) return;
+
+        // After EndReached libvlc sits in the Ended state where Play() is a no-op —
+        // a "watch it again" click must restart the clip from the beginning.
+        if (_mediaPlayer.State == VLCState.Ended)
+        {
+            _mediaPlayer.Stop();
+            _mediaPlayer.Play();
+            return;
+        }
 
         if (_mediaPlayer.IsPlaying)
             _mediaPlayer.Pause();
@@ -307,10 +456,12 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
 
         _library.Clips.CollectionChanged -= OnClipsCollectionChanged;
 
+        _vlcApplyTimer?.Stop();
         _positionTimer?.Stop();
         _positionTimer?.Dispose();
         _mediaPlayer?.Stop();
         _mediaPlayer?.Dispose();
         _libVLC?.Dispose();
+        VideoRenderer.Dispose();
     }
 }

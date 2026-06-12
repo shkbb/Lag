@@ -2,165 +2,169 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Lag.ViewModels"
              xmlns:models="using:Lag.Models"
-             xmlns:materialIcons="using:Material.Icons.Avalonia"
+             xmlns:mi="using:Material.Icons.Avalonia"
              x:Class="Lag.Views.LibraryView"
              x:DataType="vm:LibraryViewModel">
 
-  <Grid RowDefinitions="Auto,*">
+  <Grid RowDefinitions="Auto,*" Margin="24,20,24,0">
 
-    <!-- Header: title left, free-space indicator + "Open folder" right -->
-    <DockPanel Grid.Row="0" Margin="30,22,30,0">
-
-      <!-- Open Folder button (far right) -->
-      <Button DockPanel.Dock="Right" Classes="btn-save"
-              Command="{Binding OpenLibraryFolderCommand}"
-              Height="36" Padding="14,0" VerticalAlignment="Center"
-              HorizontalAlignment="Right" Margin="10,0,0,0">
-        <StackPanel Orientation="Horizontal" Spacing="7" HorizontalAlignment="Center">
-          <materialIcons:MaterialIcon Kind="FolderOpenOutline" Width="15" Height="15"
-                                      VerticalAlignment="Center" />
-          <TextBlock Text="{DynamicResource Library_OpenFolder}" FontSize="12" VerticalAlignment="Center" />
-        </StackPanel>
-      </Button>
-
-      <!-- Free space indicator (glass pill) -->
-      <Border DockPanel.Dock="Right" VerticalAlignment="Center"
-              Background="{StaticResource GlassFillBrush}"
-              BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="1"
-              CornerRadius="10" Padding="12,7">
-        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-          <materialIcons:MaterialIcon Kind="HarddiskPlus" Width="14" Height="14"
-                                      Foreground="{StaticResource AccentCyanBrush}"
-                                      VerticalAlignment="Center" />
-          <TextBlock FontSize="11" VerticalAlignment="Center" Foreground="#8FFFFFFF">
-            <Run Text="{DynamicResource Library_FreeSpace}" /><Run Text=": " />
-            <Run Text="{Binding FreeSpaceDisplay}" Foreground="{StaticResource AccentCyanBrush}" />
-          </TextBlock>
-          <ProgressBar Minimum="0" Maximum="100" Value="{Binding UsedSpacePercent}"
-                       Width="64" Height="4" VerticalAlignment="Center"
-                       Foreground="{StaticResource AccentCyanBrush}" Background="#1FFFFFFF" />
-        </StackPanel>
-      </Border>
-
-      <!-- Title -->
-      <StackPanel Spacing="2" VerticalAlignment="Center">
-        <TextBlock Classes="page-title" Text="{DynamicResource Library_Title}" />
-        <TextBlock Text="{DynamicResource Library_Subtitle}"
-                   FontSize="12" Foreground="{StaticResource TextDimBrush}" />
+    <!-- ── Header: title + stats | Open folder ── -->
+    <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+      <StackPanel Grid.Column="0" Spacing="4">
+        <TextBlock Text="{DynamicResource Library_Title}" FontSize="16" FontWeight="Medium" />
+        <TextBlock Text="{Binding LibraryStats}" FontSize="12"
+                   Foreground="{StaticResource Fg2Brush}" />
       </StackPanel>
-    </DockPanel>
+      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+        <!-- Bulk delete — appears once any card is selected -->
+        <Button Classes="chip danger" VerticalAlignment="Center"
+                IsVisible="{Binding HasSelection}"
+                Command="{Binding DeleteSelectedCommand}">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <mi:MaterialIcon Kind="TrashCanOutline" Width="14" Height="14" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding DeleteSelectedLabel}" VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
+        <Button Classes="chip" VerticalAlignment="Center"
+                Command="{Binding OpenLibraryFolderCommand}">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <mi:MaterialIcon Kind="FolderOutline" Width="14" Height="14" VerticalAlignment="Center" />
+            <TextBlock Text="{DynamicResource Library_OpenFolder}" VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
+      </StackPanel>
+    </Grid>
 
-    <!-- Loading indicator -->
     <ProgressBar Grid.Row="0" IsIndeterminate="True"
                  IsVisible="{Binding IsLoading}"
-                 Height="2" Margin="24,0"
-                 VerticalAlignment="Bottom"
-                 Foreground="{StaticResource AccentPurpleBrush}" />
+                 Height="2" VerticalAlignment="Bottom" Margin="0,0,0,-10"
+                 Foreground="{StaticResource AccentBrush}" Background="Transparent" />
 
-    <!-- Clip Gallery -->
-    <ScrollViewer Grid.Row="1" Margin="18,16,18,0"
-                  VerticalScrollBarVisibility="Auto">
+    <!-- ── Clip grid ── -->
+    <ScrollViewer Grid.Row="1" Margin="0,20,0,0" VerticalScrollBarVisibility="Auto">
       <Panel>
-        <!-- Empty state -->
-        <TextBlock Text="{DynamicResource Library_Empty}"
-                   IsVisible="{Binding !Clips.Count}"
-                   Foreground="{StaticResource TextDimBrush}"
-                   HorizontalAlignment="Center"
-                   VerticalAlignment="Center"
-                   TextWrapping="Wrap" MaxWidth="420" TextAlignment="Center"
-                   Margin="0,80" FontSize="14" />
 
-        <ItemsControl ItemsSource="{Binding Clips}"
-                      IsVisible="{Binding Clips.Count}">
+        <!-- Empty state (frame 2:2) -->
+        <StackPanel IsVisible="{Binding !Clips.Count}"
+                    HorizontalAlignment="Center" VerticalAlignment="Center"
+                    Margin="0,140,0,0" Spacing="14">
+          <Viewbox Width="44" Height="44" HorizontalAlignment="Center">
+            <Canvas Width="22" Height="22">
+              <Path Data="{StaticResource LogoArcGeometry}" Stroke="{StaticResource EmptyIconBrush}"
+                    StrokeThickness="0.8" StrokeLineCap="Round" StrokeJoin="Round" />
+              <Path Data="{StaticResource LogoCornerGeometry}" Stroke="{StaticResource EmptyIconBrush}"
+                    StrokeThickness="0.8" StrokeLineCap="Round" StrokeJoin="Round" />
+              <Path Data="{StaticResource LogoHandsGeometry}" Stroke="{StaticResource EmptyIconBrush}"
+                    StrokeThickness="0.8" StrokeLineCap="Round" StrokeJoin="Round" />
+            </Canvas>
+          </Viewbox>
+          <TextBlock Text="{DynamicResource Library_EmptyTitle}" FontSize="16" FontWeight="Medium"
+                     HorizontalAlignment="Center" />
+          <TextBlock Text="{DynamicResource Library_Empty}" FontSize="13" LineHeight="20"
+                     Foreground="{StaticResource Fg2Brush}"
+                     TextWrapping="Wrap" TextAlignment="Center" MaxWidth="430"
+                     HorizontalAlignment="Center" />
+          <ItemsControl ItemsSource="{Binding $parent[Window].DataContext.Settings.HotkeyParts}"
+                        x:CompileBindings="False"
+                        HorizontalAlignment="Center" Margin="0,2,0,0">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <StackPanel Orientation="Horizontal" Spacing="6" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <Border Classes="kbd"><TextBlock Text="{Binding}" /></Border>
+                </StackPanel>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+
+        <!-- Cards (frame 1:2): 300px, r12, preview 16:9, meta -->
+        <ItemsControl ItemsSource="{Binding Clips}" IsVisible="{Binding Clips.Count}">
           <ItemsControl.ItemsPanel>
             <ItemsPanelTemplate>
               <WrapPanel Orientation="Horizontal" />
             </ItemsPanelTemplate>
           </ItemsControl.ItemsPanel>
-
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="models:ReplayClip">
-              <Button Command="{Binding $parent[UserControl].((vm:LibraryViewModel)DataContext).PlayClipCommand}"
-                      CommandParameter="{Binding}"
-                      Padding="0" Background="Transparent" BorderThickness="0" Cursor="Hand">
+              <Button Classes="clipcard" Width="300" Margin="0,0,16,16"
+                      Classes.selected="{Binding IsSelected}"
+                      Command="{Binding $parent[UserControl].((vm:LibraryViewModel)DataContext).PlayClipCommand}"
+                      CommandParameter="{Binding}">
 
-                <!-- Right-click actions. MenuItem clicks are routed through code-behind because
-                     bindings inside a ContextMenu popup can't reliably reach the view-model. -->
                 <Button.ContextMenu>
                   <ContextMenu>
-                    <MenuItem Header="{DynamicResource Library_ShowInFolder}"
-                              Click="OnShowInFolderClick">
+                    <MenuItem Header="{DynamicResource Editor_Edit}" Click="OnEditClipClick">
                       <MenuItem.Icon>
-                        <materialIcons:MaterialIcon Kind="FolderSearchOutline" Width="16" Height="16" />
+                        <mi:MaterialIcon Kind="MovieEditOutline" Width="16" Height="16" />
                       </MenuItem.Icon>
                     </MenuItem>
-                    <MenuItem Header="{DynamicResource Library_Delete}"
-                              Click="OnDeleteClipClick">
+                    <MenuItem Header="{DynamicResource Library_ShowInFolder}" Click="OnShowInFolderClick">
                       <MenuItem.Icon>
-                        <materialIcons:MaterialIcon Kind="TrashCanOutline" Width="16" Height="16" />
+                        <mi:MaterialIcon Kind="FolderSearchOutline" Width="16" Height="16" />
+                      </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Header="{DynamicResource Library_Delete}" Click="OnDeleteClipClick">
+                      <MenuItem.Icon>
+                        <mi:MaterialIcon Kind="TrashCanOutline" Width="16" Height="16" />
                       </MenuItem.Icon>
                     </MenuItem>
                   </ContextMenu>
                 </Button.ContextMenu>
 
-                <Border Classes="replay-card" Width="204" Margin="8">
                 <StackPanel>
+                  <!-- Preview 300×169. The clip geometry is 12px taller than the preview,
+                       so only the TOP corners are rounded (r12, like the card) while the
+                       bottom edge stays square against the meta block. -->
+                  <Grid Height="169" ClipToBounds="True">
+                    <Grid.Clip>
+                      <RectangleGeometry Rect="0,0,300,181" RadiusX="12" RadiusY="12" />
+                    </Grid.Clip>
+                    <Border Background="#232A33" />
+                    <Image Source="{Binding Thumbnail}" Stretch="UniformToFill" />
 
-                  <!-- Thumbnail area -->
-                  <Grid Height="108">
-                    <Border CornerRadius="14,14,0,0" ClipToBounds="True">
-                      <Border.Background>
-                        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                          <GradientStop Color="#0a1628" Offset="0" />
-                          <GradientStop Color="#141a35" Offset="1" />
-                        </LinearGradientBrush>
-                      </Border.Background>
-                      <Image Source="{Binding Thumbnail}"
-                             Stretch="UniformToFill" />
+                    <!-- hover veil (4% white) -->
+                    <Border x:Name="HoverVeil" Background="{StaticResource HoverVeilBrush}" />
+
+                    <!-- duration chip (hidden for screenshots) -->
+                    <Border Background="{StaticResource Overlay85Brush}" CornerRadius="6"
+                            Padding="6,2" Margin="0,0,8,8"
+                            IsVisible="{Binding !IsImage}"
+                            HorizontalAlignment="Right" VerticalAlignment="Bottom">
+                      <TextBlock Text="{Binding DurationDisplay}" FontSize="11" FontWeight="Medium" />
                     </Border>
 
-                    <!-- Play icon -->
-                    <materialIcons:MaterialIcon Kind="PlayCircleOutline" Width="32" Height="32"
-                                                Opacity="0.65" Foreground="White"
-                                                HorizontalAlignment="Center"
-                                                VerticalAlignment="Center" />
-
-                    <!-- Duration badge -->
-                    <Border Background="#99000000" CornerRadius="3"
-                            Padding="5,2" Margin="0,0,6,5"
-                            HorizontalAlignment="Right"
-                            VerticalAlignment="Bottom">
-                      <TextBlock Text="{Binding DurationDisplay}"
-                                 FontSize="10"
-                                 Foreground="#A6FFFFFF" />
-                    </Border>
-
-                    <!-- Delete button (top-right). Binds to the VM via the ItemsControl ancestor,
-                         which is reliably in the visual tree (popups/flyouts are not). -->
-                    <Button HorizontalAlignment="Right" VerticalAlignment="Top"
-                            Margin="0,5,5,0" Width="26" Height="26" CornerRadius="13" Padding="0"
-                            Background="#99000000" BorderThickness="0" Cursor="Hand"
-                            ToolTip.Tip="{DynamicResource Library_Delete}"
-                            Command="{Binding $parent[ItemsControl].((vm:LibraryViewModel)DataContext).DeleteClipCommand}"
+                    <!-- select toggle (reveals on hover, stays while selected) -->
+                    <Button x:Name="SelectBtn" Width="28" Height="28" CornerRadius="8" Padding="0"
+                            Classes.checked="{Binding IsSelected}"
+                            Background="{StaticResource Overlay88Brush}" BorderThickness="0"
+                            HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,8,8,0"
+                            Cursor="Hand"
+                            Command="{Binding $parent[ItemsControl].((vm:LibraryViewModel)DataContext).ToggleSelectCommand}"
                             CommandParameter="{Binding}">
-                      <materialIcons:MaterialIcon Kind="TrashCanOutline" Width="14" Height="14"
-                                                  Foreground="#E6FFFFFF"
-                                                  HorizontalAlignment="Center" VerticalAlignment="Center" />
+                      <Panel>
+                        <mi:MaterialIcon Kind="CheckboxBlankCircleOutline" Width="15" Height="15"
+                                         Foreground="{StaticResource FgBrush}"
+                                         IsVisible="{Binding !IsSelected}" />
+                        <mi:MaterialIcon Kind="CheckCircle" Width="15" Height="15"
+                                         Foreground="{StaticResource AccentBrush}"
+                                         IsVisible="{Binding IsSelected}" />
+                      </Panel>
                     </Button>
                   </Grid>
 
-                  <!-- Info area -->
-                  <StackPanel Margin="10,8,10,8" Spacing="2">
-                    <TextBlock Text="{Binding CreatedDate, StringFormat='{}{0:MMM dd, yyyy  HH:mm}'}"
-                               FontSize="12" FontWeight="Medium"
-                               Foreground="#BFFFFFFF" />
-                    <TextBlock Text="{Binding FileSizeDisplay}"
-                               FontSize="10"
-                               Foreground="#4DFFFFFF" />
+                  <!-- Meta -->
+                  <StackPanel Margin="12,10,12,12" Spacing="3">
+                    <TextBlock Text="{Binding DisplayName}" FontSize="13" FontWeight="Medium"
+                               TextTrimming="CharacterEllipsis" />
+                    <TextBlock Text="{Binding CreatedDate, StringFormat='{}{0:d MMM, HH:mm}'}"
+                               FontSize="11" Foreground="{StaticResource Fg3Brush}" />
                   </StackPanel>
-
                 </StackPanel>
-              </Border>
               </Button>
             </DataTemplate>
           </ItemsControl.ItemTemplate>

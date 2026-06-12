@@ -52,6 +52,29 @@
   <sys:String x:Key="Settings_Group_Automation">AUTOMATIZĀCIJA</sys:String>
   <sys:String x:Key="Settings_StartWithWindows">Palaist kopā ar Windows</sys:String>
   <sys:String x:Key="Settings_StartWithWindows_Desc">Pievieno programmu sistēmas startēšanai</sys:String>
+  <sys:String x:Key="Settings_StartMinimized">Palaist minimizētu</sys:String>
+  <sys:String x:Key="Settings_StartMinimized_Desc">Palaižas paslēpta sistēmas teknē</sys:String>
+  <sys:String x:Key="Editor_Title">Redaktors</sys:String>
+  <sys:String x:Key="Editor_Edit">Rediģēt</sys:String>
+  <sys:String x:Key="Editor_Back">Atpakaļ</sys:String>
+  <sys:String x:Key="Editor_Export">Eksportēt</sys:String>
+  <sys:String x:Key="Editor_Exporting">Eksportē… {0}%</sys:String>
+  <sys:String x:Key="Editor_ExportDone">Saglabāts: {0}</sys:String>
+  <sys:String x:Key="Editor_ExportError">Eksporta kļūda: {0}</sys:String>
+  <sys:String x:Key="Editor_Speed">Ātrums</sys:String>
+  <sys:String x:Key="Editor_Format">Formāts</sys:String>
+  <sys:String x:Key="Editor_TabClip">Klips</sys:String>
+  <sys:String x:Key="Editor_TabFilters">Filtri</sys:String>
+  <sys:String x:Key="Editor_Tracks">AUDIO CELIŅI</sys:String>
+  <sys:String x:Key="Editor_TrackSystem">Sistēmas skaņa</sys:String>
+  <sys:String x:Key="Editor_TrackMic">Mikrofons</sys:String>
+  <sys:String x:Key="Editor_TrackAudio">Skaņa</sys:String>
+  <sys:String x:Key="Editor_SetStart">Iestatīt klipa sākumu uz pašreizējo brīdi</sys:String>
+  <sys:String x:Key="Editor_SetEnd">Iestatīt klipa beigas uz pašreizējo brīdi</sys:String>
+  <sys:String x:Key="Editor_ResetTrim">Atiestatīt apgriešanu</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Screenshot">Ekrānuzņēmums</sys:String>
+  <sys:String x:Key="Toast_ReplaySaved">Atkārtojums saglabāts</sys:String>
+  <sys:String x:Key="Toast_ScreenshotSaved">Ekrānuzņēmums saglabāts</sys:String>
   <sys:String x:Key="Settings_AutoStart">Automātiski sākt ierakstīšanu</sys:String>
   <sys:String x:Key="Settings_AutoStart_Desc">Atkārtojuma buferis startē uzreiz pēc palaišanas</sys:String>
   <sys:String x:Key="Settings_Group_Hotkey">KARSTAIS TAUSTIŅŠ</sys:String>
@@ -125,4 +148,9 @@
   <sys:String x:Key="Option_Auto">Automātiski</sys:String>
   <sys:String x:Key="Option_Custom">Pielāgots</sys:String>
 
+  <sys:String x:Key="Sidebar_Buffer">Buferis</sys:String>
+  <sys:String x:Key="Library_Stats">{0} klipi · brīvs {1}</sys:String>
+  <sys:String x:Key="Player_Used">Aizņemts</sys:String>
+
+  <sys:String x:Key="Library_EmptyTitle">Vēl nav atkārtojumu</sys:String>
 </ResourceDictionary>

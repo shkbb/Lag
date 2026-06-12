@@ -24,6 +24,13 @@ public partial class LibraryView : UserControl
             vm.ShowInFolderCommand.Execute(clip);
     }
 
+    /// <summary>Context menu → "Edit". Raises the VM event handled by MainViewModel.</summary>
+    private void OnEditClipClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is LibraryViewModel vm && ClipFrom(sender) is { } clip)
+            vm.RequestEdit(clip);
+    }
+
     /// <summary>Context menu → "Delete". Delegates to the VM command.</summary>
     private void OnDeleteClipClick(object? sender, RoutedEventArgs e)
     {

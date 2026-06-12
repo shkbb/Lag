@@ -43,3 +43,9 @@ obs_native.log
 # ───────── Local Claude Code settings (user-specific) ─────────
 .claude/settings.local.json
 **/.claude/settings.local.json
+
+# ───────── Design scratch (mockup screenshots, verify captures, helper scripts) ─────────
+figma-design/
+
+# ───────── Local backups ─────────
+*.bak

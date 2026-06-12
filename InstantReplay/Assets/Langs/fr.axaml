@@ -52,6 +52,29 @@
   <sys:String x:Key="Settings_Group_Automation">AUTOMATISATION</sys:String>
   <sys:String x:Key="Settings_StartWithWindows">Démarrer avec Windows</sys:String>
   <sys:String x:Key="Settings_StartWithWindows_Desc">Ajoute l'application au démarrage du système</sys:String>
+  <sys:String x:Key="Settings_StartMinimized">Démarrer réduit</sys:String>
+  <sys:String x:Key="Settings_StartMinimized_Desc">Se lance masqué dans la zone de notification</sys:String>
+  <sys:String x:Key="Editor_Title">Éditeur</sys:String>
+  <sys:String x:Key="Editor_Edit">Modifier</sys:String>
+  <sys:String x:Key="Editor_Back">Retour</sys:String>
+  <sys:String x:Key="Editor_Export">Exporter</sys:String>
+  <sys:String x:Key="Editor_Exporting">Exportation… {0}%</sys:String>
+  <sys:String x:Key="Editor_ExportDone">Enregistré : {0}</sys:String>
+  <sys:String x:Key="Editor_ExportError">Échec de l'export : {0}</sys:String>
+  <sys:String x:Key="Editor_Speed">Vitesse</sys:String>
+  <sys:String x:Key="Editor_Format">Format</sys:String>
+  <sys:String x:Key="Editor_TabClip">Clip</sys:String>
+  <sys:String x:Key="Editor_TabFilters">Filtres</sys:String>
+  <sys:String x:Key="Editor_Tracks">PISTES AUDIO</sys:String>
+  <sys:String x:Key="Editor_TrackSystem">Son système</sys:String>
+  <sys:String x:Key="Editor_TrackMic">Microphone</sys:String>
+  <sys:String x:Key="Editor_TrackAudio">Audio</sys:String>
+  <sys:String x:Key="Editor_SetStart">Définir le début du clip au moment actuel</sys:String>
+  <sys:String x:Key="Editor_SetEnd">Définir la fin du clip au moment actuel</sys:String>
+  <sys:String x:Key="Editor_ResetTrim">Réinitialiser le découpage</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Screenshot">Capture d'écran</sys:String>
+  <sys:String x:Key="Toast_ReplaySaved">Replay enregistré</sys:String>
+  <sys:String x:Key="Toast_ScreenshotSaved">Capture d'écran enregistrée</sys:String>
   <sys:String x:Key="Settings_AutoStart">Démarrer l'enregistrement automatiquement</sys:String>
   <sys:String x:Key="Settings_AutoStart_Desc">Le tampon de replay démarre dès le lancement</sys:String>
   <sys:String x:Key="Settings_Group_Hotkey">RACCOURCI</sys:String>
@@ -125,4 +148,9 @@
   <sys:String x:Key="Option_Auto">Auto</sys:String>
   <sys:String x:Key="Option_Custom">Personnalisé</sys:String>
 
+  <sys:String x:Key="Sidebar_Buffer">Tampon</sys:String>
+  <sys:String x:Key="Library_Stats">{0} clips · {1} libres</sys:String>
+  <sys:String x:Key="Player_Used">Utilisé</sys:String>
+
+  <sys:String x:Key="Library_EmptyTitle">Pas encore de replays</sys:String>
 </ResourceDictionary>

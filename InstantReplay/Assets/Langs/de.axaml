@@ -52,6 +52,29 @@
   <sys:String x:Key="Settings_Group_Automation">AUTOMATISIERUNG</sys:String>
   <sys:String x:Key="Settings_StartWithWindows">Mit Windows starten</sys:String>
   <sys:String x:Key="Settings_StartWithWindows_Desc">Fügt die App dem Systemstart hinzu</sys:String>
+  <sys:String x:Key="Settings_StartMinimized">Minimiert starten</sys:String>
+  <sys:String x:Key="Settings_StartMinimized_Desc">Startet versteckt im Infobereich</sys:String>
+  <sys:String x:Key="Editor_Title">Editor</sys:String>
+  <sys:String x:Key="Editor_Edit">Bearbeiten</sys:String>
+  <sys:String x:Key="Editor_Back">Zurück</sys:String>
+  <sys:String x:Key="Editor_Export">Exportieren</sys:String>
+  <sys:String x:Key="Editor_Exporting">Exportiere… {0}%</sys:String>
+  <sys:String x:Key="Editor_ExportDone">Gespeichert: {0}</sys:String>
+  <sys:String x:Key="Editor_ExportError">Export fehlgeschlagen: {0}</sys:String>
+  <sys:String x:Key="Editor_Speed">Geschwindigkeit</sys:String>
+  <sys:String x:Key="Editor_Format">Format</sys:String>
+  <sys:String x:Key="Editor_TabClip">Clip</sys:String>
+  <sys:String x:Key="Editor_TabFilters">Filter</sys:String>
+  <sys:String x:Key="Editor_Tracks">AUDIOSPUREN</sys:String>
+  <sys:String x:Key="Editor_TrackSystem">Systemton</sys:String>
+  <sys:String x:Key="Editor_TrackMic">Mikrofon</sys:String>
+  <sys:String x:Key="Editor_TrackAudio">Audio</sys:String>
+  <sys:String x:Key="Editor_SetStart">Clip-Anfang auf aktuellen Moment setzen</sys:String>
+  <sys:String x:Key="Editor_SetEnd">Clip-Ende auf aktuellen Moment setzen</sys:String>
+  <sys:String x:Key="Editor_ResetTrim">Zuschnitt zurücksetzen</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Screenshot">Screenshot</sys:String>
+  <sys:String x:Key="Toast_ReplaySaved">Replay gespeichert</sys:String>
+  <sys:String x:Key="Toast_ScreenshotSaved">Screenshot gespeichert</sys:String>
   <sys:String x:Key="Settings_AutoStart">Aufnahme automatisch starten</sys:String>
   <sys:String x:Key="Settings_AutoStart_Desc">Der Replay-Puffer startet direkt nach dem Programmstart</sys:String>
   <sys:String x:Key="Settings_Group_Hotkey">TASTENKÜRZEL</sys:String>
@@ -125,4 +148,9 @@
   <sys:String x:Key="Option_Auto">Auto</sys:String>
   <sys:String x:Key="Option_Custom">Benutzerdefiniert</sys:String>
 
+  <sys:String x:Key="Sidebar_Buffer">Puffer</sys:String>
+  <sys:String x:Key="Library_Stats">{0} Clips · {1} frei</sys:String>
+  <sys:String x:Key="Player_Used">Belegt</sys:String>
+
+  <sys:String x:Key="Library_EmptyTitle">Noch keine Replays</sys:String>
 </ResourceDictionary>

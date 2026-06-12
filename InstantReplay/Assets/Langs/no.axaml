@@ -52,6 +52,29 @@
   <sys:String x:Key="Settings_Group_Automation">AUTOMATISERING</sys:String>
   <sys:String x:Key="Settings_StartWithWindows">Start med Windows</sys:String>
   <sys:String x:Key="Settings_StartWithWindows_Desc">Legger appen til i systemoppstarten</sys:String>
+  <sys:String x:Key="Settings_StartMinimized">Start minimert</sys:String>
+  <sys:String x:Key="Settings_StartMinimized_Desc">Starter skjult i systemstatusfeltet</sys:String>
+  <sys:String x:Key="Editor_Title">Redigering</sys:String>
+  <sys:String x:Key="Editor_Edit">Rediger</sys:String>
+  <sys:String x:Key="Editor_Back">Tilbake</sys:String>
+  <sys:String x:Key="Editor_Export">Eksporter</sys:String>
+  <sys:String x:Key="Editor_Exporting">Eksporterer… {0}%</sys:String>
+  <sys:String x:Key="Editor_ExportDone">Lagret: {0}</sys:String>
+  <sys:String x:Key="Editor_ExportError">Eksport mislyktes: {0}</sys:String>
+  <sys:String x:Key="Editor_Speed">Hastighet</sys:String>
+  <sys:String x:Key="Editor_Format">Format</sys:String>
+  <sys:String x:Key="Editor_TabClip">Klipp</sys:String>
+  <sys:String x:Key="Editor_TabFilters">Filtre</sys:String>
+  <sys:String x:Key="Editor_Tracks">LYDSPOR</sys:String>
+  <sys:String x:Key="Editor_TrackSystem">Systemlyd</sys:String>
+  <sys:String x:Key="Editor_TrackMic">Mikrofon</sys:String>
+  <sys:String x:Key="Editor_TrackAudio">Lyd</sys:String>
+  <sys:String x:Key="Editor_SetStart">Sett klippstart til nåværende øyeblikk</sys:String>
+  <sys:String x:Key="Editor_SetEnd">Sett klippslutt til nåværende øyeblikk</sys:String>
+  <sys:String x:Key="Editor_ResetTrim">Tilbakestill trimming</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Screenshot">Skjermbilde</sys:String>
+  <sys:String x:Key="Toast_ReplaySaved">Reprise lagret</sys:String>
+  <sys:String x:Key="Toast_ScreenshotSaved">Skjermbilde lagret</sys:String>
   <sys:String x:Key="Settings_AutoStart">Start opptak automatisk</sys:String>
   <sys:String x:Key="Settings_AutoStart_Desc">Reprisebufferen starter rett etter programstart</sys:String>
   <sys:String x:Key="Settings_Group_Hotkey">HURTIGTAST</sys:String>
@@ -125,4 +148,9 @@
   <sys:String x:Key="Option_Auto">Auto</sys:String>
   <sys:String x:Key="Option_Custom">Egendefinert</sys:String>
 
+  <sys:String x:Key="Sidebar_Buffer">Buffer</sys:String>
+  <sys:String x:Key="Library_Stats">{0} klipp · {1} ledig</sys:String>
+  <sys:String x:Key="Player_Used">Brukt</sys:String>
+
+  <sys:String x:Key="Library_EmptyTitle">Ingen repriser ennå</sys:String>
 </ResourceDictionary>

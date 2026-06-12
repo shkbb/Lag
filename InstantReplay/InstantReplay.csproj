@@ -39,6 +39,7 @@
     <AvaloniaResource Include="Assets\**" />
     <!-- Also copy the sound file to the output dir so System.Media.SoundPlayer can load it from disk. -->
     <None Update="Assets\save.wav" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Assets\screenshot.wav" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
@@ -75,6 +76,8 @@
     <PackageReference Include="VideoLAN.LibVLC.Windows" Version="3.0.21" />
     <!-- Provides System.Media.SoundPlayer (not in the base net8.0-windows SDK) -->
     <PackageReference Include="System.Windows.Extensions" Version="8.0.0" />
+    <!-- GDI screenshot capture (Bitmap/Graphics.CopyFromScreen) -->
+    <PackageReference Include="System.Drawing.Common" Version="8.0.10" />
   </ItemGroup>
 
 </Project>

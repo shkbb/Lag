@@ -26,9 +26,8 @@ public partial class MainWindow : Window
                 return;
             }
 
-            // Otherwise, hide it to tray. Stop video playback first — the window is only
-            // hidden (the view stays attached), so without this VLC keeps playing and its
-            // audio remains audible from the tray.
+            // Hide to tray. Stop video playback first — the window is only hidden (the view
+            // stays attached), so without this VLC keeps playing audibly from the tray.
             if (DataContext is MainViewModel mainVm)
                 mainVm.Player.StopPlayback();
 
@@ -51,18 +50,22 @@ public partial class MainWindow : Window
                     {
                         ApplyFullscreen(vm.IsFullscreen);
                     }
+                    else if (e.PropertyName == nameof(MainViewModel.IsRecording))
+                    {
+                        UpdateRecordCta(vm.IsRecording);
+                    }
                 };
                 // Set initial state
                 UpdateActiveNav(vm.CurrentView);
+                UpdateRecordCta(vm.IsRecording);
                 ApplyFullscreen(vm.IsFullscreen);
             }
         };
     }
 
     /// <summary>
-    /// Toggles the "nav-active" vs "nav" CSS class on sidebar navigation buttons
-    /// based on which view is currently selected. Avalonia's Classes property
-    /// doesn't support bindings, so we manage this imperatively.
+    /// Toggles the "nav-active" vs "nav" class on sidebar navigation buttons based on the
+    /// current view. Avalonia's Classes property doesn't support bindings, so this is imperative.
     /// </summary>
     private void UpdateActiveNav(ViewModelBase? currentView)
     {
@@ -73,40 +76,34 @@ public partial class MainWindow : Window
 
     private static void SetNavClass(Button button, bool isActive)
     {
-        button.Classes.Clear();
-        button.Classes.Add(isActive ? "nav-active" : "nav");
+        button.Classes.Set("nav", !isActive);
+        button.Classes.Set("nav-active", isActive);
     }
 
-    /// <summary>
-    /// Applies true fullscreen. Besides the window state, we must collapse the reserved title-bar
-    /// chrome (ExtendClientAreaTitleBarHeightHint) and drop the system chrome — otherwise Avalonia
-    /// keeps a ~44px title-bar strip at the very top even though our custom title bar Border is
-    /// hidden. We also zero the content margin so the video truly fills 100% of the screen.
-    /// </summary>
+    /// <summary>Swaps the CTA between cyan "Start" and red "Stop" (Figma .rec state).</summary>
+    private void UpdateRecordCta(bool isRecording) => RecordCta.Classes.Set("rec", isRecording);
+
+    /// <summary>True fullscreen: window state only — sidebar/titlebar collapse via bindings.</summary>
     private void ApplyFullscreen(bool isFullscreen)
     {
-        if (isFullscreen)
-        {
-            ExtendClientAreaTitleBarHeightHint = 0;
-            ExtendClientAreaChromeHints = Avalonia.Platform.ExtendClientAreaChromeHints.NoChrome;
-            WindowState = WindowState.FullScreen;
-            if (ContentHost != null) ContentHost.Margin = new Thickness(0);
-        }
-        else
-        {
-            WindowState = WindowState.Normal;
-            ExtendClientAreaTitleBarHeightHint = 44;
-            ExtendClientAreaChromeHints = Avalonia.Platform.ExtendClientAreaChromeHints.PreferSystemChrome;
-            if (ContentHost != null) ContentHost.Margin = new Thickness(6, 4, 12, 14);
-        }
+        WindowState = isFullscreen ? WindowState.FullScreen : WindowState.Normal;
     }
 
-    /// <summary>Lets the user drag the window by the custom title bar (left mouse button).</summary>
+    // ── Custom window chrome ──
+
     private void OnTitleBarPointerPressed(object? sender, PointerPressedEventArgs e)
     {
         if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
             BeginMoveDrag(e);
     }
+
+    private void OnMinimizeClick(object? sender, RoutedEventArgs e) =>
+        WindowState = WindowState.Minimized;
+
+    private void OnMaximizeClick(object? sender, RoutedEventArgs e) =>
+        WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
+
+    private void OnCloseClick(object? sender, RoutedEventArgs e) => Close();
 
     /// <summary>ESC exits fullscreen (restores the normal layout).</summary>
     private void OnPreviewKeyDown(object? sender, KeyEventArgs e)

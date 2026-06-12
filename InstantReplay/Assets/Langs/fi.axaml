@@ -52,6 +52,29 @@
   <sys:String x:Key="Settings_Group_Automation">AUTOMAATIO</sys:String>
   <sys:String x:Key="Settings_StartWithWindows">Käynnistä Windowsin mukana</sys:String>
   <sys:String x:Key="Settings_StartWithWindows_Desc">Lisää sovelluksen järjestelmän käynnistykseen</sys:String>
+  <sys:String x:Key="Settings_StartMinimized">Käynnistä pienennettynä</sys:String>
+  <sys:String x:Key="Settings_StartMinimized_Desc">Käynnistyy piilotettuna ilmoitusalueelle</sys:String>
+  <sys:String x:Key="Editor_Title">Editori</sys:String>
+  <sys:String x:Key="Editor_Edit">Muokkaa</sys:String>
+  <sys:String x:Key="Editor_Back">Takaisin</sys:String>
+  <sys:String x:Key="Editor_Export">Vie</sys:String>
+  <sys:String x:Key="Editor_Exporting">Viedään… {0}%</sys:String>
+  <sys:String x:Key="Editor_ExportDone">Tallennettu: {0}</sys:String>
+  <sys:String x:Key="Editor_ExportError">Vienti epäonnistui: {0}</sys:String>
+  <sys:String x:Key="Editor_Speed">Nopeus</sys:String>
+  <sys:String x:Key="Editor_Format">Kuvasuhde</sys:String>
+  <sys:String x:Key="Editor_TabClip">Klippi</sys:String>
+  <sys:String x:Key="Editor_TabFilters">Suodattimet</sys:String>
+  <sys:String x:Key="Editor_Tracks">ÄÄNIRAIDAT</sys:String>
+  <sys:String x:Key="Editor_TrackSystem">Järjestelmän ääni</sys:String>
+  <sys:String x:Key="Editor_TrackMic">Mikrofoni</sys:String>
+  <sys:String x:Key="Editor_TrackAudio">Ääni</sys:String>
+  <sys:String x:Key="Editor_SetStart">Aseta klipin alku nykyhetkeen</sys:String>
+  <sys:String x:Key="Editor_SetEnd">Aseta klipin loppu nykyhetkeen</sys:String>
+  <sys:String x:Key="Editor_ResetTrim">Nollaa leikkaus</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Screenshot">Kuvakaappaus</sys:String>
+  <sys:String x:Key="Toast_ReplaySaved">Uusinta tallennettu</sys:String>
+  <sys:String x:Key="Toast_ScreenshotSaved">Kuvakaappaus tallennettu</sys:String>
   <sys:String x:Key="Settings_AutoStart">Aloita tallennus automaattisesti</sys:String>
   <sys:String x:Key="Settings_AutoStart_Desc">Uusintapuskuri käynnistyy heti ohjelman avauduttua</sys:String>
   <sys:String x:Key="Settings_Group_Hotkey">PIKANÄPPÄIN</sys:String>
@@ -125,4 +148,9 @@
   <sys:String x:Key="Option_Auto">Automaattinen</sys:String>
   <sys:String x:Key="Option_Custom">Mukautettu</sys:String>
 
+  <sys:String x:Key="Sidebar_Buffer">Puskuri</sys:String>
+  <sys:String x:Key="Library_Stats">{0} klippiä · vapaana {1}</sys:String>
+  <sys:String x:Key="Player_Used">Käytössä</sys:String>
+
+  <sys:String x:Key="Library_EmptyTitle">Ei vielä uusintoja</sys:String>
 </ResourceDictionary>

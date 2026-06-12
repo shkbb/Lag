@@ -172,24 +172,112 @@
       </DrawingGroup>
     </DrawingImage>
 
-    <!-- ═══════════ Global "Lag" palette (neon glass) ═══════════ -->
-    <!-- Headline accents reused across the redesign -->
-    <Color x:Key="LagCyan">#FF22D3EE</Color>
-    <Color x:Key="LagPurple">#FF9D8CFF</Color>
-    <Color x:Key="LagTeal">#FF2DD4BF</Color>
-    <SolidColorBrush x:Key="LagCyanBrush" Color="#FF22D3EE" />
-    <SolidColorBrush x:Key="LagPurpleBrush" Color="#FF9D8CFF" />
-    <SolidColorBrush x:Key="LagTealBrush" Color="#FF2DD4BF" />
+    <!-- Español — red / yellow / red (1:2:1) -->
+    <DrawingImage x:Key="Flag_es">
+      <DrawingGroup>
+        <GeometryDrawing Brush="#AA151B" Geometry="M0,0 H30 V5 H0 Z" />
+        <GeometryDrawing Brush="#F1BF00" Geometry="M0,5 H30 V15 H0 Z" />
+        <GeometryDrawing Brush="#AA151B" Geometry="M0,15 H30 V20 H0 Z" />
+      </DrawingGroup>
+    </DrawingImage>
 
-    <!-- Window backdrop gradient (deep translucent navy → black; lets Mica peek through) -->
-    <LinearGradientBrush x:Key="LagBackdropBrush" StartPoint="0%,0%" EndPoint="100%,100%">
-      <GradientStop Color="#F20B0F1A" Offset="0" />
-      <GradientStop Color="#F2090B12" Offset="0.5" />
-      <GradientStop Color="#F2070910" Offset="1" />
-    </LinearGradientBrush>
+    <!-- Português — green / red (2:3) with the armillary disc hint -->
+    <DrawingImage x:Key="Flag_pt">
+      <DrawingGroup>
+        <GeometryDrawing Brush="#006600" Geometry="M0,0 H12 V20 H0 Z" />
+        <GeometryDrawing Brush="#FF0000" Geometry="M12,0 H30 V20 H12 Z" />
+        <GeometryDrawing Brush="#FFE900">
+          <GeometryDrawing.Geometry>
+            <EllipseGeometry Center="12,10" RadiusX="3.6" RadiusY="3.6" />
+          </GeometryDrawing.Geometry>
+        </GeometryDrawing>
+      </DrawingGroup>
+    </DrawingImage>
 
-    <!-- Override Fluent's system accent so built-in controls (ToggleSwitch on-state,
-         focus rings, selection) match the neon-cyan brand. -->
+    <!-- 日本語 — white field, red sun disc -->
+    <DrawingImage x:Key="Flag_ja">
+      <DrawingGroup>
+        <GeometryDrawing Brush="#FFFFFF" Geometry="M0,0 H30 V20 H0 Z" />
+        <GeometryDrawing Brush="#BC002D">
+          <GeometryDrawing.Geometry>
+            <EllipseGeometry Center="15,10" RadiusX="6" RadiusY="6" />
+          </GeometryDrawing.Geometry>
+        </GeometryDrawing>
+      </DrawingGroup>
+    </DrawingImage>
+
+    <!-- Extra UI converters for the Figma design -->
+    <core:EqualsConverter x:Key="Eq" />
+    <core:StringToUpperConverter x:Key="Upper" />
+
+    <!-- Fluent ToggleSwitch recolored to the design (cyan pill, white knob) -->
+    <SolidColorBrush x:Key="ToggleSwitchFillOn">#22D3EE</SolidColorBrush>
+    <SolidColorBrush x:Key="ToggleSwitchFillOnPointerOver">#4ADDF2</SolidColorBrush>
+    <SolidColorBrush x:Key="ToggleSwitchFillOnPressed">#22D3EE</SolidColorBrush>
+    <SolidColorBrush x:Key="ToggleSwitchStrokeOn">#22D3EE</SolidColorBrush>
+    <SolidColorBrush x:Key="ToggleSwitchStrokeOnPointerOver">#4ADDF2</SolidColorBrush>
+    <SolidColorBrush x:Key="ToggleSwitchStrokeOnPressed">#22D3EE</SolidColorBrush>
+    <SolidColorBrush x:Key="ToggleSwitchKnobFillOn">White</SolidColorBrush>
+    <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPointerOver">White</SolidColorBrush>
+    <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPressed">White</SolidColorBrush>
+    <SolidColorBrush x:Key="ToggleSwitchFillOff">#20252D</SolidColorBrush>
+    <SolidColorBrush x:Key="ToggleSwitchFillOffPointerOver">#272D36</SolidColorBrush>
+    <SolidColorBrush x:Key="ToggleSwitchFillOffPressed">#272D36</SolidColorBrush>
+    <SolidColorBrush x:Key="ToggleSwitchStrokeOff">#20252D</SolidColorBrush>
+    <SolidColorBrush x:Key="ToggleSwitchStrokeOffPointerOver">#272D36</SolidColorBrush>
+    <SolidColorBrush x:Key="ToggleSwitchStrokeOffPressed">#272D36</SolidColorBrush>
+    <SolidColorBrush x:Key="ToggleSwitchKnobFillOff">#9AA3AD</SolidColorBrush>
+    <SolidColorBrush x:Key="ToggleSwitchKnobFillOffPointerOver">#B6BEC7</SolidColorBrush>
+    <SolidColorBrush x:Key="ToggleSwitchKnobFillOffPressed">#B6BEC7</SolidColorBrush>
+
+    <!-- Popup overlays (ComboBox dropdown / menus / tooltips) recolored to the design.
+         The Fluent templates reference these DynamicResource keys directly, so styles
+         can't override them — resources can. -->
+    <CornerRadius x:Key="OverlayCornerRadius">10</CornerRadius>
+    <SolidColorBrush x:Key="ComboBoxDropDownBackground">#181C23</SolidColorBrush>
+    <SolidColorBrush x:Key="ComboBoxDropDownBorderBrush">#1FFFFFFF</SolidColorBrush>
+    <Thickness x:Key="ComboBoxDropdownBorderPadding">4</Thickness>
+    <SolidColorBrush x:Key="ComboBoxDropDownGlyphForeground">#9AA3AD</SolidColorBrush>
+
+    <!-- Menu items (library context menu + Avalonia-rendered tray menu) -->
+    <SolidColorBrush x:Key="MenuFlyoutPresenterBackground">#181C23</SolidColorBrush>
+    <SolidColorBrush x:Key="MenuFlyoutPresenterBorderBrush">#1FFFFFFF</SolidColorBrush>
+    <Thickness x:Key="MenuFlyoutPresenterThemePadding">4</Thickness>
+    <SolidColorBrush x:Key="MenuFlyoutItemBackground">Transparent</SolidColorBrush>
+    <SolidColorBrush x:Key="MenuFlyoutItemBackgroundPointerOver">#272D36</SolidColorBrush>
+    <SolidColorBrush x:Key="MenuFlyoutItemBackgroundPressed">#2A313B</SolidColorBrush>
+    <SolidColorBrush x:Key="MenuFlyoutItemForeground">#E7EAEE</SolidColorBrush>
+    <SolidColorBrush x:Key="MenuFlyoutItemForegroundPointerOver">#E7EAEE</SolidColorBrush>
+    <SolidColorBrush x:Key="MenuFlyoutItemForegroundPressed">#E7EAEE</SolidColorBrush>
+    <SolidColorBrush x:Key="MenuFlyoutSeparatorBackground">#0FFFFFFF</SolidColorBrush>
+
+    <!-- ToolTip -->
+    <SolidColorBrush x:Key="ToolTipBackground">#20252D</SolidColorBrush>
+    <SolidColorBrush x:Key="ToolTipForeground">#E7EAEE</SolidColorBrush>
+    <SolidColorBrush x:Key="ToolTipBorderBrush">#1FFFFFFF</SolidColorBrush>
+
+    <!-- Slider: reskin of the Fluent template (see DarkTheme.axaml, Slider section).
+         Compact 20px control: 4px(top) + 12px thumb + 4px(bottom); white round thumb. -->
+    <x:Double x:Key="SliderHorizontalHeight">20</x:Double>
+    <x:Double x:Key="SliderHorizontalThumbWidth">12</x:Double>
+    <x:Double x:Key="SliderHorizontalThumbHeight">12</x:Double>
+    <x:Double x:Key="SliderTrackThemeHeight">4</x:Double>
+    <GridLength x:Key="SliderPreContentMargin">4</GridLength>
+    <GridLength x:Key="SliderPostContentMargin">4</GridLength>
+    <CornerRadius x:Key="SliderThumbCornerRadius">6</CornerRadius>
+    <SolidColorBrush x:Key="SliderThumbBackground">White</SolidColorBrush>
+    <SolidColorBrush x:Key="SliderThumbBackgroundPointerOver">White</SolidColorBrush>
+    <SolidColorBrush x:Key="SliderThumbBackgroundPressed">White</SolidColorBrush>
+    <SolidColorBrush x:Key="SliderThumbBackgroundDisabled">White</SolidColorBrush>
+    <SolidColorBrush x:Key="SliderContainerBackground">Transparent</SolidColorBrush>
+    <SolidColorBrush x:Key="SliderContainerBackgroundPointerOver">Transparent</SolidColorBrush>
+    <SolidColorBrush x:Key="SliderContainerBackgroundPressed">Transparent</SolidColorBrush>
+    <SolidColorBrush x:Key="SliderContainerBackgroundDisabled">Transparent</SolidColorBrush>
+    <SolidColorBrush x:Key="SliderTrackValueFillDisabled">#22D3EE</SolidColorBrush>
+    <SolidColorBrush x:Key="SliderTrackFillDisabled">#24FFFFFF</SolidColorBrush>
+
+    <!-- Override Fluent's system accent so built-in controls (focus rings, selection)
+         match the design accent. -->
     <Color x:Key="SystemAccentColor">#FF22D3EE</Color>
     <Color x:Key="SystemAccentColorLight1">#FF4DDDF2</Color>
     <Color x:Key="SystemAccentColorLight2">#FF7BE7F5</Color>

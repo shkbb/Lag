@@ -52,6 +52,29 @@
   <sys:String x:Key="Settings_Group_Automation">АЎТАМАТЫЗАЦЫЯ</sys:String>
   <sys:String x:Key="Settings_StartWithWindows">Запускаць разам з Windows</sys:String>
   <sys:String x:Key="Settings_StartWithWindows_Desc">Дадае праграму ў аўтазагрузку сістэмы</sys:String>
+  <sys:String x:Key="Settings_StartMinimized">Запускаць згорнутым</sys:String>
+  <sys:String x:Key="Settings_StartMinimized_Desc">Праграма стартуе схаванай у трэі</sys:String>
+  <sys:String x:Key="Editor_Title">Рэдактар</sys:String>
+  <sys:String x:Key="Editor_Edit">Рэдагаваць</sys:String>
+  <sys:String x:Key="Editor_Back">Назад</sys:String>
+  <sys:String x:Key="Editor_Export">Экспартаваць</sys:String>
+  <sys:String x:Key="Editor_Exporting">Экспарт… {0}%</sys:String>
+  <sys:String x:Key="Editor_ExportDone">Захавана: {0}</sys:String>
+  <sys:String x:Key="Editor_ExportError">Памылка экспарту: {0}</sys:String>
+  <sys:String x:Key="Editor_Speed">Хуткасць</sys:String>
+  <sys:String x:Key="Editor_Format">Фармат</sys:String>
+  <sys:String x:Key="Editor_TabClip">Кліп</sys:String>
+  <sys:String x:Key="Editor_TabFilters">Фільтры</sys:String>
+  <sys:String x:Key="Editor_Tracks">АЎДЫЯДАРОЖКІ</sys:String>
+  <sys:String x:Key="Editor_TrackSystem">Сістэмны гук</sys:String>
+  <sys:String x:Key="Editor_TrackMic">Мікрафон</sys:String>
+  <sys:String x:Key="Editor_TrackAudio">Гук</sys:String>
+  <sys:String x:Key="Editor_SetStart">Усталяваць пачатак кліпа на бягучы момант</sys:String>
+  <sys:String x:Key="Editor_SetEnd">Усталяваць канец кліпа на бягучы момант</sys:String>
+  <sys:String x:Key="Editor_ResetTrim">Скінуць абрэзку</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Screenshot">Здымак экрана</sys:String>
+  <sys:String x:Key="Toast_ReplaySaved">Паўтор захаваны</sys:String>
+  <sys:String x:Key="Toast_ScreenshotSaved">Здымак экрана захаваны</sys:String>
   <sys:String x:Key="Settings_AutoStart">Аўтаматычна пачынаць запіс</sys:String>
   <sys:String x:Key="Settings_AutoStart_Desc">Буфер паўтору стартуе адразу пасля запуску</sys:String>
   <sys:String x:Key="Settings_Group_Hotkey">ГАРАЧЫЯ КЛАВІШЫ</sys:String>
@@ -125,4 +148,9 @@
   <sys:String x:Key="Option_Auto">Аўта</sys:String>
   <sys:String x:Key="Option_Custom">Уласны</sys:String>
 
+  <sys:String x:Key="Sidebar_Buffer">Буфер</sys:String>
+  <sys:String x:Key="Library_Stats">{0} кліпаў · вольна {1}</sys:String>
+  <sys:String x:Key="Player_Used">Занята</sys:String>
+
+  <sys:String x:Key="Library_EmptyTitle">Пакуль няма паўтораў</sys:String>
 </ResourceDictionary>

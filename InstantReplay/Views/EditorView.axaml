@@ -1,0 +1,379 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Lag.ViewModels"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:controls="using:Lag.Controls"
+             x:Class="Lag.Views.EditorView"
+             x:DataType="vm:EditorViewModel"
+             Focusable="True">
+
+  <!-- Spacebar toggles preview play/pause -->
+  <UserControl.KeyBindings>
+    <KeyBinding Gesture="Space" Command="{Binding PlayPauseCommand}" />
+  </UserControl.KeyBindings>
+
+  <UserControl.Styles>
+    <!-- Timeline rows (video strip + audio tracks): Shift+click selects, accent outline -->
+    <Style Selector="Border.trow">
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="Padding" Value="4" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="BorderBrush" Duration="0:0:0.12" />
+          <BrushTransition Property="Background" Duration="0:0:0.12" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Border.trow.selected">
+      <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}" />
+      <Setter Property="Background" Value="#0D22D3EE" />
+    </Style>
+
+    <!-- Filter cards: vertical wrap grid in the tools panel -->
+    <Style Selector="ListBox.filters">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="ItemsPanel">
+        <ItemsPanelTemplate>
+          <WrapPanel Orientation="Horizontal" />
+        </ItemsPanelTemplate>
+      </Setter>
+    </Style>
+    <Style Selector="ListBox.filters ListBoxItem">
+      <Setter Property="Padding" Value="2" />
+      <Setter Property="Margin" Value="0,0,6,6" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="MinHeight" Value="0" />
+      <Setter Property="Cursor" Value="Hand" />
+    </Style>
+    <Style Selector="ListBox.filters ListBoxItem /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Transitions">
+        <Transitions><BrushTransition Property="Background" Duration="0:0:0.12" /></Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="ListBox.filters ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="#20262E" />
+    </Style>
+    <Style Selector="ListBox.filters ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{StaticResource AccentBrush}" />
+    </Style>
+    <Style Selector="ListBox.filters TextBlock">
+      <Setter Property="Foreground" Value="{StaticResource Fg2Brush}" />
+    </Style>
+    <Style Selector="ListBox.filters ListBoxItem:selected TextBlock">
+      <Setter Property="Foreground" Value="{StaticResource OnAccentBrush}" />
+      <Setter Property="FontWeight" Value="Medium" />
+    </Style>
+  </UserControl.Styles>
+
+  <Grid RowDefinitions="Auto,*" Margin="24,20,24,24">
+
+    <!-- ── Header: title/clip + export ── -->
+    <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto" Margin="0,0,0,14">
+      <StackPanel Grid.Column="0" Spacing="3">
+        <TextBlock Text="{DynamicResource Editor_Title}" FontSize="16" FontWeight="Medium" />
+        <TextBlock Text="{Binding CurrentClip.DisplayName, FallbackValue=''}"
+                   FontSize="12" Foreground="{StaticResource Fg2Brush}"
+                   TextTrimming="CharacterEllipsis" MaxWidth="420" />
+      </StackPanel>
+
+      <TextBlock Grid.Column="2" Text="{Binding ExportStatus}"
+                 FontSize="12" Foreground="{StaticResource Fg2Brush}"
+                 VerticalAlignment="Center" Margin="0,0,12,0"
+                 MaxWidth="340" TextTrimming="CharacterEllipsis"
+                 ToolTip.Tip="{Binding ExportStatus}" />
+
+      <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+        <Button Classes="chip"
+                x:CompileBindings="False"
+                Command="{Binding $parent[Window].DataContext.NavigateToPlayerCommand}"
+                Content="{DynamicResource Editor_Back}" />
+        <Button Classes="cta" HorizontalAlignment="Right" MinWidth="140"
+                Command="{Binding ExportCommand}">
+          <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+            <mi:MaterialIcon Kind="MovieCheckOutline" Width="15" Height="15"
+                             VerticalAlignment="Center" IsVisible="{Binding !IsExporting}" />
+            <TextBlock Text="{DynamicResource Editor_Export}" VerticalAlignment="Center"
+                       IsVisible="{Binding !IsExporting}" />
+            <TextBlock Text="{Binding ExportProgress, StringFormat='{}{0}%'}"
+                       VerticalAlignment="Center" IsVisible="{Binding IsExporting}" />
+          </StackPanel>
+        </Button>
+      </StackPanel>
+    </Grid>
+
+    <!-- ── Workspace: preview + timeline | tools panel ── -->
+    <Grid Grid.Row="1" ColumnDefinitions="*,300">
+
+      <Grid Grid.Column="0" RowDefinitions="*,Auto" Margin="0,0,14,0">
+
+        <!-- Video preview (#07090C, r12) — Avalonia-rendered frames, live-preview effects -->
+        <Border Grid.Row="0" x:Name="VideoFrame"
+                Background="{StaticResource VideoBrush}"
+                CornerRadius="12" ClipToBounds="True" MinHeight="180">
+          <Grid RowDefinitions="*,Auto">
+            <Panel Grid.Row="0" x:Name="VideoSurface" Background="Transparent"
+                   PointerPressed="OnVideoSurfacePressed">
+              <Image x:Name="VideoImage" Stretch="Uniform"
+                     RenderOptions.BitmapInterpolationMode="HighQuality"
+                     HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+            </Panel>
+
+            <!-- Control bar -->
+            <Border Grid.Row="1" Margin="12" Background="#D10A0C0F" CornerRadius="10" Padding="14,10">
+              <Grid ColumnDefinitions="Auto,Auto,*">
+                <Button Grid.Column="0" Width="30" Height="30" CornerRadius="15" Padding="0"
+                        Background="White" BorderThickness="0" Cursor="Hand"
+                        Focusable="False"
+                        Command="{Binding PlayPauseCommand}"
+                        ToolTip.Tip="{DynamicResource Tooltip_PlayPause}">
+                  <Panel>
+                    <mi:MaterialIcon Kind="Play" Width="15" Height="15"
+                                     Foreground="{StaticResource OnAccentBrush}"
+                                     IsVisible="{Binding !IsPlaying}" />
+                    <mi:MaterialIcon Kind="Pause" Width="14" Height="14"
+                                     Foreground="{StaticResource OnAccentBrush}"
+                                     IsVisible="{Binding IsPlaying}" />
+                  </Panel>
+                </Button>
+
+                <TextBlock Grid.Column="1" Text="{Binding TimeDisplay}" Margin="12,0,0,0"
+                           FontSize="11" Foreground="{StaticResource Fg2Brush}"
+                           VerticalAlignment="Center" />
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8"
+                            HorizontalAlignment="Right" VerticalAlignment="Center">
+                  <Button Classes="chip" Focusable="False" Command="{Binding SetTrimStartHereCommand}"
+                          ToolTip.Tip="{DynamicResource Editor_SetStart}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                      <mi:MaterialIcon Kind="ArrowCollapseLeft" Width="14" Height="14" VerticalAlignment="Center" />
+                      <TextBlock Text="{Binding TrimStartDisplay}" FontSize="12" VerticalAlignment="Center" />
+                    </StackPanel>
+                  </Button>
+                  <Button Classes="chip" Focusable="False" Command="{Binding SetTrimEndHereCommand}"
+                          ToolTip.Tip="{DynamicResource Editor_SetEnd}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                      <TextBlock Text="{Binding TrimEndDisplay}" FontSize="12" VerticalAlignment="Center" />
+                      <mi:MaterialIcon Kind="ArrowCollapseRight" Width="14" Height="14" VerticalAlignment="Center" />
+                    </StackPanel>
+                  </Button>
+                  <Button Classes="transport" Command="{Binding ResetTrimCommand}"
+                          ToolTip.Tip="{DynamicResource Editor_ResetTrim}">
+                    <mi:MaterialIcon Kind="Restore" Width="16" Height="16" />
+                  </Button>
+                </StackPanel>
+              </Grid>
+            </Border>
+          </Grid>
+        </Border>
+
+        <!-- Timeline: video strip + audio tracks right under it (Medal-style) -->
+        <Border Grid.Row="1" Background="{StaticResource CardBrush}" CornerRadius="12"
+                Padding="10,8,10,10" Margin="0,14,0,0">
+          <StackPanel Spacing="4">
+            <Grid ColumnDefinitions="Auto,*,Auto" Margin="4,0,4,2">
+              <TextBlock Grid.Column="0" Text="{Binding TrimStartDisplay}"
+                         FontSize="11" Foreground="{StaticResource Fg3Brush}" />
+              <TextBlock Grid.Column="1" Text="{Binding TrimDurationDisplay}"
+                         FontSize="11" FontWeight="Medium" Foreground="{StaticResource AccentBrush}"
+                         HorizontalAlignment="Center" />
+              <TextBlock Grid.Column="2" Text="{Binding TrimEndDisplay}"
+                         FontSize="11" Foreground="{StaticResource Fg3Brush}" />
+            </Grid>
+
+            <!-- Video row -->
+            <Border Classes="trow" Classes.selected="{Binding IsVideoSelected}">
+              <Panel x:Name="TimelinePanel" Height="56" Background="#10151B">
+                <ItemsControl ItemsSource="{Binding TimelineThumbs}">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                      <UniformGrid Rows="1" />
+                    </ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <Image Source="{Binding}" Stretch="UniformToFill" Height="56" ClipToBounds="True" />
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <Canvas x:Name="TimelineOverlay" Background="Transparent">
+                  <Border x:Name="LeftShade" Canvas.Left="0" Canvas.Top="0" Height="56"
+                          Background="#B30A0C0F" IsHitTestVisible="False" />
+                  <Border x:Name="RightShade" Canvas.Top="0" Height="56"
+                          Background="#B30A0C0F" IsHitTestVisible="False" />
+                  <Border x:Name="Playhead" Canvas.Top="0" Width="2" Height="56"
+                          Background="White" Opacity="0.9" IsHitTestVisible="False" />
+                  <Border x:Name="StartHandle" Canvas.Top="0" Width="10" Height="56"
+                          Background="{StaticResource AccentBrush}" CornerRadius="3,0,0,3"
+                          Cursor="SizeWestEast" IsHitTestVisible="False">
+                    <Border Width="2" Height="18" CornerRadius="1"
+                            Background="{StaticResource OnAccentBrush}" Opacity="0.65"
+                            HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  </Border>
+                  <Border x:Name="EndHandle" Canvas.Top="0" Width="10" Height="56"
+                          Background="{StaticResource AccentBrush}" CornerRadius="0,3,3,0"
+                          Cursor="SizeWestEast" IsHitTestVisible="False">
+                    <Border Width="2" Height="18" CornerRadius="1"
+                            Background="{StaticResource OnAccentBrush}" Opacity="0.65"
+                            HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  </Border>
+                </Canvas>
+              </Panel>
+            </Border>
+
+            <!-- Audio track lanes: full-width, same x-scale as the video strip above,
+                 so the trim handles line up with the video timings 1:1. Name/mute and
+                 volume float as chips OVER the lane (the lane stays draggable around
+                 them and in the thin strips above/below). -->
+            <ItemsControl ItemsSource="{Binding AudioTracks}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:EditorAudioTrack">
+                  <Border Classes="trow" Classes.selected="{Binding IsSelected}"
+                          PointerPressed="OnTrackRowPressed">
+                    <Panel Height="32">
+                      <controls:TrimRangeBar x:CompileBindings="False"
+                                             Duration="{Binding ClipDurationSec}"
+                                             RangeStart="{Binding StartSec, Mode=TwoWay}"
+                                             RangeEnd="{Binding EndSec, Mode=TwoWay}"
+                                             SnapA="{Binding $parent[UserControl].DataContext.TrimStartSec}"
+                                             SnapB="{Binding $parent[UserControl].DataContext.TrimEndSec}"
+                                             IsEnabled="{Binding !IsMuted}" />
+
+                      <!-- Name + mute chip (kept clear of the left handle) -->
+                      <Border Background="{StaticResource Overlay85Brush}" CornerRadius="6"
+                              Padding="8,3" Margin="16,0,0,0"
+                              HorizontalAlignment="Left" VerticalAlignment="Center">
+                        <CheckBox Classes="app" VerticalAlignment="Center"
+                                  IsChecked="{Binding !IsMuted}">
+                          <TextBlock Text="{Binding Name}" FontSize="11"
+                                     TextTrimming="CharacterEllipsis" MaxWidth="130" />
+                        </CheckBox>
+                      </Border>
+
+                      <!-- Volume chip (kept clear of the right handle) -->
+                      <Border Background="{StaticResource Overlay85Brush}" CornerRadius="6"
+                              Padding="8,2" Margin="0,0,16,0"
+                              HorizontalAlignment="Right" VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                          <Slider Width="72" Minimum="0" Maximum="100"
+                                  TickFrequency="1" IsSnapToTickEnabled="True"
+                                  Value="{Binding Volume}"
+                                  IsEnabled="{Binding !IsMuted}"
+                                  VerticalAlignment="Center" />
+                          <TextBlock Text="{Binding Volume, StringFormat='{}{0}%'}"
+                                     FontSize="10" Foreground="{StaticResource Fg2Brush}"
+                                     Width="30" VerticalAlignment="Center" />
+                        </StackPanel>
+                      </Border>
+                    </Panel>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
+      </Grid>
+
+      <!-- ── Tools panel: tabs Clip | Filters ── -->
+      <Border Grid.Column="1" Background="{StaticResource CardBrush}" CornerRadius="12"
+              Padding="16,12">
+        <Grid RowDefinitions="Auto,Auto,*">
+          <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="20">
+            <Button Classes="tab" Classes.sel="{Binding SelectedToolsTab, Converter={StaticResource Eq}, ConverterParameter=0}"
+                    Click="OnToolsTabClick" Tag="0">
+              <StackPanel>
+                <TextBlock Classes="tabtxt" Text="{DynamicResource Editor_TabClip}" />
+                <Border Classes="tabline" />
+              </StackPanel>
+            </Button>
+            <Button Classes="tab" Classes.sel="{Binding SelectedToolsTab, Converter={StaticResource Eq}, ConverterParameter=1}"
+                    Click="OnToolsTabClick" Tag="1">
+              <StackPanel>
+                <TextBlock Classes="tabtxt" Text="{DynamicResource Editor_TabFilters}" />
+                <Border Classes="tabline" />
+              </StackPanel>
+            </Button>
+          </StackPanel>
+
+          <Border Grid.Row="1" Height="1" Background="{StaticResource Divider6Brush}" Margin="0,10,0,12" />
+
+          <Carousel Grid.Row="2" SelectedIndex="{Binding SelectedToolsTab}">
+            <Carousel.PageTransition>
+              <CrossFade Duration="0:0:0.15" />
+            </Carousel.PageTransition>
+
+            <!-- TAB 0 · CLIP -->
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+              <StackPanel Spacing="14">
+                <StackPanel Spacing="6">
+                  <TextBlock Text="{DynamicResource Editor_Format}" FontSize="12"
+                             Foreground="{StaticResource Fg2Brush}" />
+                  <ComboBox HorizontalAlignment="Stretch"
+                            ItemsSource="{Binding AspectOptions}"
+                            SelectedItem="{Binding SelectedAspect}">
+                    <ComboBox.ItemTemplate>
+                      <DataTemplate x:DataType="vm:EditorAspectOption">
+                        <TextBlock Text="{Binding Display}" />
+                      </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                  </ComboBox>
+                </StackPanel>
+
+                <StackPanel Spacing="6">
+                  <TextBlock Text="{DynamicResource Editor_Speed}" FontSize="12"
+                             Foreground="{StaticResource Fg2Brush}" />
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <ListBox Classes="segctl" VerticalAlignment="Center"
+                             ItemsSource="{Binding SpeedOptions}"
+                             SelectedItem="{Binding SelectedSpeed}">
+                      <ListBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:EditorSpeedOption">
+                          <TextBlock Text="{Binding Display}" />
+                        </DataTemplate>
+                      </ListBox.ItemTemplate>
+                    </ListBox>
+                    <TextBox Width="52" VerticalAlignment="Center"
+                             Text="{Binding SpeedText}" />
+                  </StackPanel>
+                </StackPanel>
+              </StackPanel>
+            </ScrollViewer>
+
+            <!-- TAB 1 · FILTERS -->
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+              <ListBox Classes="filters"
+                       ItemsSource="{Binding FilterOptions}"
+                       SelectedItem="{Binding SelectedFilter}">
+                <ListBox.ItemTemplate>
+                  <DataTemplate x:DataType="vm:EditorFilterOption">
+                    <StackPanel Spacing="3" Width="78">
+                      <Border Width="74" Height="42" CornerRadius="8" Background="#10151B"
+                              ClipToBounds="True" HorizontalAlignment="Center">
+                        <Panel>
+                          <Panel.Clip>
+                            <RectangleGeometry Rect="0,0,74,42" RadiusX="8" RadiusY="8" />
+                          </Panel.Clip>
+                          <Image Source="{Binding Preview}" Stretch="UniformToFill" />
+                        </Panel>
+                      </Border>
+                      <TextBlock Text="{Binding Name}" FontSize="10"
+                                 HorizontalAlignment="Center" />
+                    </StackPanel>
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+            </ScrollViewer>
+          </Carousel>
+        </Grid>
+      </Border>
+    </Grid>
+  </Grid>
+
+</UserControl>

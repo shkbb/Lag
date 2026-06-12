@@ -1,543 +1,468 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Lag.ViewModels"
-             xmlns:materialIcons="using:Material.Icons.Avalonia"
+             xmlns:mi="using:Material.Icons.Avalonia"
              x:Class="Lag.Views.SettingsView"
              x:DataType="vm:SettingsViewModel">
 
-  <Grid RowDefinitions="Auto,Auto,*" Margin="28,18,28,0">
+  <Grid RowDefinitions="Auto,Auto,Auto,*" Margin="24,20,24,0">
 
-    <!-- Page Title -->
-    <StackPanel Grid.Row="0" Spacing="6" MaxWidth="860" HorizontalAlignment="Stretch">
-      <TextBlock Classes="page-title" Text="{DynamicResource Settings_Title}" />
+    <!-- Title -->
+    <TextBlock Grid.Row="0" Text="{DynamicResource Settings_Title}"
+               FontSize="16" FontWeight="Medium" />
 
-      <!-- Pending Changes Warning -->
-      <TextBlock Text="{DynamicResource Settings_PendingChanges}"
-                 Foreground="#FFA000" FontSize="13" FontWeight="SemiBold"
-                 TextWrapping="Wrap"
-                 IsVisible="{Binding HasPendingChanges}" />
+    <!-- Pending changes hint -->
+    <TextBlock Grid.Row="0" Text="{DynamicResource Settings_PendingChanges}"
+               FontSize="11" Foreground="#F0B45A" HorizontalAlignment="Right"
+               VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="420"
+               IsVisible="{Binding HasPendingChanges}" />
+
+    <!-- Tabs (animated underline) -->
+    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="24" Margin="0,18,0,0">
+      <Button Classes="tab" Classes.sel="{Binding SelectedSettingsTab, Converter={StaticResource Eq}, ConverterParameter=0}"
+              Click="OnTabClick" Tag="0">
+        <StackPanel>
+          <TextBlock Classes="tabtxt" Text="{DynamicResource Tab_Video}" />
+          <Border Classes="tabline" />
+        </StackPanel>
+      </Button>
+      <Button Classes="tab" Classes.sel="{Binding SelectedSettingsTab, Converter={StaticResource Eq}, ConverterParameter=1}"
+              Click="OnTabClick" Tag="1">
+        <StackPanel>
+          <TextBlock Classes="tabtxt" Text="{DynamicResource Tab_Audio}" />
+          <Border Classes="tabline" />
+        </StackPanel>
+      </Button>
+      <Button Classes="tab" Classes.sel="{Binding SelectedSettingsTab, Converter={StaticResource Eq}, ConverterParameter=2}"
+              Click="OnTabClick" Tag="2">
+        <StackPanel>
+          <TextBlock Classes="tabtxt" Text="{DynamicResource Tab_General}" />
+          <Border Classes="tabline" />
+        </StackPanel>
+      </Button>
     </StackPanel>
 
-    <!-- ═══════════════════ Category Tabs ═══════════════════ -->
-    <TabControl Grid.Row="2" Margin="0,6,0,0">
+    <Border Grid.Row="2" Height="1" Background="{StaticResource Divider6Brush}" />
 
-      <!-- ════════════════ TAB: VIDEO ════════════════ -->
-      <TabItem Header="{DynamicResource Tab_Video}">
-        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-          <StackPanel Margin="0,14,0,28" Spacing="22" MaxWidth="820" HorizontalAlignment="Center">
+    <!-- Animated tab pages -->
+    <Carousel Grid.Row="3" SelectedIndex="{Binding SelectedSettingsTab}">
+      <Carousel.PageTransition>
+        <CrossFade Duration="0:0:0.15" />
+      </Carousel.PageTransition>
 
-            <StackPanel Spacing="8">
-              <TextBlock Classes="group-label" Text="{DynamicResource Settings_Group_Recording}" />
+      <!-- ════════════════ TAB 0 · VIDEO ════════════════ -->
+      <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="0,6,0,24">
 
-              <Border Classes="card">
-                <StackPanel>
-
-                  <!-- Buffer Duration -->
-                  <DockPanel Margin="16,11">
-                    <TextBlock DockPanel.Dock="Left" Text="{DynamicResource Settings_BufferLength}"
-                               FontSize="13" Foreground="#B3FFFFFF" VerticalAlignment="Center" />
-                    <ComboBox DockPanel.Dock="Right"
-                              ItemsSource="{Binding BufferOptions}"
-                              SelectedItem="{Binding SelectedBuffer}"
-                              HorizontalAlignment="Right" MinWidth="130" />
-                  </DockPanel>
-
-                  <Border Height="0.5" Background="#0DFFFFFF" />
-
-                  <!-- Monitor -->
-                  <DockPanel Margin="16,11">
-                    <TextBlock DockPanel.Dock="Left" Text="{DynamicResource Settings_Display}"
-                               FontSize="13" Foreground="#B3FFFFFF" VerticalAlignment="Center" />
-                    <ComboBox DockPanel.Dock="Right"
-                              ItemsSource="{Binding Monitors}"
-                              SelectedItem="{Binding SelectedMonitor}"
-                              HorizontalAlignment="Right" MinWidth="260" />
-                  </DockPanel>
-
-                  <Border Height="0.5" Background="#0DFFFFFF" />
-
-                  <!-- Frame Rate: presets (24–360) + custom value -->
-                  <DockPanel Margin="16,11">
-                    <TextBlock DockPanel.Dock="Left" Text="{DynamicResource Settings_FrameRate}"
-                               FontSize="13" Foreground="#B3FFFFFF" VerticalAlignment="Center" />
-                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8"
-                                HorizontalAlignment="Right">
-                      <StackPanel Orientation="Horizontal" Spacing="6"
-                                  IsVisible="{Binding IsCustomFps}">
-                        <TextBox Text="{Binding CustomFps}" Width="56"
-                                 VerticalAlignment="Center" />
-                        <TextBlock Text="fps" FontSize="12" Foreground="#8FFFFFFF"
-                                   VerticalAlignment="Center" />
-                      </StackPanel>
-                      <ComboBox ItemsSource="{Binding FpsOptions}"
-                                SelectedItem="{Binding SelectedFps}"
-                                MinWidth="96" />
-                    </StackPanel>
-                  </DockPanel>
-
-                  <Border Height="0.5" Background="#0DFFFFFF" />
-
-                  <!-- Output Resolution (render downscale; capture stays native) -->
-                  <DockPanel Margin="16,11">
-                    <TextBlock DockPanel.Dock="Left" Text="{DynamicResource Settings_OutputResolution}"
-                               FontSize="13" Foreground="#B3FFFFFF" VerticalAlignment="Center" />
-                    <ComboBox DockPanel.Dock="Right"
-                              ItemsSource="{Binding ResolutionOptions}"
-                              SelectedItem="{Binding SelectedResolution}"
-                              HorizontalAlignment="Right" MinWidth="110" />
-                  </DockPanel>
-
-                  <Border Height="0.5" Background="#0DFFFFFF" />
-
-                  <!-- Video Codec ("Auto" keeps the automatic hardware fallback) -->
-                  <DockPanel Margin="16,11">
-                    <TextBlock DockPanel.Dock="Left" Text="{DynamicResource Settings_Codec}"
-                               FontSize="13" Foreground="#B3FFFFFF" VerticalAlignment="Center" />
-                    <ComboBox DockPanel.Dock="Right"
-                              ItemsSource="{Binding CodecOptions}"
-                              SelectedItem="{Binding SelectedCodec}"
-                              HorizontalAlignment="Right" MinWidth="160" />
-                  </DockPanel>
-
-                  <Border Height="0.5" Background="#0DFFFFFF" />
-
-                  <!-- Bitrate: presets + custom Mbps input -->
-                  <DockPanel Margin="16,11">
-                    <TextBlock DockPanel.Dock="Left" Text="{DynamicResource Settings_Bitrate}"
-                               FontSize="13" Foreground="#B3FFFFFF" VerticalAlignment="Center" />
-                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8"
-                                HorizontalAlignment="Right">
-                      <StackPanel Orientation="Horizontal" Spacing="6"
-                                  IsVisible="{Binding IsCustomBitrate}">
-                        <TextBox Text="{Binding CustomBitrateMbps}" Width="64"
-                                 VerticalAlignment="Center" />
-                        <TextBlock Text="{DynamicResource Settings_Bitrate_CustomSuffix}"
-                                   FontSize="12" Foreground="#8FFFFFFF" VerticalAlignment="Center" />
-                      </StackPanel>
-                      <ComboBox ItemsSource="{Binding BitrateOptions}"
-                                SelectedItem="{Binding SelectedBitrate}"
-                                MinWidth="110" />
-                    </StackPanel>
-                  </DockPanel>
-
-                  <Border Height="0.5" Background="#0DFFFFFF" />
-
-                  <!-- Output file format (container) -->
-                  <DockPanel Margin="16,11">
-                    <TextBlock DockPanel.Dock="Left" Text="{DynamicResource Settings_Format}"
-                               FontSize="13" Foreground="#B3FFFFFF" VerticalAlignment="Center" />
-                    <ComboBox DockPanel.Dock="Right"
-                              ItemsSource="{Binding FormatOptions}"
-                              SelectedItem="{Binding SelectedFormat}"
-                              HorizontalAlignment="Right" MinWidth="90" />
-                  </DockPanel>
-
-                  <Border Height="0.5" Background="#0DFFFFFF" />
-
-                  <!-- Recording GPU (multi-GPU systems) -->
-                  <DockPanel Margin="16,11">
-                    <TextBlock DockPanel.Dock="Left" Text="{DynamicResource Settings_Gpu}"
-                               FontSize="13" Foreground="#B3FFFFFF" VerticalAlignment="Center" />
-                    <ComboBox DockPanel.Dock="Right"
-                              ItemsSource="{Binding GpuOptions}"
-                              SelectedItem="{Binding SelectedGpu}"
-                              HorizontalAlignment="Right" MinWidth="240" />
-                  </DockPanel>
-
-                </StackPanel>
-              </Border>
+          <Grid ColumnDefinitions="*,Auto" MinHeight="50">
+            <StackPanel Grid.Column="0" Spacing="3" VerticalAlignment="Center">
+              <TextBlock Text="{DynamicResource Settings_BufferLength}" FontSize="13" />
+              <TextBlock Text="{DynamicResource Settings_AutoStart_Desc}" IsVisible="False" />
             </StackPanel>
+            <ComboBox Grid.Column="1" VerticalAlignment="Center"
+                      ItemsSource="{Binding BufferOptions}"
+                      SelectedItem="{Binding SelectedBuffer}" />
+          </Grid>
+          <Border Classes="divider" />
 
-          </StackPanel>
-        </ScrollViewer>
-      </TabItem>
+          <Grid ColumnDefinitions="*,Auto" MinHeight="50">
+            <TextBlock Grid.Column="0" Text="{DynamicResource Settings_Display}" FontSize="13"
+                       VerticalAlignment="Center" />
+            <ComboBox Grid.Column="1" VerticalAlignment="Center"
+                      ItemsSource="{Binding Monitors}"
+                      SelectedItem="{Binding SelectedMonitor}" />
+          </Grid>
+          <Border Classes="divider" />
 
-      <!-- ════════════════ TAB: AUDIO ════════════════ -->
-      <TabItem Header="{DynamicResource Tab_Audio}">
-        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-          <StackPanel Margin="0,14,0,28" Spacing="22" MaxWidth="820" HorizontalAlignment="Center">
-
-            <!-- ── Microphone ── -->
-            <StackPanel Spacing="8">
-              <TextBlock Classes="group-label" Text="{DynamicResource Settings_Group_Mic}" />
-
-              <Border Classes="card">
-                <StackPanel>
-
-                  <!-- Device -->
-                  <DockPanel Margin="16,11">
-                    <TextBlock DockPanel.Dock="Left" Text="{DynamicResource Settings_Microphone}"
-                               FontSize="13" Foreground="#B3FFFFFF" VerticalAlignment="Center" />
-                    <ComboBox DockPanel.Dock="Right"
-                              ItemsSource="{Binding Microphones}"
-                              SelectedItem="{Binding SelectedMicrophone}"
-                              HorizontalAlignment="Right" MinWidth="260">
-                      <ComboBox.ItemTemplate>
-                        <DataTemplate>
-                          <TextBlock Text="{Binding Name}" />
-                        </DataTemplate>
-                      </ComboBox.ItemTemplate>
-                    </ComboBox>
-                  </DockPanel>
-
-                  <Border Height="0.5" Background="#0DFFFFFF" />
-
-                  <!-- Volume -->
-                  <DockPanel Margin="16,11">
-                    <TextBlock DockPanel.Dock="Left" Text="{DynamicResource Settings_MicVolume}"
-                               FontSize="13" Foreground="#B3FFFFFF" VerticalAlignment="Center" />
-                    <TextBlock DockPanel.Dock="Right" Width="42"
-                               Text="{Binding MicVolume, StringFormat='{}{0}%'}"
-                               FontSize="12" Foreground="{StaticResource AccentCyanBrush}"
-                               HorizontalAlignment="Right" VerticalAlignment="Center" />
-                    <Slider Minimum="0" Maximum="100"
-                            Value="{Binding MicVolume, Mode=TwoWay}"
-                            Margin="16,0,10,0" VerticalAlignment="Center"
-                            Foreground="{StaticResource AccentCyanBrush}" />
-                  </DockPanel>
-
-                  <Border Height="0.5" Background="#0DFFFFFF" />
-
-                  <!-- Channels: stereo / mono -->
-                  <DockPanel Margin="16,11">
-                    <TextBlock DockPanel.Dock="Left" Text="{DynamicResource Settings_MicChannels}"
-                               FontSize="13" Foreground="#B3FFFFFF" VerticalAlignment="Center" />
-                    <ComboBox DockPanel.Dock="Right"
-                              SelectedIndex="{Binding MicChannelIndex}"
-                              HorizontalAlignment="Right" MinWidth="110">
-                      <ComboBoxItem Content="{DynamicResource Channels_Stereo}" />
-                      <ComboBoxItem Content="{DynamicResource Channels_Mono}" />
-                    </ComboBox>
-                  </DockPanel>
-
-                  <Border Height="0.5" Background="#0DFFFFFF" />
-
-                  <!-- Push-to-talk toggle -->
-                  <DockPanel Margin="16,11">
-                    <ToggleSwitch DockPanel.Dock="Right"
-                                  IsChecked="{Binding PushToTalkEnabled}"
-                                  HorizontalAlignment="Right" />
-                    <StackPanel Spacing="2" VerticalAlignment="Center">
-                      <TextBlock Text="{DynamicResource Settings_Ptt}"
-                                 FontSize="13" Foreground="#B3FFFFFF" />
-                      <TextBlock Text="{DynamicResource Settings_Ptt_Desc}"
-                                 FontSize="11" Foreground="#4DFFFFFF" TextWrapping="Wrap" />
-                    </StackPanel>
-                  </DockPanel>
-
-                  <!-- Push-to-talk key (active only when PTT is on) -->
-                  <DockPanel Margin="16,0,16,11" IsEnabled="{Binding PushToTalkEnabled}">
-                    <TextBlock DockPanel.Dock="Left" Text="{DynamicResource Settings_PttKey}"
-                               FontSize="13" Foreground="#B3FFFFFF" VerticalAlignment="Center" />
-                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8"
-                                HorizontalAlignment="Right" VerticalAlignment="Center">
-                      <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="0.5"
-                              CornerRadius="6" Padding="10,5">
-                        <TextBlock Text="{Binding PttKeyDisplayText}"
-                                   FontFamily="Consolas, monospace"
-                                   FontSize="12" FontWeight="Medium" Foreground="#99FFFFFF" />
-                      </Border>
-                      <Button Classes="accent" Command="{Binding CapturePttKeyCommand}">
-                        <Panel>
-                          <TextBlock Text="{DynamicResource Settings_Hotkey_Change}"
-                                     IsVisible="{Binding !IsCapturingPttKey}" />
-                          <TextBlock Text="{DynamicResource Settings_Hotkey_Listening}"
-                                     IsVisible="{Binding IsCapturingPttKey}" />
-                        </Panel>
-                      </Button>
-                    </StackPanel>
-                  </DockPanel>
-
-                </StackPanel>
-              </Border>
+          <Grid ColumnDefinitions="*,Auto" MinHeight="50">
+            <TextBlock Grid.Column="0" Text="{DynamicResource Settings_FrameRate}" FontSize="13"
+                       VerticalAlignment="Center" />
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+              <TextBox Text="{Binding CustomFps}" Width="56"
+                       IsVisible="{Binding IsCustomFps}" />
+              <ListBox Classes="segctl"
+                       ItemsSource="{Binding FpsOptions}"
+                       SelectedItem="{Binding SelectedFps}" />
             </StackPanel>
+          </Grid>
+          <Border Classes="divider" />
 
-            <!-- ── System sound (all PC / specific apps, Medal-style) ── -->
-            <StackPanel Spacing="8">
-              <TextBlock Classes="group-label" Text="{DynamicResource Settings_Group_SystemAudio}" />
+          <Grid ColumnDefinitions="*,Auto" MinHeight="50">
+            <TextBlock Grid.Column="0" Text="{DynamicResource Settings_OutputResolution}" FontSize="13"
+                       VerticalAlignment="Center" />
+            <ComboBox Grid.Column="1" VerticalAlignment="Center"
+                      ItemsSource="{Binding ResolutionOptions}"
+                      SelectedItem="{Binding SelectedResolution}" />
+          </Grid>
+          <Border Classes="divider" />
 
-              <Border Classes="card">
-                <StackPanel>
+          <Grid ColumnDefinitions="*,Auto" MinHeight="50">
+            <TextBlock Grid.Column="0" Text="{DynamicResource Settings_Codec}" FontSize="13"
+                       VerticalAlignment="Center" />
+            <ListBox Grid.Column="1" Classes="segctl" VerticalAlignment="Center"
+                     ItemsSource="{Binding CodecOptions}"
+                     SelectedItem="{Binding SelectedCodec}" />
+          </Grid>
+          <Border Classes="divider" />
 
-                  <!-- Mode -->
-                  <DockPanel Margin="16,11">
-                    <TextBlock DockPanel.Dock="Left" Text="{DynamicResource Settings_AudioMode}"
-                               FontSize="13" Foreground="#B3FFFFFF" VerticalAlignment="Center" />
-                    <ComboBox DockPanel.Dock="Right"
-                              SelectedIndex="{Binding AudioModeIndex}"
-                              HorizontalAlignment="Right" MinWidth="170">
-                      <ComboBoxItem Content="{DynamicResource AudioMode_All}" />
-                      <ComboBoxItem Content="{DynamicResource AudioMode_Apps}" />
-                    </ComboBox>
-                  </DockPanel>
-
-                  <!-- App list (Medal-style: checkbox + per-app volume) -->
-                  <StackPanel IsVisible="{Binding IsAppsMode}">
-                    <Border Height="0.5" Background="#0DFFFFFF" />
-
-                    <ItemsControl ItemsSource="{Binding AudioApps}" Margin="8,6">
-                      <ItemsControl.ItemTemplate>
-                        <DataTemplate x:DataType="vm:AppAudioItem">
-                          <Border CornerRadius="10" Padding="10,7" Margin="0,2"
-                                  Background="#0AFFFFFF">
-                            <DockPanel>
-                              <CheckBox DockPanel.Dock="Left"
-                                        IsChecked="{Binding IsEnabled}"
-                                        VerticalAlignment="Center" />
-                              <TextBlock DockPanel.Dock="Right" Width="42"
-                                         Text="{Binding Volume, StringFormat='{}{0}%'}"
-                                         FontSize="11" Foreground="{StaticResource AccentCyanBrush}"
-                                         HorizontalAlignment="Right" VerticalAlignment="Center" />
-                              <Slider DockPanel.Dock="Right" Width="140"
-                                      Minimum="0" Maximum="100"
-                                      Value="{Binding Volume, Mode=TwoWay}"
-                                      IsEnabled="{Binding IsEnabled}"
-                                      Margin="10,0" VerticalAlignment="Center"
-                                      Foreground="{StaticResource AccentCyanBrush}" />
-                              <TextBlock Text="{Binding DisplayName}"
-                                         FontSize="13" Foreground="#CCFFFFFF"
-                                         Margin="8,0,0,0" VerticalAlignment="Center"
-                                         TextTrimming="CharacterEllipsis" />
-                            </DockPanel>
-                          </Border>
-                        </DataTemplate>
-                      </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-
-                    <TextBlock Text="{DynamicResource Settings_AppsHint}"
-                               FontSize="11" Foreground="#4DFFFFFF"
-                               TextWrapping="Wrap" Margin="16,2,16,11" />
-                  </StackPanel>
-
-                </StackPanel>
-              </Border>
+          <Grid ColumnDefinitions="*,Auto" MinHeight="50">
+            <TextBlock Grid.Column="0" Text="{DynamicResource Settings_Bitrate}" FontSize="13"
+                       VerticalAlignment="Center" />
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+              <Slider Width="160" Minimum="5" Maximum="100" TickFrequency="1" IsSnapToTickEnabled="True"
+                      Value="{Binding BitrateSliderValue}" />
+              <StackPanel Orientation="Horizontal" Spacing="4" Width="74">
+                <TextBlock Text="{Binding BitrateDisplayMbps}" FontSize="13" />
+                <TextBlock Text="{DynamicResource Settings_Bitrate_CustomSuffix}" FontSize="13" />
+              </StackPanel>
             </StackPanel>
+          </Grid>
+          <Border Classes="divider" />
 
-            <!-- ── Separate audio tracks ── -->
-            <Border Classes="card">
-              <DockPanel Margin="16,11">
-                <ToggleSwitch DockPanel.Dock="Right"
-                              IsChecked="{Binding SeparateAudioTracks}"
-                              HorizontalAlignment="Right" />
-                <StackPanel Spacing="2" VerticalAlignment="Center">
-                  <TextBlock Text="{DynamicResource Settings_SeparateTracks}"
-                             FontSize="13" Foreground="#B3FFFFFF" />
-                  <TextBlock Text="{DynamicResource Settings_SeparateTracks_Desc}"
-                             FontSize="11" Foreground="#4DFFFFFF" TextWrapping="Wrap" />
-                </StackPanel>
-              </DockPanel>
+          <Grid ColumnDefinitions="*,Auto" MinHeight="50">
+            <TextBlock Grid.Column="0" Text="{DynamicResource Settings_Gpu}" FontSize="13"
+                       VerticalAlignment="Center" />
+            <ComboBox Grid.Column="1" VerticalAlignment="Center"
+                      ItemsSource="{Binding GpuOptions}"
+                      SelectedItem="{Binding SelectedGpu}" />
+          </Grid>
+          <Border Classes="divider" />
+
+          <Grid ColumnDefinitions="*,Auto" MinHeight="50">
+            <TextBlock Grid.Column="0" Text="{DynamicResource Settings_Format}" FontSize="13"
+                       VerticalAlignment="Center" />
+            <ComboBox Grid.Column="1" VerticalAlignment="Center"
+                      ItemsSource="{Binding FormatOptions}"
+                      SelectedItem="{Binding SelectedFormat}">
+              <ComboBox.ItemTemplate>
+                <DataTemplate>
+                  <TextBlock Text="{Binding Converter={StaticResource Upper}}" />
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+          </Grid>
+
+        </StackPanel>
+      </ScrollViewer>
+
+      <!-- ════════════════ TAB 1 · AUDIO ════════════════ -->
+      <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="0,12,0,24">
+
+          <TextBlock Classes="section" Text="{DynamicResource Settings_Group_Mic}" Margin="0,0,0,2" />
+
+          <Grid ColumnDefinitions="*,Auto" MinHeight="46">
+            <TextBlock Grid.Column="0" Text="{DynamicResource Settings_Microphone}" FontSize="13"
+                       VerticalAlignment="Center" />
+            <ComboBox Grid.Column="1" VerticalAlignment="Center"
+                      ItemsSource="{Binding Microphones}"
+                      SelectedItem="{Binding SelectedMicrophone}">
+              <ComboBox.ItemTemplate>
+                <DataTemplate>
+                  <TextBlock Text="{Binding Name}" />
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+          </Grid>
+          <Border Classes="divider" />
+
+          <Grid ColumnDefinitions="*,Auto" MinHeight="46">
+            <TextBlock Grid.Column="0" Text="{DynamicResource Settings_MicVolume}" FontSize="13"
+                       VerticalAlignment="Center" />
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+              <Slider Width="160" Minimum="0" Maximum="100" TickFrequency="1" IsSnapToTickEnabled="True"
+                      Value="{Binding MicVolume}" />
+              <TextBlock Text="{Binding MicVolume, StringFormat='{}{0}%'}" FontSize="13" Width="40" />
+            </StackPanel>
+          </Grid>
+          <Border Classes="divider" />
+
+          <Grid ColumnDefinitions="*,Auto" MinHeight="46">
+            <TextBlock Grid.Column="0" Text="{DynamicResource Settings_MicChannels}" FontSize="13"
+                       VerticalAlignment="Center" />
+            <Border Grid.Column="1" Classes="segment" VerticalAlignment="Center">
+              <StackPanel Orientation="Horizontal" Spacing="2">
+                <Button Classes="seg" Classes.sel="{Binding MicChannelIndex, Converter={StaticResource Eq}, ConverterParameter=1}"
+                        Click="OnChannelSegClick" Tag="1"
+                        Content="{DynamicResource Channels_Mono}" />
+                <Button Classes="seg" Classes.sel="{Binding MicChannelIndex, Converter={StaticResource Eq}, ConverterParameter=0}"
+                        Click="OnChannelSegClick" Tag="0"
+                        Content="{DynamicResource Channels_Stereo}" />
+              </StackPanel>
             </Border>
+          </Grid>
+          <Border Classes="divider" />
 
-          </StackPanel>
-        </ScrollViewer>
-      </TabItem>
-
-      <!-- ════════════════ TAB: GENERAL ════════════════ -->
-      <TabItem Header="{DynamicResource Tab_General}">
-        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-          <StackPanel Margin="0,14,0,28" Spacing="22" MaxWidth="820" HorizontalAlignment="Center">
-
-            <!-- Language -->
-            <StackPanel Spacing="8">
-              <TextBlock Classes="group-label" Text="{DynamicResource Settings_Group_Language}" />
-
-              <Border Classes="card">
-                <DockPanel Margin="16,11">
-                  <TextBlock DockPanel.Dock="Left" Text="{DynamicResource Settings_Language}"
-                             FontSize="13" Foreground="#B3FFFFFF" VerticalAlignment="Center" />
-                  <ComboBox DockPanel.Dock="Right"
-                            ItemsSource="{Binding LanguageOptions}"
-                            SelectedItem="{Binding SelectedLanguage}"
-                            HorizontalAlignment="Right" MinWidth="190">
-                    <ComboBox.ItemTemplate>
-                      <DataTemplate x:DataType="vm:LanguageOption">
-                        <StackPanel Orientation="Horizontal" Spacing="9">
-                          <!-- Vector flag (DrawingImage resource picked by language code) -->
-                          <Border CornerRadius="3" ClipToBounds="True"
-                                  BorderBrush="#33FFFFFF" BorderThickness="0.5"
-                                  VerticalAlignment="Center">
-                            <Image Source="{Binding Code, Converter={StaticResource LangFlag}}"
-                                   Width="23" Height="15" Stretch="Fill" />
-                          </Border>
-                          <TextBlock Text="{Binding Display}" VerticalAlignment="Center" />
-                        </StackPanel>
-                      </DataTemplate>
-                    </ComboBox.ItemTemplate>
-                  </ComboBox>
-                </DockPanel>
-              </Border>
+          <Grid ColumnDefinitions="*,Auto" MinHeight="46">
+            <StackPanel Grid.Column="0" Spacing="3" VerticalAlignment="Center">
+              <TextBlock Text="{DynamicResource Settings_Ptt}" FontSize="13" />
+              <TextBlock Text="{DynamicResource Settings_Ptt_Desc}" FontSize="11"
+                         Foreground="{StaticResource Fg3Brush}" />
             </StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+              <Button Classes="bare" Padding="0" Background="Transparent" BorderThickness="0" Cursor="Hand"
+                      Command="{Binding CapturePttKeyCommand}"
+                      IsEnabled="{Binding PushToTalkEnabled}"
+                      ToolTip.Tip="{DynamicResource Settings_Hotkey_Desc}">
+                <Panel>
+                  <Border Classes="kbd" IsVisible="{Binding !IsCapturingPttKey}">
+                    <TextBlock Text="{Binding PttKeyDisplayText}" />
+                  </Border>
+                  <Border Classes="kbd listening" IsVisible="{Binding IsCapturingPttKey}">
+                    <TextBlock Text="..." />
+                  </Border>
+                </Panel>
+              </Button>
+              <ToggleSwitch IsChecked="{Binding PushToTalkEnabled}"
+                            OnContent="{x:Null}" OffContent="{x:Null}" MinWidth="0" />
+            </StackPanel>
+          </Grid>
 
-            <!-- Hotkey -->
-            <StackPanel Spacing="8">
-              <TextBlock Classes="group-label" Text="{DynamicResource Settings_Group_Hotkey}" />
+          <TextBlock Classes="section" Text="{DynamicResource Settings_Group_SystemAudio}" Margin="0,12,0,2" />
 
-              <Border Classes="card">
-                <DockPanel Margin="16,12">
-                  <StackPanel DockPanel.Dock="Left" Spacing="2" VerticalAlignment="Center">
-                    <TextBlock Text="{DynamicResource Settings_Hotkey_SaveReplay}"
-                               FontSize="13" FontWeight="Medium" Foreground="#BFFFFFFF" />
-                    <TextBlock Text="{DynamicResource Settings_Hotkey_Desc}"
-                               FontSize="11" Foreground="#4DFFFFFF" TextWrapping="Wrap" />
-                  </StackPanel>
+          <Grid ColumnDefinitions="*,Auto" MinHeight="46">
+            <TextBlock Grid.Column="0" Text="{DynamicResource Settings_AudioMode}" FontSize="13"
+                       VerticalAlignment="Center" />
+            <Border Grid.Column="1" Classes="segment" VerticalAlignment="Center">
+              <StackPanel Orientation="Horizontal" Spacing="2">
+                <Button Classes="seg" Classes.sel="{Binding AudioModeIndex, Converter={StaticResource Eq}, ConverterParameter=0}"
+                        Click="OnSourceSegClick" Tag="0"
+                        Content="{DynamicResource AudioMode_All}" />
+                <Button Classes="seg" Classes.sel="{Binding AudioModeIndex, Converter={StaticResource Eq}, ConverterParameter=1}"
+                        Click="OnSourceSegClick" Tag="1"
+                        Content="{DynamicResource AudioMode_Apps}" />
+              </StackPanel>
+            </Border>
+          </Grid>
 
-                  <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8"
-                              HorizontalAlignment="Right" VerticalAlignment="Center">
-                    <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="0.5"
-                            CornerRadius="6" Padding="10,5">
-                      <TextBlock Text="{Binding HotkeyDisplayText}"
-                                 FontFamily="Consolas, monospace"
-                                 FontSize="12" FontWeight="Medium" Foreground="#99FFFFFF" />
+          <!-- App list (design card, visible in "apps" mode) -->
+          <Border Background="{StaticResource CardBrush}" CornerRadius="12" Padding="0,4"
+                  Margin="0,4,0,4"
+                  IsVisible="{Binding IsAppsMode}">
+            <StackPanel>
+              <ItemsControl ItemsSource="{Binding AudioApps}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:AppAudioItem">
+                    <Grid ColumnDefinitions="*,120,40" Margin="12,9">
+                      <CheckBox Grid.Column="0" Classes="app"
+                                IsChecked="{Binding IsEnabled}">
+                        <TextBlock Text="{Binding DisplayName}" />
+                      </CheckBox>
+                      <Slider Grid.Column="1" Minimum="0" Maximum="100"
+                              TickFrequency="1" IsSnapToTickEnabled="True"
+                              Value="{Binding Volume}"
+                              IsEnabled="{Binding IsEnabled}"
+                              VerticalAlignment="Center" />
+                      <TextBlock Grid.Column="2" Text="{Binding Volume, StringFormat='{}{0}%'}"
+                                 FontSize="11" Foreground="{StaticResource Fg3Brush}"
+                                 HorizontalAlignment="Right" VerticalAlignment="Center" />
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <TextBlock Text="{DynamicResource Settings_AppsHint}" FontSize="11"
+                         Foreground="{StaticResource Fg3Brush}" Margin="12,4,12,8"
+                         TextWrapping="Wrap" />
+            </StackPanel>
+          </Border>
+
+          <Border Classes="divider" />
+
+          <Grid ColumnDefinitions="*,Auto" MinHeight="46">
+            <StackPanel Grid.Column="0" Spacing="3" VerticalAlignment="Center">
+              <TextBlock Text="{DynamicResource Settings_SeparateTracks}" FontSize="13" />
+              <TextBlock Text="{DynamicResource Settings_SeparateTracks_Desc}" FontSize="11"
+                         Foreground="{StaticResource Fg3Brush}" />
+            </StackPanel>
+            <ToggleSwitch Grid.Column="1" VerticalAlignment="Center"
+                          IsChecked="{Binding SeparateAudioTracks}"
+                          OnContent="{x:Null}" OffContent="{x:Null}" MinWidth="0" />
+          </Grid>
+
+        </StackPanel>
+      </ScrollViewer>
+
+      <!-- ════════════════ TAB 2 · GENERAL ════════════════ -->
+      <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="0,6,0,24">
+
+          <Grid ColumnDefinitions="*,Auto" MinHeight="50">
+            <TextBlock Grid.Column="0" Text="{DynamicResource Settings_Language}" FontSize="13"
+                       VerticalAlignment="Center" />
+            <ComboBox Grid.Column="1" VerticalAlignment="Center"
+                      ItemsSource="{Binding LanguageOptions}"
+                      SelectedItem="{Binding SelectedLanguage}">
+              <ComboBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:LanguageOption">
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Border CornerRadius="3" ClipToBounds="True" VerticalAlignment="Center">
+                      <Image Source="{Binding Code, Converter={StaticResource LangFlag}}"
+                             Width="17" Height="12" Stretch="Fill" />
                     </Border>
-                    <Button Classes="accent" Command="{Binding CaptureHotkeyCommand}">
-                      <Panel>
-                        <TextBlock Text="{DynamicResource Settings_Hotkey_Change}"
-                                   IsVisible="{Binding !IsCapturingHotkey}" />
-                        <TextBlock Text="{DynamicResource Settings_Hotkey_Listening}"
-                                   IsVisible="{Binding IsCapturingHotkey}" />
-                      </Panel>
-                    </Button>
+                    <TextBlock Text="{Binding Display}" VerticalAlignment="Center" />
                   </StackPanel>
-                </DockPanel>
-              </Border>
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+          </Grid>
+          <Border Classes="divider" />
+
+          <Grid ColumnDefinitions="*,Auto" MinHeight="50">
+            <StackPanel Grid.Column="0" Spacing="3" VerticalAlignment="Center">
+              <TextBlock Text="{DynamicResource Settings_Group_Hotkey}" FontSize="13" />
+              <TextBlock Text="{DynamicResource Settings_Hotkey_SaveReplay}" FontSize="11"
+                         Foreground="{StaticResource Fg3Brush}" />
             </StackPanel>
+            <Button Grid.Column="1" Classes="bare" Padding="0" Background="Transparent" BorderThickness="0"
+                    Cursor="Hand" VerticalAlignment="Center"
+                    Command="{Binding CaptureHotkeyCommand}"
+                    ToolTip.Tip="{DynamicResource Settings_Hotkey_Desc}">
+              <Panel>
+                <ItemsControl ItemsSource="{Binding HotkeyParts}"
+                              IsVisible="{Binding !IsCapturingHotkey}">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                      <StackPanel Orientation="Horizontal" Spacing="6" />
+                    </ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <Border Classes="kbd"><TextBlock Text="{Binding}" /></Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <Border Classes="kbd listening" IsVisible="{Binding IsCapturingHotkey}">
+                  <TextBlock Text="{DynamicResource Settings_Hotkey_Listening}" />
+                </Border>
+              </Panel>
+            </Button>
+          </Grid>
+          <Border Classes="divider" />
 
-            <!-- Automation -->
-            <StackPanel Spacing="8">
-              <TextBlock Classes="group-label" Text="{DynamicResource Settings_Group_Automation}" />
+          <Grid ColumnDefinitions="*,Auto" MinHeight="50">
+            <StackPanel Grid.Column="0" Spacing="3" VerticalAlignment="Center">
+              <TextBlock Text="{DynamicResource Settings_Hotkey_Screenshot}" FontSize="13" />
+              <TextBlock Text="{DynamicResource Settings_Hotkey_Desc}" FontSize="11"
+                         Foreground="{StaticResource Fg3Brush}" />
+            </StackPanel>
+            <Button Grid.Column="1" Classes="bare" Padding="0" Background="Transparent" BorderThickness="0"
+                    Cursor="Hand" VerticalAlignment="Center"
+                    Command="{Binding CaptureScreenshotHotkeyCommand}"
+                    ToolTip.Tip="{DynamicResource Settings_Hotkey_Desc}">
+              <Panel>
+                <ItemsControl ItemsSource="{Binding ScreenshotHotkeyParts}"
+                              IsVisible="{Binding !IsCapturingScreenshotKey}">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                      <StackPanel Orientation="Horizontal" Spacing="6" />
+                    </ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <Border Classes="kbd"><TextBlock Text="{Binding}" /></Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <Border Classes="kbd listening" IsVisible="{Binding IsCapturingScreenshotKey}">
+                  <TextBlock Text="{DynamicResource Settings_Hotkey_Listening}" />
+                </Border>
+              </Panel>
+            </Button>
+          </Grid>
+          <Border Classes="divider" />
 
-              <Border Classes="card">
-                <StackPanel>
+          <Grid ColumnDefinitions="*,Auto" MinHeight="50">
+            <TextBlock Grid.Column="0" Text="{DynamicResource Settings_StartWithWindows}" FontSize="13"
+                       VerticalAlignment="Center" />
+            <ToggleSwitch Grid.Column="1" VerticalAlignment="Center"
+                          IsChecked="{Binding StartWithWindows}"
+                          OnContent="{x:Null}" OffContent="{x:Null}" MinWidth="0" />
+          </Grid>
+          <Border Classes="divider" />
 
-                  <!-- Start with Windows -->
-                  <DockPanel Margin="16,11">
-                    <ToggleSwitch DockPanel.Dock="Right"
-                                  IsChecked="{Binding StartWithWindows}"
-                                  HorizontalAlignment="Right" />
-                    <StackPanel Spacing="2" VerticalAlignment="Center">
-                      <TextBlock Text="{DynamicResource Settings_StartWithWindows}"
-                                 FontSize="13" Foreground="#B3FFFFFF" />
-                      <TextBlock Text="{DynamicResource Settings_StartWithWindows_Desc}"
-                                 FontSize="11" Foreground="#4DFFFFFF" TextWrapping="Wrap" />
-                    </StackPanel>
-                  </DockPanel>
+          <Grid ColumnDefinitions="*,Auto" MinHeight="50">
+            <StackPanel Grid.Column="0" Spacing="3" VerticalAlignment="Center">
+              <TextBlock Text="{DynamicResource Settings_StartMinimized}" FontSize="13" />
+              <TextBlock Text="{DynamicResource Settings_StartMinimized_Desc}" FontSize="11"
+                         Foreground="{StaticResource Fg3Brush}" />
+            </StackPanel>
+            <ToggleSwitch Grid.Column="1" VerticalAlignment="Center"
+                          IsChecked="{Binding StartMinimized}"
+                          OnContent="{x:Null}" OffContent="{x:Null}" MinWidth="0" />
+          </Grid>
+          <Border Classes="divider" />
 
-                  <Border Height="0.5" Background="#0DFFFFFF" />
+          <Grid ColumnDefinitions="*,Auto" MinHeight="50">
+            <TextBlock Grid.Column="0" Text="{DynamicResource Settings_AutoStart}" FontSize="13"
+                       VerticalAlignment="Center" />
+            <ToggleSwitch Grid.Column="1" VerticalAlignment="Center"
+                          IsChecked="{Binding AutoStartRecording}"
+                          OnContent="{x:Null}" OffContent="{x:Null}" MinWidth="0" />
+          </Grid>
+          <Border Classes="divider" />
 
-                  <!-- Auto-Start Recording -->
-                  <DockPanel Margin="16,11">
-                    <ToggleSwitch DockPanel.Dock="Right"
-                                  IsChecked="{Binding AutoStartRecording}"
-                                  HorizontalAlignment="Right" />
-                    <StackPanel Spacing="2" VerticalAlignment="Center">
-                      <TextBlock Text="{DynamicResource Settings_AutoStart}"
-                                 FontSize="13" Foreground="#B3FFFFFF" />
-                      <TextBlock Text="{DynamicResource Settings_AutoStart_Desc}"
-                                 FontSize="11" Foreground="#4DFFFFFF" TextWrapping="Wrap" />
-                    </StackPanel>
-                  </DockPanel>
+          <Grid ColumnDefinitions="*,Auto" MinHeight="50">
+            <StackPanel Grid.Column="0" Spacing="3" VerticalAlignment="Center">
+              <TextBlock Text="{DynamicResource Settings_AutoCleanup}" FontSize="13" />
+              <TextBlock Text="{DynamicResource Settings_AutoCleanup_Desc}" FontSize="11"
+                         Foreground="{StaticResource Fg3Brush}" />
+            </StackPanel>
+            <ToggleSwitch Grid.Column="1" VerticalAlignment="Center"
+                          IsChecked="{Binding AutoCleanupEnabled}"
+                          OnContent="{x:Null}" OffContent="{x:Null}" MinWidth="0" />
+          </Grid>
+          <Border Classes="divider" />
 
-                  <Border Height="0.5" Background="#0DFFFFFF" />
+          <Grid ColumnDefinitions="*,Auto" MinHeight="50" IsEnabled="{Binding AutoCleanupEnabled}">
+            <TextBlock Grid.Column="0" Text="{DynamicResource Settings_StorageLimit}" FontSize="13"
+                       VerticalAlignment="Center" />
+            <ComboBox Grid.Column="1" VerticalAlignment="Center"
+                      ItemsSource="{Binding StorageLimitOptions}"
+                      SelectedItem="{Binding SelectedStorageLimit}" />
+          </Grid>
+          <Border Classes="divider" />
 
-                  <!-- Library Auto-Cleanup (opt-in) -->
-                  <DockPanel Margin="16,11">
-                    <ToggleSwitch DockPanel.Dock="Right"
-                                  IsChecked="{Binding AutoCleanupEnabled}"
-                                  HorizontalAlignment="Right" />
-                    <StackPanel Spacing="2" VerticalAlignment="Center">
-                      <TextBlock Text="{DynamicResource Settings_AutoCleanup}"
-                                 FontSize="13" Foreground="#B3FFFFFF" />
-                      <TextBlock Text="{DynamicResource Settings_AutoCleanup_Desc}"
-                                 FontSize="11" Foreground="#4DFFFFFF" TextWrapping="Wrap" />
-                    </StackPanel>
-                  </DockPanel>
+          <Grid ColumnDefinitions="*,Auto" MinHeight="50">
+            <TextBlock Grid.Column="0" Text="{DynamicResource Settings_LibraryFolder}" FontSize="13"
+                       VerticalAlignment="Center" />
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+              <TextBlock Text="{Binding LibraryPath}" FontSize="13"
+                         Foreground="{StaticResource Fg2Brush}"
+                         MaxWidth="320" TextTrimming="CharacterEllipsis"
+                         ToolTip.Tip="{Binding LibraryPath}"
+                         VerticalAlignment="Center" />
+              <Button Classes="chip" Content="{DynamicResource Settings_Hotkey_Change}"
+                      Command="{Binding BrowseFolderCommand}" />
+            </StackPanel>
+          </Grid>
+          <Border Classes="divider" />
 
-                  <!-- Storage limit (active only while auto-cleanup is enabled) -->
-                  <DockPanel Margin="16,0,16,11"
-                             IsEnabled="{Binding AutoCleanupEnabled}">
-                    <TextBlock DockPanel.Dock="Left" Text="{DynamicResource Settings_StorageLimit}"
-                               FontSize="13" Foreground="#B3FFFFFF" VerticalAlignment="Center" />
-                    <ComboBox DockPanel.Dock="Right"
-                              ItemsSource="{Binding StorageLimitOptions}"
-                              SelectedItem="{Binding SelectedStorageLimit}"
-                              HorizontalAlignment="Right" MinWidth="110" />
-                  </DockPanel>
-
+          <Grid ColumnDefinitions="*,Auto" MinHeight="50">
+            <StackPanel Grid.Column="0" Spacing="3" VerticalAlignment="Center">
+              <TextBlock Text="{DynamicResource About_Group}" FontSize="13" />
+              <Panel>
+                <StackPanel Orientation="Horizontal" Spacing="4"
+                            IsVisible="{Binding UpdateStatus, Converter={x:Static StringConverters.IsNullOrEmpty}}">
+                  <TextBlock Text="{DynamicResource About_Version}" FontSize="11"
+                             Foreground="{StaticResource Fg3Brush}" />
+                  <TextBlock Text="{Binding AppVersion}" FontSize="11"
+                             Foreground="{StaticResource Fg3Brush}" />
                 </StackPanel>
-              </Border>
+                <TextBlock Text="{Binding UpdateStatus}" FontSize="11"
+                           Foreground="{StaticResource Fg3Brush}"
+                           IsVisible="{Binding UpdateStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+              </Panel>
             </StackPanel>
+            <Button Grid.Column="1" Classes="chip" VerticalAlignment="Center"
+                    Content="{DynamicResource About_CheckUpdates}"
+                    Command="{Binding CheckForUpdatesCommand}"
+                    IsEnabled="{Binding !IsCheckingForUpdate}" />
+          </Grid>
 
-            <!-- Paths -->
-            <StackPanel Spacing="8">
-              <TextBlock Classes="group-label" Text="{DynamicResource Settings_Group_Paths}" />
+        </StackPanel>
+      </ScrollViewer>
 
-              <Border Classes="card">
-                <StackPanel Margin="16,12" Spacing="8">
-                  <TextBlock Text="{DynamicResource Settings_LibraryFolder}"
-                             FontSize="13" Foreground="#B3FFFFFF" />
-                  <DockPanel>
-                    <Button DockPanel.Dock="Right" Classes="btn-save"
-                            Command="{Binding BrowseFolderCommand}"
-                            Height="34" Width="92" Margin="8,0,0,0"
-                            HorizontalContentAlignment="Center">
-                      <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
-                        <materialIcons:MaterialIcon Kind="FolderOpenOutline" Width="15" Height="15"
-                                                    VerticalAlignment="Center" />
-                        <TextBlock Text="{DynamicResource Settings_Browse}" FontSize="12" VerticalAlignment="Center" />
-                      </StackPanel>
-                    </Button>
-                    <TextBox Text="{Binding LibraryPath}" IsReadOnly="False" />
-                  </DockPanel>
-                </StackPanel>
-              </Border>
-            </StackPanel>
-
-            <!-- About / Updates -->
-            <StackPanel Spacing="8">
-              <TextBlock Classes="group-label" Text="{DynamicResource About_Group}" />
-
-              <Border Classes="card">
-                <StackPanel Margin="16,12" Spacing="10">
-
-                  <DockPanel>
-                    <Button DockPanel.Dock="Right" Classes="accent"
-                            Command="{Binding CheckForUpdatesCommand}"
-                            IsEnabled="{Binding !IsCheckingForUpdate}"
-                            VerticalAlignment="Center" Margin="8,0,0,0">
-                      <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
-                        <materialIcons:MaterialIcon Kind="Update" Width="15" Height="15" VerticalAlignment="Center" />
-                        <TextBlock Text="{DynamicResource About_CheckUpdates}" VerticalAlignment="Center" />
-                      </StackPanel>
-                    </Button>
-
-                    <StackPanel Spacing="2" VerticalAlignment="Center">
-                      <TextBlock Text="Lag" FontSize="14" FontWeight="SemiBold" Foreground="#BFFFFFFF" />
-                      <StackPanel Orientation="Horizontal" Spacing="6">
-                        <TextBlock Text="{DynamicResource About_Version}" FontSize="12" Foreground="#66FFFFFF" />
-                        <TextBlock Text="{Binding AppVersion}" FontSize="12"
-                                   Foreground="{StaticResource AccentCyanBrush}" />
-                      </StackPanel>
-                    </StackPanel>
-                  </DockPanel>
-
-                  <ProgressBar IsIndeterminate="True" Height="2"
-                               IsVisible="{Binding IsCheckingForUpdate}"
-                               Foreground="{StaticResource AccentCyanBrush}" />
-
-                  <TextBlock Text="{Binding UpdateStatus}" FontSize="11"
-                             Foreground="#8FFFFFFF" TextWrapping="Wrap"
-                             IsVisible="{Binding UpdateStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-
-                </StackPanel>
-              </Border>
-            </StackPanel>
-
-          </StackPanel>
-        </ScrollViewer>
-      </TabItem>
-
-    </TabControl>
-
+    </Carousel>
   </Grid>
 
 </UserControl>
