@@ -180,18 +180,10 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
             _vlcApplyTimer?.Stop();
     }
 
-    /// <summary>
-    /// Global input hook, exposed for the view: clicks on the native VLC video window never
-    /// reach Avalonia (HWND-level input routing), so PlayerView detects them via this hook
-    /// by hit-testing the global click position against the video's screen bounds.
-    /// </summary>
-    public Lag.Services.GlobalHotkeyManager HotkeyManager { get; }
-
-    public PlayerViewModel(LibraryViewModel library, Lag.Services.GlobalHotkeyManager hotkeyManager)
+    public PlayerViewModel(LibraryViewModel library)
     {
         Title = "Player";
         _library = library;
-        HotkeyManager = hotkeyManager;
 
         // Keep the sidebar stats live as the shared clip collection changes (refresh, save, delete).
         _library.Clips.CollectionChanged += OnClipsCollectionChanged;

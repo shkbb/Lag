@@ -12,7 +12,11 @@ namespace Lag.Services;
 /// </summary>
 public sealed class GlobalHotkeyManager : IDisposable
 {
-    private SimpleGlobalHook? _hook;
+    // TaskPoolGlobalHook dispatches events on the thread pool instead of the hook thread
+    // itself. With SimpleGlobalHook any slowness in our process (GC pause, CPU spike)
+    // stalled the low-level hook callback — which Windows punishes by lagging the MOUSE
+    // CURSOR system-wide. Never block the hook thread.
+    private TaskPoolGlobalHook? _hook;
     private readonly object _lock = new();
     private bool _disposed;
 
@@ -60,15 +64,6 @@ public sealed class GlobalHotkeyManager : IDisposable
     /// <summary>Fired when the PTT key is released. Background thread!</summary>
     public event EventHandler? PttReleased;
 
-    // ───────────── Global mouse (video click-to-pause) ─────────────
-
-    /// <summary>
-    /// Fired on any global LEFT mouse button press with SCREEN pixel coordinates.
-    /// Used by the player to detect clicks on the native VLC video window, which swallows
-    /// input at the HWND level so Avalonia overlays never see it. Background thread!
-    /// </summary>
-    public event EventHandler<GlobalMouseEventArgs>? LeftMousePressed;
-
     /// <summary>
     /// Starts the global keyboard hook on a background thread.
     /// Must be called once during application startup.
@@ -78,10 +73,11 @@ public sealed class GlobalHotkeyManager : IDisposable
         lock (_lock)
         {
             if (_hook != null) return;
-            _hook = new SimpleGlobalHook();
+            // Keyboard events only: the old global mouse subscription (click-to-pause for the
+            // native VLC window) is gone — video clicks are plain Avalonia events now.
+            _hook = new TaskPoolGlobalHook();
             _hook.KeyPressed += OnKeyPressed;
             _hook.KeyReleased += OnKeyReleased;
-            _hook.MousePressed += OnMousePressed;
         }
 
         // RunAsync blocks until the hook is disposed, so we fire-and-forget.
@@ -143,17 +139,6 @@ public sealed class GlobalHotkeyManager : IDisposable
         }
     }
 
-    /// <summary>Forwards global left-clicks (screen pixels) to subscribers (player click-to-pause).</summary>
-    private void OnMousePressed(object? sender, MouseHookEventArgs e)
-    {
-        if (_disposed) return;
-
-        if (e.Data.Button == SharpHook.Native.MouseButton.Button1)
-        {
-            LeftMousePressed?.Invoke(this, new GlobalMouseEventArgs(e.Data.X, e.Data.Y));
-        }
-    }
-
     /// <summary>
     /// True if the key is a bare modifier (Shift/Ctrl/Alt/Win, left or right). Such keys must not
     /// be accepted as the primary trigger of a hotkey combination.
@@ -181,24 +166,10 @@ public sealed class GlobalHotkeyManager : IDisposable
             {
                 _hook.KeyPressed -= OnKeyPressed;
                 _hook.KeyReleased -= OnKeyReleased;
-                _hook.MousePressed -= OnMousePressed;
                 _hook.Dispose();
                 _hook = null;
             }
         }
-    }
-}
-
-/// <summary>Screen-pixel coordinates of a global mouse press.</summary>
-public sealed class GlobalMouseEventArgs : EventArgs
-{
-    public int X { get; }
-    public int Y { get; }
-
-    public GlobalMouseEventArgs(int x, int y)
-    {
-        X = x;
-        Y = y;
     }
 }
 

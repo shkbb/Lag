@@ -16,6 +16,13 @@ public static class Program
     [STAThread]
     public static void Main(string[] args)
     {
+        // Crash forensics: any unhandled exception lands in %AppData%\Lag\crash.log with a
+        // full stack trace, so failures on users' machines can be diagnosed remotely.
+        AppDomain.CurrentDomain.UnhandledException += (_, e) =>
+            LogCrash("AppDomain", e.ExceptionObject as Exception);
+        System.Threading.Tasks.TaskScheduler.UnobservedTaskException += (_, e) =>
+            LogCrash("UnobservedTask", e.Exception);
+
         // MUST run first: handles Velopack's install/update/uninstall hooks and exits early
         // for those special invocations before any UI is created. (Velopack maintenance must not
         // be blocked by the single-instance guard below.)
@@ -27,7 +34,34 @@ public static class Program
         if (!createdNew)
             return;
 
-        BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
+        try
+        {
+            BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
+        }
+        catch (Exception ex)
+        {
+            LogCrash("Main", ex);
+            throw;
+        }
+    }
+
+    /// <summary>Appends a crash record to %AppData%\Lag\crash.log (never throws).</summary>
+    private static void LogCrash(string source, Exception? ex)
+    {
+        try
+        {
+            string dir = System.IO.Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Lag");
+            System.IO.Directory.CreateDirectory(dir);
+            System.IO.File.AppendAllText(
+                System.IO.Path.Combine(dir, "crash.log"),
+                $"───── {DateTime.Now:yyyy-MM-dd HH:mm:ss} [{source}] v{typeof(Program).Assembly.GetName().Version} ─────{Environment.NewLine}" +
+                $"{ex}{Environment.NewLine}{Environment.NewLine}");
+        }
+        catch
+        {
+            // logging must never take the process down with it
+        }
     }
 
     /// <summary>
