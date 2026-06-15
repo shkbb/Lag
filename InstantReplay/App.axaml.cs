@@ -26,6 +26,9 @@ public class App : Application
     [return: MarshalAs(UnmanagedType.Bool)]
     static extern bool SetDllDirectory(string lpPathName);
 
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    static extern IntPtr AddDllDirectory(string newDirectory);
+
     public override void Initialize()
     {
         // Crucial: Set Working Directory explicitly so libobs internal shaders resolve properly
@@ -34,6 +37,13 @@ public class App : Application
         
         // Crucial: Allow DllImports to find obs.dll inside the obs-core folder
         SetDllDirectory(obsCoreDir);
+
+        // Crucial: libobs os_dlopen() uses LoadLibraryEx(LOAD_LIBRARY_SEARCH_DEFAULT_DIRS),
+        // which ignores SetDllDirectory, PATH and the current directory — it only searches the
+        // exe dir, System32 and AddDllDirectory entries. Without this, win-capture cannot load
+        // libobs-winrt.dll at module init and Windows Graphics Capture support is silently lost
+        // (fullscreen games then starve DXGI duplication down to ~2 FPS in replays).
+        AddDllDirectory(obsCoreDir);
 
         // Crucial: Inject obs-core into the process PATH so that deeply nested plugin dependencies
         // (like avcodec-61.dll for obs-ffmpeg or graphics-hook64.dll for win-capture) 
@@ -90,6 +100,11 @@ public class App : Application
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
+            // Opt out of Windows background throttling (EcoQoS) and raise priority a notch:
+            // otherwise a focused fullscreen game starves the capture pipeline (2 FPS replays)
+            // and delays hotkey delivery until alt-tab.
+            PerformanceGuard.Apply();
+
             var mainViewModel = _serviceProvider.GetRequiredService<MainViewModel>();
 
             var mainWindow = new MainWindow
@@ -201,9 +216,25 @@ public class App : Application
         services.AddSingleton<GlobalHotkeyManager>();
         services.AddSingleton<GlobalHotkeyService>();
 
-        // ── OBS Integration services ──
+        // ── Recording engines ──
         services.AddSingleton<HardwareDetector>();
         services.AddSingleton<ObsRecorderService>();
+        services.AddSingleton<Lag.Services.VfrCapture.VfrRecorderAdapter>();
+        // The UI talks to IReplayRecorder. The native WGC/NVENC VFR engine is now THE recorder —
+        // it replaces OBS on every machine that supports it (WGC + FFmpeg + an encoder, i.e. all of
+        // Win10 1903+). OBS stays only as an automatic safety net for the rare box where the native
+        // engine can't run; the user no longer chooses between them. No Settings dependency here, so
+        // SettingsViewModel can itself depend on IReplayRecorder without a DI cycle.
+        services.AddSingleton<IReplayRecorder>(sp =>
+        {
+            if (Lag.Services.VfrCapture.VfrRecorderAdapter.IsAvailable())
+            {
+                Console.WriteLine("[App] Recorder: native VFR engine.");
+                return sp.GetRequiredService<Lag.Services.VfrCapture.VfrRecorderAdapter>();
+            }
+            Console.WriteLine("[App] Recorder: OBS replay buffer (VFR unavailable — fallback).");
+            return sp.GetRequiredService<ObsRecorderService>();
+        });
 
         // ── ViewModels ──
         services.AddSingleton<SettingsViewModel>();

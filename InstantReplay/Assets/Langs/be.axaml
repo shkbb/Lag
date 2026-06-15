@@ -54,6 +54,10 @@
   <sys:String x:Key="Settings_StartWithWindows_Desc">Дадае праграму ў аўтазагрузку сістэмы</sys:String>
   <sys:String x:Key="Settings_StartMinimized">Запускаць згорнутым</sys:String>
   <sys:String x:Key="Settings_StartMinimized_Desc">Праграма стартуе схаванай у трэі</sys:String>
+  <sys:String x:Key="Settings_DisableGameMode">Адключаць гульнявы рэжым Windows</sys:String>
+  <sys:String x:Key="Settings_DisableGameMode_Desc">Гульнявы рэжым Windows прыглушае фонавыя праграмы: запіс у гульні можа падаць да 1-2 кадраў/с, а захаванне паўтору - не спрацоўваць да alt-tab. Lag адключае яго аўтаматычна. Настойліва раім пакінуць уключаным.</sys:String>
+  <sys:String x:Key="Settings_GameCapture">Захоп гульняў (хук)</sys:String>
+  <sys:String x:Key="Settings_GameCapture_Desc">Патрэбна для гульняў у ЭКСКЛЮЗІЎНЫМ поўнаэкранным рэжыме. Для CS2 дадаткова патрэбны параметр запуску Steam "-allow_third_party_software", інакш гульня адхіляе хук і паўторныя спробы марнуюць CPU. У аконным/бязрамкавым рэжыме пакіньце выключаным.</sys:String>
   <sys:String x:Key="Editor_Title">Рэдактар</sys:String>
   <sys:String x:Key="Editor_Edit">Рэдагаваць</sys:String>
   <sys:String x:Key="Editor_Back">Назад</sys:String>

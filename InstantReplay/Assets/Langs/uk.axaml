@@ -54,6 +54,10 @@
   <sys:String x:Key="Settings_StartWithWindows_Desc">Додає застосунок до автозавантаження системи</sys:String>
   <sys:String x:Key="Settings_StartMinimized">Запускати згорнутим</sys:String>
   <sys:String x:Key="Settings_StartMinimized_Desc">Застосунок стартує прихованим у треї</sys:String>
+  <sys:String x:Key="Settings_DisableGameMode">Вимикати ігровий режим Windows</sys:String>
+  <sys:String x:Key="Settings_DisableGameMode_Desc">Ігровий режим Windows пригнічує фонові програми: запис у грі може падати до 1–2 кадрів/с, а збереження повтору — не спрацьовувати до alt-tab. Lag вимикатиме його автоматично. Наполегливо радимо лишити увімкненим.</sys:String>
+  <sys:String x:Key="Settings_GameCapture">Захоплення ігор (хук)</sys:String>
+  <sys:String x:Key="Settings_GameCapture_Desc">Потрібно для ігор в ЕКСКЛЮЗИВНОМУ повноекранному режимі. Для CS2 додатково потрібен параметр запуску Steam "-allow_third_party_software", інакше гра відхиляє хук і повторні спроби марнують CPU. Якщо граєте у віконному/безрамковому режимі — лишіть вимкненим.</sys:String>
   <sys:String x:Key="Editor_Title">Редактор</sys:String>
   <sys:String x:Key="Editor_Edit">Редагувати</sys:String>
   <sys:String x:Key="Editor_Back">Назад</sys:String>

@@ -49,3 +49,5 @@ figma-design/
 
 # ───────── Local backups ─────────
 *.bak
+
+vfr_test_out/

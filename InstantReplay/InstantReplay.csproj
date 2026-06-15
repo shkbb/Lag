@@ -2,7 +2,13 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <!-- Compile against the Windows 11 (22621) WinRT projection so we can reach the newer
+         Graphics.Capture knobs Medal uses — GraphicsCaptureSession.IsBorderRequired (kill the
+         yellow capture border) and MinUpdateInterval (cap WGC frame rate). We still RUN on
+         Windows 10 1903+: SupportedOSPlatformVersion stays 19041 and every 22621-only call is
+         guarded at runtime (ApiInformation / OperatingSystem.IsWindowsVersionAtLeast). -->
+    <TargetFramework>net8.0-windows10.0.26100.0</TargetFramework>
+    <SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -64,6 +70,11 @@
     <!-- Video playback -->
     <PackageReference Include="LibVLCSharp" Version="3.9.2" />
     <PackageReference Include="LibVLCSharp.Avalonia" Version="3.9.2" />
+    <!-- LibVLCSharp drags in Microsoft.WindowsAppSDK (WinUI) once we target a versioned Windows
+         TFM. We render video through vmem callbacks into Avalonia, never WinUI, so cut it out —
+         its legacy win10-* RID native assets otherwise break framework resolution on the .NET 10
+         SDK (NETSDK1083). ExcludeAssets=all keeps it fully out of the graph. -->
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.5.240627000" ExcludeAssets="all" PrivateAssets="all" />
     <PackageReference Include="Velopack" Version="1.1.1" />
   </ItemGroup>
 
@@ -74,6 +85,10 @@
     <PackageReference Include="SharpDX.DXGI" Version="4.2.0" />
     <PackageReference Include="SharpDX.Direct3D11" Version="4.2.0" />
     <PackageReference Include="VideoLAN.LibVLC.Windows" Version="3.0.21" />
+    <!-- Native VFR capture engine: binds to the FFmpeg 7.0 libs already in obs-core
+         (avcodec-61/avformat-61/avutil-59) for av1_nvenc encode + mp4 mux with real
+         per-frame timestamps. Version must match libavcodec major 61 (FFmpeg 7.0). -->
+    <PackageReference Include="FFmpeg.AutoGen" Version="7.0.0" />
     <!-- Provides System.Media.SoundPlayer (not in the base net8.0-windows SDK) -->
     <PackageReference Include="System.Windows.Extensions" Version="8.0.0" />
     <!-- GDI screenshot capture (Bitmap/Graphics.CopyFromScreen) -->

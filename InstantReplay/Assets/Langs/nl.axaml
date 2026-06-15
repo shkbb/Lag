@@ -54,6 +54,10 @@
   <sys:String x:Key="Settings_StartWithWindows_Desc">Voegt de app toe aan het opstarten van het systeem</sys:String>
   <sys:String x:Key="Settings_StartMinimized">Geminimaliseerd starten</sys:String>
   <sys:String x:Key="Settings_StartMinimized_Desc">Start verborgen in het systeemvak</sys:String>
+  <sys:String x:Key="Settings_DisableGameMode">Windows-spelmodus uitschakelen</sys:String>
+  <sys:String x:Key="Settings_DisableGameMode_Desc">De Windows-spelmodus knijpt achtergrondapps af: opnames in games kunnen dalen naar 1-2 FPS en het opslaan van een replay werkt soms pas na alt-tab. Lag schakelt hem automatisch uit. Sterk aanbevolen om dit aan te laten.</sys:String>
+  <sys:String x:Key="Settings_GameCapture">Game-opname (hook)</sys:String>
+  <sys:String x:Key="Settings_GameCapture_Desc">Nodig voor games in EXCLUSIEF volledig scherm. CS2 vereist daarnaast de Steam-opstartoptie "-allow_third_party_software", anders wordt de hook geweigerd en verspillen pogingen CPU. Laat uit bij venster-/randloze modi.</sys:String>
   <sys:String x:Key="Editor_Title">Editor</sys:String>
   <sys:String x:Key="Editor_Edit">Bewerken</sys:String>
   <sys:String x:Key="Editor_Back">Terug</sys:String>

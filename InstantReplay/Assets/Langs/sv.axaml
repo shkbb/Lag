@@ -54,6 +54,10 @@
   <sys:String x:Key="Settings_StartWithWindows_Desc">Lägger till appen i systemstarten</sys:String>
   <sys:String x:Key="Settings_StartMinimized">Starta minimerad</sys:String>
   <sys:String x:Key="Settings_StartMinimized_Desc">Startar dold i systemfältet</sys:String>
+  <sys:String x:Key="Settings_DisableGameMode">Inaktivera Windows spellage</sys:String>
+  <sys:String x:Key="Settings_DisableGameMode_Desc">Windows spellage stryper bakgrundsappar: inspelningar i spel kan falla till 1-2 FPS och reprissparning utlosas forst efter alt-tab. Lag inaktiverar det automatiskt. Starkt rekommenderat att lamna pa.</sys:String>
+  <sys:String x:Key="Settings_GameCapture">Spelinspelning (hook)</sys:String>
+  <sys:String x:Key="Settings_GameCapture_Desc">Kravs for spel i EXKLUSIVT helskarmslage. CS2 kraver dessutom Steam-startalternativet "-allow_third_party_software", annars avvisas hooken och omforsoken slosar CPU. Lat vara av i fonster-/ramlost lage.</sys:String>
   <sys:String x:Key="Editor_Title">Redigerare</sys:String>
   <sys:String x:Key="Editor_Edit">Redigera</sys:String>
   <sys:String x:Key="Editor_Back">Tillbaka</sys:String>

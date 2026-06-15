@@ -16,7 +16,7 @@ namespace Lag.ViewModels;
 /// </summary>
 public partial class MainViewModel : ViewModelBase
 {
-    private readonly ObsRecorderService _engine;
+    private readonly IReplayRecorder _engine;
     private readonly GlobalHotkeyManager _hotkeyManager;
 
     /// <summary>Child ViewModels for each view.</summary>
@@ -93,7 +93,7 @@ public partial class MainViewModel : ViewModelBase
     private bool _isFullscreen;
 
     public MainViewModel(
-        ObsRecorderService engine,
+        IReplayRecorder engine,
         GlobalHotkeyManager hotkeyManager,
         SettingsViewModel settings,
         LibraryViewModel library,
@@ -136,7 +136,11 @@ public partial class MainViewModel : ViewModelBase
             if (IsRecording && !IsSaving)
             {
                 IsSaving = true;
-                Avalonia.Threading.Dispatcher.UIThread.Post(() => StatusText = Localizer.Get("Status_Saving"));
+                Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                {
+                    StatusText = Localizer.Get("Status_Saving");
+                    StartSaveWatchdog();
+                });
                 _ = Task.Run(() => _engine.SaveReplay());
             }
         };
@@ -288,7 +292,7 @@ public partial class MainViewModel : ViewModelBase
                 Height = height,
                 OutputWidth = outputWidth,
                 OutputHeight = outputHeight,
-                MicrophoneId = micId,
+                MicrophoneId = Settings.MicEnabled ? micId : "",   // mic row unchecked → no mic
                 MonitorId = monitorId,
                 LibraryPath = Settings.LibraryPath,
                 FileFormat = Settings.SelectedFormat,
@@ -299,9 +303,14 @@ public partial class MainViewModel : ViewModelBase
                 VideoBitrateKbps = Settings.EffectiveBitrateKbps,
                 AdapterIndex = Settings.SelectedGpu.Index < 0 ? 0 : Settings.SelectedGpu.Index,
                 SeparateAudioTracks = Settings.SeparateAudioTracks,
+                SystemAudioEnabled = Settings.SystemAudioEnabled,
+                SystemAudioVolume = Settings.SystemAudioVolume,
+                GameAudioEnabled = Settings.GameAudioEnabled,
+                GameAudioVolume = Settings.GameAudioVolume,
                 MicForceMono = Settings.MicMono,
                 MicStartMuted = Settings.PushToTalkEnabled,
                 AudioCaptureMode = Settings.IsAppsMode ? "apps" : "all",
+                GameCaptureEnabled = false,   // removed from UI (dead CS2-hook setting); OBS-only, off
                 AudioApps = Settings.AudioApps
                     .Where(a => a.IsEnabled)
                     .Select(a => new AppAudioCapture(a.Exe, a.Volume / 100f))
@@ -357,10 +366,17 @@ public partial class MainViewModel : ViewModelBase
         }
     }
 
-    /// <summary>Toggles recording state.</summary>
+    private DateTime _lastToggleUtc = DateTime.MinValue;
+
+    /// <summary>Toggles recording state. Debounced: rapid on/off clicks created and tore down NVENC
+    /// encoders faster than the driver released the sessions, which exhausted them (open → error −2)
+    /// and led the engine into a GPU-thrashing retry loop. Ignore toggles closer than ~1.2 s.</summary>
     [RelayCommand]
     private async Task ToggleRecordingAsync()
     {
+        if ((DateTime.UtcNow - _lastToggleUtc).TotalMilliseconds < 1200) return;
+        _lastToggleUtc = DateTime.UtcNow;
+
         if (IsRecording)
             StopRecording();
         else
@@ -388,6 +404,7 @@ public partial class MainViewModel : ViewModelBase
         
         IsSaving = true;
         StatusText = Localizer.Get("Status_Saving");
+        StartSaveWatchdog();
         _ = Task.Run(() =>
         {
             try
@@ -405,6 +422,23 @@ public partial class MainViewModel : ViewModelBase
                 });
             }
         });
+    }
+
+    /// <summary>
+    /// Safety net: if OBS never raises ReplaySaved (mux stalled, native error swallowed),
+    /// IsSaving would stay true forever and block every further save. Reset it after 20s.
+    /// Must be called on the UI thread.
+    /// </summary>
+    private void StartSaveWatchdog()
+    {
+        Avalonia.Threading.DispatcherTimer.RunOnce(() =>
+        {
+            if (IsSaving)
+            {
+                IsSaving = false;
+                StatusText = Localizer.Format("Status_SaveError", "timeout");
+            }
+        }, TimeSpan.FromSeconds(20));
     }
 
     /// <summary>Plays the "replay saved" chime (Assets/save.wav).</summary>

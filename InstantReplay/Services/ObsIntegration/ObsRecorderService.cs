@@ -16,7 +16,7 @@ namespace Lag.Services.ObsIntegration;
 ///   Windows: D3D11 graphics, game_capture/monitor_capture, WASAPI audio, file logging
 ///   Linux:   OpenGL graphics, PipeWire/XSHM capture, PulseAudio, stderr logging
 /// </summary>
-public sealed class ObsRecorderService : IDisposable
+public sealed class ObsRecorderService : Lag.Services.IReplayRecorder
 {
     private readonly HardwareDetector _hardwareDetector;
     private bool _isInitialized;
@@ -188,9 +188,13 @@ public sealed class ObsRecorderService : IDisposable
         _separateTracks = options.SeparateAudioTracks;
         _micMono = options.MicForceMono;
         _micStartMuted = options.MicStartMuted;
+        _gameCaptureEnabled = options.GameCaptureEnabled;
         _audioMode = options.AudioCaptureMode == "apps" ? "apps" : "all";
         _audioApps = options.AudioApps;
         _fileFormat = options.FileFormat is "mkv" or "mov" or "avi" ? options.FileFormat : "mp4";
+        // Remembered for the game-window overlay: only windows on the RECORDED monitor may
+        // become capture targets (null = primary monitor).
+        _monitorDeviceId = monitorId;
 
         // Defensive: if a previous session was not explicitly stopped, release its pipeline first
         // so we never leak or double-attach native objects. (Core stays resident.)
@@ -490,6 +494,10 @@ public sealed class ObsRecorderService : IDisposable
         uint safeWidth = width == 0 ? 1920 : width;
         uint safeHeight = height == 0 ? 1080 : height;
 
+        // Remember the canvas size: the game_capture overlay stretches hooked frames to it.
+        _baseWidth = safeWidth;
+        _baseHeight = safeHeight;
+
         // Output (render/encode) resolution: defaults to native; when the user picks a downscale
         // preset (1080p/720p) we render smaller to save GPU encode cost and disk space.
         // base_* stays NATIVE so the capture is never cropped — libobs scales base → output
@@ -591,14 +599,29 @@ public sealed class ObsRecorderService : IDisposable
 
         using var settings = ObsInterop.obs_data_create();
 
+        // Both WGC sources are created, but only ONE captures at a time: running monitor +
+        // window WGC simultaneously throttles each to ~half the frame rate (measured: a game
+        // that should record 120 fps came out at 43–69 unique fps with both active, 87–120
+        // with just one). So the monitor capture is HIDDEN whenever the window overlay locks
+        // onto a fullscreen game (it would be fully covered anyway), and shown again on the
+        // desktop. The toggle lives in RetargetGameWindowOverlay via the stored scene items.
         CreateWindowsCaptureSource(settings, monitorId);
-
         if (_captureSource == null || _captureSource.IsInvalid)
         {
             throw new InvalidOperationException(
                 "Failed to create any video capture source. " +
                 "Ensure OBS win-capture plugin (monitor_capture) is available.");
         }
+
+        // WGC window overlay ON TOP of the monitor feed (added later = rendered above):
+        // captures the fullscreen game's own swapchain at full rate, which monitor capture
+        // cannot do past independent flip. Renders nothing until a game is targeted.
+        CreateGameWindowOverlay();
+
+        // Hook-based game_capture overlay on the very top. Opt-in: hook retries against
+        // anti-tamper games (CS2 Trusted Mode) burn CPU, so it stays off by default.
+        if (_gameCaptureEnabled)
+            CreateGameCaptureOverlay();
 
         // ── Step 2: Establish the output pipeline ──
         // Assign the SCENE's source to channel 0.
@@ -643,9 +666,14 @@ public sealed class ObsRecorderService : IDisposable
                 ObsInterop.obs_data_set_string(monSettings, "monitor_id", @"\\.\DISPLAY1");
             }
             
-            // Force DXGI Desktop Duplication (method = 1)
-            // WGC (method = 2) often returns black screens in headless Avalonia applications.
-            ObsInterop.obs_data_set_int(monSettings, "method", 1);
+            // Windows Graphics Capture (method = 2): unlike DXGI duplication, WGC keeps
+            // delivering frames while a fullscreen game holds independent flip (DXGI starves
+            // to ~2 FPS and the replay flush stalls until alt-tab). Requires libobs-winrt.dll,
+            // which win-capture os_dlopen()s at module load — see AddDllDirectory in App.axaml.cs;
+            // without it the historical "WGC = black screen" failure was actually a silent
+            // fallback caused by the missing DLL. win-capture still falls back to DXGI on its
+            // own when WGC is unsupported, so this is safe on older Windows builds.
+            ObsInterop.obs_data_set_int(monSettings, "method", 2);
 
             _captureSource = ObsInterop.obs_source_create("monitor_capture", "MainMonitorCapture", monSettings, IntPtr.Zero);
             
@@ -668,6 +696,9 @@ public sealed class ObsRecorderService : IDisposable
             IntPtr sceneItem = ObsInterop.obs_scene_add(_scene, _captureSource);
             if (sceneItem != IntPtr.Zero)
             {
+                // Remember the item so the overlay can hide it (stop its WGC session) while a
+                // game window is captured — see RetargetGameWindowOverlay.
+                _monitorSceneItem = sceneItem;
                 Console.WriteLine("[ObsRecorderService] SUCCESS: Windows monitor_capture source created and added to scene.");
             }
             else
@@ -676,6 +707,304 @@ public sealed class ObsRecorderService : IDisposable
             }
             Console.Out.Flush();
         }
+    }
+
+    // ────────────────────── Game Capture Overlay ────────────────────── //
+
+    private ObsSourceHandle? _gameCaptureSource;
+
+    /// <summary>Whether the opt-in game_capture hook overlay is enabled for this session.</summary>
+    private bool _gameCaptureEnabled;
+
+    /// <summary>Canvas (base) size, remembered for the game-capture stretch bounds.</summary>
+    private uint _baseWidth = 1920;
+    private uint _baseHeight = 1080;
+
+    /// <summary>
+    /// Adds a game_capture source ABOVE monitor_capture in the scene.
+    ///
+    /// Why: DXGI desktop duplication only delivers frames when the DESKTOP composition
+    /// updates. When a fullscreen game enters independent flip, the desktop barely
+    /// changes — replays degrade to 1–2 FPS and the buffer flush stalls until alt-tab.
+    /// game_capture hooks the game's swapchain directly (graphics-hook64.dll from
+    /// obs-core, same win-capture module), so hooked frames arrive at full rate.
+    /// While no game is hooked the source renders nothing and the monitor capture
+    /// underneath remains the fallback. Failure here is non-fatal by design.
+    /// </summary>
+    private void CreateGameCaptureOverlay()
+    {
+        try
+        {
+            using var gcSettings = ObsInterop.obs_data_create();
+            // Auto-hook whatever fullscreen/borderless game is in the foreground.
+            ObsInterop.obs_data_set_string(gcSettings, "capture_mode", "any_fullscreen");
+            ObsInterop.obs_data_set_bool(gcSettings, "capture_cursor", true);
+
+            _gameCaptureSource = ObsInterop.obs_source_create(
+                "game_capture", "GameCaptureOverlay", gcSettings, IntPtr.Zero);
+
+            if (_gameCaptureSource == null || _gameCaptureSource.IsInvalid)
+            {
+                Console.WriteLine("[ObsRecorderService] game_capture unavailable — monitor capture only.");
+                _gameCaptureSource = null;
+                return;
+            }
+
+            IntPtr item = ObsInterop.obs_scene_add(_scene, _gameCaptureSource);
+            if (item == IntPtr.Zero)
+            {
+                Console.WriteLine("[ObsRecorderService] Failed to add game_capture to the scene.");
+                _gameCaptureSource.Dispose();
+                _gameCaptureSource = null;
+                return;
+            }
+
+            // Stretch hooked frames to the full canvas: stretched-res games (e.g. 4:3 CS2
+            // on a widescreen) deliver their native backbuffer, and the recording must
+            // match what the player actually sees on the display.
+            var bounds = new ObsInterop.ObsVec2 { x = _baseWidth, y = _baseHeight };
+            ObsInterop.obs_sceneitem_set_bounds_type(item, 1); // OBS_BOUNDS_STRETCH
+            ObsInterop.obs_sceneitem_set_bounds_alignment(item, 0); // centered
+            ObsInterop.obs_sceneitem_set_bounds(item, ref bounds);
+
+            Console.WriteLine("[ObsRecorderService] SUCCESS: game_capture overlay added (any_fullscreen, stretched to canvas).");
+            Console.Out.Flush();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[ObsRecorderService] game_capture overlay failed (non-fatal): {ex.Message}");
+        }
+    }
+
+    // ────────────────────── WGC Game-Window Overlay ────────────────────── //
+
+    private ObsSourceHandle? _gameWindowSource;
+    private System.Threading.Timer? _gameWindowTimer;
+    private string _gameWindowTarget = "";
+
+    /// <summary>The game window we are LOCKED onto, held through alt-tabs (Medal-style).</summary>
+    private IntPtr _lockedGameHwnd = IntPtr.Zero;
+    private uint _lockedGamePid;
+
+    /// <summary>Monitor-capture scene item, hidden while a game window is captured (single-WGC).</summary>
+    private IntPtr _monitorSceneItem = IntPtr.Zero;
+
+    /// <summary>
+    /// Processes that are never games — we must not lock the game overlay onto them, or the
+    /// capture would thrash (and restart its WGC session → ~0.5s freeze) every time the user
+    /// alt-tabs to a browser/chat during a loading screen. Lowercase, with .exe.
+    /// </summary>
+    private static readonly HashSet<string> NonGameProcesses = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "explorer.exe", "searchhost.exe", "shellexperiencehost.exe", "startmenuexperiencehost.exe",
+        "applicationframehost.exe", "textinputhost.exe", "lockapp.exe", "dwm.exe",
+        "firefox.exe", "chrome.exe", "msedge.exe", "opera.exe", "operagx.exe", "brave.exe", "vivaldi.exe",
+        "telegram.exe", "discord.exe", "slack.exe", "teams.exe", "whatsapp.exe", "viber.exe",
+        "snippingtool.exe", "screenclippinghost.exe", "notepad.exe", "code.exe", "devenv.exe",
+        "obs64.exe", "lag.exe", "spotify.exe", "vlc.exe", "mpc-hc64.exe", "wmplayer.exe",
+    };
+
+    /// <summary>Device id of the recorded monitor (e.g. @"\\.\DISPLAY1"); null = primary.</summary>
+    private string? _monitorDeviceId;
+
+    [DllImport("user32.dll")] private static extern IntPtr GetForegroundWindow();
+    [DllImport("user32.dll")] private static extern bool IsWindow(IntPtr hWnd);
+    [DllImport("user32.dll")] private static extern bool GetWindowRect(IntPtr hWnd, out Win32Rect rect);
+    [DllImport("user32.dll")] private static extern IntPtr MonitorFromWindow(IntPtr hWnd, uint flags);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern bool GetMonitorInfoW(IntPtr hMonitor, ref MonitorInfoEx info);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetWindowTextW(IntPtr hWnd, System.Text.StringBuilder text, int maxCount);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetClassNameW(IntPtr hWnd, System.Text.StringBuilder text, int maxCount);
+    [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct Win32Rect { public int Left, Top, Right, Bottom; }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    private struct MonitorInfoEx
+    {
+        public uint Size;
+        public Win32Rect Monitor;
+        public Win32Rect Work;
+        public uint Flags;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
+        public string Device;
+    }
+
+    /// <summary>
+    /// True when the window is a fullscreen surface ON THE RECORDED MONITOR: its rect covers
+    /// the monitor it sits on, and that monitor is the one the user selected for recording
+    /// (or the primary one when no explicit selection exists). The monitor check is what
+    /// keeps a fullscreen Discord/video on a SECOND display from hijacking the overlay.
+    /// </summary>
+    private bool IsFullscreenOnRecordedMonitor(IntPtr hwnd)
+    {
+        if (!GetWindowRect(hwnd, out var rect)) return false;
+
+        IntPtr mon = MonitorFromWindow(hwnd, 2 /* MONITOR_DEFAULTTONEAREST */);
+        var info = new MonitorInfoEx { Size = (uint)Marshal.SizeOf<MonitorInfoEx>() };
+        if (!GetMonitorInfoW(mon, ref info)) return false;
+
+        bool onRecordedMonitor = string.IsNullOrEmpty(_monitorDeviceId)
+            ? (info.Flags & 1) != 0 // MONITORINFOF_PRIMARY
+            : string.Equals(info.Device, _monitorDeviceId, StringComparison.OrdinalIgnoreCase);
+        if (!onRecordedMonitor) return false;
+
+        return rect.Left <= info.Monitor.Left && rect.Top <= info.Monitor.Top
+            && rect.Right >= info.Monitor.Right && rect.Bottom >= info.Monitor.Bottom;
+    }
+
+    /// <summary>
+    /// Adds a window_capture source (Windows Graphics Capture, method 2) ABOVE the monitor
+    /// feed and keeps it pointed at whatever fullscreen window is in the foreground.
+    ///
+    /// Why this exists: MONITOR capture — DXGI duplication AND monitor-WGC alike — only sees
+    /// the desktop COMPOSITION. A fullscreen game presents past the compositor (independent
+    /// flip / MPO), so DWM re-composes mostly when the cursor moves and the captured "new"
+    /// frames carry stale game content (measured: 70%+ visually frozen frames in CS2 fights
+    /// while every OBS pipeline stat looked clean). WGC window capture reads the WINDOW's own
+    /// swapchain — full rate regardless of flip mode, no hooks, no Trusted Mode conflicts.
+    /// This is exactly how Game Bar records fullscreen games.
+    ///
+    /// While no fullscreen window is targeted the source renders nothing and the monitor
+    /// capture underneath remains the fallback. Failure here is non-fatal by design.
+    /// </summary>
+    private void CreateGameWindowOverlay()
+    {
+        try
+        {
+            using var settings = ObsInterop.obs_data_create();
+            ObsInterop.obs_data_set_string(settings, "window", "");
+            ObsInterop.obs_data_set_int(settings, "method", 2);   // WGC
+            ObsInterop.obs_data_set_int(settings, "priority", 2); // match by executable
+            ObsInterop.obs_data_set_bool(settings, "cursor", true);
+
+            _gameWindowSource = ObsInterop.obs_source_create(
+                "window_capture", "GameWindowOverlay", settings, IntPtr.Zero);
+
+            if (_gameWindowSource == null || _gameWindowSource.IsInvalid)
+            {
+                Console.WriteLine("[ObsRecorderService] window_capture unavailable — monitor capture only.");
+                _gameWindowSource = null;
+                return;
+            }
+
+            IntPtr item = ObsInterop.obs_scene_add(_scene, _gameWindowSource);
+            if (item == IntPtr.Zero)
+            {
+                Console.WriteLine("[ObsRecorderService] Failed to add window_capture to the scene.");
+                _gameWindowSource.Dispose();
+                _gameWindowSource = null;
+                return;
+            }
+
+            // Stretch to the full canvas — stretched-res games (4:3 CS2 on ultrawide) must
+            // record the way the player sees them, same rationale as the game_capture overlay.
+            var bounds = new ObsInterop.ObsVec2 { x = _baseWidth, y = _baseHeight };
+            ObsInterop.obs_sceneitem_set_bounds_type(item, 1); // OBS_BOUNDS_STRETCH
+            ObsInterop.obs_sceneitem_set_bounds_alignment(item, 0);
+            ObsInterop.obs_sceneitem_set_bounds(item, ref bounds);
+
+            _gameWindowTarget = "";
+            _gameWindowTimer = new System.Threading.Timer(_ => EvaluateGameCapture(), null, 1000, 2000);
+
+            Console.WriteLine("[ObsRecorderService] SUCCESS: WGC window overlay added (locks onto a game, Medal-style).");
+            Console.Out.Flush();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[ObsRecorderService] WGC window overlay failed (non-fatal): {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Timer callback — Medal-style game lock. Once a real game is detected fullscreen on the
+    /// recorded monitor, we LOCK the window capture onto it and HOLD that lock as long as the
+    /// game process is alive — regardless of foreground focus. So when the user alt-tabs to a
+    /// browser/chat during a loading screen, we keep capturing the game window (a borderless
+    /// game keeps rendering in the background) instead of thrashing the WGC session over to
+    /// the new foreground window (which restarted capture and caused ~0.5s freezes). Only when
+    /// the game exits do we release the lock and fall back to the desktop monitor feed.
+    /// </summary>
+    private void EvaluateGameCapture()
+    {
+        var source = _gameWindowSource;
+        if (source == null || source.IsInvalid) return;
+
+        try
+        {
+            // 1) Locked onto a game? Hold it while its window exists and its process lives —
+            //    NO foreground check, NO source churn. This is what survives alt-tabs.
+            if (_lockedGameHwnd != IntPtr.Zero)
+            {
+                if (IsWindow(_lockedGameHwnd) && IsProcessAlive(_lockedGamePid))
+                    return; // steady state — do nothing, capture keeps flowing
+
+                // Game closed → release the lock and restore the desktop monitor feed.
+                _lockedGameHwnd = IntPtr.Zero;
+                _lockedGamePid = 0;
+                _gameWindowTarget = "";
+                UpdateGameWindowSetting(source, "");
+                if (_monitorSceneItem != IntPtr.Zero)
+                    ObsInterop.obs_sceneitem_set_visible(_monitorSceneItem, true);
+                Console.WriteLine("[ObsRecorderService] Game closed — released lock, monitor capture restored.");
+                Console.Out.Flush();
+                // fall through and look for another game this same tick
+            }
+
+            // 2) Not locked. Look for a game to lock onto: the foreground window, when it is
+            //    fullscreen on the recorded monitor and is NOT a known non-game process.
+            IntPtr hwnd = GetForegroundWindow();
+            if (hwnd == IntPtr.Zero || !IsFullscreenOnRecordedMonitor(hwnd)) return;
+
+            GetWindowThreadProcessId(hwnd, out uint pid);
+            if (pid == 0 || pid == (uint)Environment.ProcessId) return;
+
+            string exe;
+            try { exe = System.Diagnostics.Process.GetProcessById((int)pid).ProcessName + ".exe"; }
+            catch { return; }
+            if (NonGameProcesses.Contains(exe)) return; // browser/chat/shell/tool — never lock
+
+            var titleSb = new System.Text.StringBuilder(256);
+            GetWindowTextW(hwnd, titleSb, titleSb.Capacity);
+            var classSb = new System.Text.StringBuilder(256);
+            GetClassNameW(hwnd, classSb, classSb.Capacity);
+
+            // OBS window id format: "Title:Class:Exe", '#' → "#23", ':' → "#3A".
+            static string Esc(string s) => s.Replace("#", "#23").Replace(":", "#3A");
+            string target = $"{Esc(titleSb.ToString())}:{Esc(classSb.ToString())}:{Esc(exe)}";
+
+            _lockedGameHwnd = hwnd;
+            _lockedGamePid = pid;
+            _gameWindowTarget = target;
+            UpdateGameWindowSetting(source, target);
+            // Single-WGC: hide the redundant monitor capture (the game covers the canvas).
+            if (_monitorSceneItem != IntPtr.Zero)
+                ObsInterop.obs_sceneitem_set_visible(_monitorSceneItem, false);
+            Console.WriteLine($"[ObsRecorderService] Locked onto game → {target} (held through alt-tabs)");
+            Console.Out.Flush();
+        }
+        catch
+        {
+            // Detection must never take down the pipeline; worst case the monitor feed shows.
+        }
+    }
+
+    /// <summary>Lightweight liveness check for a captured game process.</summary>
+    private static bool IsProcessAlive(uint pid)
+    {
+        if (pid == 0) return false;
+        try { using var p = System.Diagnostics.Process.GetProcessById((int)pid); return !p.HasExited; }
+        catch { return false; }
+    }
+
+    private static void UpdateGameWindowSetting(ObsSourceHandle source, string target)
+    {
+        using var settings = ObsInterop.obs_data_create();
+        ObsInterop.obs_data_set_string(settings, "window", target);
+        ObsInterop.obs_data_set_int(settings, "method", 2);
+        ObsInterop.obs_data_set_int(settings, "priority", 2);
+        ObsInterop.obs_data_set_bool(settings, "cursor", true);
+        ObsInterop.obs_source_update(source, settings);
     }
 
     // ────────────────────── Audio Source Creation ────────────────────── //
@@ -819,11 +1148,33 @@ public sealed class ObsRecorderService : IDisposable
         // successfully (and isn't a libobs dummy) is used. If the user explicitly picked a codec
         // in Settings, it is tried FIRST; the automatic chain stays as a safety net so recording
         // still works when the chosen encoder isn't available on this machine.
-        string[] autoChain = ["ffmpeg_nvenc", "ffmpeg_amf", "obs_qsv11", "obs_x264"];
+        //
+        // CRITICAL ordering — obs_nvenc_h264_tex (and its alias jim_nvenc) FIRST:
+        // these are the TEXTURE-based NVENC encoders. They take the frame as a GPU texture and
+        // hand it straight to NVENC with zero copies. ffmpeg_nvenc (and the *_cuda/*_soft
+        // variants) instead round-trip the frame GPU→system RAM→GPU every frame. Under a
+        // game that saturates the GPU, that round-trip stalls and OBS drops frames it can't
+        // hand off in time — measured 78% "skipped due to encoding lag" at native and STILL
+        // 39% after halving resolution, because the bottleneck was the copy path, not pixels.
+        // The texture path is what OBS, ShadowPlay and Medal all use to record games smoothly.
+        // AV1 texture encoder FIRST on RTX 40-series. Counter-intuitively, Ada's AV1 NVENC is
+        // FASTER than its H.264 path here: measured encoding lag was 11% on AV1 p1 vs 18-45%
+        // on H.264, and the user confirmed AV1 looked clearly smoother (H.264 was worse in
+        // every window). AV1 also gives the better quality Medal's clips have. It auto-creates
+        // only on AV1-capable GPUs; older cards fall through to the H.264 texture encoder.
+        string[] autoChain = ["obs_nvenc_av1_tex", "obs_nvenc_h264_tex", "jim_nvenc", "ffmpeg_nvenc", "ffmpeg_amf", "obs_qsv11", "obs_x264"];
 
         var candidates = new List<string>();
         if (!string.IsNullOrEmpty(_preferredEncoder))
         {
+            // Saved settings store "ffmpeg_nvenc" for the NVENC choice — expand it to AV1 first
+            // (faster + better on Ada), then H.264 texture as fallback.
+            if (_preferredEncoder == "ffmpeg_nvenc")
+            {
+                candidates.Add("obs_nvenc_av1_tex");
+                candidates.Add("obs_nvenc_h264_tex");
+                candidates.Add("jim_nvenc");
+            }
             candidates.Add(_preferredEncoder);
             Console.WriteLine($"[Encoder Fallback] User preference: trying '{_preferredEncoder}' first.");
         }
@@ -835,12 +1186,46 @@ public sealed class ObsRecorderService : IDisposable
         foreach (var encoderId in candidates)
         {
             using var settings = ObsInterop.obs_data_create();
-            
-            // VBR at the user-configured bitrate (kbps)
+
+            // VBR at the user-configured bitrate (kbps), with 2x headroom for motion spikes —
+            // plain VBR without a max starves fast scenes and they come out pixelated.
             ObsInterop.obs_data_set_string(settings, "rate_control", "VBR");
             ObsInterop.obs_data_set_int(settings, "bitrate", _videoBitrateKbps);
+            ObsInterop.obs_data_set_int(settings, "max_bitrate", _videoBitrateKbps * 2);
+            // Keyframe every 2s: replay trims/saves start on a keyframe, and the default
+            // (often 250 frames) makes the first seconds of a clip mushy after seeking.
+            ObsInterop.obs_data_set_int(settings, "keyint_sec", 2);
 
-            if (encoderId == "obs_x264")
+            bool isNvencH264 = encoderId is "obs_nvenc_h264_tex" or "jim_nvenc" or "obs_nvenc_h264" or "ffmpeg_nvenc";
+            bool isNvencAv1 = encoderId is "obs_nvenc_av1_tex";
+            if (isNvencH264 || isNvencAv1)
+            {
+                // Native obs-nvenc knobs (unknown keys are ignored by other encoders).
+                // FASTEST preset (p1): we force CFR 120, so the encoder must finish a frame in
+                // <8.3ms even while the game pegs the GPU. At p5 (default) AV1 couldn't and
+                // dropped 32% of frames → stutter. p1 keeps NVENC well inside budget so every
+                // canvas frame is encoded → smooth. At 26 Mbps the p1 quality hit is minor.
+                // Set "preset" too (legacy key) in case the texture encoder reads that one.
+                ObsInterop.obs_data_set_string(settings, "preset2", "p1");
+                ObsInterop.obs_data_set_string(settings, "preset", "p1");
+                ObsInterop.obs_data_set_string(settings, "multipass", "disabled");
+                ObsInterop.obs_data_set_bool(settings, "adaptive_quantization", true);
+                // Strip the heavy extras NVENC enables by default. Lookahead (8 frames) buffers
+                // ahead before encoding and B-frames add reordering — together they spiked
+                // encoding lag to 45.7% under heavy combat (encoder couldn't finish in time →
+                // dropped frames → stutter). Medal records "Constrained Baseline": no B-frames,
+                // no lookahead. At our bitrate the compression loss is invisible, and the encode
+                // becomes light enough to keep up at 120fps while the game owns the GPU.
+                ObsInterop.obs_data_set_int(settings, "bf", 0);
+                ObsInterop.obs_data_set_bool(settings, "lookahead", false);
+                // "profile" is an H.264 concept (high/main/baseline); AV1 has no such key.
+                if (isNvencH264)
+                {
+                    ObsInterop.obs_data_set_string(settings, "tune", "hq");
+                    ObsInterop.obs_data_set_string(settings, "profile", "high");
+                }
+            }
+            else if (encoderId == "obs_x264")
             {
                 ObsInterop.obs_data_set_string(settings, "preset", "veryfast");
             }
@@ -912,13 +1297,11 @@ public sealed class ObsRecorderService : IDisposable
         ObsInterop.obs_data_set_string(settings, "format", "%CCYY-%MM-%DD_%hh-%mm-%ss-Replay");
         ObsInterop.obs_data_set_string(settings, "extension", _fileFormat);
 
-        // movflags=+faststart moves the moov atom to the beginning of the file (immediate
-        // playability, resilience to early muxer exit). It is an MP4/MOV-family option —
-        // MKV/AVI muxers don't understand it, so it is applied only for mp4/mov.
-        if (_fileFormat is "mp4" or "mov")
-        {
-            ObsInterop.obs_data_set_string(settings, "muxer_settings", "movflags=+faststart");
-        }
+        // NO movflags=+faststart here: faststart makes the muxer rewrite the whole file a
+        // second time to move the moov atom to the front. Under full game load that doubles
+        // the hotkey-to-saved latency (measured ~10s for a 60 MB replay in CS2). Local
+        // playback doesn't need faststart — it only matters for progressive HTTP streaming.
+        // Editor exports keep faststart (EditorViewModel) since they are not time-critical.
 
         // Explicit muxer path override to fix ERROR_FILE_NOT_FOUND (code 2)
         string muxerFullPath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "obs-core", "obs-ffmpeg-mux.exe")).Replace("\\", "/");
@@ -1330,6 +1713,18 @@ public sealed class ObsRecorderService : IDisposable
                     Console.Out.Flush();
                 }
 
+                // Stop retargeting BEFORE the source dies so the timer never touches a
+                // disposed handle.
+                _gameWindowTimer?.Dispose();
+                _gameWindowTimer = null;
+                _gameWindowSource?.Dispose();
+                _gameWindowSource = null;
+                _lockedGameHwnd = IntPtr.Zero;
+                _lockedGamePid = 0;
+                _gameWindowTarget = "";
+
+                _gameCaptureSource?.Dispose();
+                _gameCaptureSource = null;
                 _captureSource?.Dispose();
                 _captureSource = null;
                 _desktopAudioSource?.Dispose();
@@ -1348,6 +1743,8 @@ public sealed class ObsRecorderService : IDisposable
                 {
                     ObsInterop.obs_scene_release(_scene);
                     _scene = IntPtr.Zero;
+                    // Scene items die with the scene — drop the dangling pointer.
+                    _monitorSceneItem = IntPtr.Zero;
                     Console.WriteLine("[Teardown Step 4] Scene released.");
                     Console.Out.Flush();
                 }

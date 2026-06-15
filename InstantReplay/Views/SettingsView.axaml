@@ -109,9 +109,19 @@
             <TextBlock Grid.Column="0" Text="{DynamicResource Settings_Bitrate}" FontSize="13"
                        VerticalAlignment="Center" />
             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-              <Slider Width="160" Minimum="5" Maximum="100" TickFrequency="1" IsSnapToTickEnabled="True"
-                      Value="{Binding BitrateSliderValue}" />
-              <StackPanel Orientation="Horizontal" Spacing="4" Width="74">
+              <!-- Discrete bitrate presets (Medal-style); the slider appears only for "Custom". -->
+              <ComboBox MinWidth="120" VerticalAlignment="Center"
+                        ItemsSource="{Binding BitrateOptions}"
+                        SelectedItem="{Binding SelectedBitrate}">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate><TextBlock Text="{Binding Display}" /></DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+              <Slider Width="120" Minimum="5" Maximum="150" TickFrequency="1" IsSnapToTickEnabled="True"
+                      VerticalAlignment="Center" Value="{Binding BitrateSliderValue}"
+                      IsVisible="{Binding IsCustomBitrate}" />
+              <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center"
+                          IsVisible="{Binding IsCustomBitrate}">
                 <TextBlock Text="{Binding BitrateDisplayMbps}" FontSize="13" />
                 <TextBlock Text="{DynamicResource Settings_Bitrate_CustomSuffix}" FontSize="13" />
               </StackPanel>
@@ -149,8 +159,95 @@
       <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Margin="0,12,0,24">
 
-          <TextBlock Classes="section" Text="{DynamicResource Settings_Group_Mic}" Margin="0,0,0,2" />
+          <TextBlock Classes="section" Text="{DynamicResource Settings_Group_SystemAudio}" Margin="0,0,0,2" />
 
+          <!-- Recording mode: all PC audio vs specific apps -->
+          <Grid ColumnDefinitions="*,Auto" MinHeight="46">
+            <TextBlock Grid.Column="0" Text="{DynamicResource Settings_AudioMode}" FontSize="13"
+                       VerticalAlignment="Center" />
+            <Border Grid.Column="1" Classes="segment" VerticalAlignment="Center">
+              <StackPanel Orientation="Horizontal" Spacing="2">
+                <Button Classes="seg" Classes.sel="{Binding AudioModeIndex, Converter={StaticResource Eq}, ConverterParameter=0}"
+                        Click="OnSourceSegClick" Tag="0"
+                        Content="{DynamicResource AudioMode_All}" />
+                <Button Classes="seg" Classes.sel="{Binding AudioModeIndex, Converter={StaticResource Eq}, ConverterParameter=1}"
+                        Click="OnSourceSegClick" Tag="1"
+                        Content="{DynamicResource AudioMode_Apps}" />
+              </StackPanel>
+            </Border>
+          </Grid>
+
+          <!-- Unified audio-source list: system, microphone, and (in apps mode) per-app rows -->
+          <Border Background="{StaticResource CardBrush}" CornerRadius="12" Padding="0,4" Margin="0,6,0,4">
+            <StackPanel>
+
+              <!-- System audio (full-PC mode) -->
+              <Grid ColumnDefinitions="Auto,Auto,*,120,42" Margin="12,9" IsVisible="{Binding !IsAppsMode}">
+                <CheckBox Grid.Column="0" IsChecked="{Binding SystemAudioEnabled}" VerticalAlignment="Center" />
+                <mi:MaterialIcon Grid.Column="1" Kind="VolumeHigh" Width="20" Height="20"
+                                 Margin="6,0,10,0" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="2" Text="Звук системи" FontSize="14" VerticalAlignment="Center" />
+                <Slider Grid.Column="3" Minimum="0" Maximum="100" TickFrequency="1" IsSnapToTickEnabled="True"
+                        Value="{Binding SystemAudioVolume}" IsEnabled="{Binding SystemAudioEnabled}"
+                        VerticalAlignment="Center" />
+                <TextBlock Grid.Column="4" Text="{Binding SystemAudioVolume, StringFormat='{}{0}%'}"
+                           FontSize="11" Foreground="{StaticResource Fg3Brush}"
+                           HorizontalAlignment="Right" VerticalAlignment="Center" />
+              </Grid>
+              <Border Classes="divider" Margin="12,0" IsVisible="{Binding !IsAppsMode}" />
+
+              <!-- Microphone (always shown) -->
+              <Grid ColumnDefinitions="Auto,Auto,*,120,42" Margin="12,9">
+                <CheckBox Grid.Column="0" IsChecked="{Binding MicEnabled}" VerticalAlignment="Center" />
+                <mi:MaterialIcon Grid.Column="1" Kind="Microphone" Width="20" Height="20"
+                                 Margin="6,0,10,0" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="2" Text="{DynamicResource Settings_Microphone}" FontSize="14" VerticalAlignment="Center" />
+                <Slider Grid.Column="3" Minimum="0" Maximum="100" TickFrequency="1" IsSnapToTickEnabled="True"
+                        Value="{Binding MicVolume}" IsEnabled="{Binding MicEnabled}" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="4" Text="{Binding MicVolume, StringFormat='{}{0}%'}"
+                           FontSize="11" Foreground="{StaticResource Fg3Brush}"
+                           HorizontalAlignment="Right" VerticalAlignment="Center" />
+              </Grid>
+
+              <!-- Game audio (specific-apps mode): the detected game's own sound, always recorded -->
+              <Grid ColumnDefinitions="Auto,Auto,*,120,42" Margin="12,9" IsVisible="{Binding IsAppsMode}">
+                <CheckBox Grid.Column="0" IsChecked="{Binding GameAudioEnabled}" VerticalAlignment="Center" />
+                <mi:MaterialIcon Grid.Column="1" Kind="Gamepad" Width="20" Height="20"
+                                 Margin="6,0,10,0" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="2" Text="Звук гри" FontSize="14" VerticalAlignment="Center" />
+                <Slider Grid.Column="3" Minimum="0" Maximum="100" TickFrequency="1" IsSnapToTickEnabled="True"
+                        Value="{Binding GameAudioVolume}" IsEnabled="{Binding GameAudioEnabled}" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="4" Text="{Binding GameAudioVolume, StringFormat='{}{0}%'}"
+                           FontSize="11" Foreground="{StaticResource Fg3Brush}"
+                           HorizontalAlignment="Right" VerticalAlignment="Center" />
+              </Grid>
+
+              <!-- Per-app rows (specific-apps mode) -->
+              <ItemsControl ItemsSource="{Binding AudioApps}" IsVisible="{Binding IsAppsMode}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:AppAudioItem">
+                    <Grid ColumnDefinitions="Auto,Auto,*,120,42" Margin="12,9">
+                      <CheckBox Grid.Column="0" IsChecked="{Binding IsEnabled}" VerticalAlignment="Center" />
+                      <Image Grid.Column="1" Source="{Binding Icon}" Width="20" Height="20"
+                             Margin="6,0,10,0" VerticalAlignment="Center" />
+                      <TextBlock Grid.Column="2" Text="{Binding DisplayName}" FontSize="14"
+                                 VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                      <Slider Grid.Column="3" Minimum="0" Maximum="100" TickFrequency="1" IsSnapToTickEnabled="True"
+                              Value="{Binding Volume}" IsEnabled="{Binding IsEnabled}" VerticalAlignment="Center" />
+                      <TextBlock Grid.Column="4" Text="{Binding Volume, StringFormat='{}{0}%'}"
+                                 FontSize="11" Foreground="{StaticResource Fg3Brush}"
+                                 HorizontalAlignment="Right" VerticalAlignment="Center" />
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <TextBlock Text="{DynamicResource Settings_AppsHint}" FontSize="11"
+                         Foreground="{StaticResource Fg3Brush}" Margin="12,4,12,8"
+                         TextWrapping="Wrap" IsVisible="{Binding IsAppsMode}" />
+            </StackPanel>
+          </Border>
+
+          <!-- Microphone device picker -->
           <Grid ColumnDefinitions="*,Auto" MinHeight="46">
             <TextBlock Grid.Column="0" Text="{DynamicResource Settings_Microphone}" FontSize="13"
                        VerticalAlignment="Center" />
@@ -166,17 +263,7 @@
           </Grid>
           <Border Classes="divider" />
 
-          <Grid ColumnDefinitions="*,Auto" MinHeight="46">
-            <TextBlock Grid.Column="0" Text="{DynamicResource Settings_MicVolume}" FontSize="13"
-                       VerticalAlignment="Center" />
-            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-              <Slider Width="160" Minimum="0" Maximum="100" TickFrequency="1" IsSnapToTickEnabled="True"
-                      Value="{Binding MicVolume}" />
-              <TextBlock Text="{Binding MicVolume, StringFormat='{}{0}%'}" FontSize="13" Width="40" />
-            </StackPanel>
-          </Grid>
-          <Border Classes="divider" />
-
+          <!-- Microphone channels (mono / stereo) -->
           <Grid ColumnDefinitions="*,Auto" MinHeight="46">
             <TextBlock Grid.Column="0" Text="{DynamicResource Settings_MicChannels}" FontSize="13"
                        VerticalAlignment="Center" />
@@ -193,6 +280,7 @@
           </Grid>
           <Border Classes="divider" />
 
+          <!-- Push-to-talk -->
           <Grid ColumnDefinitions="*,Auto" MinHeight="46">
             <StackPanel Grid.Column="0" Spacing="3" VerticalAlignment="Center">
               <TextBlock Text="{DynamicResource Settings_Ptt}" FontSize="13" />
@@ -217,57 +305,9 @@
                             OnContent="{x:Null}" OffContent="{x:Null}" MinWidth="0" />
             </StackPanel>
           </Grid>
-
-          <TextBlock Classes="section" Text="{DynamicResource Settings_Group_SystemAudio}" Margin="0,12,0,2" />
-
-          <Grid ColumnDefinitions="*,Auto" MinHeight="46">
-            <TextBlock Grid.Column="0" Text="{DynamicResource Settings_AudioMode}" FontSize="13"
-                       VerticalAlignment="Center" />
-            <Border Grid.Column="1" Classes="segment" VerticalAlignment="Center">
-              <StackPanel Orientation="Horizontal" Spacing="2">
-                <Button Classes="seg" Classes.sel="{Binding AudioModeIndex, Converter={StaticResource Eq}, ConverterParameter=0}"
-                        Click="OnSourceSegClick" Tag="0"
-                        Content="{DynamicResource AudioMode_All}" />
-                <Button Classes="seg" Classes.sel="{Binding AudioModeIndex, Converter={StaticResource Eq}, ConverterParameter=1}"
-                        Click="OnSourceSegClick" Tag="1"
-                        Content="{DynamicResource AudioMode_Apps}" />
-              </StackPanel>
-            </Border>
-          </Grid>
-
-          <!-- App list (design card, visible in "apps" mode) -->
-          <Border Background="{StaticResource CardBrush}" CornerRadius="12" Padding="0,4"
-                  Margin="0,4,0,4"
-                  IsVisible="{Binding IsAppsMode}">
-            <StackPanel>
-              <ItemsControl ItemsSource="{Binding AudioApps}">
-                <ItemsControl.ItemTemplate>
-                  <DataTemplate x:DataType="vm:AppAudioItem">
-                    <Grid ColumnDefinitions="*,120,40" Margin="12,9">
-                      <CheckBox Grid.Column="0" Classes="app"
-                                IsChecked="{Binding IsEnabled}">
-                        <TextBlock Text="{Binding DisplayName}" />
-                      </CheckBox>
-                      <Slider Grid.Column="1" Minimum="0" Maximum="100"
-                              TickFrequency="1" IsSnapToTickEnabled="True"
-                              Value="{Binding Volume}"
-                              IsEnabled="{Binding IsEnabled}"
-                              VerticalAlignment="Center" />
-                      <TextBlock Grid.Column="2" Text="{Binding Volume, StringFormat='{}{0}%'}"
-                                 FontSize="11" Foreground="{StaticResource Fg3Brush}"
-                                 HorizontalAlignment="Right" VerticalAlignment="Center" />
-                    </Grid>
-                  </DataTemplate>
-                </ItemsControl.ItemTemplate>
-              </ItemsControl>
-              <TextBlock Text="{DynamicResource Settings_AppsHint}" FontSize="11"
-                         Foreground="{StaticResource Fg3Brush}" Margin="12,4,12,8"
-                         TextWrapping="Wrap" />
-            </StackPanel>
-          </Border>
-
           <Border Classes="divider" />
 
+          <!-- Separate audio tracks -->
           <Grid ColumnDefinitions="*,Auto" MinHeight="46">
             <StackPanel Grid.Column="0" Spacing="3" VerticalAlignment="Center">
               <TextBlock Text="{DynamicResource Settings_SeparateTracks}" FontSize="13" />
@@ -307,12 +347,12 @@
           </Grid>
           <Border Classes="divider" />
 
+          <!-- ── HOTKEYS section: header + one clean row per action ── -->
+          <TextBlock Classes="section" Text="{DynamicResource Settings_Group_Hotkey}" Margin="0,14,0,2" />
+
           <Grid ColumnDefinitions="*,Auto" MinHeight="50">
-            <StackPanel Grid.Column="0" Spacing="3" VerticalAlignment="Center">
-              <TextBlock Text="{DynamicResource Settings_Group_Hotkey}" FontSize="13" />
-              <TextBlock Text="{DynamicResource Settings_Hotkey_SaveReplay}" FontSize="11"
-                         Foreground="{StaticResource Fg3Brush}" />
-            </StackPanel>
+            <TextBlock Grid.Column="0" Text="{DynamicResource Settings_Hotkey_SaveReplay}" FontSize="13"
+                       VerticalAlignment="Center" />
             <Button Grid.Column="1" Classes="bare" Padding="0" Background="Transparent" BorderThickness="0"
                     Cursor="Hand" VerticalAlignment="Center"
                     Command="{Binding CaptureHotkeyCommand}"
@@ -340,11 +380,8 @@
           <Border Classes="divider" />
 
           <Grid ColumnDefinitions="*,Auto" MinHeight="50">
-            <StackPanel Grid.Column="0" Spacing="3" VerticalAlignment="Center">
-              <TextBlock Text="{DynamicResource Settings_Hotkey_Screenshot}" FontSize="13" />
-              <TextBlock Text="{DynamicResource Settings_Hotkey_Desc}" FontSize="11"
-                         Foreground="{StaticResource Fg3Brush}" />
-            </StackPanel>
+            <TextBlock Grid.Column="0" Text="{DynamicResource Settings_Hotkey_Screenshot}" FontSize="13"
+                       VerticalAlignment="Center" />
             <Button Grid.Column="1" Classes="bare" Padding="0" Background="Transparent" BorderThickness="0"
                     Cursor="Hand" VerticalAlignment="Center"
                     Command="{Binding CaptureScreenshotHotkeyCommand}"
@@ -397,6 +434,20 @@
                        VerticalAlignment="Center" />
             <ToggleSwitch Grid.Column="1" VerticalAlignment="Center"
                           IsChecked="{Binding AutoStartRecording}"
+                          OnContent="{x:Null}" OffContent="{x:Null}" MinWidth="0" />
+          </Grid>
+          <Border Classes="divider" />
+
+          <!-- Game Mode kill-switch (Medal-style): emphasized description, default ON -->
+          <Grid ColumnDefinitions="*,Auto" MinHeight="56">
+            <StackPanel Grid.Column="0" Spacing="3" VerticalAlignment="Center" Margin="0,8">
+              <TextBlock Text="{DynamicResource Settings_DisableGameMode}" FontSize="13" />
+              <TextBlock Text="{DynamicResource Settings_DisableGameMode_Desc}" FontSize="11"
+                         Foreground="{StaticResource Fg3Brush}"
+                         TextWrapping="Wrap" MaxWidth="560" HorizontalAlignment="Left" />
+            </StackPanel>
+            <ToggleSwitch Grid.Column="1" VerticalAlignment="Center"
+                          IsChecked="{Binding DisableGameMode}"
                           OnContent="{x:Null}" OffContent="{x:Null}" MinWidth="0" />
           </Grid>
           <Border Classes="divider" />

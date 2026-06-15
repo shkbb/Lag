@@ -17,7 +17,7 @@ namespace Lag.ViewModels;
 /// </summary>
 public partial class SettingsViewModel : ViewModelBase
 {
-    private readonly ObsRecorderService _engine;
+    private readonly Lag.Services.IReplayRecorder _engine;   // the active recorder (VFR, or OBS fallback)
     private readonly GlobalHotkeyManager _hotkeyManager;
     private readonly GlobalHotkeyService _hotkeyService;
 
@@ -206,7 +206,10 @@ public partial class SettingsViewModel : ViewModelBase
     // ───────────── Output File Format ─────────────
 
     /// <summary>Container formats for saved replays.</summary>
-    public IReadOnlyList<string> FormatOptions { get; } = new[] { "mp4", "mkv", "mov", "avi" };
+    // mp4 + mov are verified clean with our H.264/HEVC/AV1 + AAC streams. mkv/avi are omitted: the
+    // matroska muxer rejects our stream extradata at write_header (needs separate muxer work) and avi
+    // can't carry HEVC/AV1 — offering them would produce broken files. (mkv: future task.)
+    public IReadOnlyList<string> FormatOptions { get; } = new[] { "mp4", "mov" };
 
     [ObservableProperty]
     private string _selectedFormat = "mp4";
@@ -371,7 +374,7 @@ public partial class SettingsViewModel : ViewModelBase
 
     private Avalonia.Threading.DispatcherTimer? _audioAppsTimer;
 
-    /// <summary>Kicks off a background scan of active audio sessions and merges the result.</summary>
+    /// <summary>Kicks off a background scan of apps currently playing audio and merges the result.</summary>
     private void RefreshAudioAppsNow()
     {
         _ = Task.Run(AudioSessionService.GetActiveAudioApps).ContinueWith(t =>
@@ -382,28 +385,58 @@ public partial class SettingsViewModel : ViewModelBase
     }
 
     /// <summary>
-    /// Merges the freshly scanned audio apps into the visible list: new apps are appended,
-    /// vanished apps are dropped UNLESS the user has them enabled (so selections survive
-    /// the target app being closed temporarily).
+    /// Merges the freshly scanned RUNNING apps into the visible list: new apps are appended (with
+    /// their icon), apps that have closed are dropped UNLESS the user has them enabled (so a
+    /// selection survives the app being closed temporarily).
     /// </summary>
     private void MergeAudioApps(List<AudioSessionService.AudioApp> live)
     {
         foreach (var app in live)
         {
-            if (!AudioApps.Any(a => a.Exe.Equals(app.ExeName, StringComparison.OrdinalIgnoreCase)))
-                AudioApps.Add(new AppAudioItem(app.ExeName, app.DisplayName, OnAppAudioChanged));
+            var existing = AudioApps.FirstOrDefault(a => a.Exe.Equals(app.ExeName, StringComparison.OrdinalIgnoreCase));
+            if (existing == null)
+                AudioApps.Add(new AppAudioItem(app.ExeName, app.DisplayName, OnAppAudioChanged, app.IconPng));
+            else
+                existing.UpdateMeta(app.DisplayName, app.IconPng);   // fill icon/name on a stale/restored row
         }
 
         for (int i = AudioApps.Count - 1; i >= 0; i--)
         {
             var item = AudioApps[i];
-            bool stillLive = live.Any(l => l.ExeName.Equals(item.Exe, StringComparison.OrdinalIgnoreCase));
-            if (!stillLive && !item.IsEnabled)
+            bool stillRunning = live.Any(l => l.ExeName.Equals(item.Exe, StringComparison.OrdinalIgnoreCase));
+            if (!stillRunning && !item.IsEnabled)
                 AudioApps.RemoveAt(i);
         }
     }
 
     private void OnAppAudioChanged() => SaveSettings();
+
+    // ───────────── System audio source ("Звук системи" row: enable + volume) ─────────────
+
+    /// <summary>Capture the full-system loopback (used in "Весь звук ПК" mode). Its row checkbox.</summary>
+    [ObservableProperty]
+    private bool _systemAudioEnabled = true;
+    partial void OnSystemAudioEnabledChanged(bool value) => SaveSettings();
+
+    /// <summary>System-audio volume in percent (0–100), applied as a 0.0–1.0 gain to the loopback.</summary>
+    [ObservableProperty]
+    private int _systemAudioVolume = 100;
+    partial void OnSystemAudioVolumeChanged(int value) => SaveSettings();
+
+    /// <summary>Microphone row checkbox — off = no mic captured at all.</summary>
+    [ObservableProperty]
+    private bool _micEnabled = true;
+    partial void OnMicEnabledChanged(bool value) => SaveSettings();
+
+    /// <summary>"Звук гри" row (specific-apps mode): capture the detected game's own audio so it's
+    /// always recorded even if it isn't in the picked-apps list, with its own volume — like Medal.</summary>
+    [ObservableProperty]
+    private bool _gameAudioEnabled = true;
+    partial void OnGameAudioEnabledChanged(bool value) => SaveSettings();
+
+    [ObservableProperty]
+    private int _gameAudioVolume = 100;
+    partial void OnGameAudioVolumeChanged(int value) => SaveSettings();
 
     // ───────────── Microphone Volume ─────────────
 
@@ -477,6 +510,19 @@ public partial class SettingsViewModel : ViewModelBase
         SaveSettings();
     }
 
+    // ───────────── Capture engine (OBS vs native VFR) ─────────────
+
+    /// <summary>Use the native WGC/NVENC VFR engine instead of the OBS replay buffer. OBS stays the
+    /// default; this is opt-in until the native engine is fully proven. Takes effect on next Start.</summary>
+    [ObservableProperty]
+    private bool _useVfrEngine;
+
+    partial void OnUseVfrEngineChanged(bool value)
+    {
+        HasPendingChanges = true;   // engine swap needs a stop/start to apply
+        SaveSettings();
+    }
+
     // ───────────── Automation ─────────────
 
     /// <summary>The Run-key registry value name used for "Start with Windows".</summary>
@@ -511,6 +557,40 @@ public partial class SettingsViewModel : ViewModelBase
     partial void OnStartMinimizedChanged(bool value)
     {
         SaveSettings();
+    }
+
+    /// <summary>
+    /// Disable Windows Game Mode (Medal-style). Game Mode deprioritizes background apps
+    /// while a game is focused, which throttles the capture pipeline to a few FPS and
+    /// delays hotkey handling. Default ON — strongly recommended.
+    /// </summary>
+    [ObservableProperty]
+    private bool _disableGameMode = true;
+
+    partial void OnDisableGameModeChanged(bool value)
+    {
+        if (!_isInitializing)
+            ApplyDisableGameMode(value);
+        SaveSettings();
+    }
+
+    /// <summary>
+    /// Toggles Windows Game Mode via the HKCU GameBar keys (the same approach Medal uses).
+    /// disable=true → Game Mode off; false → restored to the Windows default (on).
+    /// </summary>
+    private static void ApplyDisableGameMode(bool disable)
+    {
+        try
+        {
+            using RegistryKey key = Registry.CurrentUser.CreateSubKey(@"SOFTWARE\Microsoft\GameBar");
+            int value = disable ? 0 : 1;
+            key.SetValue("AllowAutoGameMode", value, RegistryValueKind.DWord);
+            key.SetValue("AutoGameModeEnabled", value, RegistryValueKind.DWord);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Failed to toggle Windows Game Mode: {ex.Message}");
+        }
     }
 
     /// <summary>
@@ -629,7 +709,7 @@ public partial class SettingsViewModel : ViewModelBase
             // ── Bitrate (default: 20 Mbps) ──
             int selKbps = SelectedBitrate?.Kbps ?? 20000;
             BitrateOptions.Clear();
-            foreach (int kbps in new[] { 5000, 10000, 20000, 30000, 50000 })
+            foreach (int kbps in new[] { 10000, 20000, 30000, 50000, 80000, 100000 })
                 BitrateOptions.Add(new BitrateOption($"{kbps / 1000} Mbps", kbps));
             BitrateOptions.Add(new BitrateOption(Localizer.Get("Option_Custom"), 0));
             SelectedBitrate = BitrateOptions.FirstOrDefault(b => b.Kbps == selKbps) ?? BitrateOptions[2];
@@ -727,7 +807,7 @@ public partial class SettingsViewModel : ViewModelBase
     }
 
     public SettingsViewModel(
-        ObsRecorderService engine,
+        Lag.Services.IReplayRecorder engine,
         GlobalHotkeyManager hotkeyManager,
         GlobalHotkeyService hotkeyService,
         HardwareDetector hardwareDetector)
@@ -770,6 +850,11 @@ public partial class SettingsViewModel : ViewModelBase
         // Register the persisted (or default) hotkey with the active Win32 service at startup.
         ApplyHotkeyToGlobalService();
         ApplyScreenshotHotkeyToService();
+
+        // Re-assert "Game Mode off" each launch when enabled (Windows updates and the
+        // user toggling it back in Windows Settings would otherwise silently undo it).
+        if (DisableGameMode)
+            ApplyDisableGameMode(true);
 
         // Mirror the persisted push-to-talk state onto the global hook.
         ApplyPttToManager();
@@ -944,6 +1029,7 @@ public partial class SettingsViewModel : ViewModelBase
                 StartWithWindows = StartWithWindows,
                 AutoStartRecording = AutoStartRecording,
                 StartMinimized = StartMinimized,
+                DisableGameMode = DisableGameMode,
                 Language = SelectedLanguage.Code,
                 MicVolume = MicVolume,
                 OutputResolutionHeight = SelectedResolution.TargetHeight,
@@ -960,7 +1046,13 @@ public partial class SettingsViewModel : ViewModelBase
                 PttEnabled = PushToTalkEnabled,
                 PttKey = _pttKey.ToString(),
                 MicMono = MicMono,
-                SeparateAudioTracks = SeparateAudioTracks
+                SeparateAudioTracks = SeparateAudioTracks,
+                UseVfrEngine = UseVfrEngine,
+                SystemAudioEnabled = SystemAudioEnabled,
+                SystemAudioVolume = SystemAudioVolume,
+                MicEnabled = MicEnabled,
+                GameAudioEnabled = GameAudioEnabled,
+                GameAudioVolume = GameAudioVolume
             };
 
             string dir = Path.GetDirectoryName(SettingsFilePath)!;
@@ -1051,6 +1143,11 @@ public partial class SettingsViewModel : ViewModelBase
 
             // System audio capture mode + saved per-app selections.
             AudioModeIndex = settings.AudioCaptureMode == "apps" ? 1 : 0;
+            SystemAudioEnabled = settings.SystemAudioEnabled;
+            SystemAudioVolume = settings.SystemAudioVolume;
+            MicEnabled = settings.MicEnabled;
+            GameAudioEnabled = settings.GameAudioEnabled;
+            GameAudioVolume = settings.GameAudioVolume;
             foreach (var saved in settings.AudioApps)
             {
                 if (string.IsNullOrWhiteSpace(saved.Exe)) continue;
@@ -1074,6 +1171,7 @@ public partial class SettingsViewModel : ViewModelBase
             }
             MicChannelIndex = settings.MicMono ? 1 : 0;
             SeparateAudioTracks = settings.SeparateAudioTracks;
+            UseVfrEngine = settings.UseVfrEngine;
 
             // Restore the persisted monitor/microphone by matching against the enumerated devices.
             if (!string.IsNullOrEmpty(settings.MonitorDeviceName))
@@ -1092,6 +1190,7 @@ public partial class SettingsViewModel : ViewModelBase
             StartWithWindows = settings.StartWithWindows;
             AutoStartRecording = settings.AutoStartRecording;
             StartMinimized = settings.StartMinimized;
+            DisableGameMode = settings.DisableGameMode;
 
             // Language (applies the persisted UI language via OnSelectedLanguageChanged).
             SelectedLanguage = LanguageOptions.FirstOrDefault(l => l.Code == settings.Language) ?? LanguageOptions[0];
@@ -1126,6 +1225,12 @@ public partial class SettingsViewModel : ViewModelBase
 
         /// <summary>Launch hidden in the system tray (window not shown until requested).</summary>
         public bool StartMinimized { get; set; }
+
+        /// <summary>Keep Windows Game Mode disabled (recommended for stable in-game capture).</summary>
+        public bool DisableGameMode { get; set; } = true;
+
+        /// <summary>Opt-in game_capture hook for exclusive-fullscreen games.</summary>
+        public bool GameCaptureEnabled { get; set; }
 
         /// <summary>UI language code: "en" (default) or "uk".</summary>
         public string Language { get; set; } = "en";
@@ -1164,8 +1269,22 @@ public partial class SettingsViewModel : ViewModelBase
         /// <summary>Downmix microphone to mono.</summary>
         public bool MicMono { get; set; }
 
+        /// <summary>System-audio source row: enabled + volume (default on, 100%).</summary>
+        public bool SystemAudioEnabled { get; set; } = true;
+        public int SystemAudioVolume { get; set; } = 100;
+
+        /// <summary>Microphone row enabled (default on).</summary>
+        public bool MicEnabled { get; set; } = true;
+
+        /// <summary>"Звук гри" row: capture the detected game's audio + its volume (default on, 100%).</summary>
+        public bool GameAudioEnabled { get; set; } = true;
+        public int GameAudioVolume { get; set; } = 100;
+
         /// <summary>Save system audio and mic as separate tracks in the file.</summary>
         public bool SeparateAudioTracks { get; set; }
+
+        /// <summary>Use the native WGC/NVENC VFR engine instead of OBS (opt-in).</summary>
+        public bool UseVfrEngine { get; set; }
 
         /// <summary>Output container format: mp4 (default), mkv, mov or avi.</summary>
         public string FileFormat { get; set; } = "mp4";
@@ -1237,8 +1356,15 @@ public partial class AppAudioItem : ObservableObject
     /// <summary>Executable name used to match the OBS application-audio capture (e.g. "Discord.exe").</summary>
     public string Exe { get; }
 
-    /// <summary>Friendly name shown in the UI (process name without extension).</summary>
-    public string DisplayName { get; }
+    /// <summary>Friendly name shown in the UI (app's FileDescription / window title / process name).
+    /// Observable so a later scan can upgrade a restored "Process.exe" name to the real one.</summary>
+    [ObservableProperty]
+    private string _displayName;
+
+    /// <summary>The app's icon for the list row (decoded from the exe), or null. Observable so the
+    /// icon can fill in once the app is seen playing audio (restored entries start without one).</summary>
+    [ObservableProperty]
+    private Avalonia.Media.Imaging.Bitmap? _icon;
 
     private readonly Action _onChanged;
 
@@ -1253,10 +1379,26 @@ public partial class AppAudioItem : ObservableObject
 
     partial void OnVolumeChanged(int value) => _onChanged();
 
-    public AppAudioItem(string exe, string displayName, Action onChanged)
+    public AppAudioItem(string exe, string displayName, Action onChanged, byte[]? iconPng = null)
     {
         Exe = exe;
-        DisplayName = displayName;
+        _displayName = displayName;
         _onChanged = onChanged;
+        Icon = DecodeIcon(iconPng);
+    }
+
+    /// <summary>Refreshes a row with fresh scan data — upgrades the friendly name and fills the icon
+    /// if it was missing (e.g. a restored selection that started as just the process name).</summary>
+    public void UpdateMeta(string displayName, byte[]? iconPng)
+    {
+        if (!string.IsNullOrWhiteSpace(displayName)) DisplayName = displayName;
+        if (Icon == null) { var ic = DecodeIcon(iconPng); if (ic != null) Icon = ic; }
+    }
+
+    private static Avalonia.Media.Imaging.Bitmap? DecodeIcon(byte[]? iconPng)
+    {
+        if (iconPng is not { Length: > 0 }) return null;
+        try { return new Avalonia.Media.Imaging.Bitmap(new System.IO.MemoryStream(iconPng)); }
+        catch { return null; }
     }
 }

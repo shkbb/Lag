@@ -54,6 +54,10 @@
   <sys:String x:Key="Settings_StartWithWindows_Desc">Lisab rakenduse süsteemi käivitusse</sys:String>
   <sys:String x:Key="Settings_StartMinimized">Käivita minimeerituna</sys:String>
   <sys:String x:Key="Settings_StartMinimized_Desc">Käivitub peidetuna süsteemisalves</sys:String>
+  <sys:String x:Key="Settings_DisableGameMode">Keela Windowsi mangurežiim</sys:String>
+  <sys:String x:Key="Settings_DisableGameMode_Desc">Windowsi mangurežiim piirab taustarakendusi: salvestus mangus voib langeda 1-2 kaadrini sekundis ja korduse salvestamine kaivituda alles parast alt-tabi. Lag keelab selle automaatselt. Soovitame tungivalt sisse jatta.</sys:String>
+  <sys:String x:Key="Settings_GameCapture">Mangu puudmine (hook)</sys:String>
+  <sys:String x:Key="Settings_GameCapture_Desc">Vajalik EKSKLUSIIVSES taisekraanirežiimis mangudele. CS2 nouab lisaks Steami kaivitusparameetrit "-allow_third_party_software", muidu lukkab mang hooki tagasi ja kordused raiskavad protsessorit. Aknarežiimis jatke valja.</sys:String>
   <sys:String x:Key="Editor_Title">Redaktor</sys:String>
   <sys:String x:Key="Editor_Edit">Muuda</sys:String>
   <sys:String x:Key="Editor_Back">Tagasi</sys:String>

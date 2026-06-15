@@ -222,7 +222,9 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
         try
         {
             LibVLCSharp.Shared.Core.Initialize();
-            _libVLC = new LibVLC(new string[] { "--no-video-title-show", "--no-osd", "--avcodec-hw=none" });
+            // No --avcodec-hw here: VLC ignores it for vmem players (the callbacks attach
+            // forces it back to "none"). Hardware decode is enabled per-media in LoadAndPlay.
+            _libVLC = new LibVLC(new string[] { "--no-video-title-show", "--no-osd" });
             _mediaPlayer = new MediaPlayer(_libVLC);
 
             // Frames are rendered into an Avalonia bitmap (vmem callbacks) instead of a native
@@ -318,6 +320,12 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
 
         var oldMedia = _mediaPlayer.Media;
         var media = new Media(_libVLC, new Uri(clip.FilePath));
+        // VLC force-resets avcodec-hw=none at the player level when vmem callbacks are
+        // attached, ignoring the LibVLC constructor option. A per-media option outranks
+        // the player variable, so this is the only way to get D3D11VA/NVDEC decoding —
+        // software decode of high-res replays drops to ~2 fps while a game is running.
+        // If d3d11va is unavailable VLC falls back to dxva2, then software, on its own.
+        media.AddOption(":avcodec-hw=d3d11va");
         _mediaPlayer.Media = media;
         // The player keeps its own native reference — release ours (and the previous one)
         // so switching clips doesn't leak native Media handles.

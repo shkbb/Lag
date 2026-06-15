@@ -54,6 +54,10 @@
   <sys:String x:Key="Settings_StartWithWindows_Desc">アプリをシステムのスタートアップに追加します</sys:String>
   <sys:String x:Key="Settings_StartMinimized">最小化して起動</sys:String>
   <sys:String x:Key="Settings_StartMinimized_Desc">システムトレイに隠れた状態で起動します</sys:String>
+  <sys:String x:Key="Settings_DisableGameMode">Windowsゲームモードを無効化</sys:String>
+  <sys:String x:Key="Settings_DisableGameMode_Desc">Windowsのゲームモードはバックグラウンドアプリを制限します。ゲーム中の録画が1～2FPSまで低下したり、リプレイ保存がalt-tabするまで動作しないことがあります。Lagが自動的に無効化します。オンのままにすることを強く推奨します。</sys:String>
+  <sys:String x:Key="Settings_GameCapture">ゲームキャプチャ（フック）</sys:String>
+  <sys:String x:Key="Settings_GameCapture_Desc">排他的フルスクリーンのゲームに必要です。CS2ではさらにSteam起動オプション「-allow_third_party_software」が必要で、ないとフックが拒否され再試行でCPUを浪費します。ウィンドウ／ボーダーレスでプレイする場合はオフのままにしてください。</sys:String>
   <sys:String x:Key="Editor_Title">エディター</sys:String>
   <sys:String x:Key="Editor_Edit">編集</sys:String>
   <sys:String x:Key="Editor_Back">戻る</sys:String>

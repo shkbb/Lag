@@ -54,6 +54,10 @@
   <sys:String x:Key="Settings_StartWithWindows_Desc">Legger appen til i systemoppstarten</sys:String>
   <sys:String x:Key="Settings_StartMinimized">Start minimert</sys:String>
   <sys:String x:Key="Settings_StartMinimized_Desc">Starter skjult i systemstatusfeltet</sys:String>
+  <sys:String x:Key="Settings_DisableGameMode">Deaktiver Windows spillmodus</sys:String>
+  <sys:String x:Key="Settings_DisableGameMode_Desc">Windows spillmodus struper bakgrunnsapper: opptak i spill kan falle til 1-2 FPS og reprise-lagring utloses forst etter alt-tab. Lag deaktiverer den automatisk. Sterkt anbefalt a la sta pa.</sys:String>
+  <sys:String x:Key="Settings_GameCapture">Spillopptak (hook)</sys:String>
+  <sys:String x:Key="Settings_GameCapture_Desc">Kreves for spill i EKSKLUSIV fullskjerm. CS2 krever i tillegg Steam-startalternativet "-allow_third_party_software", ellers avvises hooken og nye forsok sloser CPU. La sta av i vindus-/rammelos modus.</sys:String>
   <sys:String x:Key="Editor_Title">Redigering</sys:String>
   <sys:String x:Key="Editor_Edit">Rediger</sys:String>
   <sys:String x:Key="Editor_Back">Tilbake</sys:String>

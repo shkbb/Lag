@@ -54,6 +54,10 @@
   <sys:String x:Key="Settings_StartWithWindows_Desc">Adds the app to system startup</sys:String>
   <sys:String x:Key="Settings_StartMinimized">Start minimized</sys:String>
   <sys:String x:Key="Settings_StartMinimized_Desc">Launches hidden in the system tray</sys:String>
+  <sys:String x:Key="Settings_DisableGameMode">Disable Windows Game Mode</sys:String>
+  <sys:String x:Key="Settings_DisableGameMode_Desc">Windows Game Mode throttles background apps: in-game recordings can drop to 1-2 FPS and saving a replay may not trigger until you alt-tab. Lag disables it automatically while this is on. Strongly recommended to keep enabled.</sys:String>
+  <sys:String x:Key="Settings_GameCapture">Game capture (hook)</sys:String>
+  <sys:String x:Key="Settings_GameCapture_Desc">Needed for games in EXCLUSIVE fullscreen. CS2 also requires the "-allow_third_party_software" Steam launch option, otherwise the hook is rejected and retries waste CPU. Leave off if you record in windowed/borderless modes.</sys:String>
   <sys:String x:Key="Editor_Title">Editor</sys:String>
   <sys:String x:Key="Editor_Edit">Edit</sys:String>
   <sys:String x:Key="Editor_Back">Back</sys:String>

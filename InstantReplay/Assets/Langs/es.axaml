@@ -54,6 +54,10 @@
   <sys:String x:Key="Settings_StartWithWindows_Desc">Añade la aplicación al inicio del sistema</sys:String>
   <sys:String x:Key="Settings_StartMinimized">Iniciar minimizado</sys:String>
   <sys:String x:Key="Settings_StartMinimized_Desc">Se inicia oculto en la bandeja del sistema</sys:String>
+  <sys:String x:Key="Settings_DisableGameMode">Desactivar el Modo de juego de Windows</sys:String>
+  <sys:String x:Key="Settings_DisableGameMode_Desc">El Modo de juego de Windows limita las apps en segundo plano: las grabaciones en juego pueden caer a 1-2 FPS y el guardado de la repeticion puede no activarse hasta hacer alt-tab. Lag lo desactiva automaticamente. Muy recomendable dejarlo activado.</sys:String>
+  <sys:String x:Key="Settings_GameCapture">Captura de juegos (hook)</sys:String>
+  <sys:String x:Key="Settings_GameCapture_Desc">Necesario para juegos en pantalla completa EXCLUSIVA. CS2 ademas requiere la opcion de inicio de Steam "-allow_third_party_software"; de lo contrario el juego rechaza el hook y los reintentos desperdician CPU. En modo ventana/sin bordes dejalo desactivado.</sys:String>
   <sys:String x:Key="Editor_Title">Editor</sys:String>
   <sys:String x:Key="Editor_Edit">Editar</sys:String>
   <sys:String x:Key="Editor_Back">Atrás</sys:String>

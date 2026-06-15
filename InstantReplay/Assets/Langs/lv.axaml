@@ -54,6 +54,10 @@
   <sys:String x:Key="Settings_StartWithWindows_Desc">Pievieno programmu sistēmas startēšanai</sys:String>
   <sys:String x:Key="Settings_StartMinimized">Palaist minimizētu</sys:String>
   <sys:String x:Key="Settings_StartMinimized_Desc">Palaižas paslēpta sistēmas teknē</sys:String>
+  <sys:String x:Key="Settings_DisableGameMode">Atspejot Windows spelu režimu</sys:String>
+  <sys:String x:Key="Settings_DisableGameMode_Desc">Windows spelu režims ierobežo fona programmas: ieraksts spele var krist lidz 1-2 kadriem/s, un atkartojuma saglabašana var nostradat tikai pec alt-tab. Lag to atspejos automatiski. Loti ieteicams atstat ieslegtu.</sys:String>
+  <sys:String x:Key="Settings_GameCapture">Spelu tveršana (hook)</sys:String>
+  <sys:String x:Key="Settings_GameCapture_Desc">Nepieciešams spelem EKSKLUZIVAJA pilnekrana režima. CS2 papildus prasa Steam palaišanas parametru "-allow_third_party_software", citadi spele noraida hook un atkartojumi terre CPU. Loga/bezmalu režima atstajiet izslegtu.</sys:String>
   <sys:String x:Key="Editor_Title">Redaktors</sys:String>
   <sys:String x:Key="Editor_Edit">Rediģēt</sys:String>
   <sys:String x:Key="Editor_Back">Atpakaļ</sys:String>

@@ -54,6 +54,10 @@
   <sys:String x:Key="Settings_StartWithWindows_Desc">Prideda programą prie sistemos paleisties</sys:String>
   <sys:String x:Key="Settings_StartMinimized">Paleisti sumažintą</sys:String>
   <sys:String x:Key="Settings_StartMinimized_Desc">Paleidžiama paslėpta sistemos dėkle</sys:String>
+  <sys:String x:Key="Settings_DisableGameMode">Išjungti Windows žaidimu rezima</sys:String>
+  <sys:String x:Key="Settings_DisableGameMode_Desc">Windows žaidimu režimas riboja fonines programas: irašymas žaidime gali kristi iki 1-2 kadru/s, o pakartojimo issaugojimas suveikti tik po alt-tab. Lag išjungs ji automatiškai. Primygtinai rekomenduojame palikti ijungta.</sys:String>
+  <sys:String x:Key="Settings_GameCapture">Žaidimu fiksavimas (hook)</sys:String>
+  <sys:String x:Key="Settings_GameCapture_Desc">Reikalinga žaidimams ISSKIRTINIO viso ekrano režimu. CS2 papildomai reikia Steam paleidimo parametro "-allow_third_party_software", kitaip žaidimas atmeta hook ir bandymai eikvoja CPU. Lango/berėmio režimu palikite išjungta.</sys:String>
   <sys:String x:Key="Editor_Title">Redaktorius</sys:String>
   <sys:String x:Key="Editor_Edit">Redaguoti</sys:String>
   <sys:String x:Key="Editor_Back">Atgal</sys:String>

@@ -54,6 +54,10 @@
   <sys:String x:Key="Settings_StartWithWindows_Desc">Tilføjer appen til systemstart</sys:String>
   <sys:String x:Key="Settings_StartMinimized">Start minimeret</sys:String>
   <sys:String x:Key="Settings_StartMinimized_Desc">Starter skjult i systembakken</sys:String>
+  <sys:String x:Key="Settings_DisableGameMode">Deaktiver Windows spiltilstand</sys:String>
+  <sys:String x:Key="Settings_DisableGameMode_Desc">Windows spiltilstand drosler baggrundsapps: optagelser i spil kan falde til 1-2 FPS, og replay-gemning udloses forst efter alt-tab. Lag deaktiverer den automatisk. Staerkt anbefalet at lade den vaere slaet til.</sys:String>
+  <sys:String x:Key="Settings_GameCapture">Spiloptagelse (hook)</sys:String>
+  <sys:String x:Key="Settings_GameCapture_Desc">Kraves til spil i EKSKLUSIV fuldskaerm. CS2 kraever desuden Steam-startparameteren "-allow_third_party_software", ellers afvises hooken og gentagne forsog spilder CPU. Lad den vaere slaet fra i vindues-/rammelos tilstand.</sys:String>
   <sys:String x:Key="Editor_Title">Editor</sys:String>
   <sys:String x:Key="Editor_Edit">Rediger</sys:String>
   <sys:String x:Key="Editor_Back">Tilbage</sys:String>

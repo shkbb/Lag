@@ -194,109 +194,130 @@ public partial class LibraryViewModel : ViewModelBase
     /// Scans the library directory for .mp4 files and populates the clip collection.
     /// Generates real video thumbnails via FFMpegCore for clips that don't already have a cached one.
     /// </summary>
+    /// <summary>Cancels an in-flight refresh so a newer one supersedes it (re-entrancy guard).</summary>
+    private System.Threading.CancellationTokenSource? _refreshCts;
+
     [RelayCommand]
     private async Task RefreshAsync()
     {
-        IsLoading = true;
+        // A refresh runs on NavigateToLibrary AND after every saved replay, so two can overlap.
+        // Two refreshes mutating the UI-bound Clips collection at once desync the ItemsControl's
+        // container generator → ArgumentOutOfRangeException (the crash that froze the whole app and
+        // lagged the cursor). Cancel any in-flight refresh; only the newest publishes its result.
+        _refreshCts?.Cancel();
+        var cts = new System.Threading.CancellationTokenSource();
+        _refreshCts = cts;
+        var token = cts.Token;
 
+        IsLoading = true;
         try
         {
-            // Keep the library under the size quota BEFORE scanning, so clips removed by the
-            // cleanup never appear in the gallery. A refresh runs after every saved replay.
-            await Task.Run(EnforceStorageQuota);
-
-            Clips.Clear();
-
             string libraryDir = _settings.LibraryPath;
-            if (!Directory.Exists(libraryDir))
+
+            // ALL scanning, ffprobe and thumbnail generation runs OFF the UI thread, building a local
+            // list. The UI-bound collection is then touched exactly once, on the UI thread — this
+            // both removes the crash (no concurrent/again-on-UI mutation mid-virtualization) and the
+            // lag (heavy ffmpeg/bitmap work no longer runs on continuations of the UI thread).
+            var built = await Task.Run(async () =>
             {
-                Directory.CreateDirectory(libraryDir);
-                return;
-            }
+                EnforceStorageQuota(); // keep under the size quota before scanning
 
-            // Ensure the (hidden, LocalAppData) thumbnail cache exists; drop the legacy
-            // visible ".thumbnails" folder older versions kept inside the library.
-            Directory.CreateDirectory(ThumbnailCacheDir);
-            CleanupLegacyThumbnailFolder(libraryDir);
+                var result = new List<ReplayClip>();
+                if (!Directory.Exists(libraryDir)) { Directory.CreateDirectory(libraryDir); return result; }
 
-            var files = GetMediaFiles(libraryDir)
-                .OrderByDescending(File.GetCreationTime);
+                Directory.CreateDirectory(ThumbnailCacheDir);
+                CleanupLegacyThumbnailFolder(libraryDir);
 
-            foreach (var filePath in files)
-            {
-                var fileInfo = new FileInfo(filePath);
-                Avalonia.Media.Imaging.Bitmap? avaloniaBitmap = null;
-                TimeSpan duration = TimeSpan.Zero;
-                bool isImage = IsImageFile(filePath);
-                string thumbPath = isImage ? filePath : GetThumbnailCachePath(filePath);
-
-                if (isImage)
+                var files = GetMediaFiles(libraryDir).OrderByDescending(File.GetCreationTime);
+                foreach (var filePath in files)
                 {
-                    // Screenshots are their own thumbnail — just decode them downscaled.
-                    try
-                    {
-                        await using var fs = File.OpenRead(filePath);
-                        avaloniaBitmap = Avalonia.Media.Imaging.Bitmap.DecodeToWidth(fs, 640);
-                    }
-                    catch (Exception ex)
-                    {
-                        System.Diagnostics.Debug.WriteLine($"[Library] Failed to load screenshot {filePath}: {ex.Message}");
-                    }
-                }
-                else
-                {
-                    // ── Step 1: Get duration via FFProbe ──
-                    try
-                    {
-                        var mediaInfo = await FFProbe.AnalyseAsync(filePath);
-                        duration = mediaInfo.Duration;
-                    }
-                    catch (Exception ex)
-                    {
-                        System.Diagnostics.Debug.WriteLine($"[FFProbe] Failed to get duration for {filePath}: {ex.Message}");
-                    }
+                    if (token.IsCancellationRequested) break;
 
-                    // ── Step 2: Generate or load cached thumbnail ──
-                    try
+                    var fileInfo = new FileInfo(filePath);
+                    Avalonia.Media.Imaging.Bitmap? avaloniaBitmap = null;
+                    TimeSpan duration = TimeSpan.Zero;
+                    bool isImage = IsImageFile(filePath);
+                    string thumbPath = isImage ? filePath : GetThumbnailCachePath(filePath);
+
+                    if (isImage)
                     {
-                        // If cached thumbnail doesn't exist or is older than the video, regenerate
-                        if (!File.Exists(thumbPath) || File.GetLastWriteTime(thumbPath) < fileInfo.LastWriteTime)
+                        // Screenshots are their own thumbnail — just decode them downscaled.
+                        try
                         {
-                            // Extract a frame at the 2-second mark (or at 0s for very short clips)
-                            var snapshotTime = duration.TotalSeconds > 3 ? TimeSpan.FromSeconds(2) : TimeSpan.Zero;
-                            await FFMpeg.SnapshotAsync(filePath, thumbPath, new Size(320, 180), snapshotTime);
+                            await using var fs = File.OpenRead(filePath);
+                            avaloniaBitmap = Avalonia.Media.Imaging.Bitmap.DecodeToWidth(fs, 640);
                         }
-
-                        if (File.Exists(thumbPath))
+                        catch (Exception ex)
                         {
-                            await using var fs = File.OpenRead(thumbPath);
-                            avaloniaBitmap = new Avalonia.Media.Imaging.Bitmap(fs);
+                            System.Diagnostics.Debug.WriteLine($"[Library] Failed to load screenshot {filePath}: {ex.Message}");
                         }
                     }
-                    catch (Exception ex)
+                    else
                     {
-                        System.Diagnostics.Debug.WriteLine($"[FFMpeg] Failed to generate thumbnail for {filePath}: {ex.Message}");
-                    }
-                }
+                        // ── Step 1: Get duration via FFProbe ──
+                        try
+                        {
+                            var mediaInfo = await FFProbe.AnalyseAsync(filePath);
+                            duration = mediaInfo.Duration;
+                        }
+                        catch (Exception ex)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"[FFProbe] Failed to get duration for {filePath}: {ex.Message}");
+                        }
 
-                Clips.Add(new ReplayClip
-                {
-                    FilePath = filePath,
-                    ThumbnailPath = thumbPath,
-                    Thumbnail = avaloniaBitmap,
-                    Duration = duration,
-                    CreatedDate = fileInfo.CreationTime,
-                    FileSize = fileInfo.Length,
-                    IsImage = isImage
-                });
-            }
+                        // ── Step 2: Generate or load cached thumbnail ──
+                        try
+                        {
+                            if (!File.Exists(thumbPath) || File.GetLastWriteTime(thumbPath) < fileInfo.LastWriteTime)
+                            {
+                                var snapshotTime = duration.TotalSeconds > 3 ? TimeSpan.FromSeconds(2) : TimeSpan.Zero;
+                                await FFMpeg.SnapshotAsync(filePath, thumbPath, new Size(320, 180), snapshotTime);
+                            }
+
+                            if (File.Exists(thumbPath))
+                            {
+                                await using var fs = File.OpenRead(thumbPath);
+                                avaloniaBitmap = new Avalonia.Media.Imaging.Bitmap(fs);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"[FFMpeg] Failed to generate thumbnail for {filePath}: {ex.Message}");
+                        }
+                    }
+
+                    result.Add(new ReplayClip
+                    {
+                        FilePath = filePath,
+                        ThumbnailPath = thumbPath,
+                        Thumbnail = avaloniaBitmap,
+                        Duration = duration,
+                        CreatedDate = fileInfo.CreationTime,
+                        FileSize = fileInfo.Length,
+                        IsImage = isImage
+                    });
+                }
+                return result;
+            }, token);
+
+            // A newer refresh started while we were building → drop this (stale) result untouched.
+            if (token.IsCancellationRequested || !ReferenceEquals(_refreshCts, cts)) return;
+
+            // Publish to the UI-bound collection — on the UI thread (continuation of the await), once.
+            Clips.Clear();
+            foreach (var c in built) Clips.Add(c);
         }
+        catch (OperationCanceledException) { /* superseded by a newer refresh */ }
         finally
         {
-            UpdateFreeSpace();
-            OnPropertyChanged(nameof(LibraryStats));
-            NotifySelectionChanged(); // rebuilt list starts with nothing selected
-            IsLoading = false;
+            // Only the newest refresh owns the shared UI state / loading flag.
+            if (ReferenceEquals(_refreshCts, cts))
+            {
+                UpdateFreeSpace();
+                OnPropertyChanged(nameof(LibraryStats));
+                NotifySelectionChanged(); // rebuilt list starts with nothing selected
+                IsLoading = false;
+            }
         }
     }
 

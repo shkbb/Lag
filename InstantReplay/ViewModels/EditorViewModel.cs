@@ -356,19 +356,65 @@ public partial class EditorViewModel : ViewModelBase, IDisposable
         catch (Exception ex) { Debug.WriteLine($"[Editor] adjust failed: {ex.Message}"); }
     }
 
+    private const int NoVlcTrack = int.MinValue;
+
     /// <summary>
-    /// Preview volume follows the first unmuted track (libvlc plays a single audio track,
-    /// so a 2-track mix can't be fully previewed — export does the real mixing).
+    /// Drives the preview's audible audio. libvlc plays ONE audio track at a time, so muting a row
+    /// can't just lower volume — we must SWITCH the active track to match what's enabled:
+    ///   • only System enabled → play the system track,
+    ///   • only Mic enabled    → play the mic track,
+    ///   • both enabled        → play the pre-mixed "All" track (stream 0) when the clip has one
+    ///                            (native VFR layout), else the first enabled row (OBS files have no mix).
+    /// Volume follows the loudest enabled row. Export still does the true per-track mix + gain; this is
+    /// the closest a single-track player can preview. (Previously this only set Volume, so the default
+    /// "All" mix kept playing and you heard system+mic no matter which row you toggled.)
     /// </summary>
     private void ApplyPreviewVolume()
     {
         if (_mediaPlayer == null) return;
         try
         {
-            var active = AudioTracks.FirstOrDefault(t => !t.IsMuted);
-            _mediaPlayer.Volume = active != null ? Math.Clamp(active.Volume, 0, 100) : 0;
+            var unmuted = AudioTracks.Where(t => !t.IsMuted && t.Volume > 0).ToList();
+            if (unmuted.Count == 0) { _mediaPlayer.Mute = true; return; }
+            _mediaPlayer.Mute = false;
+
+            int playStream;
+            if (unmuted.Count == 1)
+            {
+                playStream = unmuted[0].StreamIndex;
+            }
+            else
+            {
+                // Several rows enabled. The native VFR file carries a pre-mixed "All" track at
+                // stream 0 (the editor only exposes streams ≥ 1), so play that for a real blend.
+                // OBS/single files have no mix track → fall back to the first enabled row.
+                bool hasMixTrack = AudioTracks.All(t => t.StreamIndex >= 1);
+                playStream = hasMixTrack ? 0 : unmuted[0].StreamIndex;
+            }
+
+            int id = LibVlcAudioId(playStream);
+            if (id != NoVlcTrack) _mediaPlayer.SetAudioTrack(id);
+            _mediaPlayer.Volume = Math.Clamp(unmuted.Max(t => t.Volume), 0, 100);
         }
-        catch (Exception ex) { Debug.WriteLine($"[Editor] volume failed: {ex.Message}"); }
+        catch (Exception ex) { Debug.WriteLine($"[Editor] preview audio failed: {ex.Message}"); }
+    }
+
+    /// <summary>Maps a source audio-stream index to libvlc's audio-track Id. libvlc's track
+    /// descriptions (after the leading "Disable" entry, Id = -1) are in source-stream order, so the
+    /// Nth real description is stream N. Returns <see cref="NoVlcTrack"/> if not resolvable yet
+    /// (descriptions populate once playback starts).</summary>
+    private int LibVlcAudioId(int streamIndex)
+    {
+        var descs = _mediaPlayer?.AudioTrackDescription;
+        if (descs == null) return NoVlcTrack;
+        int i = 0;
+        foreach (var d in descs)
+        {
+            if (d.Id < 0) continue; // skip the "Disable" pseudo-track
+            if (i == streamIndex) return d.Id;
+            i++;
+        }
+        return NoVlcTrack;
     }
 
     private void ApplyAllPreview()
@@ -406,6 +452,12 @@ public partial class EditorViewModel : ViewModelBase, IDisposable
         {
             var oldMedia = _mediaPlayer.Media;
             var media = new Media(_libVLC, new Uri(clip.FilePath));
+            // SOFTWARE decode in the EDITOR (unlike the player's d3d11va): libvlc's "adjust" colour
+            // filter and crop only apply to software-decoded frames — hardware (d3d11va) frames bypass
+            // the filter chain, which is exactly why the filter + aspect-ratio previews stopped working
+            // after the player switched to HW decode. Smooth 120fps matters less here than seeing the
+            // edit; export still does the real ffmpeg filter/crop.
+            media.AddOption(":avcodec-hw=none");
             _mediaPlayer.Media = media;
             media.Dispose();
             oldMedia?.Dispose();
@@ -434,9 +486,16 @@ public partial class EditorViewModel : ViewModelBase, IDisposable
                 TrimStartSec = Math.Min(TrimStartSec, TrimEndSec);
 
                 AudioTracks.Clear();
-                if (audioStreams >= 2)
+                if (audioStreams >= 3)
                 {
-                    // Recorded with "separate audio tracks": 1 = system sound, 2 = microphone.
+                    // Native VFR engine: stream 0 = "All" (mixed, the default playback track),
+                    // 1 = system, 2 = mic. Edit the two source tracks; "All" plays automatically.
+                    AudioTracks.Add(new EditorAudioTrack(1, Localizer.Get("Editor_TrackSystem"), DurationSec));
+                    AudioTracks.Add(new EditorAudioTrack(2, Localizer.Get("Editor_TrackMic"), DurationSec));
+                }
+                else if (audioStreams == 2)
+                {
+                    // OBS "separate audio tracks": 0 = system sound, 1 = microphone.
                     AudioTracks.Add(new EditorAudioTrack(0, Localizer.Get("Editor_TrackSystem"), DurationSec));
                     AudioTracks.Add(new EditorAudioTrack(1, Localizer.Get("Editor_TrackMic"), DurationSec));
                 }
@@ -562,7 +621,9 @@ public partial class EditorViewModel : ViewModelBase, IDisposable
         try
         {
             LibVLCSharp.Shared.Core.Initialize();
-            _libVLC = new LibVLC(new[] { "--no-video-title-show", "--no-osd", "--avcodec-hw=none" });
+            // No --avcodec-hw here: VLC ignores it for vmem players (the callbacks attach
+            // forces it back to "none"). Hardware decode is enabled per-media on load.
+            _libVLC = new LibVLC(new[] { "--no-video-title-show", "--no-osd" });
             _mediaPlayer = new MediaPlayer(_libVLC);
             VideoRenderer.Attach(_mediaPlayer);
             Player = _mediaPlayer;
@@ -579,10 +640,16 @@ public partial class EditorViewModel : ViewModelBase, IDisposable
                 ApplyPreviewAspect();
                 ApplyPreviewFilter();
                 ApplyPreviewVolume();
-                // Rate is re-applied a beat later: forcing 2× at t=0 makes the decoder
-                // drop the whole first GOP and the screen flashes blank before the
-                // first real frame ("gray screen on speeded start").
-                DispatcherTimer.RunOnce(ApplyPreviewRate, TimeSpan.FromMilliseconds(300));
+                // Re-assert crop + adjust a beat later too: applied at the instant Playing fires (the
+                // vmem vout isn't fully up yet) they often don't "stick", so the aspect crop and the
+                // colour filter appeared to do nothing. Rate is also deferred — forcing 2× at t=0
+                // makes the decoder drop the first GOP and flash blank ("gray screen on speeded start").
+                DispatcherTimer.RunOnce(() =>
+                {
+                    ApplyPreviewAspect();
+                    ApplyPreviewFilter();
+                    ApplyPreviewRate();
+                }, TimeSpan.FromMilliseconds(300));
             });
             _mediaPlayer.Paused += (_, _) => Dispatcher.UIThread.Post(() => { IsPlaying = false; _positionTimer?.Stop(); });
             _mediaPlayer.Stopped += (_, _) => Dispatcher.UIThread.Post(() =>

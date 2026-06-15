@@ -54,6 +54,10 @@
   <sys:String x:Key="Settings_StartWithWindows_Desc">Lisää sovelluksen järjestelmän käynnistykseen</sys:String>
   <sys:String x:Key="Settings_StartMinimized">Käynnistä pienennettynä</sys:String>
   <sys:String x:Key="Settings_StartMinimized_Desc">Käynnistyy piilotettuna ilmoitusalueelle</sys:String>
+  <sys:String x:Key="Settings_DisableGameMode">Poista Windowsin pelitila kaytosta</sys:String>
+  <sys:String x:Key="Settings_DisableGameMode_Desc">Windowsin pelitila rajoittaa taustasovelluksia: pelin tallennus voi pudota 1-2 kuvaan sekunnissa ja uusinnan tallennus laueta vasta alt-tabin jalkeen. Lag poistaa sen kaytosta automaattisesti. Suosittelemme vahvasti pitamaan paalla.</sys:String>
+  <sys:String x:Key="Settings_GameCapture">Pelikaappaus (hook)</sys:String>
+  <sys:String x:Key="Settings_GameCapture_Desc">Tarvitaan EKSKLUSIIVISESSA koko nayton tilassa oleville peleille. CS2 vaatii lisaksi Steam-kaynnistysparametrin "-allow_third_party_software", muuten peli hylkaa koukun ja uudelleenyritykset tuhlaavat suoritinta. Ikkuna-/reunuksettomassa tilassa jata pois paalta.</sys:String>
   <sys:String x:Key="Editor_Title">Editori</sys:String>
   <sys:String x:Key="Editor_Edit">Muokkaa</sys:String>
   <sys:String x:Key="Editor_Back">Takaisin</sys:String>

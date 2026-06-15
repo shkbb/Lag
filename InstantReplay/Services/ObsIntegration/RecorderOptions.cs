@@ -33,6 +33,13 @@ public sealed class RecorderOptions
     public string? MonitorId { get; init; }
     public string? LibraryPath { get; init; }
 
+    /// <summary>
+    /// Add a game_capture hook overlay above the monitor capture. Required for games in
+    /// EXCLUSIVE fullscreen (desktop duplication can't see them), but costs CPU when an
+    /// anti-tamper game (e.g. CS2 Trusted Mode) keeps rejecting the hook. Default off.
+    /// </summary>
+    public bool GameCaptureEnabled { get; init; }
+
     /// <summary>Output container format: "mp4" (default), "mkv", "mov" or "avi".</summary>
     public string FileFormat { get; init; } = "mp4";
 
@@ -56,6 +63,18 @@ public sealed class RecorderOptions
 
     /// <summary>Save system audio and microphone as two separate tracks in the output file.</summary>
     public bool SeparateAudioTracks { get; init; }
+
+    /// <summary>Capture the full-system audio (the "Звук системи" row). When false, no system audio.</summary>
+    public bool SystemAudioEnabled { get; init; } = true;
+
+    /// <summary>System-audio volume in percent (0–100).</summary>
+    public int SystemAudioVolume { get; init; } = 100;
+
+    /// <summary>Capture the detected game's own audio (the "Звук гри" row) in specific-apps mode.</summary>
+    public bool GameAudioEnabled { get; init; } = true;
+
+    /// <summary>Game-audio volume in percent (0–100).</summary>
+    public int GameAudioVolume { get; init; } = 100;
 }
 
 /// <summary>One application whose audio should be captured, with its linear volume (1.0 = 100%).</summary>

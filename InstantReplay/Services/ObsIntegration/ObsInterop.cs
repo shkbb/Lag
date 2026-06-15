@@ -280,6 +280,34 @@ public static class ObsInterop
     [DllImport(ObsDll, CallingConvention = CallingConvention.Cdecl)]
     public static extern IntPtr obs_scene_get_source(IntPtr scene);
 
+    /// <summary>2D vector used by scene-item transforms (struct vec2 in libobs).</summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct ObsVec2
+    {
+        public float x;
+        public float y;
+    }
+
+    // Scene-item bounds: used to stretch the game_capture overlay to the full canvas
+    // (obs_bounds_type: 0 = NONE, 1 = STRETCH, 2 = SCALE_INNER, ...).
+    [DllImport(ObsDll, CallingConvention = CallingConvention.Cdecl)]
+    public static extern void obs_sceneitem_set_bounds_type(IntPtr item, int type);
+
+    [DllImport(ObsDll, CallingConvention = CallingConvention.Cdecl)]
+    public static extern void obs_sceneitem_set_bounds(IntPtr item, ref ObsVec2 bounds);
+
+    [DllImport(ObsDll, CallingConvention = CallingConvention.Cdecl)]
+    public static extern void obs_sceneitem_set_bounds_alignment(IntPtr item, uint alignment);
+
+    /// <summary>
+    /// Shows/hides a scene item. A hidden item is not rendered and, when it is the only
+    /// reference to its source in the active program scene, OBS marks the source inactive —
+    /// which stops a WGC capture's frame pool. Used to disable the redundant monitor capture
+    /// while a game window is being captured, so only ONE WGC session runs at a time.
+    /// </summary>
+    [DllImport(ObsDll, CallingConvention = CallingConvention.Cdecl)]
+    public static extern void obs_sceneitem_set_visible(IntPtr item, [MarshalAs(UnmanagedType.I1)] bool visible);
+
     // ────────────────────── Source Control ────────────────────── //
 
     /// <summary>
