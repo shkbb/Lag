@@ -51,3 +51,4 @@ figma-design/
 *.bak
 
 vfr_test_out/
+.claude-memory/
