@@ -4,18 +4,20 @@
 <p><strong>Instant Replay & Screen Recorder</strong></p>
 
 [![.NET 8](https://img.shields.io/badge/.NET-8.0-512BD4?style=flat-square&logo=dotnet)](https://dotnet.microsoft.com/)
-[![Avalonia UI](https://img.shields.io/badge/Avalonia-11.0-8B5CF6?style=flat-square)](https://avaloniaui.net/)
+[![Avalonia UI](https://img.shields.io/badge/Avalonia-11.2-8B5CF6?style=flat-square)](https://avaloniaui.net/)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg?style=flat-square)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Windows_x64-0078D6?style=flat-square&logo=windows)](../../releases)
 [![Releases](https://img.shields.io/github/v/release/shkbb/Lag?style=flat-square&color=success)](../../releases/latest)
 
 <p>
-  <strong>Lag</strong> is a sleek, lightweight instant replay tool powered by the <strong>OBS Studio core</strong> (<code>libobs</code>)<br>
+  <strong>Lag</strong> is a sleek, lightweight instant replay tool powered by a custom<br>
+  <strong>native VFR capture engine</strong> (Windows Graphics Capture + hardware NVENC/AMF/QSV)<br>
   and a modern <strong>Avalonia UI</strong> with Glassmorphism design. Never miss an epic highlight again.
 </p>
 
 <p>
   <a href="#features">Features</a> ·
+  <a href="#how-it-works">How it works</a> ·
   <a href="#installation">Installation</a> ·
   <a href="#building-from-source">Build from Source</a> ·
   <a href="#license">License</a> ·
@@ -30,7 +32,7 @@
 
 > *(Add your screenshots here)*
 
-![App Screenshot](https://via.placeholder.com/900x500.png?text=Lag+Settings+UI)
+![App Screenshot](https://via.placeholder.com/900x500.png?text=Lag+UI)
 
 ---
 
@@ -38,13 +40,25 @@
 
 | Feature | Description |
 |---|---|
-| **Glassmorphism UI** | Windows 11 Mica/Acrylic effects, smooth animations, and Material vector icons |
-| **Smart Hardware Encoding** | Auto-detects the best encoder — `NVENC` (NVIDIA), `AMF` (AMD), `QSV` (Intel), or `x264` fallback |
+| **Native VFR engine** | Smooth, high-FPS variable-frame-rate capture via Windows Graphics Capture (WGC) — true per-frame timestamps, no forced-duplicate stutter |
+| **Smart Hardware Encoding** | Auto-picks the best encoder by probing your GPU — `H.264` / `HEVC` / `AV1` on `NVENC` (NVIDIA), `AMF` (AMD), `QSV` (Intel), or `x264` CPU fallback |
+| **Automatic Game Detection** | Detects the active game by GPU 3D-engine usage + Steam (no denylist, no curated DB), and auto-switches between game and full-desktop capture without stopping the buffer |
+| **Multi-track Audio** | Captures system/game sound **and** microphone — as separate tracks or a single mix. Per-app audio capture (record only chosen programs), push-to-talk, mono/stereo mic |
+| **Built-in Clip Editor** | Trim, change speed, crop aspect ratio, and apply colour filters — then export, all inside the app |
 | **Global Hotkeys** | Save the last X seconds/minutes of gameplay with a single customizable keystroke |
 | **Built-in Video Player** | Review your highlights directly inside the app — no external player needed |
+| **Configurable Output** | Pick resolution, frame rate, bitrate, codec/vendor, container (`mp4` / `mov`), and GPU adapter |
 | **Auto-Updater** | Velopack integration: checks GitHub Releases and updates silently in the background |
 | **Set and Forget** | Start with Windows, auto-start recording — configure once and forget |
 | **Bilingual** | Full English and Ukrainian localization |
+
+---
+
+## How it works
+
+Lag records into a rolling in-memory **replay buffer**, so when something epic happens you hit the hotkey and the last X seconds are saved instantly — nothing is written to disk until you ask for it.
+
+The default recorder is a **custom native VFR engine** (`Services/VfrCapture/`): it captures the game window (or a monitor) through **Windows Graphics Capture**, converts on the GPU, and encodes with hardware **NVENC / AMF / QSV** (or **x264** on the CPU) via the bundled **FFmpeg 7.0** libraries — writing true variable-frame-rate timestamps for buttery-smooth playback. An **OBS Studio core (`libobs`)** recorder is kept as an automatic fallback for machines without WGC support.
 
 ---
 
@@ -53,8 +67,8 @@
 > For gamers — no technical knowledge required.
 
 1. Open the [**Releases**](../../releases) tab
-2. Download the latest **`Lag-Setup.exe`**
-3. Run the installer — the app installs instantly, creates a desktop shortcut, and launches
+2. Download the latest **`Lag-win-Setup.exe`**
+3. Run the installer — the app installs instantly and launches
 4. Future updates are downloaded and applied automatically
 
 ---
@@ -63,9 +77,11 @@
 
 > For developers who want to build or contribute to the project.
 
-**Prerequisites:** [.NET 8 SDK](https://dotnet.microsoft.com/download)
+**Prerequisites:**
+- [.NET 8 SDK](https://dotnet.microsoft.com/download)
+- **Windows SDK 10.0.26100** (the project targets `net8.0-windows10.0.26100.0` to reach the newer WGC knobs; it still *runs* on Windows 10 1903 / 19041+)
 
-> **Important:** This project requires native `obs-core` binaries (`libobs`, FFmpeg) which are **not included** in this repository due to their size (~400 MB). You can obtain them from an existing OBS Studio installation or a pre-compiled `libobs` package.
+> **Important:** This project requires native `obs-core` binaries — the **FFmpeg 7.0** libraries (`avcodec-61`, `avformat-61`, `avutil-59`, plus `ffmpeg`/`ffprobe`) used by the VFR engine, and `libobs` for the fallback recorder. These are **not included** in this repository due to their size (~400 MB). You can obtain them from an existing OBS Studio installation or a pre-compiled `libobs` package.
 
 **Step 1 — Clone the repository:**
 
@@ -74,22 +90,25 @@ git clone https://github.com/shkbb/Lag.git
 cd Lag
 ```
 
-**Step 2 — Build the project to generate output directories:**
+**Step 2 — Place the `obs-core` binaries in the project folder:**
+
+```
+InstantReplay/obs-core/
+```
+
+The build automatically bundles everything under `obs-core/` into the output directory.
+
+**Step 3 — Build & run:**
 
 ```bash
-dotnet build
+dotnet build InstantReplay/InstantReplay.csproj -c Release
+dotnet run --project InstantReplay/InstantReplay.csproj -c Release
 ```
 
-**Step 3 — Place the `obs-core` binaries into the build output:**
+The build output (with `obs-core` bundled) lands in:
 
 ```
-Lag/bin/Debug/net8.0-windows/win-x64/obs-core/
-```
-
-**Step 4 — Run:**
-
-```bash
-dotnet run
+InstantReplay/bin/Release/net8.0-windows10.0.26100.0/Lag.exe
 ```
 
 ---
@@ -110,7 +129,7 @@ See [`LICENSE`](LICENSE) for full details.
 
 </div>
 
-**Lag** — це стильна та легка програма для запису ігрових моментів. Вона поєднує надійність ядра **OBS Studio** (`libobs`) із сучасним **Avalonia UI** у стилі скломорфізму. Більше жоден епічний момент не буде втрачено.
+**Lag** — це стильна та легка програма для запису ігрових моментів. Вона працює на власному **нативному VFR-рушії захоплення** (Windows Graphics Capture + апаратний NVENC/AMF/QSV) із сучасним **Avalonia UI** у стилі скломорфізму. Більше жоден епічний момент не буде втрачено.
 
 ---
 
@@ -118,13 +137,25 @@ See [`LICENSE`](LICENSE) for full details.
 
 | Функція | Опис |
 |---|---|
-| **Дизайн (Скломорфізм)** | Ефекти Mica/Acrylic з Windows 11, плавні анімації та векторні Material-іконки |
-| **Апаратне прискорення** | Автоматично обирає найкращий кодек — `NVENC` (NVIDIA), `AMF` (AMD), `QSV` (Intel) або `x264` |
+| **Нативний VFR-рушій** | Плавний запис із високим FPS і змінною частотою кадрів через Windows Graphics Capture (WGC) — справжні часові мітки кожного кадру, без заїкань від дубльованих кадрів |
+| **Апаратне прискорення** | Сам обирає найкращий кодек, перевіряючи вашу відеокарту — `H.264` / `HEVC` / `AV1` на `NVENC` (NVIDIA), `AMF` (AMD), `QSV` (Intel) або `x264` на процесорі |
+| **Автовизначення гри** | Визначає активну гру за завантаженням 3D-рушія GPU + Steam (без чорних списків і баз даних) і автоматично перемикається між грою та записом усього робочого столу, не зупиняючи буфер |
+| **Багатодоріжкове аудіо** | Записує звук системи/гри **та** мікрофон — окремими доріжками або одним міксом. Захоплення звуку обраних програм, push-to-talk, моно/стерео мікрофон |
+| **Вбудований редактор** | Обрізка, зміна швидкості, кадрування співвідношення сторін і кольорові фільтри — з експортом, прямо в програмі |
 | **Глобальні гарячі клавіші** | Збережіть останні секунди або хвилини гри одним натисканням налаштованої клавіші |
 | **Вбудований програвач** | Переглядайте моменти прямо в програмі — без сторонніх плеєрів |
+| **Гнучкий вихід** | Вибір роздільної здатності, частоти кадрів, бітрейту, кодека/виробника, контейнера (`mp4` / `mov`) та відеоадаптера |
 | **Автооновлення** | Velopack завантажує нові версії з GitHub і оновлює програму у фоновому режимі |
 | **Автоматизація** | Автозапуск разом з Windows та автоматичний початок запису |
 | **Локалізація** | Повна підтримка англійської та української мов |
+
+---
+
+## Як це працює
+
+Lag записує у кільцевий **буфер повтору** в пам'яті, тож коли стається щось епічне — ви натискаєте гарячу клавішу, і останні X секунд зберігаються миттєво. На диск нічого не пишеться, доки ви самі не попросите.
+
+Основний рекордер — це власний **нативний VFR-рушій** (`Services/VfrCapture/`): він захоплює вікно гри (або монітор) через **Windows Graphics Capture**, конвертує кадри на GPU й кодує апаратно через **NVENC / AMF / QSV** (або **x264** на процесорі) за допомогою вбудованих бібліотек **FFmpeg 7.0**, записуючи справжні часові мітки зі змінною частотою кадрів для ідеально плавного відтворення. Рекордер на ядрі **OBS Studio (`libobs`)** лишається автоматичним запасним варіантом для машин без підтримки WGC.
 
 ---
 
@@ -133,8 +164,8 @@ See [`LICENSE`](LICENSE) for full details.
 > Для користувачів — технічні знання не потрібні.
 
 1. Перейдіть на вкладку [**Releases**](../../releases)
-2. Завантажте найновіший файл **`Lag-Setup.exe`**
-3. Запустіть його — програма встановиться за секунду, створить ярлик і запуститься
+2. Завантажте найновіший файл **`Lag-win-Setup.exe`**
+3. Запустіть його — програма встановиться за секунду й запуститься
 4. Усі майбутні оновлення завантажуватимуться автоматично
 
 ---
@@ -143,9 +174,11 @@ See [`LICENSE`](LICENSE) for full details.
 
 > Для розробників, які хочуть зібрати або долучитися до проєкту.
 
-**Вимоги:** [.NET 8 SDK](https://dotnet.microsoft.com/download)
+**Вимоги:**
+- [.NET 8 SDK](https://dotnet.microsoft.com/download)
+- **Windows SDK 10.0.26100** (проєкт націлений на `net8.0-windows10.0.26100.0` заради новіших можливостей WGC; але *працює* на Windows 10 1903 / 19041+)
 
-> **Увага:** Для роботи програми потрібні нативні бінарники `obs-core` (`libobs`, FFmpeg), які **не включені** в репозиторій через великий розмір (~400 МБ). Їх можна взяти з папки встановленої OBS Studio або завантажити зібраний пакет libobs.
+> **Увага:** Для роботи програми потрібні нативні бінарники `obs-core` — бібліотеки **FFmpeg 7.0** (`avcodec-61`, `avformat-61`, `avutil-59` та `ffmpeg`/`ffprobe`), які використовує VFR-рушій, і `libobs` для запасного рекордера. Вони **не включені** в репозиторій через великий розмір (~400 МБ). Їх можна взяти з папки встановленої OBS Studio або завантажити зібраний пакет libobs.
 
 **Крок 1 — Клонуйте репозиторій:**
 
@@ -154,22 +187,25 @@ git clone https://github.com/shkbb/Lag.git
 cd Lag
 ```
 
-**Крок 2 — Зберіть проєкт для створення вихідних директорій:**
+**Крок 2 — Помістіть бінарники `obs-core` у папку проєкту:**
+
+```
+InstantReplay/obs-core/
+```
+
+Усе, що лежить у `obs-core/`, автоматично копіюється у вихідну директорію під час збірки.
+
+**Крок 3 — Зберіть і запустіть:**
 
 ```bash
-dotnet build
+dotnet build InstantReplay/InstantReplay.csproj -c Release
+dotnet run --project InstantReplay/InstantReplay.csproj -c Release
 ```
 
-**Крок 3 — Помістіть бінарники `obs-core` у вихідну директорію:**
+Зібраний застосунок (разом із `obs-core`) опиниться тут:
 
 ```
-Lag/bin/Debug/net8.0-windows/win-x64/obs-core/
-```
-
-**Крок 4 — Запустіть:**
-
-```bash
-dotnet run
+InstantReplay/bin/Release/net8.0-windows10.0.26100.0/Lag.exe
 ```
 
 ---
