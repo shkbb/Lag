@@ -82,7 +82,14 @@
                        IsVisible="{Binding IsCustomFps}" />
               <ListBox Classes="segctl"
                        ItemsSource="{Binding FpsOptions}"
-                       SelectedItem="{Binding SelectedFps}" />
+                       SelectedItem="{Binding SelectedFps}">
+                <ListBox.ItemTemplate>
+                  <DataTemplate x:DataType="vm:FpsOption">
+                    <TextBlock Text="{Binding Display}"
+                               Foreground="{Binding Tier, Converter={StaticResource Intensity}}" />
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
             </StackPanel>
           </Grid>
           <Border Classes="divider" />
@@ -92,7 +99,14 @@
                        VerticalAlignment="Center" />
             <ComboBox Grid.Column="1" VerticalAlignment="Center"
                       ItemsSource="{Binding ResolutionOptions}"
-                      SelectedItem="{Binding SelectedResolution}" />
+                      SelectedItem="{Binding SelectedResolution}">
+              <ComboBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:ResolutionOption">
+                  <TextBlock Text="{Binding Display}"
+                             Foreground="{Binding Tier, Converter={StaticResource Intensity}}" />
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
           </Grid>
           <Border Classes="divider" />
 
@@ -114,10 +128,13 @@
                         ItemsSource="{Binding BitrateOptions}"
                         SelectedItem="{Binding SelectedBitrate}">
                 <ComboBox.ItemTemplate>
-                  <DataTemplate><TextBlock Text="{Binding Display}" /></DataTemplate>
+                  <DataTemplate x:DataType="vm:BitrateOption">
+                    <TextBlock Text="{Binding Display}"
+                               Foreground="{Binding Tier, Converter={StaticResource Intensity}}" />
+                  </DataTemplate>
                 </ComboBox.ItemTemplate>
               </ComboBox>
-              <Slider Width="120" Minimum="5" Maximum="150" TickFrequency="1" IsSnapToTickEnabled="True"
+              <Slider Width="120" Minimum="3" Maximum="100" TickFrequency="1" IsSnapToTickEnabled="True"
                       VerticalAlignment="Center" Value="{Binding BitrateSliderValue}"
                       IsVisible="{Binding IsCustomBitrate}" />
               <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center"
@@ -514,6 +531,27 @@
       </ScrollViewer>
 
     </Carousel>
+
+    <!-- Intensive-quality disclaimer (Medal-style): choosing high FPS / bitrate / resolution shows
+         this once per session. High settings are allowed — this just sets expectations. -->
+    <Border Grid.Row="0" Grid.RowSpan="4" ZIndex="100"
+            Background="#B0000000" IsVisible="{Binding ShowIntensiveWarning}">
+      <Border Width="560" MaxWidth="560" Padding="28" CornerRadius="12"
+              Background="#161A21" BorderBrush="#2A2F37" BorderThickness="1"
+              HorizontalAlignment="Center" VerticalAlignment="Center"
+              BoxShadow="0 12 40 0 #80000000">
+        <StackPanel Spacing="14">
+          <TextBlock Text="{Binding IntensiveWarnTitle}" FontSize="17" FontWeight="SemiBold"
+                     TextWrapping="Wrap" />
+          <TextBlock Text="{Binding IntensiveWarnSummary}" FontSize="13" FontWeight="Medium"
+                     Foreground="#E5B84C" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding IntensiveWarnBody}" FontSize="13"
+                     Foreground="{StaticResource Fg2Brush}" TextWrapping="Wrap" LineHeight="20" />
+          <Button Content="{Binding IntensiveWarnOk}" Classes="chip" HorizontalAlignment="Right"
+                  Click="OnIntensiveUnderstood" />
+        </StackPanel>
+      </Border>
+    </Border>
   </Grid>
 
 </UserControl>

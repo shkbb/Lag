@@ -71,10 +71,27 @@ public sealed class ProcessLoopbackCapture : IDisposable
 
     private void Run()
     {
-        try { Setup(); _running = true; }
-        catch (Exception ex) { _startError = ex; _ready.Set(); return; }
+        bool setupOk = false;
+        try { Setup(); _running = true; setupOk = true; }
+        catch (Exception ex) { _startError = ex; }
         _ready.Set();
-        CaptureLoop();
+
+        if (setupOk)
+        {
+            try { CaptureLoop(); } catch { /* never let the capture loop escape the thread */ }
+        }
+
+        // Free the COM objects on the SAME MTA apartment that created them, and only AFTER the loop
+        // has fully stopped. Releasing them from Dispose() — a different thread, possibly while the
+        // loop was mid-GetBuffer/ReleaseBuffer — was an access violation → hard crash on stop.
+        ReleaseComOnThread();
+    }
+
+    private void ReleaseComOnThread()
+    {
+        try { _client?.Stop(); } catch { }
+        if (_capture != null) { try { Marshal.ReleaseComObject(_capture); } catch { } _capture = null; }
+        if (_client != null) { try { Marshal.ReleaseComObject(_client); } catch { } _client = null; }
     }
 
     private void Setup()
@@ -183,12 +200,15 @@ public sealed class ProcessLoopbackCapture : IDisposable
         if (_disposed) return;
         _disposed = true;
         _running = false;
+        // Wake the capture thread so it leaves its wait promptly, then let it run its own COM
+        // cleanup (ReleaseComOnThread) and exit. A generous join: the loop wakes every 100 ms, so
+        // it returns quickly — but we must NOT free the COM objects here (wrong apartment + a live
+        // thread = access violation).
         try { if (_event != IntPtr.Zero) SetEvent(_event); } catch { }
-        try { _thread?.Join(500); } catch { }
-        try { _client?.Stop(); } catch { }
-        if (_capture != null) { Marshal.ReleaseComObject(_capture); _capture = null; }
-        if (_client != null) { Marshal.ReleaseComObject(_client); _client = null; }
-        if (_event != IntPtr.Zero) { CloseHandle(_event); _event = IntPtr.Zero; }
+        try { _thread?.Join(2000); } catch { }
+        _thread = null;
+        // The event is a plain kernel handle (apartment-neutral), safe to close after the join.
+        if (_event != IntPtr.Zero) { try { CloseHandle(_event); } catch { } _event = IntPtr.Zero; }
     }
 
     // ───────────────────────── COM completion handler (managed → native CCW) ─────────────────────────

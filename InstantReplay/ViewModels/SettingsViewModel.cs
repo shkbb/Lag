@@ -74,6 +74,10 @@ public partial class SettingsViewModel : ViewModelBase
 
     partial void OnSelectedMonitorChanged(HardwareDetector.MonitorInfo? value)
     {
+        // The capture FPS ceiling follows the monitor's refresh rate; the resolution ceiling follows
+        // its native height. Both are rebuilt when the selected monitor changes.
+        RebuildFpsOptions();
+        RebuildResolutionOptions();
         SaveSettings();
     }
 
@@ -186,6 +190,7 @@ public partial class SettingsViewModel : ViewModelBase
     {
         OnPropertyChanged(nameof(IsCustomFps));
         SaveSettings();
+        MaybeWarnIntensive();
     }
 
     /// <summary>Custom frame rate (used when the "Custom" preset is selected).</summary>
@@ -194,14 +199,165 @@ public partial class SettingsViewModel : ViewModelBase
 
     partial void OnCustomFpsChanged(int value)
     {
+        // Clamp to the monitor's refresh — a higher value can't be captured and would only
+        // starve the CBR bitrate (the fps-hint splits bit_rate across it). Re-enters once.
+        int cap = CurrentRefreshCap();
+        if (value > cap) { CustomFps = cap; return; }
         SaveSettings();
+        MaybeWarnIntensive();
     }
 
     public bool IsCustomFps => SelectedFps.Value == 0;
 
     /// <summary>The frame rate that actually goes to the engine.</summary>
     public int EffectiveFps =>
-        SelectedFps.Value > 0 ? SelectedFps.Value : Math.Clamp(CustomFps, 1, 1000);
+        SelectedFps.Value > 0 ? SelectedFps.Value : Math.Clamp(CustomFps, 1, CurrentRefreshCap());
+
+    /// <summary>FPS ceiling = the selected monitor's refresh rate. WGC captures at most the
+    /// monitor's composition rate, so offering more is dishonest and (via the CBR fps-hint)
+    /// hurts quality. Unknown/implausible refresh → 360 (don't restrict).</summary>
+    private int CurrentRefreshCap()
+    {
+        uint hz = SelectedMonitor?.RefreshRate
+                  ?? Monitors.FirstOrDefault(m => m.IsPrimary)?.RefreshRate
+                  ?? 0;
+        if (hz < 24) return 360;
+        return Math.Max(SnapRefresh((int)hz), 60);
+    }
+
+    /// <summary>Panels often report 59 / 143 / 164 etc. — snap to the nearest common rate.</summary>
+    private static int SnapRefresh(int hz)
+    {
+        int[] known = { 60, 75, 90, 100, 120, 144, 160, 165, 180, 200, 240, 280, 300, 360, 390, 480, 500 };
+        foreach (int k in known)
+            if (Math.Abs(hz - k) <= 2) return k;
+        return hz;
+    }
+
+    /// <summary>Rebuilds the FPS preset list capped to the selected monitor's refresh rate — no
+    /// point offering 240/360 on a 144 Hz panel. On a 360 Hz panel the high rungs reappear
+    /// automatically. Keeps the prior selection, snapping it down if it now exceeds the cap.</summary>
+    private void RebuildFpsOptions()
+    {
+        bool wasInitializing = _isInitializing;
+        _isInitializing = true;
+        try
+        {
+            int prev = SelectedFps?.Value ?? 30;
+            int cap = CurrentRefreshCap();
+
+            var rungs = new List<int>();
+            foreach (int fps in new[] { 24, 30, 60, 120, 240, 360 })
+                if (fps <= cap) rungs.Add(fps);
+            if (rungs.Count == 0) rungs.Add(60);
+            if (cap > rungs[^1]) rungs.Add(cap);   // the panel's native top (e.g. 144, 165)
+
+            FpsOptions.Clear();
+            foreach (int fps in rungs) FpsOptions.Add(new FpsOption(fps.ToString(), fps, FpsTier(fps)));
+            FpsOptions.Add(new FpsOption(Localizer.Get("Option_Custom"), 0));
+
+            FpsOption? pick = FpsOptions.FirstOrDefault(f => f.Value == prev);
+            if (pick == null && prev > 0)
+                pick = FpsOptions.Where(f => f.Value > 0)
+                                 .OrderBy(f => Math.Abs(f.Value - Math.Min(prev, cap)))
+                                 .First();
+            SelectedFps = pick ?? FpsOptions.FirstOrDefault(f => f.Value == 30) ?? FpsOptions[0];
+
+            if (CustomFps > cap) CustomFps = cap;
+        }
+        finally
+        {
+            _isInitializing = wasInitializing;
+        }
+    }
+
+    // ───────────── Intensive-quality tiers + warning (Medal-style) ─────────────
+    // We DON'T block high settings — we colour them by "intensity" and show a one-time disclaimer,
+    // like Medal. Tier 0 = normal, 1 = caution (amber), 2 = extreme (red). Resolution above 1080p
+    // and bitrate above ~25 Mbps / fps above 60 are the thresholds Medal calls out.
+
+    private static int FpsTier(int fps) => fps > 120 ? 2 : fps > 60 ? 1 : 0;
+    private static int BitrateTier(int mbps) => mbps > 50 ? 2 : mbps > 30 ? 1 : 0;
+    private static int ResolutionTier(int height) => height > 1440 ? 2 : height > 1080 ? 1 : 0;
+
+    /// <summary>True when the current selection is heavy enough to warrant the disclaimer.</summary>
+    private bool IsIntensiveSelection
+    {
+        get
+        {
+            if (EffectiveFps > 60 || EffectiveBitrateKbps > 25_000) return true;
+            int h = SelectedResolution?.TargetHeight ?? 0;
+            if (h == 0) h = (int)(SelectedMonitor?.Height ?? 0);   // Native → the monitor's own height
+            return h > 1080;
+        }
+    }
+
+    /// <summary>Shows the intensive-quality disclaimer overlay (once per session) when a heavy option
+    /// is chosen — bound to <c>IsVisible</c> in the view.</summary>
+    [ObservableProperty]
+    private bool _showIntensiveWarning;
+
+    private bool _intensiveAcknowledged;
+
+    private void MaybeWarnIntensive()
+    {
+        if (_isInitializing || _intensiveAcknowledged) return;
+        if (IsIntensiveSelection) ShowIntensiveWarning = true;
+    }
+
+    /// <summary>"I understand" — dismiss and don't nag again this session.</summary>
+    public void AcknowledgeIntensive()
+    {
+        _intensiveAcknowledged = true;
+        ShowIntensiveWarning = false;
+    }
+
+    // Disclaimer text lives here (not in the 19 language dictionaries) — Ukrainian + English, with
+    // English as the fallback for every other UI language. Refreshed on a language switch.
+    private bool IsUk => SelectedLanguage?.Code == "uk";
+    public string IntensiveWarnTitle => IsUk ? "Увага: інтенсивні налаштування якості" : "Warning: Intensive Quality Options";
+    public string IntensiveWarnSummary => IsUk
+        ? "Обрані налаштування перевищують: 60 FPS / 25 Мбіт/с / 1080p."
+        : "Your selected quality options exceed: 60 FPS / 25 Mbps / 1080p.";
+    public string IntensiveWarnBody => IsUk
+        ? "• Якщо твоя система не потужна, кліпи можуть бути смикані (choppy).\n• При публікації відео все одно стискається — оригінал лишається на ПК.\n• Вищі налаштування ≠ кращі кліпи: плавний Full HD кращий за смиканий QHD.\n\nРекомендовано вмикати це лише якщо твоя відеокарта це тягне і ти знаєш, що робиш."
+        : "• Unless your machine is powerful, your clips may be choppy.\n• Clips are compressed when you publish them — the original stays on your PC.\n• Higher settings don't always mean better clips: a smooth Full HD clip beats a choppy QHD one.\n\nUse these only if your graphics card can handle them and you know what you're doing.";
+    public string IntensiveWarnOk => IsUk ? "Зрозуміло" : "I understand";
+
+    /// <summary>Rebuilds the resolution list capped to the selected monitor's native height — you can't
+    /// capture above native (the engine only downscales), the same honesty as the FPS cap — with the
+    /// high outputs (1440p/4K) coloured by tier. They only appear on a monitor that can supply them.</summary>
+    private void RebuildResolutionOptions()
+    {
+        bool wasInitializing = _isInitializing;
+        _isInitializing = true;
+        try
+        {
+            int prev = SelectedResolution?.TargetHeight ?? 0;
+            int native = (int)(SelectedMonitor?.Height
+                               ?? Monitors.FirstOrDefault(m => m.IsPrimary)?.Height ?? 1080);
+
+            ResolutionOptions.Clear();
+            ResolutionOptions.Add(new ResolutionOption(Localizer.Get("Option_Native"), 0, ResolutionTier(native)));
+            foreach (int h in new[] { 2160, 1440, 1080, 720 })
+                if (h <= native)
+                    ResolutionOptions.Add(new ResolutionOption(ResolutionLabel(h), h, ResolutionTier(h)));
+
+            SelectedResolution = ResolutionOptions.FirstOrDefault(r => r.TargetHeight == prev)
+                                 ?? ResolutionOptions[0];
+        }
+        finally
+        {
+            _isInitializing = wasInitializing;
+        }
+    }
+
+    private static string ResolutionLabel(int h) => h switch
+    {
+        2160 => "2160p (4K)",
+        1440 => "1440p (QHD)",
+        _ => $"{h}p",
+    };
 
     // ───────────── Output File Format ─────────────
 
@@ -234,6 +390,7 @@ public partial class SettingsViewModel : ViewModelBase
     partial void OnSelectedResolutionChanged(ResolutionOption value)
     {
         SaveSettings();
+        MaybeWarnIntensive();
     }
 
     // ───────────── Video Codec ─────────────
@@ -295,6 +452,7 @@ public partial class SettingsViewModel : ViewModelBase
     {
         OnPropertyChanged(nameof(IsCustomBitrate));
         SaveSettings();
+        MaybeWarnIntensive();
     }
 
     /// <summary>Custom bitrate in Mbps (used when the "Custom" preset is selected).</summary>
@@ -304,13 +462,21 @@ public partial class SettingsViewModel : ViewModelBase
     partial void OnCustomBitrateMbpsChanged(int value)
     {
         SaveSettings();
+        MaybeWarnIntensive();
     }
 
     public bool IsCustomBitrate => SelectedBitrate.Kbps == 0;
 
+    // Bitrate range. High values are ALLOWED (Medal-style: warn, don't block) but coloured by tier
+    // and gated behind the intensive-quality dialog — the rolling buffer is in RAM, so RAM ≈ bitrate
+    // × bufferSeconds / 8 (100 Mbps × 5 min ≈ 3.75 GB). These are just absolute sanity bounds so a
+    // custom value can't go truly insane (the old code allowed 300).
+    private const int MinBitrateMbps = 3;
+    private const int MaxBitrateMbps = 100;
+
     /// <summary>The bitrate that actually goes to the encoder, in kbps.</summary>
     public int EffectiveBitrateKbps =>
-        SelectedBitrate.Kbps > 0 ? SelectedBitrate.Kbps : Math.Clamp(CustomBitrateMbps, 1, 300) * 1000;
+        SelectedBitrate.Kbps > 0 ? SelectedBitrate.Kbps : Math.Clamp(CustomBitrateMbps, MinBitrateMbps, MaxBitrateMbps) * 1000;
 
     /// <summary>
     /// Figma-style bitrate slider (Mbps). Reads the effective bitrate; writing snaps the
@@ -321,12 +487,13 @@ public partial class SettingsViewModel : ViewModelBase
         get => EffectiveBitrateKbps / 1000.0;
         set
         {
-            int mbps = Math.Clamp((int)Math.Round(value), 1, 150);
+            int mbps = Math.Clamp((int)Math.Round(value), MinBitrateMbps, MaxBitrateMbps);
             CustomBitrateMbps = mbps;
             var preset = BitrateOptions.FirstOrDefault(b => b.Kbps == mbps * 1000);
             SelectedBitrate = preset ?? BitrateOptions.First(b => b.Kbps == 0);
             OnPropertyChanged(nameof(BitrateSliderValue));
             OnPropertyChanged(nameof(BitrateDisplayMbps));
+            MaybeWarnIntensive();
         }
     }
 
@@ -656,6 +823,11 @@ public partial class SettingsViewModel : ViewModelBase
         Lag.App.SetLanguage(value.Code);
         RebuildLocalizedOptions();
         SaveSettings();
+        // The intensive-quality disclaimer text is built in-VM (en/uk), so refresh it on a switch.
+        OnPropertyChanged(nameof(IntensiveWarnTitle));
+        OnPropertyChanged(nameof(IntensiveWarnSummary));
+        OnPropertyChanged(nameof(IntensiveWarnBody));
+        OnPropertyChanged(nameof(IntensiveWarnOk));
     }
 
     /// <summary>
@@ -687,14 +859,8 @@ public partial class SettingsViewModel : ViewModelBase
             SelectedBuffer = BufferOptions.FirstOrDefault(b => (int)b.Duration.TotalSeconds == selBufSec)
                              ?? BufferOptions[3];
 
-            // ── Output resolution (default: Native) ──
-            int selRes = SelectedResolution?.TargetHeight ?? 0;
-            ResolutionOptions.Clear();
-            ResolutionOptions.Add(new ResolutionOption(Localizer.Get("Option_Native"), 0));
-            ResolutionOptions.Add(new ResolutionOption("1080p", 1080));
-            ResolutionOptions.Add(new ResolutionOption("720p", 720));
-            SelectedResolution = ResolutionOptions.FirstOrDefault(r => r.TargetHeight == selRes)
-                                 ?? ResolutionOptions[0];
+            // ── Output resolution (default: Native; capped to the monitor, coloured by tier) ──
+            RebuildResolutionOptions();
 
             // ── Codec (default: Auto) ──
             string selCodec = SelectedCodec?.EncoderId ?? "";
@@ -706,21 +872,17 @@ public partial class SettingsViewModel : ViewModelBase
             CodecOptions.Add(new CodecOption("x264 (CPU)", "obs_x264"));
             SelectedCodec = CodecOptions.FirstOrDefault(c => c.EncoderId == selCodec) ?? CodecOptions[0];
 
-            // ── Bitrate (default: 20 Mbps) ──
+            // ── Bitrate (default: 20 Mbps; Medal-style range, high values coloured by tier) ──
             int selKbps = SelectedBitrate?.Kbps ?? 20000;
             BitrateOptions.Clear();
-            foreach (int kbps in new[] { 10000, 20000, 30000, 50000, 80000, 100000 })
-                BitrateOptions.Add(new BitrateOption($"{kbps / 1000} Mbps", kbps));
+            foreach (int kbps in new[] { 3000, 5000, 7000, 10000, 15000, 20000, 25000, 30000, 50000, 70000, 100000 })
+                BitrateOptions.Add(new BitrateOption($"{kbps / 1000} Mbps", kbps, BitrateTier(kbps / 1000)));
             BitrateOptions.Add(new BitrateOption(Localizer.Get("Option_Custom"), 0));
-            SelectedBitrate = BitrateOptions.FirstOrDefault(b => b.Kbps == selKbps) ?? BitrateOptions[2];
+            SelectedBitrate = BitrateOptions.FirstOrDefault(b => b.Kbps == selKbps)
+                              ?? BitrateOptions.FirstOrDefault(b => b.Kbps == 20000) ?? BitrateOptions[0];
 
-            // ── FPS (default: 30) ──
-            int selFps = SelectedFps?.Value ?? 30;
-            FpsOptions.Clear();
-            foreach (int fps in new[] { 24, 30, 60, 120, 240, 360 })
-                FpsOptions.Add(new FpsOption(fps.ToString(), fps));
-            FpsOptions.Add(new FpsOption(Localizer.Get("Option_Custom"), 0));
-            SelectedFps = FpsOptions.FirstOrDefault(f => f.Value == selFps) ?? FpsOptions[1];
+            // ── FPS (default: 30; rungs capped to the selected monitor's refresh rate) ──
+            RebuildFpsOptions();
         }
         finally
         {
@@ -1098,17 +1260,19 @@ public partial class SettingsViewModel : ViewModelBase
 
 
             LibraryPath = settings.LibraryPath ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyVideos), "Lag");
-            // FPS: match a preset, otherwise restore as "Custom".
+            // FPS: clamp to this monitor's refresh (the file may come from a faster-panel machine),
+            // then match a preset, otherwise restore as "Custom".
             if (settings.FrameRate > 0)
             {
-                var fpsPreset = FpsOptions.FirstOrDefault(f => f.Value == settings.FrameRate);
+                int clamped = Math.Clamp(settings.FrameRate, 1, CurrentRefreshCap());
+                var fpsPreset = FpsOptions.FirstOrDefault(f => f.Value == clamped);
                 if (fpsPreset != null)
                 {
                     SelectedFps = fpsPreset;
                 }
                 else
                 {
-                    CustomFps = Math.Clamp(settings.FrameRate, 1, 1000);
+                    CustomFps = clamped;
                     SelectedFps = FpsOptions.First(f => f.Value == 0); // Custom
                 }
             }
@@ -1133,7 +1297,7 @@ public partial class SettingsViewModel : ViewModelBase
                 }
                 else
                 {
-                    CustomBitrateMbps = Math.Clamp(settings.BitrateKbps / 1000, 1, 300);
+                    CustomBitrateMbps = Math.Clamp(settings.BitrateKbps / 1000, MinBitrateMbps, MaxBitrateMbps);
                     SelectedBitrate = BitrateOptions.First(b => b.Kbps == 0); // Custom
                 }
             }
@@ -1311,8 +1475,9 @@ public record LanguageOption(string Code, string Display)
     public override string ToString() => Display;
 }
 
-/// <summary>Output resolution preset (TargetHeight = 0 means native screen resolution).</summary>
-public record ResolutionOption(string Display, int TargetHeight)
+/// <summary>Output resolution preset (TargetHeight = 0 means native screen resolution).
+/// Tier: 0 = normal, 1 = caution (amber), 2 = extreme (red) — drives the Medal-style colouring.</summary>
+public record ResolutionOption(string Display, int TargetHeight, int Tier = 0)
 {
     public override string ToString() => Display;
 }
@@ -1329,14 +1494,14 @@ public record StorageLimitOption(int Gb)
     public override string ToString() => $"{Gb} GB";
 }
 
-/// <summary>Video bitrate preset (Kbps = 0 means "Custom").</summary>
-public record BitrateOption(string Display, int Kbps)
+/// <summary>Video bitrate preset (Kbps = 0 means "Custom"). Tier drives Medal-style colouring.</summary>
+public record BitrateOption(string Display, int Kbps, int Tier = 0)
 {
     public override string ToString() => Display;
 }
 
-/// <summary>Frame-rate preset (Value = 0 means "Custom").</summary>
-public record FpsOption(string Display, int Value)
+/// <summary>Frame-rate preset (Value = 0 means "Custom"). Tier drives Medal-style colouring.</summary>
+public record FpsOption(string Display, int Value, int Tier = 0)
 {
     public override string ToString() => Display;
 }

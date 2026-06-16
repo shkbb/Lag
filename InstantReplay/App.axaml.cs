@@ -275,13 +275,21 @@ public class App : Application
 
     private void TrayIcon_ExitClicked(object? sender, EventArgs e)
     {
-        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        // The window is already hidden in the tray, so there's nothing to visually close — just tear
+        // down and make sure the process actually dies. libVLC (MediaPlayer.Stop / LibVLC.Dispose)
+        // and the native encode/capture/audio subsystems can block on Dispose or keep unmanaged
+        // threads alive (the 120 fps render-timer thread too); a plain Shutdown() therefore left the
+        // process lingering in the background. So a background watchdog force-terminates after a
+        // short grace period no matter what, while we run the normal teardown on the UI thread
+        // (where the DispatcherTimers expect to be stopped). Whichever finishes first ends the app.
+        new Thread(() =>
         {
-            // Set ShutdownMode to OnExplicitShutdown to bypass our Closing hide logic
-            desktop.ShutdownMode = Avalonia.Controls.ShutdownMode.OnExplicitShutdown;
-            
-            // Dispose everything properly through DI container if needed, though ShutdownRequested handles it
-            desktop.Shutdown();
-        }
+            Thread.Sleep(2500);
+            Environment.Exit(0);
+        })
+        { IsBackground = true, Name = "ExitWatchdog" }.Start();
+
+        try { _serviceProvider?.Dispose(); } catch { /* never let a Dispose fault block exit */ }
+        Environment.Exit(0);
     }
 }

@@ -33,4 +33,10 @@ public partial class SettingsView : UserControl
     {
         if (Vm != null) Vm.AudioModeIndex = TagToInt(sender);
     }
+
+    /// <summary>"I understand" on the intensive-quality disclaimer — dismiss for the session.</summary>
+    private void OnIntensiveUnderstood(object? sender, RoutedEventArgs e)
+    {
+        Vm?.AcknowledgeIntensive();
+    }
 }

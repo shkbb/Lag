@@ -209,6 +209,7 @@
     <!-- Extra UI converters for the Figma design -->
     <core:EqualsConverter x:Key="Eq" />
     <core:StringToUpperConverter x:Key="Upper" />
+    <core:IntensityToBrushConverter x:Key="Intensity" />
 
     <!-- Fluent ToggleSwitch recolored to the design (cyan pill, white knob) -->
     <SolidColorBrush x:Key="ToggleSwitchFillOn">#22D3EE</SolidColorBrush>

@@ -146,9 +146,10 @@ public sealed partial class HardwareDetector
     /// <summary>
     /// Represents an available display monitor and its unscaled native render bounds.
     /// </summary>
-    public record MonitorInfo(int Index, string DeviceName, uint Width, uint Height, bool IsPrimary)
+    public record MonitorInfo(int Index, string DeviceName, uint Width, uint Height, bool IsPrimary, uint RefreshRate = 0)
     {
-        public override string ToString() => $"{DeviceName} ({Width}x{Height}){(IsPrimary ? " [Primary]" : "")}";
+        public override string ToString() =>
+            $"{DeviceName} ({Width}x{Height}{(RefreshRate > 0 ? $" @{RefreshRate}Hz" : "")}){(IsPrimary ? " [Primary]" : "")}";
     }
 
     public IReadOnlyList<MonitorInfo> GetAvailableMonitors()
@@ -182,17 +183,71 @@ public sealed partial class HardwareDetector
                     uint height = (uint)(info.rcMonitor.Bottom - info.rcMonitor.Top);
                     bool isPrimary = (info.dwFlags & MONITORINFOF_PRIMARY) != 0;
                     string name = new string(info.szDevice).TrimEnd('\0');
+                    uint refresh = QueryRefreshRate(name);
 
-                    monitors.Add(new MonitorInfo(monitors.Count, name, width, height, isPrimary));
+                    monitors.Add(new MonitorInfo(monitors.Count, name, width, height, isPrimary, refresh));
                 }
                 return true;
             }, IntPtr.Zero);
+    }
+
+    /// <summary>Current refresh rate (Hz) of a display by its adapter device name (\\.\DISPLAYn).
+    /// 0 when it can't be read.</summary>
+    private static uint QueryRefreshRate(string deviceName)
+    {
+        var dm = new DEVMODE();
+        dm.dmSize = (short)Marshal.SizeOf(typeof(DEVMODE));
+        if (EnumDisplaySettings(deviceName, ENUM_CURRENT_SETTINGS, ref dm) && dm.dmDisplayFrequency > 1)
+            return (uint)dm.dmDisplayFrequency;
+        return 0;
     }
 
     private delegate bool MonitorEnumDelegate(IntPtr hMonitor, IntPtr hdcMonitor, ref RECT lprcMonitor, IntPtr dwData);
 
     [DllImport("user32.dll")]
     private static extern bool EnumDisplayMonitors(IntPtr hdc, IntPtr lprcClip, MonitorEnumDelegate lpfnEnum, IntPtr dwData);
+
+    private const int ENUM_CURRENT_SETTINGS = -1;
+
+    [DllImport("user32.dll", CharSet = CharSet.Auto)]
+    private static extern bool EnumDisplaySettings(string lpszDeviceName, int iModeNum, ref DEVMODE lpDevMode);
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+    private struct DEVMODE
+    {
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
+        public string dmDeviceName;
+        public short dmSpecVersion;
+        public short dmDriverVersion;
+        public short dmSize;
+        public short dmDriverExtra;
+        public int dmFields;
+        public int dmPositionX;
+        public int dmPositionY;
+        public int dmDisplayOrientation;
+        public int dmDisplayFixedOutput;
+        public short dmColor;
+        public short dmDuplex;
+        public short dmYResolution;
+        public short dmTTOption;
+        public short dmCollate;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
+        public string dmFormName;
+        public short dmLogPixels;
+        public int dmBitsPerPel;
+        public int dmPelsWidth;
+        public int dmPelsHeight;
+        public int dmDisplayFlags;
+        public int dmDisplayFrequency;
+        public int dmICMMethod;
+        public int dmICMIntent;
+        public int dmMediaType;
+        public int dmDitherType;
+        public int dmReserved1;
+        public int dmReserved2;
+        public int dmPanningWidth;
+        public int dmPanningHeight;
+    }
 
     [DllImport("user32.dll", CharSet = CharSet.Auto)]
     private static extern bool GetMonitorInfo(IntPtr hMonitor, ref MONITORINFOEX lpmi);
