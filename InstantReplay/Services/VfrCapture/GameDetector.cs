@@ -136,6 +136,27 @@ public sealed class GameDetector
         return best;
     }
 
+    /// <summary>Exe names (with ".exe") of EVERY window that currently qualifies as a game. Used to
+    /// keep games out of the per-app audio picker — a game's sound belongs to the dedicated "game
+    /// audio" row, not a separate app entry. Reuses the exact same classification as recording, so
+    /// it's never a hand-maintained list of "these two games".</summary>
+    public HashSet<string> RunningGameExes(string? monitorDeviceId)
+    {
+        var games = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        IntPtr foreground = GetForegroundWindow();
+        _gpu.Sample();
+        _steamGameRunning = SteamGameRunning();
+
+        EnumWindows((hwnd, _) =>
+        {
+            var c = Evaluate(hwnd, monitorDeviceId, foreground);
+            if (c != null) games.Add(c.Exe);
+            return true;
+        }, IntPtr.Zero);
+
+        return games;
+    }
+
     /// <summary>Scores a single window. Returns null if it isn't a recordable game.</summary>
     public GameCandidate? Evaluate(IntPtr hwnd, string? monitorDeviceId, IntPtr foreground)
     {

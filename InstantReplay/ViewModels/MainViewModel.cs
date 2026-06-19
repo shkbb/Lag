@@ -80,6 +80,34 @@ public partial class MainViewModel : ViewModelBase
         BufferStatus = "0:00";
     }
 
+    /// <summary>Refreshes the "now capturing X" indicator from the recorder's current target.</summary>
+    private void UpdateCaptureTarget()
+    {
+        var t = _engine.CurrentTarget;
+        if (t is null) { HasCaptureTarget = false; return; }
+
+        CaptureTargetIsGame = t.Value.IsGame;
+        CaptureTargetName = t.Value.IsGame && !string.IsNullOrWhiteSpace(t.Value.Name)
+            ? t.Value.Name
+            : DesktopLabel();
+        HasCaptureTarget = true;
+    }
+
+    private string DesktopLabel()
+    {
+        string code = Settings?.SelectedLanguage?.Code ?? "en";
+        return DesktopLabels.TryGetValue(code, out var s) ? s : DesktopLabels["en"];
+    }
+
+    private static readonly Dictionary<string, string> DesktopLabels = new()
+    {
+        ["en"] = "Desktop", ["uk"] = "Робочий стіл", ["de"] = "Desktop", ["fr"] = "Bureau",
+        ["be"] = "Працоўны стол", ["lt"] = "Darbalaukis", ["et"] = "Töölaud", ["lv"] = "Darbvirsma",
+        ["fi"] = "Työpöytä", ["sv"] = "Skrivbord", ["no"] = "Skrivebord", ["da"] = "Skrivebord",
+        ["nl"] = "Bureaublad", ["it"] = "Desktop", ["es"] = "Escritorio", ["pt"] = "Ambiente de trabalho",
+        ["ja"] = "デスクトップ",
+    };
+
     /// <summary>Whether a replay save is currently in progress.</summary>
     [ObservableProperty]
     private bool _isSaving;
@@ -91,6 +119,18 @@ public partial class MainViewModel : ViewModelBase
     /// </summary>
     [ObservableProperty]
     private bool _isFullscreen;
+
+    /// <summary>True while something is actively being captured — shows the sidebar "recording X" pill.</summary>
+    [ObservableProperty]
+    private bool _hasCaptureTarget;
+
+    /// <summary>Whether the current target is a game (vs the desktop) — picks the pill's icon.</summary>
+    [ObservableProperty]
+    private bool _captureTargetIsGame;
+
+    /// <summary>What's being captured: the game's friendly name, or the localized "Desktop".</summary>
+    [ObservableProperty]
+    private string _captureTargetName = "";
 
     public MainViewModel(
         IReplayRecorder engine,
@@ -126,6 +166,15 @@ public partial class MainViewModel : ViewModelBase
             // Play the custom "replay saved" sound (replaces the old system beep).
             PlaySaveSound();
         };
+
+        // Live "now capturing X" indicator: the engine reports its target (game/desktop) as it locks
+        // on and clears it on teardown. Marshal to the UI thread (the event fires on a timer thread).
+        _engine.CaptureTargetChanged += (_, _) =>
+            Avalonia.Threading.Dispatcher.UIThread.Post(UpdateCaptureTarget);
+
+        // Load the library once at startup so the Player (which shares the Library's clip list) shows
+        // replays/screenshots even when opened directly, without visiting the Library tab first.
+        _ = Library.RefreshCommand.ExecuteAsync(null);
 
         // Global hotkey → save replay. Ignored while the user is REBINDING keys in
         // Settings (and briefly after) — otherwise the combo being typed fires instantly.

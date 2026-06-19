@@ -815,9 +815,50 @@
     <Setter Property="Background" Value="#1AFFFFFF" />
   </Style>
 
-  <!-- ═══════════════ ScrollBar (slim) ═══════════════ -->
+  <!-- ═══════════════ ScrollBar (custom slim: no track line; thumb only on hover) ═══════════════ -->
+  <!-- Fluent's vertical scrollbar left a persistent grey track line on the right of scroll panels
+       (AllowAutoHide + transparent background didn't remove it — it's baked into its template). A
+       minimal custom template guarantees it's gone: a transparent track and a thin thumb that's
+       invisible at rest and fades in only when you hover the edge or drag it. -->
+  <Style Selector="ScrollViewer">
+    <Setter Property="AllowAutoHide" Value="True" />
+  </Style>
   <Style Selector="ScrollBar:vertical">
-    <Setter Property="Width" Value="8" />
+    <Setter Property="Width" Value="10" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Background="Transparent">
+          <Track Name="PART_Track" Orientation="Vertical" IsDirectionReversed="True"
+                 Minimum="{TemplateBinding Minimum}"
+                 Maximum="{TemplateBinding Maximum}"
+                 Value="{TemplateBinding Value, Mode=TwoWay}"
+                 ViewportSize="{TemplateBinding ViewportSize}">
+            <Track.Thumb>
+              <Thumb Width="6" MinHeight="28" HorizontalAlignment="Center">
+                <Thumb.Template>
+                  <ControlTemplate>
+                    <Border Background="{TemplateBinding Background}" CornerRadius="3" />
+                  </ControlTemplate>
+                </Thumb.Template>
+              </Thumb>
+            </Track.Thumb>
+          </Track>
+        </Border>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+  <Style Selector="ScrollBar:vertical /template/ Thumb">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Transitions">
+      <Transitions><BrushTransition Property="Background" Duration="0:0:0.15" /></Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="ScrollBar:vertical:pointerover /template/ Thumb">
+    <Setter Property="Background" Value="#59FFFFFF" />
+  </Style>
+  <Style Selector="ScrollBar:vertical /template/ Thumb:pressed">
+    <Setter Property="Background" Value="#8CFFFFFF" />
   </Style>
 
   <!-- ═══════════════ ProgressBar (sidebar buffer track) ═══════════════ -->

@@ -87,6 +87,23 @@
                    FontSize="11" Foreground="{StaticResource Fg3Brush}"
                    HorizontalAlignment="Center" />
 
+        <!-- Live capture indicator: what's being recorded right now (game / desktop) -->
+        <Border DockPanel.Dock="Top" Margin="0,14,0,0" Padding="11,8"
+                Background="{StaticResource SurfaceBrush}" CornerRadius="8"
+                IsVisible="{Binding HasCaptureTarget}">
+          <StackPanel Orientation="Horizontal" Spacing="9" VerticalAlignment="Center">
+            <mi:MaterialIcon Width="17" Height="17" VerticalAlignment="Center"
+                             Foreground="{StaticResource AccentBrush}"
+                             Kind="Controller" IsVisible="{Binding CaptureTargetIsGame}" />
+            <mi:MaterialIcon Width="17" Height="17" VerticalAlignment="Center"
+                             Foreground="{StaticResource AccentBrush}"
+                             Kind="Monitor" IsVisible="{Binding !CaptureTargetIsGame}" />
+            <TextBlock Text="{Binding CaptureTargetName}" FontSize="12.5" FontWeight="Medium"
+                       Foreground="{StaticResource Fg1Brush}" VerticalAlignment="Center"
+                       TextTrimming="CharacterEllipsis" MaxWidth="150" />
+          </StackPanel>
+        </Border>
+
         <!-- Navigation -->
         <StackPanel DockPanel.Dock="Top" Margin="0,26,0,0" Spacing="2">
           <Button x:Name="NavSettings" Classes="nav"

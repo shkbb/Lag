@@ -1,6 +1,7 @@
 using System;
 using System.Runtime.InteropServices;
 using Windows.Foundation;
+using Windows.Foundation.Metadata;
 using Windows.Graphics;
 using Windows.Graphics.Capture;
 using Windows.Graphics.DirectX;
@@ -95,10 +96,17 @@ public sealed class WgcCaptureSource : IDisposable
         // Kill the yellow WGC capture border (Win11 21H2+, build 22000). Guarded so it no-ops on
         // Win10 — exactly the "WinRT borderless support check" Medal does before disabling its
         // border. WGC's own frame rate is already bounded by the engine's per-frame MaxFps skip.
-        if (OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000))
+        // The yellow capture border's toggle (IsBorderRequired) shipped on Win11 22000 but was later
+        // backported to Windows 10 22H2 — so FEATURE-DETECT the property instead of version-gating on
+        // 22000, which wrongly left the border ON for Win10 users (the "yellow lines" friends saw).
+        if (ApiInformation.IsPropertyPresent("Windows.Graphics.Capture.GraphicsCaptureSession", "IsBorderRequired"))
         {
             TrySet(() => _session.IsBorderRequired = false);
             Console.WriteLine("[WgcCaptureSource] disabled WinRT capture border.");
+        }
+        else
+        {
+            Console.WriteLine("[WgcCaptureSource] capture-border toggle not available on this OS build.");
         }
 
         // MinUpdateInterval (Win11 24H2, build 26100). Medal sets this explicitly; doing so appears

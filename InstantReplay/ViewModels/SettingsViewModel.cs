@@ -312,17 +312,87 @@ public partial class SettingsViewModel : ViewModelBase
         ShowIntensiveWarning = false;
     }
 
-    // Disclaimer text lives here (not in the 19 language dictionaries) — Ukrainian + English, with
-    // English as the fallback for every other UI language. Refreshed on a language switch.
-    private bool IsUk => SelectedLanguage?.Code == "uk";
-    public string IntensiveWarnTitle => IsUk ? "Увага: інтенсивні налаштування якості" : "Warning: Intensive Quality Options";
-    public string IntensiveWarnSummary => IsUk
-        ? "Обрані налаштування перевищують: 60 FPS / 25 Мбіт/с / 1080p."
-        : "Your selected quality options exceed: 60 FPS / 25 Mbps / 1080p.";
-    public string IntensiveWarnBody => IsUk
-        ? "• Якщо твоя система не потужна, кліпи можуть бути смикані (choppy).\n• При публікації відео все одно стискається — оригінал лишається на ПК.\n• Вищі налаштування ≠ кращі кліпи: плавний Full HD кращий за смиканий QHD.\n\nРекомендовано вмикати це лише якщо твоя відеокарта це тягне і ти знаєш, що робиш."
-        : "• Unless your machine is powerful, your clips may be choppy.\n• Clips are compressed when you publish them — the original stays on your PC.\n• Higher settings don't always mean better clips: a smooth Full HD clip beats a choppy QHD one.\n\nUse these only if your graphics card can handle them and you know what you're doing.";
-    public string IntensiveWarnOk => IsUk ? "Зрозуміло" : "I understand";
+    // Intensive-quality disclaimer text — kept here (not in the language .axaml dicts) so all UI
+    // languages live in one place. Falls back to English for any code not listed.
+    private (string Title, string Summary, string Body, string Ok) IntensiveT =>
+        IntensiveTexts.TryGetValue(SelectedLanguage?.Code ?? "en", out var t) ? t : IntensiveTexts["en"];
+
+    public string IntensiveWarnTitle => IntensiveT.Title;
+    public string IntensiveWarnSummary => IntensiveT.Summary;
+    public string IntensiveWarnBody => IntensiveT.Body;
+    public string IntensiveWarnOk => IntensiveT.Ok;
+
+    private static readonly Dictionary<string, (string Title, string Summary, string Body, string Ok)> IntensiveTexts = new()
+    {
+        ["en"] = ("Warning: Intensive Quality Options",
+                  "Your selected quality options exceed: 60 FPS / 25 Mbps / 1080p.",
+                  "• Unless your machine is powerful, your clips may be choppy.\n• Clips are compressed when you publish them — the original stays on your PC.\n• Higher settings don't always mean better clips: a smooth Full HD clip beats a choppy QHD one.\n\nUse these only if your graphics card can handle them and you know what you're doing.",
+                  "I understand"),
+        ["uk"] = ("Увага: інтенсивні налаштування якості",
+                  "Обрані налаштування перевищують: 60 FPS / 25 Мбіт/с / 1080p.",
+                  "• Якщо твоя система не потужна, кліпи можуть бути смикані (choppy).\n• При публікації відео все одно стискається — оригінал лишається на ПК.\n• Вищі налаштування ≠ кращі кліпи: плавний Full HD кращий за смиканий QHD.\n\nРекомендовано вмикати це лише якщо твоя відеокарта це тягне і ти знаєш, що робиш.",
+                  "Зрозуміло"),
+        ["de"] = ("Warnung: Intensive Qualitätseinstellungen",
+                  "Deine gewählten Einstellungen überschreiten: 60 FPS / 25 Mbps / 1080p.",
+                  "• Wenn dein PC nicht leistungsstark ist, können die Clips ruckeln.\n• Beim Veröffentlichen werden Videos ohnehin komprimiert — das Original bleibt auf deinem PC.\n• Höhere Einstellungen bedeuten nicht immer bessere Clips: ein flüssiger Full-HD-Clip ist besser als ein ruckelnder QHD-Clip.\n\nNutze diese Einstellungen nur, wenn deine Grafikkarte das schafft und du weißt, was du tust.",
+                  "Verstanden"),
+        ["fr"] = ("Attention : options de qualité intensives",
+                  "Les options choisies dépassent : 60 FPS / 25 Mbps / 1080p.",
+                  "• Si ton PC n'est pas puissant, tes clips risquent de saccader.\n• Les vidéos sont de toute façon compressées à la publication — l'original reste sur ton PC.\n• Des réglages plus élevés ne donnent pas toujours de meilleurs clips : un clip Full HD fluide vaut mieux qu'un QHD saccadé.\n\nN'utilise ces réglages que si ta carte graphique le permet et si tu sais ce que tu fais.",
+                  "J'ai compris"),
+        ["be"] = ("Увага: інтэнсіўныя налады якасці",
+                  "Абраныя налады перавышаюць: 60 FPS / 25 Мбіт/с / 1080p.",
+                  "• Калі твая сістэма не магутная, кліпы могуць тузацца.\n• Пры публікацыі відэа ўсё роўна сціскаецца — арыгінал застаецца на ПК.\n• Вышэйшыя налады ≠ лепшыя кліпы: плыўны Full HD лепшы за тузаны QHD.\n\nРэкамендуецца ўключаць гэта толькі калі твая відэакарта гэта цягне і ты ведаеш, што робіш.",
+                  "Зразумела"),
+        ["lt"] = ("Įspėjimas: intensyvūs kokybės nustatymai",
+                  "Pasirinkti nustatymai viršija: 60 FPS / 25 Mbps / 1080p.",
+                  "• Jei tavo kompiuteris nėra galingas, klipai gali strigti.\n• Skelbiant vaizdo įrašai vis tiek suspaudžiami — originalas lieka tavo kompiuteryje.\n• Aukštesni nustatymai ne visada reiškia geresnius klipus: sklandus Full HD geriau nei strigantis QHD.\n\nNaudok šiuos nustatymus tik jei tavo vaizdo plokštė juos pajėgia ir žinai, ką darai.",
+                  "Supratau"),
+        ["et"] = ("Hoiatus: intensiivsed kvaliteediseaded",
+                  "Valitud seaded ületavad: 60 FPS / 25 Mbps / 1080p.",
+                  "• Kui su arvuti pole võimas, võivad klipid hakkida.\n• Avaldamisel videod niikuinii pakitakse — originaal jääb su arvutisse.\n• Kõrgemad seaded ei tähenda alati paremaid klippe: sujuv Full HD on parem kui hakkiv QHD.\n\nKasuta neid ainult siis, kui su graafikakaart seda võimaldab ja tead, mida teed.",
+                  "Sain aru"),
+        ["lv"] = ("Brīdinājums: intensīvi kvalitātes iestatījumi",
+                  "Izvēlētie iestatījumi pārsniedz: 60 FPS / 25 Mbps / 1080p.",
+                  "• Ja tavs dators nav jaudīgs, klipi var raustīties.\n• Publicējot video tāpat tiek saspiests — oriģināls paliek tavā datorā.\n• Augstāki iestatījumi ne vienmēr nozīmē labākus klipus: vienmērīgs Full HD ir labāks par raustīgu QHD.\n\nLieto tos tikai tad, ja tava videokarte to spēj un tu zini, ko dari.",
+                  "Sapratu"),
+        ["fi"] = ("Varoitus: raskaat laatuasetukset",
+                  "Valitut asetukset ylittävät: 60 FPS / 25 Mbps / 1080p.",
+                  "• Jos koneesi ei ole tehokas, leikkeet voivat nykiä.\n• Videot pakataan joka tapauksessa julkaistaessa — alkuperäinen säilyy koneellasi.\n• Korkeammat asetukset eivät aina tarkoita parempia leikkeitä: sujuva Full HD on parempi kuin nykivä QHD.\n\nKäytä näitä vain, jos näytönohjaimesi pystyy siihen ja tiedät mitä teet.",
+                  "Selvä"),
+        ["sv"] = ("Varning: intensiva kvalitetsinställningar",
+                  "Dina valda inställningar överstiger: 60 FPS / 25 Mbps / 1080p.",
+                  "• Om din dator inte är kraftfull kan klippen hacka.\n• Videor komprimeras ändå när du publicerar — originalet stannar på din dator.\n• Högre inställningar betyder inte alltid bättre klipp: ett mjukt Full HD-klipp slår ett hackigt QHD.\n\nAnvänd dessa bara om ditt grafikkort klarar det och du vet vad du gör.",
+                  "Jag förstår"),
+        ["no"] = ("Advarsel: intensive kvalitetsinnstillinger",
+                  "De valgte innstillingene overstiger: 60 FPS / 25 Mbps / 1080p.",
+                  "• Hvis maskinen din ikke er kraftig, kan klippene hakke.\n• Videoer komprimeres uansett ved publisering — originalen blir igjen på PC-en.\n• Høyere innstillinger betyr ikke alltid bedre klipp: et jevnt Full HD-klipp er bedre enn et hakkete QHD.\n\nBruk disse bare hvis grafikkortet ditt takler det og du vet hva du gjør.",
+                  "Jeg forstår"),
+        ["da"] = ("Advarsel: intensive kvalitetsindstillinger",
+                  "De valgte indstillinger overstiger: 60 FPS / 25 Mbps / 1080p.",
+                  "• Hvis din computer ikke er kraftig, kan klippene hakke.\n• Videoer komprimeres alligevel ved udgivelse — originalen bliver på din pc.\n• Højere indstillinger betyder ikke altid bedre klip: et jævnt Full HD-klip er bedre end et hakkende QHD.\n\nBrug kun disse, hvis dit grafikkort kan klare det, og du ved, hvad du laver.",
+                  "Jeg forstår"),
+        ["nl"] = ("Waarschuwing: intensieve kwaliteitsinstellingen",
+                  "Je gekozen instellingen overschrijden: 60 FPS / 25 Mbps / 1080p.",
+                  "• Als je pc niet krachtig is, kunnen je clips schokkerig zijn.\n• Video's worden bij het publiceren toch gecomprimeerd — het origineel blijft op je pc.\n• Hogere instellingen betekenen niet altijd betere clips: een vloeiende Full HD-clip is beter dan een schokkerige QHD.\n\nGebruik deze alleen als je videokaart het aankan en je weet wat je doet.",
+                  "Begrepen"),
+        ["it"] = ("Attenzione: opzioni di qualità intensive",
+                  "Le opzioni selezionate superano: 60 FPS / 25 Mbps / 1080p.",
+                  "• Se il tuo PC non è potente, le clip potrebbero scattare.\n• I video vengono comunque compressi alla pubblicazione — l'originale resta sul tuo PC.\n• Impostazioni più alte non significano sempre clip migliori: una clip Full HD fluida è meglio di una QHD a scatti.\n\nUsa queste impostazioni solo se la tua scheda video le regge e sai cosa stai facendo.",
+                  "Ho capito"),
+        ["es"] = ("Advertencia: opciones de calidad intensivas",
+                  "Las opciones elegidas superan: 60 FPS / 25 Mbps / 1080p.",
+                  "• Si tu PC no es potente, los clips pueden ir a tirones.\n• Los vídeos se comprimen igualmente al publicarlos — el original se queda en tu PC.\n• Ajustes más altos no siempre significan mejores clips: un clip Full HD fluido es mejor que uno QHD a tirones.\n\nUsa estos ajustes solo si tu tarjeta gráfica puede con ellos y sabes lo que haces.",
+                  "Entendido"),
+        ["pt"] = ("Aviso: opções de qualidade intensivas",
+                  "As opções escolhidas excedem: 60 FPS / 25 Mbps / 1080p.",
+                  "• Se o teu PC não for potente, os clipes podem ficar com falhas.\n• Os vídeos são comprimidos na publicação de qualquer forma — o original fica no teu PC.\n• Definições mais altas nem sempre significam clipes melhores: um clipe Full HD fluido é melhor que um QHD travado.\n\nUsa estas definições apenas se a tua placa gráfica aguentar e souberes o que estás a fazer.",
+                  "Entendi"),
+        ["ja"] = ("警告：高負荷の画質設定",
+                  "選択した設定は次を超えています：60 FPS / 25 Mbps / 1080p。",
+                  "• PCが高性能でない場合、クリップがカクつくことがあります。\n• 公開時に動画はいずれにせよ圧縮されます。オリジナルはPCに残ります。\n• 設定が高いほど良いクリップとは限りません。滑らかなフルHDはカクついたQHDより優れています。\n\nこれらはグラフィックカードが対応でき、操作を理解している場合のみ使用してください。",
+                  "了解"),
+    };
 
     /// <summary>Rebuilds the resolution list capped to the selected monitor's native height — you can't
     /// capture above native (the engine only downscales), the same honesty as the FPS cap — with the
@@ -541,10 +611,26 @@ public partial class SettingsViewModel : ViewModelBase
 
     private Avalonia.Threading.DispatcherTimer? _audioAppsTimer;
 
-    /// <summary>Kicks off a background scan of apps currently playing audio and merges the result.</summary>
+    // Reuses the recorder's exact game classification to keep games out of the per-app list.
+    private readonly Lag.Services.VfrCapture.GameDetector _audioGameDetector = new();
+
+    /// <summary>Kicks off a background scan of apps currently playing audio and merges the result.
+    /// Any process currently detected as a GAME is dropped — its sound is the dedicated "game audio"
+    /// row, so listing it again as a separate app (cs2, PUBG, …) was double/confusing.</summary>
     private void RefreshAudioAppsNow()
     {
-        _ = Task.Run(AudioSessionService.GetActiveAudioApps).ContinueWith(t =>
+        string? monitorId = SelectedMonitor?.DeviceName;   // read on the UI thread before the scan
+        _ = Task.Run(() =>
+        {
+            var apps = AudioSessionService.GetActiveAudioApps();
+            try
+            {
+                var games = _audioGameDetector.RunningGameExes(monitorId);
+                if (games.Count > 0) apps.RemoveAll(a => games.Contains(a.ExeName));
+            }
+            catch { /* detection is best-effort — never break the picker over it */ }
+            return apps;
+        }).ContinueWith(t =>
         {
             if (t.IsCompletedSuccessfully)
                 Avalonia.Threading.Dispatcher.UIThread.Post(() => MergeAudioApps(t.Result));
@@ -836,6 +922,27 @@ public partial class SettingsViewModel : ViewModelBase
     /// switch we regenerate the items and re-select the entry with the same underlying value.
     /// SaveSettings is suppressed during the churn — selections are value-identical.
     /// </summary>
+    /// <summary>Codec FORMATS this machine can actually encode (probed by EncoderSelector) — Medal-style:
+    /// the user picks the format (H.264 / HEVC / AV1) and the engine auto-selects the best encoder
+    /// (NVENC / AMF / QSV, x264 fallback) for it. Formats with no usable encoder here never appear, so
+    /// e.g. AV1 is hidden on a GPU that can't do it — no confusing dead options.</summary>
+    private static IEnumerable<(string Label, string Value)> AvailableCodecFormats()
+    {
+        var tiers = new HashSet<Lag.Services.VfrCapture.CodecTier>();
+        try
+        {
+            foreach (var e in Lag.Services.VfrCapture.EncoderSelector.Available)
+                tiers.Add(e.Tier);
+        }
+        catch { /* probe unavailable (e.g. FFmpeg not loaded) — fall back to H.264 below */ }
+
+        bool any = false;
+        if (tiers.Contains(Lag.Services.VfrCapture.CodecTier.H264)) { yield return ("H.264", "h264"); any = true; }
+        if (tiers.Contains(Lag.Services.VfrCapture.CodecTier.Hevc)) { yield return ("H.265 (HEVC)", "hevc"); any = true; }
+        if (tiers.Contains(Lag.Services.VfrCapture.CodecTier.Av1)) { yield return ("AV1", "av1"); any = true; }
+        if (!any) yield return ("H.264", "h264");   // safety net — H.264 always encodes (libx264)
+    }
+
     private void RebuildLocalizedOptions()
     {
         bool wasInitializing = _isInitializing;
@@ -862,14 +969,12 @@ public partial class SettingsViewModel : ViewModelBase
             // ── Output resolution (default: Native; capped to the monitor, coloured by tier) ──
             RebuildResolutionOptions();
 
-            // ── Codec (default: Auto) ──
+            // ── Codec (default: Auto; Medal-style FORMAT picker, only what this machine can encode) ──
             string selCodec = SelectedCodec?.EncoderId ?? "";
             CodecOptions.Clear();
             CodecOptions.Add(new CodecOption(Localizer.Get("Option_Auto"), ""));
-            CodecOptions.Add(new CodecOption("NVIDIA NVENC", "ffmpeg_nvenc"));
-            CodecOptions.Add(new CodecOption("AMD AMF", "ffmpeg_amf"));
-            CodecOptions.Add(new CodecOption("Intel QuickSync", "obs_qsv11"));
-            CodecOptions.Add(new CodecOption("x264 (CPU)", "obs_x264"));
+            foreach (var (label, value) in AvailableCodecFormats())
+                CodecOptions.Add(new CodecOption(label, value));
             SelectedCodec = CodecOptions.FirstOrDefault(c => c.EncoderId == selCodec) ?? CodecOptions[0];
 
             // ── Bitrate (default: 20 Mbps; Medal-style range, high values coloured by tier) ──

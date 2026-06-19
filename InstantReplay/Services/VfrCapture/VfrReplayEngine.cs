@@ -101,6 +101,14 @@ public sealed class VfrReplayEngine : IDisposable
     public bool IsRunning => _running;
     public string FriendlyEncoder => _encoderChoice?.FriendlyName ?? "—";
 
+    // What's currently being captured — surfaced to the UI's "now recording X" indicator.
+    public bool TargetActive { get; private set; }
+    public bool TargetIsGame { get; private set; }
+    public string TargetName { get; private set; } = "";
+    public string? TargetExe { get; private set; }
+    /// <summary>Raised (on the lock-timer thread) whenever the capture target changes.</summary>
+    public event Action? TargetChanged;
+
     /// <summary>Diagnostics: frames delivered by WGC and frames actually submitted to the encoder.</summary>
     public long FramesCaptured;
     public long FramesEncoded;
@@ -209,7 +217,7 @@ public sealed class VfrReplayEngine : IDisposable
             if (_lockKind == LockKind.None)
             {
                 Console.WriteLine($"[VfrReplayEngine] Game detected: {cand.GameName} ({cand.Exe}) score={cand.Score} fullscreen={cand.Fullscreen}");
-                LockOnto(cand.Hwnd, cand.Pid, cand.Exe);
+                LockOnto(cand.Hwnd, cand.Pid, cand.Exe, cand.GameName);
             }
             return;
         }
@@ -220,13 +228,14 @@ public sealed class VfrReplayEngine : IDisposable
 
     /// <summary>Lock onto a game/app WINDOW — WGC reads the window's own backbuffer, so it follows
     /// the game through alt-tabs (no source switch) and sees a fullscreen game past independent flip.</summary>
-    private void LockOnto(IntPtr hwnd, uint pid, string exe)
+    private void LockOnto(IntPtr hwnd, uint pid, string exe, string? gameName = null)
     {
         if (!GetWindowRect(hwnd, out var rect)) return;
         int winW = rect.Right - rect.Left, winH = rect.Bottom - rect.Top;
         if (winW < 2 || winH < 2) return;
         var (outW, outH) = OutputDims(winW, winH);
-        StartSession(new WgcCaptureSource(_d3d!, hwnd), outW, outH, LockKind.Game, hwnd, pid, $"game {exe}");
+        StartSession(new WgcCaptureSource(_d3d!, hwnd), outW, outH, LockKind.Game, hwnd, pid, $"game {exe}",
+                     string.IsNullOrWhiteSpace(gameName) ? exe : gameName!, exe);
     }
 
     /// <summary>Lock onto a MONITOR — desktop / "record anything". Captures the whole selected
@@ -241,7 +250,7 @@ public sealed class VfrReplayEngine : IDisposable
         }
         var (outW, outH) = OutputDims(monW, monH);
         StartSession(WgcCaptureSource.ForMonitor(_d3d!, hmon), outW, outH, LockKind.Desktop, IntPtr.Zero, 0,
-                     $"desktop {monName} ({monW}x{monH})");
+                     $"desktop {monName} ({monW}x{monH})", "", null);
     }
 
     /// <summary>Output resolution: downscale to the target height preserving aspect; even dims for NV12.</summary>
@@ -256,7 +265,7 @@ public sealed class VfrReplayEngine : IDisposable
     /// wire the frame callback, lift priority, and begin. <paramref name="hwnd"/>/<paramref name="pid"/>
     /// are 0 for a desktop (monitor) lock.</summary>
     private void StartSession(WgcCaptureSource capture, int outW, int outH, LockKind kind,
-                              IntPtr hwnd, uint pid, string label)
+                              IntPtr hwnd, uint pid, string label, string targetName, string? targetExe)
     {
         try
         {
@@ -276,6 +285,10 @@ public sealed class VfrReplayEngine : IDisposable
                 _lockedPid = pid;
                 _lastEncodedUs = long.MinValue;
                 _startQpc = System.Diagnostics.Stopwatch.GetTimestamp();
+                TargetActive = true;
+                TargetIsGame = kind == LockKind.Game;
+                TargetName = targetName;
+                TargetExe = targetExe;
             }
 
             capture.Start(_options.CaptureCursor, _options.MaxFps);
@@ -289,6 +302,7 @@ public sealed class VfrReplayEngine : IDisposable
 
             StartAudio();
             Console.WriteLine($"[VfrReplayEngine] Locked onto {label} @ {outW}x{outH} (WGC {(kind == LockKind.Desktop ? "monitor" : "window")} capture).");
+            TargetChanged?.Invoke();
         }
         catch (Exception ex)
         {
@@ -531,6 +545,7 @@ public sealed class VfrReplayEngine : IDisposable
 
         WgcCaptureSource? cap; NvencVfrEncoder? enc;
         WasapiAudioSource? aud; List<AudioTrackState> tracks;
+        bool wasActive;
         lock (_gate)
         {
             cap = _capture; enc = _encoder; aud = _audio;
@@ -538,7 +553,10 @@ public sealed class VfrReplayEngine : IDisposable
             _capture = null; _encoder = null; _ring = null;
             _audio = null; _audioTracks.Clear();
             _lockedHwnd = IntPtr.Zero; _lockedPid = 0; _lockKind = LockKind.None;
+            wasActive = TargetActive;
+            TargetActive = false; TargetIsGame = false; TargetName = ""; TargetExe = null;
         }
+        if (wasActive) TargetChanged?.Invoke();
         try { if (cap != null) cap.FrameReady -= OnFrame; } catch { }
         cap?.Dispose();
         enc?.Flush();

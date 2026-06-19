@@ -320,12 +320,16 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
 
         var oldMedia = _mediaPlayer.Media;
         var media = new Media(_libVLC, new Uri(clip.FilePath));
-        // VLC force-resets avcodec-hw=none at the player level when vmem callbacks are
-        // attached, ignoring the LibVLC constructor option. A per-media option outranks
-        // the player variable, so this is the only way to get D3D11VA/NVDEC decoding —
-        // software decode of high-res replays drops to ~2 fps while a game is running.
-        // If d3d11va is unavailable VLC falls back to dxva2, then software, on its own.
-        media.AddOption(":avcodec-hw=d3d11va");
+        // SOFTWARE decode for the player (same as the editor). Two reasons:
+        //   • Hardware (d3d11va) decoder init stalls audio ~1s at the start of every clip (audio waits
+        //     for the HW pipeline to stabilise), and it produced a green screen on a live media swap
+        //     unless we fully Stop() first (which itself re-opened the audio output, delaying sound).
+        //   • The player is used to REVIEW clips, not while a game is hammering the GPU/CPU — the
+        //     "~2 fps software decode" problem only happened under game load. 1080p H.264 (the default)
+        //     decodes far above real-time on the CPU when no game is running.
+        // Net: no green screen (so no Stop() needed → audio output stays warm), and sound starts
+        // immediately. Heavy codecs (AV1/HEVC) on a weak CPU are the only caveat.
+        media.AddOption(":avcodec-hw=none");
         _mediaPlayer.Media = media;
         // The player keeps its own native reference — release ours (and the previous one)
         // so switching clips doesn't leak native Media handles.

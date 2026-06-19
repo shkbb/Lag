@@ -19,9 +19,14 @@ public sealed class VfrRecorderAdapter : IReplayRecorder
     public event EventHandler<string>? ReplaySaved;
     public bool IsRecording => _engine.IsRunning;
 
+    public event EventHandler? CaptureTargetChanged;
+    public CaptureTarget? CurrentTarget =>
+        _engine.TargetActive ? new CaptureTarget(_engine.TargetIsGame, _engine.TargetName, _engine.TargetExe) : null;
+
     public VfrRecorderAdapter()
     {
         _engine.ReplaySaved += (_, path) => ReplaySaved?.Invoke(this, path);
+        _engine.TargetChanged += () => CaptureTargetChanged?.Invoke(this, EventArgs.Empty);
     }
 
     /// <summary>Whether the native engine can run on this machine (WGC + FFmpeg + an encoder).

@@ -3,6 +3,7 @@ using System.ComponentModel;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Threading;
 using Lag.ViewModels;
 
 namespace Lag.Views;
@@ -12,12 +13,18 @@ public partial class PlayerView : UserControl
     private MainViewModel? _mainVm;
     private PlayerViewModel? _playerVm;
 
+    // Fullscreen: hide the mouse cursor after a short idle (like a video player), reveal it on move.
+    private static readonly Cursor HiddenCursor = new(StandardCursorType.None);
+    private readonly DispatcherTimer _cursorIdleTimer = new() { Interval = TimeSpan.FromSeconds(2.5) };
+
     public PlayerView()
     {
         InitializeComponent();
 
         AttachedToVisualTree += OnAttached;
         DetachedFromVisualTree += OnDetached;
+
+        _cursorIdleTimer.Tick += OnCursorIdle;
 
         // Fullscreen: the control bar hides until the cursor approaches the bottom edge,
         // the replays panel — until it approaches the right edge. Listening on the root
@@ -44,8 +51,24 @@ public partial class PlayerView : UserControl
         ReplayPanel.IsHitTestVisible = visible;
     }
 
+    /// <summary>Restores the cursor and (re)arms the idle hide while in fullscreen.</summary>
+    private void WakeCursor()
+    {
+        PlayerArea.Cursor = Cursor.Default;
+        _cursorIdleTimer.Stop();
+        if (_mainVm?.IsFullscreen ?? false) _cursorIdleTimer.Start();
+    }
+
+    private void OnCursorIdle(object? sender, EventArgs e)
+    {
+        _cursorIdleTimer.Stop();
+        if (_mainVm?.IsFullscreen ?? false) PlayerArea.Cursor = HiddenCursor;
+    }
+
     private void OnAreaPointerMoved(object? sender, PointerEventArgs e)
     {
+        WakeCursor();
+
         if (!(_mainVm?.IsFullscreen ?? false))
         {
             SetControlsVisible(true);
@@ -101,6 +124,8 @@ public partial class PlayerView : UserControl
 
     private void OnDetached(object? sender, EventArgs e)
     {
+        _cursorIdleTimer.Stop();
+
         if (_playerVm != null)
         {
             _playerVm.VideoRenderer.BitmapChanged -= OnVideoBitmapChanged;
@@ -185,6 +210,10 @@ public partial class PlayerView : UserControl
         // Leaving it: everything visible again.
         SetControlsVisible(!fs);
         SetReplaysVisible(!fs);
+
+        // Cursor: armed to auto-hide in fullscreen, always shown windowed.
+        if (fs) WakeCursor();
+        else { _cursorIdleTimer.Stop(); PlayerArea.Cursor = Cursor.Default; }
 
         // Pull keyboard focus back to the view so SPACE keeps meaning play/pause.
         Focus();

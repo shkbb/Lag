@@ -35,4 +35,21 @@ public interface IReplayRecorder : IDisposable
 
     /// <summary>Mutes/unmutes the microphone (push-to-talk). No-op if there is no mic source.</summary>
     void SetMicMuted(bool muted);
+
+    /// <summary>What's being captured right now (game/desktop), or null when idle. Default null so
+    /// back-ends that don't report it (OBS) need no changes; the native engine overrides it.</summary>
+    CaptureTarget? CurrentTarget => null;
+
+    /// <summary>Raised when <see cref="CurrentTarget"/> changes. Default no-op for back-ends that
+    /// don't report a target.</summary>
+    event EventHandler? CaptureTargetChanged
+    {
+        add { }
+        remove { }
+    }
 }
+
+/// <summary>The live capture target shown in the UI indicator. <paramref name="IsGame"/> false = a
+/// desktop/monitor capture; <paramref name="Name"/> is the game's friendly name (empty for desktop —
+/// the UI localizes that); <paramref name="Exe"/> is the process exe, for icon lookup.</summary>
+public readonly record struct CaptureTarget(bool IsGame, string Name, string? Exe);
