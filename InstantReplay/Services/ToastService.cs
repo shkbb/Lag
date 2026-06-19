@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.InteropServices;
 using Avalonia;
 using Avalonia.Animation;
 using Avalonia.Controls;
@@ -91,6 +92,16 @@ public static class ToastService
 
             toast.Opened += (_, _) =>
             {
+                // True non-activating overlay: stamp WS_EX_NOACTIVATE | TOOLWINDOW | TOPMOST on the
+                // native window so it can NEVER take foreground — a borderless game keeps running
+                // (ShowActivated=false alone still let Windows briefly foreground it, which yanked
+                // exclusive/borderless games out and minimized them).
+                if (toast.TryGetPlatformHandle()?.Handle is { } hwnd && hwnd != IntPtr.Zero)
+                {
+                    int ex = GetWindowLong(hwnd, GWL_EXSTYLE);
+                    SetWindowLong(hwnd, GWL_EXSTYLE, ex | WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW | WS_EX_TOPMOST);
+                }
+
                 // Pin to the top-right of the primary display's working area.
                 var screen = toast.Screens.Primary ?? toast.Screens.ScreenFromWindow(toast);
                 if (screen != null)
@@ -117,4 +128,15 @@ public static class ToastService
             System.Diagnostics.Debug.WriteLine($"[Toast] failed: {ex.Message}");
         }
     }
+
+    private const int GWL_EXSTYLE = -20;
+    private const int WS_EX_TOPMOST = 0x00000008;
+    private const int WS_EX_TOOLWINDOW = 0x00000080;
+    private const int WS_EX_NOACTIVATE = 0x08000000;
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern int GetWindowLong(IntPtr hWnd, int nIndex);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
 }
