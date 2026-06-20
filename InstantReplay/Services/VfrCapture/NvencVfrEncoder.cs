@@ -262,11 +262,54 @@ public sealed unsafe class NvencVfrEncoder : IDisposable
 
             var data = new byte[_pkt->size];
             Marshal.Copy((IntPtr)_pkt->data, data, 0, _pkt->size);
-            bool key = (_pkt->flags & ffmpeg.AV_PKT_FLAG_KEY) != 0;
+            // FFmpeg/nvenc only flags the FIRST IDR with AV_PKT_FLAG_KEY here — the periodic IDRs it
+            // really emits (every gop_size frames) arrive UNflagged, so the rolling buffer (which trims
+            // on keyframes) saw a single keyframe and never trimmed → clips ran the whole session and
+            // RAM grew unbounded. Detect the real IDRs from the bitstream as a fallback to the flag.
+            // nvenc's AV_PKT_FLAG_KEY proved unreliable on periodic IDRs, so also detect keyframes
+            // straight from the bitstream — otherwise the rolling buffer never trims (saves the whole
+            // session, grows RAM). General for any buffer length / codec, not tied to a fixed duration.
+            bool key = (_pkt->flags & ffmpeg.AV_PKT_FLAG_KEY) != 0
+                       || IsKeyframeBitstream(data, _choice.CodecId);
             long dts = _pkt->dts == ffmpeg.AV_NOPTS_VALUE ? _pkt->pts : _pkt->dts;
             PacketReady?.Invoke(new EncodedPacket(data, _pkt->pts, dts, key));
             ffmpeg.av_packet_unref(_pkt);
         }
+    }
+
+    /// <summary>True if a packet contains a keyframe NAL — H.264 IDR (type 5) or HEVC IRAP (types
+    /// 16–21). Handles BOTH Annex-B (start codes) and length-prefixed (avcC/hvcC) packets, because
+    /// nvenc under-reports AV_PKT_FLAG_KEY on periodic IDRs. AV1/other falls back to the encoder flag.</summary>
+    private static bool IsKeyframeBitstream(byte[] d, AVCodecID codec)
+    {
+        bool h264 = codec == AVCodecID.AV_CODEC_ID_H264;
+        bool hevc = codec == AVCodecID.AV_CODEC_ID_HEVC;
+        if ((!h264 && !hevc) || d.Length < 5) return false;
+        int n = d.Length;
+
+        bool IsKeyNal(int hdr) => h264 ? (hdr & 0x1F) == 5 : (((hdr >> 1) & 0x3F) is >= 16 and <= 21);
+
+        // Annex-B: starts with a 00 00 01 / 00 00 00 01 start code.
+        if (d[0] == 0 && d[1] == 0 && (d[2] == 1 || (d[2] == 0 && d[3] == 1)))
+        {
+            for (int i = 0; i + 4 < n; i++)
+            {
+                if (d[i] != 0 || d[i + 1] != 0 || d[i + 2] != 1) continue;
+                if (IsKeyNal(d[i + 3])) return true;
+                i += 2;
+            }
+            return false;
+        }
+
+        // Length-prefixed (avcC/hvcC) — 4-byte big-endian NAL lengths.
+        for (int pos = 0; pos + 5 <= n;)
+        {
+            long len = ((long)d[pos] << 24) | ((long)d[pos + 1] << 16) | ((long)d[pos + 2] << 8) | d[pos + 3];
+            if (len <= 0 || pos + 4 + len > n) break;
+            if (IsKeyNal(d[pos + 4])) return true;
+            pos += (int)(4 + len);
+        }
+        return false;
     }
 
     /// <summary>Stream parameters (codec id, dimensions, extradata) for the muxer.</summary>

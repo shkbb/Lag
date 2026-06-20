@@ -25,6 +25,16 @@ public static class ToastService
     {
         try
         {
+            // Don't pop a visual overlay over a fullscreen game: ANY topmost window kicks an exclusive
+            // / fullscreen-optimized game out of fullscreen (Windows behaviour — not fixable without an
+            // in-game hook, which we avoid for anti-cheat safety). The save SOUND still plays separately,
+            // so there's still confirmation. The toast still shows on the desktop / windowed / alt-tabbed.
+            if (IsForegroundFullscreen())
+            {
+                Console.WriteLine("[Toast] foreground window is fullscreen — sound-only (skipped visual toast).");
+                return;
+            }
+
             var text = new StackPanel { Spacing = 2, VerticalAlignment = VerticalAlignment.Center };
             text.Children.Add(new TextBlock
             {
@@ -129,14 +139,51 @@ public static class ToastService
         }
     }
 
+    /// <summary>True when the foreground window covers its WHOLE monitor (incl. the taskbar area) —
+    /// i.e. a real fullscreen/borderless game, not just a maximized window (those leave the taskbar).</summary>
+    private static bool IsForegroundFullscreen()
+    {
+        try
+        {
+            IntPtr hwnd = GetForegroundWindow();
+            if (hwnd == IntPtr.Zero || !GetWindowRect(hwnd, out RECT r)) return false;
+
+            IntPtr mon = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+            var mi = new MONITORINFO { cbSize = Marshal.SizeOf<MONITORINFO>() };
+            if (!GetMonitorInfo(mon, ref mi)) return false;
+
+            RECT m = mi.rcMonitor;
+            return r.Left <= m.Left && r.Top <= m.Top && r.Right >= m.Right && r.Bottom >= m.Bottom;
+        }
+        catch { return false; }
+    }
+
     private const int GWL_EXSTYLE = -20;
     private const int WS_EX_TOPMOST = 0x00000008;
     private const int WS_EX_TOOLWINDOW = 0x00000080;
     private const int WS_EX_NOACTIVATE = 0x08000000;
+    private const uint MONITOR_DEFAULTTONEAREST = 2;
 
     [DllImport("user32.dll", SetLastError = true)]
     private static extern int GetWindowLong(IntPtr hWnd, int nIndex);
 
     [DllImport("user32.dll", SetLastError = true)]
     private static extern int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
+
+    [DllImport("user32.dll")] private static extern IntPtr GetForegroundWindow();
+    [DllImport("user32.dll")] private static extern bool GetWindowRect(IntPtr hWnd, out RECT rect);
+    [DllImport("user32.dll")] private static extern IntPtr MonitorFromWindow(IntPtr hWnd, uint flags);
+    [DllImport("user32.dll", CharSet = CharSet.Auto)] private static extern bool GetMonitorInfo(IntPtr hMonitor, ref MONITORINFO info);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct RECT { public int Left, Top, Right, Bottom; }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+    private struct MONITORINFO
+    {
+        public int cbSize;
+        public RECT rcMonitor;
+        public RECT rcWork;
+        public uint dwFlags;
+    }
 }

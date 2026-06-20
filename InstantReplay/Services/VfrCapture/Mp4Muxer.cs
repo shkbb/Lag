@@ -16,9 +16,9 @@ public sealed record StreamSpec(
 
 /// <summary>
 /// Writes buffered video + audio packets to an MP4 with their real, variable timestamps — a true
-/// VFR file like Medal's, not CFR with duplicate frames. Runs on the save (hotkey) thread off the
-/// capture path. No <c>+faststart</c>: it forces a second rewrite of the whole file and we learned
-/// that doubles save latency; local replays don't need it.
+/// VFR file (not CFR with duplicate frames). Runs on the save (hotkey) thread off the capture path.
+/// No <c>+faststart</c>: it forces a second whole-file rewrite that slows every save; local replays
+/// don't need it (the player reads the trailing moov fine).
 /// </summary>
 public static unsafe class Mp4Muxer
 {
