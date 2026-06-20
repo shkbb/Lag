@@ -176,6 +176,15 @@ public partial class MainViewModel : ViewModelBase
         // replays/screenshots even when opened directly, without visiting the Library tab first.
         _ = Library.RefreshCommand.ExecuteAsync(null);
 
+        // Silent auto-update: a few seconds after launch, check GitHub in the background. A newer
+        // version downloads and applies seamlessly on the next exit (previously updates only happened
+        // when the user clicked "Check for updates" manually).
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(TimeSpan.FromSeconds(8));
+            await Settings.AutoUpdateOnStartupAsync();
+        });
+
         // Global hotkey → save replay. Ignored while the user is REBINDING keys in
         // Settings (and briefly after) — otherwise the combo being typed fires instantly.
         _hotkeyManager.HotkeyPressed += (_, _) =>

@@ -1073,6 +1073,31 @@ public partial class SettingsViewModel : ViewModelBase
         }
     }
 
+    /// <summary>Silent auto-update run once at startup (there was no automatic check before — only the
+    /// manual button). Checks GitHub, downloads a newer version in the background, and STAGES it to
+    /// apply the next time the app fully exits — no mid-session restart, no UI. The manual button
+    /// still does an immediate download+restart.</summary>
+    public async Task AutoUpdateOnStartupAsync()
+    {
+        try
+        {
+            var mgr = new UpdateManager(new GithubSource(UpdateRepoUrl, string.Empty, false));
+            if (!mgr.IsInstalled) return;                 // dev / portable build — nothing to update
+
+            var newVersion = await mgr.CheckForUpdatesAsync();
+            if (newVersion == null) return;               // already up to date
+
+            await mgr.DownloadUpdatesAsync(newVersion);
+            // Apply seamlessly when the app next exits; don't relaunch (the user closed it on purpose).
+            mgr.WaitExitThenApplyUpdates(newVersion.TargetFullRelease, silent: true, restart: false);
+            Console.WriteLine($"[AutoUpdate] {newVersion.TargetFullRelease.Version} downloaded — applies on next exit.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[AutoUpdate] check failed: {ex.Message}");
+        }
+    }
+
     public SettingsViewModel(
         Lag.Services.IReplayRecorder engine,
         GlobalHotkeyManager hotkeyManager,

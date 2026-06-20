@@ -93,21 +93,28 @@ public sealed class WgcCaptureSource : IDisposable
         _session = _framePool.CreateCaptureSession(_item);
         TrySet(() => _session.IsCursorCaptureEnabled = captureCursor);
 
-        // Kill the yellow WGC capture border (Win11 21H2+, build 22000). Guarded so it no-ops on
-        // Win10 — exactly the "WinRT borderless support check" Medal does before disabling its
-        // border. WGC's own frame rate is already bounded by the engine's per-frame MaxFps skip.
-        // The yellow capture border's toggle (IsBorderRequired) shipped on Win11 22000 but was later
-        // backported to Windows 10 22H2 — so FEATURE-DETECT the property instead of version-gating on
-        // 22000, which wrongly left the border ON for Win10 users (the "yellow lines" friends saw).
-        if (ApiInformation.IsPropertyPresent("Windows.Graphics.Capture.GraphicsCaptureSession", "IsBorderRequired"))
+        // Kill the yellow WGC capture border. The earlier "just set IsBorderRequired=false" did NOT
+        // remove it on Windows 10 — because the OS keeps drawing the border unless the app first
+        // REQUESTS borderless access. So do both, in order (this is exactly what Medal does — its log
+        // shows "borderless ... requested, allowed"):
+        //   1) GraphicsCaptureAccess.RequestAccessAsync(Borderless) — get permission to hide the border.
+        //   2) IsBorderRequired = false — set unconditionally inside TrySet, so a build without the
+        //      property just no-ops instead of being wrongly skipped by a capability check.
+        try
         {
-            TrySet(() => _session.IsBorderRequired = false);
-            Console.WriteLine("[WgcCaptureSource] disabled WinRT capture border.");
+            GraphicsCaptureAccess.RequestAccessAsync(GraphicsCaptureAccessKind.Borderless)
+                                 .GetAwaiter().GetResult();
         }
-        else
+        catch (Exception ex)
         {
-            Console.WriteLine("[WgcCaptureSource] capture-border toggle not available on this OS build.");
+            Console.WriteLine($"[WgcCaptureSource] borderless access request unavailable: {ex.Message}");
         }
+
+        bool borderOff = false;
+        TrySet(() => { _session.IsBorderRequired = false; borderOff = true; });
+        Console.WriteLine(borderOff
+            ? "[WgcCaptureSource] disabled WinRT capture border."
+            : "[WgcCaptureSource] capture-border toggle not available on this OS build.");
 
         // MinUpdateInterval (Win11 24H2, build 26100). Medal sets this explicitly; doing so appears
         // to switch WGC from vsync-throttled (~60) to present-driven delivery. Use a floor well
