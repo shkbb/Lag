@@ -177,9 +177,27 @@
                   </Button>
                 </StackPanel>
 
-                <!-- Edit + volume + fullscreen (right; screenshots keep only fullscreen) -->
+                <!-- Speed + edit + volume + fullscreen (right; screenshots keep only fullscreen) -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10"
                             VerticalAlignment="Center">
+                  <!-- Playback speed: deep slow-mo down to 0.05x -->
+                  <Button Classes="transport" MinWidth="40"
+                          IsVisible="{Binding !IsViewingImage}">
+                    <TextBlock Text="{Binding SpeedLabel}" FontSize="12" FontWeight="Medium" />
+                    <Button.Flyout>
+                      <Flyout Placement="Top">
+                        <ListBox x:CompileBindings="False" Width="80" MaxHeight="300"
+                                 ItemsSource="{Binding SpeedOptions}"
+                                 SelectedItem="{Binding PlaybackSpeed, Mode=TwoWay}">
+                          <ListBox.ItemTemplate>
+                            <DataTemplate>
+                              <TextBlock Text="{Binding, StringFormat='{}{0}x'}" FontSize="12" />
+                            </DataTemplate>
+                          </ListBox.ItemTemplate>
+                        </ListBox>
+                      </Flyout>
+                    </Button.Flyout>
+                  </Button>
                   <Button Classes="transport"
                           x:CompileBindings="False"
                           IsVisible="{Binding !IsViewingImage}"

@@ -4,6 +4,8 @@ using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Layout;
+using Avalonia.Media;
 using Avalonia.Threading;
 using Lag.ViewModels;
 
@@ -32,6 +34,10 @@ public partial class EditorView : UserControl
         DetachedFromVisualTree += OnDetached;
 
         TimelineOverlay.SizeChanged += (_, _) => UpdateOverlay();
+        // Aspect-ratio crop PREVIEW: libVLC CropGeometry doesn't apply to the vmem bitmap, so we crop
+        // in the view instead — size the video to the target-aspect box and fill it (UniformToFill),
+        // clipping the overflow. That matches the centered ffmpeg crop the export does.
+        VideoSurface.SizeChanged += (_, _) => UpdateCropPreview();
         TimelineOverlay.PointerPressed += OnTimelinePointerPressed;
         TimelineOverlay.PointerMoved += OnTimelinePointerMoved;
         TimelineOverlay.PointerReleased += OnTimelinePointerReleased;
@@ -49,6 +55,7 @@ public partial class EditorView : UserControl
             vm.VideoRenderer.FrameRendered += OnVideoFrameRendered;
 
             vm.StartPreview();
+            UpdateCropPreview();
 
             _playheadTimer ??= new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(33) };
             _playheadTimer.Tick -= OnPlayheadTick;
@@ -132,7 +139,42 @@ public partial class EditorView : UserControl
             case nameof(EditorViewModel.DurationSec):
                 Dispatcher.UIThread.Post(UpdateOverlay, DispatcherPriority.Render);
                 break;
+            case nameof(EditorViewModel.SelectedAspect):
+                UpdateCropPreview();
+                break;
         }
+    }
+
+    /// <summary>Crops the preview to the selected aspect ratio (Native = whole frame). The video is
+    /// sized to the largest target-aspect box that fits the stage and filled with UniformToFill, so
+    /// the centre region shows and the overflow is clipped — the same centred crop the export applies.</summary>
+    private void UpdateCropPreview()
+    {
+        VideoImage.ClipToBounds = true;
+
+        double sw = VideoSurface.Bounds.Width, sh = VideoSurface.Bounds.Height;
+        double? ratio = _vm?.SelectedAspect?.Ratio;
+
+        if (ratio is not double r || r <= 0 || sw <= 0 || sh <= 0)
+        {
+            // Native / not laid out yet: whole frame, fit-and-letterbox, no crop.
+            VideoImage.Stretch = Stretch.Uniform;
+            VideoImage.Width = double.NaN;
+            VideoImage.Height = double.NaN;
+            VideoImage.HorizontalAlignment = HorizontalAlignment.Stretch;
+            VideoImage.VerticalAlignment = VerticalAlignment.Stretch;
+            return;
+        }
+
+        // Largest r-aspect box that fits the stage, centred; the video fills it (cropping overflow).
+        double boxW = sw, boxH = sw / r;
+        if (boxH > sh) { boxH = sh; boxW = sh * r; }
+
+        VideoImage.Stretch = Stretch.UniformToFill;
+        VideoImage.Width = boxW;
+        VideoImage.Height = boxH;
+        VideoImage.HorizontalAlignment = HorizontalAlignment.Center;
+        VideoImage.VerticalAlignment = VerticalAlignment.Center;
     }
 
     /// <summary>30fps interpolation between coarse VLC position updates → buttery playhead.</summary>

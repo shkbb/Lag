@@ -120,6 +120,24 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
         StartVlcApplyTimer();
     }
 
+    // ── Playback speed (incl. deep slow-mo: down to 0.05x = 20× slower, well past Medal's 0.25 floor) ──
+    /// <summary>Speed presets shown in the player's speed menu (fast → slow).</summary>
+    public IReadOnlyList<double> SpeedOptions { get; } = new[] { 2.0, 1.5, 1.0, 0.5, 0.25, 0.1, 0.05 };
+
+    /// <summary>Current playback rate (1.0 = normal). Applied to libvlc via SetRate.</summary>
+    [ObservableProperty]
+    private double _playbackSpeed = 1.0;
+
+    /// <summary>Compact label for the speed button ("1x", "0.25x", "0.05x").</summary>
+    public string SpeedLabel => PlaybackSpeed == 1.0 ? "1x" : $"{PlaybackSpeed:0.##}x";
+
+    partial void OnPlaybackSpeedChanged(double value)
+    {
+        OnPropertyChanged(nameof(SpeedLabel));
+        try { _mediaPlayer?.SetRate((float)value); }
+        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[Player] SetRate failed: {ex.Message}"); }
+    }
+
     // ── Throttled writes into libvlc ──
     // Dragging a slider produces dozens of property changes per second; pushing each one
     // straight into libvlc (volume/seek) floods its audio/input threads — the UI starts
@@ -245,6 +263,8 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
                 // libvlc applies volume per audio output instance — re-assert ours on each start.
                 _pendingVolume = Volume;
                 StartVlcApplyTimer();
+                // Rate resets to 1 on a new media — re-assert the chosen speed so it persists per clip.
+                try { _mediaPlayer.SetRate((float)PlaybackSpeed); } catch { }
             });
             _mediaPlayer.Paused += (_, _) => Dispatcher.UIThread.Post(() => { IsPlaying = false; _positionTimer?.Stop(); });
             _mediaPlayer.Stopped += (_, _) => Dispatcher.UIThread.Post(() =>
