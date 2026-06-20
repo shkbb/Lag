@@ -7,7 +7,7 @@ namespace Lag.Services.VfrCapture;
 
 /// <summary>
 /// Captures the audio rendered by ONE process (and its child process tree) via WASAPI
-/// <b>process loopback</b> — the API Medal uses to record per-application sound ("Обрані програми").
+/// <b>process loopback</b> — the API for recording per-application sound ("Обрані програми").
 /// Plain <c>WasapiLoopbackCapture</c> can only grab the whole system endpoint; isolating a single
 /// app needs <c>ActivateAudioInterfaceAsync</c> with <c>AUDIOCLIENT_ACTIVATION_TYPE_PROCESS_LOOPBACK</c>
 /// (Windows 10 build 19041+). NAudio has no binding for it, so this is hand-rolled COM interop.

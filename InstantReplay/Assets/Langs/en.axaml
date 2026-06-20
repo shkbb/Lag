@@ -67,6 +67,12 @@
   <sys:String x:Key="Editor_ExportError">Export failed: {0}</sys:String>
   <sys:String x:Key="Editor_Speed">Speed</sys:String>
   <sys:String x:Key="Editor_Format">Format</sys:String>
+  <sys:String x:Key="Editor_Crop">Crop</sys:String>
+  <sys:String x:Key="Editor_Deselect">Deselect</sys:String>
+  <sys:String x:Key="Editor_ExportResolution">Resolution</sys:String>
+  <sys:String x:Key="Editor_ExportGif">Export as GIF</sys:String>
+  <sys:String x:Key="Editor_ExportOptions">Export options</sys:String>
+  <sys:String x:Key="Editor_CancelExport">Cancel</sys:String>
   <sys:String x:Key="Editor_TabClip">Clip</sys:String>
   <sys:String x:Key="Editor_TabFilters">Filters</sys:String>
   <sys:String x:Key="Editor_Tracks">AUDIO TRACKS</sys:String>

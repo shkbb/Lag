@@ -3,7 +3,7 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <!-- Compile against the Windows 11 (22621) WinRT projection so we can reach the newer
-         Graphics.Capture knobs Medal uses — GraphicsCaptureSession.IsBorderRequired (kill the
+         Graphics.Capture knobs — GraphicsCaptureSession.IsBorderRequired (kill the
          yellow capture border) and MinUpdateInterval (cap WGC frame rate). We still RUN on
          Windows 10 1903+: SupportedOSPlatformVersion stays 19041 and every 22621-only call is
          guarded at runtime (ApiInformation / OperatingSystem.IsWindowsVersionAtLeast). -->

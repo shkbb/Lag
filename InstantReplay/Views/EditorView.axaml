@@ -10,6 +10,7 @@
   <!-- Spacebar toggles preview play/pause -->
   <UserControl.KeyBindings>
     <KeyBinding Gesture="Space" Command="{Binding PlayPauseCommand}" />
+    <KeyBinding Gesture="Ctrl+Z" Command="{Binding UndoCommand}" />
   </UserControl.KeyBindings>
 
   <UserControl.Styles>
@@ -30,6 +31,17 @@
     <Style Selector="Border.trow.selected">
       <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}" />
       <Setter Property="Background" Value="#0D22D3EE" />
+    </Style>
+
+    <!-- Crop-box resize handles (8 around the reframe rectangle) -->
+    <Style Selector="Border.chandle">
+      <Setter Property="Width" Value="12" />
+      <Setter Property="Height" Value="12" />
+      <Setter Property="Background" Value="{StaticResource AccentBrush}" />
+      <Setter Property="BorderBrush" Value="White" />
+      <Setter Property="BorderThickness" Value="1.5" />
+      <Setter Property="CornerRadius" Value="3" />
+      <Setter Property="IsHitTestVisible" Value="False" />
     </Style>
 
     <!-- Filter cards: vertical wrap grid in the tools panel -->
@@ -94,15 +106,54 @@
                 x:CompileBindings="False"
                 Command="{Binding $parent[Window].DataContext.NavigateToPlayerCommand}"
                 Content="{DynamicResource Editor_Back}" />
-        <Button Classes="cta" HorizontalAlignment="Right" MinWidth="140"
-                Command="{Binding ExportCommand}">
+
+        <!-- Export button → opens a flyout with resolution / format / GIF + the Export action. -->
+        <Button Classes="cta" MinWidth="140" IsVisible="{Binding !IsExporting}">
           <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-            <mi:MaterialIcon Kind="MovieCheckOutline" Width="15" Height="15"
-                             VerticalAlignment="Center" IsVisible="{Binding !IsExporting}" />
-            <TextBlock Text="{DynamicResource Editor_Export}" VerticalAlignment="Center"
-                       IsVisible="{Binding !IsExporting}" />
-            <TextBlock Text="{Binding ExportProgress, StringFormat='{}{0}%'}"
-                       VerticalAlignment="Center" IsVisible="{Binding IsExporting}" />
+            <mi:MaterialIcon Kind="MovieCheckOutline" Width="15" Height="15" VerticalAlignment="Center" />
+            <TextBlock Text="{DynamicResource Editor_Export}" VerticalAlignment="Center" />
+            <mi:MaterialIcon Kind="ChevronDown" Width="14" Height="14" VerticalAlignment="Center" />
+          </StackPanel>
+          <Button.Flyout>
+            <Flyout Placement="BottomEdgeAlignedRight">
+              <StackPanel Width="230" Spacing="14" Margin="4">
+                <TextBlock Text="{DynamicResource Editor_ExportOptions}" FontWeight="Medium" FontSize="13" />
+                <StackPanel Spacing="6">
+                  <TextBlock Text="{DynamicResource Editor_ExportResolution}" FontSize="12"
+                             Foreground="{StaticResource Fg2Brush}" />
+                  <ComboBox HorizontalAlignment="Stretch"
+                            ItemsSource="{Binding ExportResolutionOptions}"
+                            SelectedItem="{Binding SelectedExportResolution}">
+                    <ComboBox.ItemTemplate>
+                      <DataTemplate x:DataType="vm:EditorExportRes">
+                        <TextBlock Text="{Binding Display}" />
+                      </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                  </ComboBox>
+                </StackPanel>
+                <StackPanel Spacing="6" IsVisible="{Binding !ExportAsGif}">
+                  <TextBlock Text="{DynamicResource Editor_Format}" FontSize="12"
+                             Foreground="{StaticResource Fg2Brush}" />
+                  <ComboBox HorizontalAlignment="Stretch"
+                            ItemsSource="{Binding ExportFormatOptions}"
+                            SelectedItem="{Binding SelectedExportFormat}" />
+                </StackPanel>
+                <CheckBox IsChecked="{Binding ExportAsGif}" Content="{DynamicResource Editor_ExportGif}" />
+                <Button Classes="cta" HorizontalAlignment="Stretch"
+                        Command="{Binding ExportCommand}"
+                        Content="{DynamicResource Editor_Export}" />
+              </StackPanel>
+            </Flyout>
+          </Button.Flyout>
+        </Button>
+
+        <!-- While exporting: progress + cancel. -->
+        <Button Classes="cta" MinWidth="140" IsVisible="{Binding IsExporting}"
+                Command="{Binding CancelExportCommand}">
+          <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+            <mi:MaterialIcon Kind="Close" Width="14" Height="14" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding ExportProgress, StringFormat='{}{0}%'}" VerticalAlignment="Center" />
+            <TextBlock Text="{DynamicResource Editor_CancelExport}" VerticalAlignment="Center" />
           </StackPanel>
         </Button>
       </StackPanel>
@@ -118,11 +169,48 @@
                 Background="{StaticResource VideoBrush}"
                 CornerRadius="12" ClipToBounds="True" MinHeight="180">
           <Grid RowDefinitions="*,Auto">
-            <Panel Grid.Row="0" x:Name="VideoSurface" Background="Transparent"
-                   PointerPressed="OnVideoSurfacePressed">
-              <Image x:Name="VideoImage" Stretch="Uniform"
-                     RenderOptions.BitmapInterpolationMode="HighQuality"
-                     HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+            <Panel Grid.Row="0" x:Name="VideoSurface" Background="Transparent">
+              <!-- Video + reframe overlay share ONE container so rotate/flip transforms them together
+                   (handles stay aligned with the video); the deselect button stays upright outside it. -->
+              <Grid x:Name="PreviewContent" RenderTransformOrigin="50%,50%">
+                <!-- The video itself, free-positioned/scaled by the reframe transform
+                     (Stretch=Fill lets it be stretched/narrowed non-uniformly). -->
+                <Canvas x:Name="VideoCanvas" Background="Transparent">
+                  <Image x:Name="VideoImage" Stretch="Fill"
+                         RenderOptions.BitmapInterpolationMode="HighQuality" />
+                </Canvas>
+
+                <!-- Reframe overlay: drag the video to MOVE it, drag a handle to ZOOM/STRETCH, click
+                     outside the video to play/pause, right-click to reset. The dim shades mark the area
+                     OUTSIDE the output frame (cropped away on export). Laid out in code-behind. -->
+                <Canvas x:Name="CropOverlay" Background="Transparent"
+                        PointerPressed="OnCropPointerPressed"
+                        PointerMoved="OnCropPointerMoved"
+                        PointerReleased="OnCropPointerReleased">
+                  <Border x:Name="CropShadeTop"    Background="#99000000" IsHitTestVisible="False" />
+                  <Border x:Name="CropShadeBottom" Background="#99000000" IsHitTestVisible="False" />
+                  <Border x:Name="CropShadeLeft"   Background="#99000000" IsHitTestVisible="False" />
+                  <Border x:Name="CropShadeRight"  Background="#99000000" IsHitTestVisible="False" />
+                  <Border x:Name="FrameOutline" BorderBrush="White" BorderThickness="1"
+                          Opacity="0.55" Background="Transparent" IsHitTestVisible="False" />
+                  <Border x:Name="CropRect" BorderBrush="{StaticResource AccentBrush}" BorderThickness="1.5"
+                          Background="Transparent" IsHitTestVisible="False" />
+                  <Border x:Name="HTL" Classes="chandle" /><Border x:Name="HTR" Classes="chandle" />
+                  <Border x:Name="HBL" Classes="chandle" /><Border x:Name="HBR" Classes="chandle" />
+                  <Border x:Name="HT"  Classes="chandle" /><Border x:Name="HB"  Classes="chandle" />
+                  <Border x:Name="HL"  Classes="chandle" /><Border x:Name="HR"  Classes="chandle" />
+                </Canvas>
+              </Grid>
+
+              <!-- Deselect button (top-right), shown only while the reframe box is selected. -->
+              <Button x:Name="DeselectButton" Classes="chip" IsVisible="False"
+                      HorizontalAlignment="Right" VerticalAlignment="Top" Margin="12"
+                      Click="OnDeselectClick">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <mi:MaterialIcon Kind="Close" Width="13" Height="13" VerticalAlignment="Center" />
+                  <TextBlock Text="{DynamicResource Editor_Deselect}" VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
             </Panel>
 
             <!-- Control bar -->
@@ -173,7 +261,7 @@
           </Grid>
         </Border>
 
-        <!-- Timeline: video strip + audio tracks right under it (Medal-style) -->
+        <!-- Timeline: video strip + audio tracks right under it -->
         <Border Grid.Row="1" Background="{StaticResource CardBrush}" CornerRadius="12"
                 Padding="10,8,10,10" Margin="0,14,0,0">
           <StackPanel Spacing="4">
@@ -324,6 +412,33 @@
                       </DataTemplate>
                     </ComboBox.ItemTemplate>
                   </ComboBox>
+                </StackPanel>
+
+                <!-- Crop tool: a SEPARATE mode — toggles the preview box to select a sub-region of
+                     the source to keep. Independent of Format/reframe (applied before them). -->
+                <ToggleButton IsChecked="{Binding CropToolActive}"
+                              HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                              Cursor="Hand" Padding="12,8">
+                  <StackPanel Orientation="Horizontal" Spacing="6">
+                    <mi:MaterialIcon Kind="Crop" Width="15" Height="15" VerticalAlignment="Center" />
+                    <TextBlock Text="{DynamicResource Editor_Crop}" VerticalAlignment="Center" />
+                  </StackPanel>
+                </ToggleButton>
+
+                <!-- Rotate / flip the final output -->
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <Button Classes="transport" Command="{Binding RotateLeftCommand}">
+                    <mi:MaterialIcon Kind="RotateLeft" Width="16" Height="16" />
+                  </Button>
+                  <Button Classes="transport" Command="{Binding RotateRightCommand}">
+                    <mi:MaterialIcon Kind="RotateRight" Width="16" Height="16" />
+                  </Button>
+                  <Button Classes="transport" Command="{Binding ToggleFlipHCommand}">
+                    <mi:MaterialIcon Kind="FlipHorizontal" Width="16" Height="16" />
+                  </Button>
+                  <Button Classes="transport" Command="{Binding ToggleFlipVCommand}">
+                    <mi:MaterialIcon Kind="FlipVertical" Width="16" Height="16" />
+                  </Button>
                 </StackPanel>
 
                 <StackPanel Spacing="6">

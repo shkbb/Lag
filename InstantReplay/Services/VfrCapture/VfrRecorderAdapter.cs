@@ -79,23 +79,18 @@ public sealed class VfrRecorderAdapter : IReplayRecorder
         CaptureCursor = true,
     };
 
-    /// <summary>Maps an OBS encoder id (e.g. "obs_nvenc_h264_tex") to the VFR codec family the
-    /// selector understands; null = let the engine auto-pick the best available.</summary>
+    /// <summary>Maps the UI's codec FORMAT choice ("h264" / "hevc" / "av1"; "" = Auto) to the codec
+    /// family the <see cref="EncoderSelector"/> understands. Vendor selection is automatic by design:
+    /// the engine picks the best available encoder (NVENC / AMF / QSV, x264 CPU fallback) for the
+    /// chosen family — the dropdown deliberately offers formats, not specific backends.</summary>
     private static string? MapCodec(string? encoder)
     {
-        if (string.IsNullOrEmpty(encoder)) return null;
+        if (string.IsNullOrEmpty(encoder)) return null;   // Auto → engine picks family AND vendor
         string e = encoder.ToLowerInvariant();
-        // The UI codec dropdown picks a BACKEND/vendor (ffmpeg_nvenc / ffmpeg_amf / obs_qsv11 /
-        // obs_x264), not a codec family — map to the vendor tag EncoderSelector honors. (x264 first:
-        // "obs_x264" also contains "264".)
-        if (e.Contains("x264") || e.Contains("cpu")) return "x264";
-        if (e.Contains("nvenc")) return "nvenc";
-        if (e.Contains("amf")) return "amf";
-        if (e.Contains("qsv")) return "qsv";
-        // Legacy explicit codec families, if ever passed.
         if (e.Contains("av1")) return "av1";
         if (e.Contains("hevc") || e.Contains("h265") || e.Contains("265")) return "hevc";
         if (e.Contains("264")) return "h264";
+        if (e.Contains("x264") || e.Contains("cpu")) return "x264";   // defensive: explicit force-CPU id, if ever exposed
         return null;
     }
 }

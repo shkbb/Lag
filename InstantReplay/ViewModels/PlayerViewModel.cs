@@ -120,7 +120,7 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
         StartVlcApplyTimer();
     }
 
-    // ── Playback speed (incl. deep slow-mo: down to 0.05x = 20× slower, well past Medal's 0.25 floor) ──
+    // ── Playback speed (incl. deep slow-mo: down to 0.05x = 20× slower) ──
     /// <summary>Speed presets shown in the player's speed menu (fast → slow).</summary>
     public IReadOnlyList<double> SpeedOptions { get; } = new[] { 2.0, 1.5, 1.0, 0.5, 0.25, 0.1, 0.05 };
 

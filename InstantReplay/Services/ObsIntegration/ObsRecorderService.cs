@@ -782,7 +782,7 @@ public sealed class ObsRecorderService : Lag.Services.IReplayRecorder
     private System.Threading.Timer? _gameWindowTimer;
     private string _gameWindowTarget = "";
 
-    /// <summary>The game window we are LOCKED onto, held through alt-tabs (Medal-style).</summary>
+    /// <summary>The game window we are LOCKED onto, held through alt-tabs.</summary>
     private IntPtr _lockedGameHwnd = IntPtr.Zero;
     private uint _lockedGamePid;
 
@@ -907,7 +907,7 @@ public sealed class ObsRecorderService : Lag.Services.IReplayRecorder
             _gameWindowTarget = "";
             _gameWindowTimer = new System.Threading.Timer(_ => EvaluateGameCapture(), null, 1000, 2000);
 
-            Console.WriteLine("[ObsRecorderService] SUCCESS: WGC window overlay added (locks onto a game, Medal-style).");
+            Console.WriteLine("[ObsRecorderService] SUCCESS: WGC window overlay added (locks onto a game).");
             Console.Out.Flush();
         }
         catch (Exception ex)
@@ -917,7 +917,7 @@ public sealed class ObsRecorderService : Lag.Services.IReplayRecorder
     }
 
     /// <summary>
-    /// Timer callback — Medal-style game lock. Once a real game is detected fullscreen on the
+    /// Timer callback — game lock. Once a real game is detected fullscreen on the
     /// recorded monitor, we LOCK the window capture onto it and HOLD that lock as long as the
     /// game process is alive — regardless of foreground focus. So when the user alt-tabs to a
     /// browser/chat during a loading screen, we keep capturing the game window (a borderless
@@ -1029,7 +1029,7 @@ public sealed class ObsRecorderService : Lag.Services.IReplayRecorder
         // 1. System audio — either the whole desktop loopback, or per-application capture.
         if (_audioMode == "apps" && _audioApps.Count > 0)
         {
-            // Per-application capture (Medal-style). One wasapi_process_output_capture per app,
+            // Per-application capture. One wasapi_process_output_capture per app,
             // matched by executable name. Sources live in the SCENE (not output channels), which
             // sidesteps the 6-channel limit and lets each one carry its own volume.
             foreach (var app in _audioApps)
@@ -1156,11 +1156,11 @@ public sealed class ObsRecorderService : Lag.Services.IReplayRecorder
         // game that saturates the GPU, that round-trip stalls and OBS drops frames it can't
         // hand off in time — measured 78% "skipped due to encoding lag" at native and STILL
         // 39% after halving resolution, because the bottleneck was the copy path, not pixels.
-        // The texture path is what OBS, ShadowPlay and Medal all use to record games smoothly.
+        // The texture path is the zero-copy approach hardware recorders use to record games smoothly.
         // AV1 texture encoder FIRST on RTX 40-series. Counter-intuitively, Ada's AV1 NVENC is
         // FASTER than its H.264 path here: measured encoding lag was 11% on AV1 p1 vs 18-45%
         // on H.264, and the user confirmed AV1 looked clearly smoother (H.264 was worse in
-        // every window). AV1 also gives the better quality Medal's clips have. It auto-creates
+        // every window). AV1 also gives better quality at the same bitrate. It auto-creates
         // only on AV1-capable GPUs; older cards fall through to the H.264 texture encoder.
         string[] autoChain = ["obs_nvenc_av1_tex", "obs_nvenc_h264_tex", "jim_nvenc", "ffmpeg_nvenc", "ffmpeg_amf", "obs_qsv11", "obs_x264"];
 
@@ -1213,7 +1213,7 @@ public sealed class ObsRecorderService : Lag.Services.IReplayRecorder
                 // Strip the heavy extras NVENC enables by default. Lookahead (8 frames) buffers
                 // ahead before encoding and B-frames add reordering — together they spiked
                 // encoding lag to 45.7% under heavy combat (encoder couldn't finish in time →
-                // dropped frames → stutter). Medal records "Constrained Baseline": no B-frames,
+                // dropped frames → stutter). We record a constrained profile: no B-frames,
                 // no lookahead. At our bitrate the compression loss is invisible, and the encode
                 // becomes light enough to keep up at 120fps while the game owns the GPU.
                 ObsInterop.obs_data_set_int(settings, "bf", 0);

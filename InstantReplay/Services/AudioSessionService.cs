@@ -12,7 +12,7 @@ namespace Lag.Services;
 
 /// <summary>
 /// Enumerates applications that are CURRENTLY playing audio, via WASAPI audio sessions on the
-/// default render endpoint — the Medal-style "record audio from specific apps" picker. Apps appear
+/// default render endpoint — the "record audio from specific apps" picker. Apps appear
 /// as soon as they produce sound (so Windows system processes that never play audio don't clutter
 /// the list). Each entry carries a friendly name and the app's icon extracted from its executable.
 /// </summary>

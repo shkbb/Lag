@@ -113,15 +113,18 @@ public static unsafe class Mp4Muxer
             par->codec_type = AVMediaType.AVMEDIA_TYPE_VIDEO;
             par->width = spec.Width;
             par->height = spec.Height;
-            par->format = (int)AVPixelFormat.AV_PIX_FMT_NV12;
         }
         else
         {
             par->codec_type = AVMediaType.AVMEDIA_TYPE_AUDIO;
             par->sample_rate = spec.SampleRate;
-            par->format = (int)AVSampleFormat.AV_SAMPLE_FMT_FLTP;
             ffmpeg.av_channel_layout_default(&par->ch_layout, spec.Channels);
         }
+        // NOTE: we deliberately leave par->format unset (AV_PIX_FMT_NONE / AV_SAMPLE_FMT_NONE).
+        // codecpar->format describes the DECODED sample/pixel format; a muxer fed compressed
+        // packets doesn't need it, and this matches what a demuxer produces for a coded stream.
+        // (The encoder must supply global-header extradata — avcC/hvcC/av1C — or matroska's
+        // write_header rejects the file; see NvencVfrEncoder's AV_CODEC_FLAG_GLOBAL_HEADER.)
 
         // Codec extradata (SPS/PPS / AV1 config / AudioSpecificConfig) — required for playback.
         if (spec.ExtraData is { Length: > 0 })

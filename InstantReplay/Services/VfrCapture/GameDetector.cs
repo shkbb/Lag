@@ -10,24 +10,24 @@ public sealed record GameCandidate(IntPtr Hwnd, uint Pid, string Exe, string Gam
 
 /// <summary>
 /// Decides which window (if any) is a game worth recording — a POSITIVE detector, not a denylist.
-/// Modelled on Medal: every visible top-level window is scored from weighted signals and the
+/// Every visible top-level window is scored from weighted signals and the
 /// highest wins, instead of blocking a hand-maintained list of "not games".
 ///
-/// Our signals (Medal uses a CDN game DB for "PreferredType"; we approximate it with a small
-/// built-in known-games table PLUS a real-world heuristic Medal can lean on its DB to skip):
+/// Our signals (a curated game database would supply a "PreferredType"; we approximate it with a
+/// small built-in known-games table PLUS a real-world heuristic):
 ///   • Known game     — process name in <see cref="KnownGames"/>, or a game-engine window class
 ///                      (UnrealWindow / SDL_app / Unity…). Strong "this is a game" signal.
 ///   • Fullscreen     — the window covers the whole recorded monitor. By far the most reliable
 ///                      cross-title signal: real games run fullscreen/borderless, tools don't.
 ///   • Focused        — it's the foreground window right now.
 /// A window only qualifies as a game if it is EITHER a known game OR fullscreen-on-monitor; the
-/// score then just ranks qualifiers. A tiny stable shell/self exclude drops OS surfaces outright
-/// (Medal does the same — its own overlay scores "Avoid"); everything else gets a fair hearing.
+/// score then just ranks qualifiers. A tiny stable shell/self exclude drops OS surfaces outright;
+/// everything else gets a fair hearing.
 /// </summary>
 public sealed class GameDetector
 {
-    // Weights mirror the magnitudes seen in Medal's logs (PreferredType≈46k, Focused≈18k); the
-    // fullscreen weight is ours, sitting between them as a primary positive signal.
+    // Weights: known-game ≈46k dominates, focused ≈18k; the fullscreen weight sits
+    // between them as a primary positive signal.
     private const int ScoreKnownGame = 46000;
     private const int ScoreFullscreen = 30000;
     private const int ScoreFocused = 18000;

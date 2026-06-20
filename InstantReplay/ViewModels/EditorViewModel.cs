@@ -56,6 +56,9 @@ public partial class EditorAudioTrack : ObservableObject
 
 public record EditorSpeedOption(string Display, double Value);
 
+/// <summary>Export resolution preset; Height 0 = keep the source resolution.</summary>
+public record EditorExportRes(string Display, int Height);
+
 /// <summary>CropGeometry is libvlc's "W:H" crop string for the live preview.</summary>
 public record EditorAspectOption(string Display, double? Ratio, string? CropGeometry);
 
@@ -91,7 +94,7 @@ public partial class EditorFilterOption : ObservableObject
 }
 
 /// <summary>
-/// ViewModel for the built-in clip editor (Medal-style): trim on a thumbnail timeline,
+/// ViewModel for the built-in clip editor: trim on a thumbnail timeline,
 /// per-track audio volume/mute + audible range, playback speed (presets or manual),
 /// aspect-ratio crop, video filters, and re-encode export via the bundled ffmpeg.
 /// Preview frames are rendered into an Avalonia bitmap (vmem) — no native HWND.
@@ -156,14 +159,198 @@ public partial class EditorViewModel : ViewModelBase, IDisposable
         }
     }
 
-    // ── Aspect ratio (export crop) ──
+    // ── Aspect (output frame) + interactive reframe (move / zoom / stretch the video in the frame) ──
+    //
+    // FORMAT = the output frame's aspect (16:9 / 4:3 / … or "Native" = source aspect). It behaves like
+    // before: by default the video is scaled to COVER that frame (the old centred-crop look).
+    // REFRAME = the video's rectangle WITHIN the output frame; the user can move / zoom / stretch it.
+    // (Cropping a sub-region of the source is a separate tool, planned later.)
 
     public IReadOnlyList<EditorAspectOption> AspectOptions { get; }
 
     [ObservableProperty]
     private EditorAspectOption _selectedAspect;
 
-    partial void OnSelectedAspectChanged(EditorAspectOption value) => ApplyPreviewAspect();
+    /// <summary>Changing the output aspect re-fits the video to COVER the new frame (old format look);
+    /// the user can then move/zoom/stretch it within that frame.</summary>
+    partial void OnSelectedAspectChanging(EditorAspectOption value) => PushUndo();
+    partial void OnSelectedAspectChanged(EditorAspectOption value)
+    {
+        OnPropertyChanged(nameof(FrameAspect));
+        if (_suppressUndo) return;   // load / undo-restore set this directly
+        ResetReframe();
+    }
+
+    // The video's rectangle inside the OUTPUT FRAME, normalized to the frame. May extend past the
+    // frame (values <0 or >1) when zoomed/panned — the frame clips it on export. Default = COVER.
+    [ObservableProperty] private double _vidX;
+    [ObservableProperty] private double _vidY;
+    [ObservableProperty] private double _vidW = 1;
+    [ObservableProperty] private double _vidH = 1;
+
+    /// <summary>Raised when the reframe transform changes so the view redraws the overlay.</summary>
+    public event Action? ReframeChanged;
+
+    /// <summary>Source video pixel size (ffprobe) — used for the source aspect and export dims.</summary>
+    [ObservableProperty] private int _sourceWidth;
+    [ObservableProperty] private int _sourceHeight;
+
+    /// <summary>Raw source pixel aspect (W/H) — the Crop tool edits over the FULL source.</summary>
+    public double SourceAspectRaw => SourceWidth > 0 && SourceHeight > 0
+        ? (double)SourceWidth / SourceHeight : 16.0 / 9.0;
+
+    /// <summary>Effective source aspect AFTER the crop tool — what the reframe fills the frame with.</summary>
+    public double SourceAspect => SourceWidth > 0 && SourceHeight > 0
+        ? (double)(SourceWidth * CropW) / (SourceHeight * CropH) : 16.0 / 9.0;
+
+    /// <summary>Output frame aspect — the chosen format, or the (cropped) source aspect for "Native".</summary>
+    public double FrameAspect => SelectedAspect?.Ratio is double r && r > 0 ? r : SourceAspect;
+
+    // ── Crop tool (separate "Кадрування" button): keep only a sub-region of the SOURCE. Applied
+    //    BEFORE the format/reframe. Edited as its own box on the preview when the tool is active. ──
+
+    /// <summary>When true, the preview shows the full source and the box edits the source crop.</summary>
+    [ObservableProperty] private bool _cropToolActive;
+    partial void OnCropToolActiveChanged(bool value) => ReframeChanged?.Invoke();
+
+    [ObservableProperty] private double _cropX;
+    [ObservableProperty] private double _cropY;
+    [ObservableProperty] private double _cropW = 1;
+    [ObservableProperty] private double _cropH = 1;
+
+    /// <summary>True when the source crop is not the whole frame (drives export).</summary>
+    public bool IsCropped => CropX > 0.002 || CropY > 0.002 || CropW < 0.998 || CropH < 0.998;
+
+    /// <summary>Sets the source-crop rect (clamped to the frame, min 5%) and re-fits the reframe to
+    /// the new cropped aspect.</summary>
+    public void SetCrop(double x, double y, double w, double h)
+    {
+        w = Math.Clamp(w, 0.05, 1);
+        h = Math.Clamp(h, 0.05, 1);
+        x = Math.Clamp(x, 0, 1 - w);
+        y = Math.Clamp(y, 0, 1 - h);
+        CropX = x; CropY = y; CropW = w; CropH = h;
+        OnPropertyChanged(nameof(IsCropped));
+        OnPropertyChanged(nameof(SourceAspect));
+        OnPropertyChanged(nameof(FrameAspect));
+        ResetReframe();   // re-cover with the new cropped aspect (also raises ReframeChanged)
+    }
+
+    [RelayCommand]
+    private void ToggleCropTool() => CropToolActive = !CropToolActive;
+
+    [RelayCommand]
+    private void ResetCrop() => SetCrop(0, 0, 1, 1);
+
+    // ── Undo (Ctrl+Z): a stack of edit snapshots captured just BEFORE each change ──
+
+    private sealed record EditSnap(double TrimStart, double TrimEnd, string Speed, int Aspect, int Filter,
+        double CropX, double CropY, double CropW, double CropH,
+        double VidX, double VidY, double VidW, double VidH,
+        int Rotation, bool FlipH, bool FlipV);
+
+    private readonly Stack<EditSnap> _undo = new();
+    private bool _suppressUndo;   // true while loading a clip or restoring an undo snapshot
+
+    private static int IndexOf<T>(IReadOnlyList<T> list, T item)
+    {
+        for (int i = 0; i < list.Count; i++) if (Equals(list[i], item)) return i;
+        return 0;
+    }
+
+    /// <summary>Records the current edit state so the NEXT change can be reverted with Ctrl+Z.
+    /// Call right BEFORE applying a change (drag start, format/filter switch, reset).</summary>
+    public void PushUndo()
+    {
+        if (_suppressUndo) return;
+        _undo.Push(new EditSnap(TrimStartSec, TrimEndSec, SpeedText,
+            IndexOf(AspectOptions, SelectedAspect), IndexOf(FilterOptions, SelectedFilter),
+            CropX, CropY, CropW, CropH, VidX, VidY, VidW, VidH, Rotation, FlipH, FlipV));
+        UndoCommand.NotifyCanExecuteChanged();
+    }
+
+    private bool CanUndo() => _undo.Count > 0;
+
+    [RelayCommand(CanExecute = nameof(CanUndo))]
+    private void Undo()
+    {
+        if (_undo.Count == 0) return;
+        var s = _undo.Pop();
+        _suppressUndo = true;
+        try
+        {
+            SelectedAspect = AspectOptions[Math.Clamp(s.Aspect, 0, AspectOptions.Count - 1)];
+            SelectedFilter = FilterOptions[Math.Clamp(s.Filter, 0, FilterOptions.Count - 1)];
+            SpeedText = s.Speed;
+            TrimStartSec = s.TrimStart;
+            TrimEndSec = s.TrimEnd;
+            CropX = s.CropX; CropY = s.CropY; CropW = s.CropW; CropH = s.CropH;
+            VidX = s.VidX; VidY = s.VidY; VidW = s.VidW; VidH = s.VidH;
+            Rotation = s.Rotation; FlipH = s.FlipH; FlipV = s.FlipV;
+        }
+        finally { _suppressUndo = false; }
+
+        OnPropertyChanged(nameof(IsCropped));
+        OnPropertyChanged(nameof(IsReframed));
+        OnPropertyChanged(nameof(SourceAspect));
+        OnPropertyChanged(nameof(FrameAspect));
+        ApplyPreviewFilter();
+        ReframeChanged?.Invoke();
+        UndoCommand.NotifyCanExecuteChanged();
+    }
+
+    /// <summary>Default placement: the video scaled to COVER the output frame, centred (= the old
+    /// centred-crop look), as a frame-normalized rect.</summary>
+    private (double x, double y, double w, double h) CoverPlacement()
+    {
+        double sa = SourceAspect, fa = FrameAspect;
+        if (sa >= fa) { double w = sa / fa; return ((1 - w) / 2, 0, w, 1); }
+        double h = fa / sa; return (0, (1 - h) / 2, 1, h);
+    }
+
+    /// <summary>True when the video was moved/zoomed/stretched off its default cover placement.</summary>
+    public bool IsReframed
+    {
+        get
+        {
+            var (x, y, w, h) = CoverPlacement();
+            return Math.Abs(VidX - x) > 0.003 || Math.Abs(VidY - y) > 0.003 ||
+                   Math.Abs(VidW - w) > 0.003 || Math.Abs(VidH - h) > 0.003;
+        }
+    }
+
+    /// <summary>Atomically sets the video rect. This is only a loose backstop — the precise "stay
+    /// within the preview field" clamp lives in the view (which knows the stage size).</summary>
+    public void SetVideoRect(double x, double y, double w, double h)
+    {
+        w = Math.Clamp(w, 0.05, 6);
+        h = Math.Clamp(h, 0.05, 6);
+        x = Math.Clamp(x, -3, 3);
+        y = Math.Clamp(y, -3, 3);
+        VidX = x; VidY = y; VidW = w; VidH = h;
+        OnPropertyChanged(nameof(IsReframed));
+        ReframeChanged?.Invoke();
+    }
+
+    [RelayCommand]
+    private void ResetReframe()
+    {
+        var (x, y, w, h) = CoverPlacement();
+        SetVideoRect(x, y, w, h);
+    }
+
+    // ── Rotate / flip the final output ──
+    [ObservableProperty] private int _rotation;   // 0 / 90 / 180 / 270 (clockwise)
+    [ObservableProperty] private bool _flipH;
+    [ObservableProperty] private bool _flipV;
+    partial void OnRotationChanged(int value) => ReframeChanged?.Invoke();
+    partial void OnFlipHChanged(bool value) => ReframeChanged?.Invoke();
+    partial void OnFlipVChanged(bool value) => ReframeChanged?.Invoke();
+
+    [RelayCommand] private void RotateRight() { PushUndo(); Rotation = (Rotation + 90) % 360; }
+    [RelayCommand] private void RotateLeft()  { PushUndo(); Rotation = (Rotation + 270) % 360; }
+    [RelayCommand] private void ToggleFlipH() { PushUndo(); FlipH = !FlipH; }
+    [RelayCommand] private void ToggleFlipV() { PushUndo(); FlipV = !FlipV; }
 
     // ── Filters ──
 
@@ -184,6 +371,7 @@ public partial class EditorViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private EditorFilterOption _selectedFilter;
 
+    partial void OnSelectedFilterChanging(EditorFilterOption value) => PushUndo();
     partial void OnSelectedFilterChanged(EditorFilterOption value) => ApplyPreviewFilter();
 
     /// <summary>Selected tools tab in the right panel: 0 = Clip, 1 = Filters (UI-only).</summary>
@@ -277,6 +465,18 @@ public partial class EditorViewModel : ViewModelBase, IDisposable
 
     private CancellationTokenSource? _exportCts;
 
+    // ── Export options (the Export button's flyout) ──
+    public IReadOnlyList<EditorExportRes> ExportResolutionOptions { get; }
+
+    [ObservableProperty] private EditorExportRes _selectedExportResolution = null!;
+
+    public IReadOnlyList<string> ExportFormatOptions { get; } = new[] { "mp4", "mkv", "mov" };
+
+    [ObservableProperty] private string _selectedExportFormat = "mp4";
+
+    /// <summary>Export an animated GIF instead of a video (no audio).</summary>
+    [ObservableProperty] private bool _exportAsGif;
+
     public EditorViewModel(LibraryViewModel library)
     {
         Title = "Editor";
@@ -295,6 +495,15 @@ public partial class EditorViewModel : ViewModelBase, IDisposable
             new EditorAspectOption("1:1", 1.0, "1:1"),
         };
         _selectedAspect = AspectOptions[0];
+
+        ExportResolutionOptions = new[]
+        {
+            new EditorExportRes(Localizer.Get("Option_Native"), 0),
+            new EditorExportRes("1080p", 1080),
+            new EditorExportRes("720p", 720),
+            new EditorExportRes("480p", 480),
+        };
+        _selectedExportResolution = ExportResolutionOptions[0];
 
         // Per-track volume/mute changes feed the live preview.
         AudioTracks.CollectionChanged += (_, e) =>
@@ -321,16 +530,6 @@ public partial class EditorViewModel : ViewModelBase, IDisposable
     {
         try { _mediaPlayer?.SetRate((float)Math.Clamp(EffectiveSpeed, 0.25, 4.0)); }
         catch (Exception ex) { Debug.WriteLine($"[Editor] SetRate failed: {ex.Message}"); }
-    }
-
-    private void ApplyPreviewAspect()
-    {
-        try
-        {
-            if (_mediaPlayer != null)
-                _mediaPlayer.CropGeometry = SelectedAspect.CropGeometry;
-        }
-        catch (Exception ex) { Debug.WriteLine($"[Editor] CropGeometry failed: {ex.Message}"); }
     }
 
     /// <summary>Approximates the chosen filter with libvlc's adjust filter.</summary>
@@ -420,7 +619,6 @@ public partial class EditorViewModel : ViewModelBase, IDisposable
     private void ApplyAllPreview()
     {
         ApplyPreviewRate();
-        ApplyPreviewAspect();
         ApplyPreviewFilter();
         ApplyPreviewVolume();
     }
@@ -433,16 +631,25 @@ public partial class EditorViewModel : ViewModelBase, IDisposable
         EnsureVlc();
         CurrentClip = clip;
 
-        // Reset edit state for the new clip.
+        // Reset edit state for the new clip (no undo capture during the reset; fresh history).
+        _undo.Clear();
+        _suppressUndo = true;
         TrimStartSec = 0;
         DurationSec = Math.Max(1, clip.Duration.TotalSeconds);
         TrimEndSec = DurationSec;
         SpeedText = "1";
+        SourceWidth = 0;
+        SourceHeight = 0;
+        CropToolActive = false;
         SelectedAspect = AspectOptions[0];
+        SetCrop(0, 0, 1, 1);   // resets the source crop AND re-fits the reframe to cover
+        Rotation = 0; FlipH = false; FlipV = false;
         SelectedFilter = FilterOptions[0];
         IsVideoSelected = false;
         ExportStatus = string.Empty;
         ExportProgress = 0;
+        _suppressUndo = false;
+        UndoCommand.NotifyCanExecuteChanged();
 
         // Default to a single mixed track until ffprobe tells us better.
         AudioTracks.Clear();
@@ -477,9 +684,17 @@ public partial class EditorViewModel : ViewModelBase, IDisposable
 
             int audioStreams = info.AudioStreams.Count;
             double duration = info.Duration.TotalSeconds > 0 ? info.Duration.TotalSeconds : DurationSec;
+            int vw = info.PrimaryVideoStream?.Width ?? 0;
+            int vh = info.PrimaryVideoStream?.Height ?? 0;
 
             await Dispatcher.UIThread.InvokeAsync(() =>
             {
+                SourceWidth = vw;
+                SourceHeight = vh;
+                OnPropertyChanged(nameof(SourceAspectRaw));
+                OnPropertyChanged(nameof(SourceAspect));
+                OnPropertyChanged(nameof(FrameAspect));
+                ResetReframe();   // re-cover with the now-known real source aspect
                 bool endWasAtMax = Math.Abs(TrimEndSec - DurationSec) < 0.05;
                 DurationSec = Math.Max(1, duration);
                 if (endWasAtMax || TrimEndSec > DurationSec) TrimEndSec = DurationSec;
@@ -636,17 +851,15 @@ public partial class EditorViewModel : ViewModelBase, IDisposable
                 IsPlaying = true;
                 _positionTimer?.Start();
 
-                // libvlc resets crop/adjust/volume per playback — re-assert immediately.
-                ApplyPreviewAspect();
+                // libvlc resets adjust/volume per playback — re-assert immediately.
                 ApplyPreviewFilter();
                 ApplyPreviewVolume();
-                // Re-assert crop + adjust a beat later too: applied at the instant Playing fires (the
-                // vmem vout isn't fully up yet) they often don't "stick", so the aspect crop and the
-                // colour filter appeared to do nothing. Rate is also deferred — forcing 2× at t=0
-                // makes the decoder drop the first GOP and flash blank ("gray screen on speeded start").
+                // Re-assert adjust a beat later too: applied at the instant Playing fires (the vmem
+                // vout isn't fully up yet) it often doesn't "stick", so the colour filter appeared to
+                // do nothing. Rate is also deferred — forcing 2× at t=0 makes the decoder drop the
+                // first GOP and flash blank ("gray screen on speeded start").
                 DispatcherTimer.RunOnce(() =>
                 {
-                    ApplyPreviewAspect();
                     ApplyPreviewFilter();
                     ApplyPreviewRate();
                 }, TimeSpan.FromMilliseconds(300));
@@ -825,9 +1038,9 @@ public partial class EditorViewModel : ViewModelBase, IDisposable
         ExportStatus = Localizer.Format("Editor_Exporting", 0);
         _exportCts = new CancellationTokenSource();
 
+        string outPath = BuildOutputPath(clip, ExportAsGif ? "gif" : SelectedExportFormat);
         try
         {
-            string outPath = BuildOutputPath(clip);
             double speed = EffectiveSpeed;
             double start = Math.Clamp(TrimStartSec, 0, DurationSec);
             double duration = Math.Max(0.2, Math.Min(TrimEndSec, DurationSec) - start);
@@ -839,12 +1052,22 @@ public partial class EditorViewModel : ViewModelBase, IDisposable
                 ExportStatus = Localizer.Format("Editor_Exporting", ExportProgress);
             });
 
-            // Hardware encode first (nvenc), transparent fallback to x264 on any failure.
-            int exit = await RunExportAsync(clip, outPath, start, duration, speed, useNvenc: true,
-                                            effectiveDuration, progress, _exportCts.Token);
-            if (exit != 0)
+            int exit;
+            if (ExportAsGif)
+            {
+                // GIF is a CPU palette pipeline — no nvenc path.
                 exit = await RunExportAsync(clip, outPath, start, duration, speed, useNvenc: false,
                                             effectiveDuration, progress, _exportCts.Token);
+            }
+            else
+            {
+                // Hardware encode first (nvenc), transparent fallback to x264 on any failure.
+                exit = await RunExportAsync(clip, outPath, start, duration, speed, useNvenc: true,
+                                            effectiveDuration, progress, _exportCts.Token);
+                if (exit != 0)
+                    exit = await RunExportAsync(clip, outPath, start, duration, speed, useNvenc: false,
+                                                effectiveDuration, progress, _exportCts.Token);
+            }
 
             if (exit == 0 && File.Exists(outPath))
             {
@@ -860,6 +1083,7 @@ public partial class EditorViewModel : ViewModelBase, IDisposable
         catch (OperationCanceledException)
         {
             ExportStatus = string.Empty;
+            try { if (File.Exists(outPath)) File.Delete(outPath); } catch { /* partial file cleanup */ }
         }
         catch (Exception ex)
         {
@@ -873,14 +1097,14 @@ public partial class EditorViewModel : ViewModelBase, IDisposable
     }
 
     /// <summary>"name-edit.mp4" next to the original, with a numeric suffix when taken.</summary>
-    private static string BuildOutputPath(ReplayClip clip)
+    private static string BuildOutputPath(ReplayClip clip, string ext)
     {
         string dir = Path.GetDirectoryName(clip.FilePath) ?? ".";
         string baseName = Path.GetFileNameWithoutExtension(clip.FilePath);
 
-        string candidate = Path.Combine(dir, $"{baseName}-edit.mp4");
+        string candidate = Path.Combine(dir, $"{baseName}-edit.{ext}");
         for (int i = 2; File.Exists(candidate); i++)
-            candidate = Path.Combine(dir, $"{baseName}-edit{i}.mp4");
+            candidate = Path.Combine(dir, $"{baseName}-edit{i}.{ext}");
         return candidate;
     }
 
@@ -894,6 +1118,66 @@ public partial class EditorViewModel : ViewModelBase, IDisposable
         while (s > 2.0) { parts.Add("atempo=2.0"); s /= 2.0; }
         parts.Add($"atempo={s.ToString("0.####", inv)}");
         return string.Join(',', parts);
+    }
+
+    private static int Even(double v)
+    {
+        int i = (int)Math.Round(v);
+        if (i < 2) i = 2;
+        return i - (i % 2);
+    }
+
+    /// <summary>Appends flip + 90° rotation to the END of the video chain (the final framed output).
+    /// Matches the preview's flip-then-rotate order.</summary>
+    private void AppendRotateFlip(List<string> vparts)
+    {
+        if (FlipH) vparts.Add("hflip");
+        if (FlipV) vparts.Add("vflip");
+        if (Rotation == 90) vparts.Add("transpose=1");       // 90° clockwise
+        else if (Rotation == 180) { vparts.Add("transpose=1"); vparts.Add("transpose=1"); }
+        else if (Rotation == 270) vparts.Add("transpose=2"); // 90° counter-clockwise
+    }
+
+    /// <summary>Appends the reframe pipeline: scale the video, crop the part that spills past the output
+    /// frame, then pad onto a black frame at the chosen position — producing the format-aspect output
+    /// with the video moved / zoomed / stretched inside it. No-op for Native + default cover.</summary>
+    private void AppendReframe(List<string> vparts)
+    {
+        bool needsAspect = SelectedAspect?.Ratio is double;
+        if (!needsAspect && !IsReframed && !IsCropped) return; // Native, untouched → passthrough
+        if (SourceWidth <= 0 || SourceHeight <= 0) return;     // can't compute output pixels yet
+
+        // Base = the (already-cropped) source frame.
+        int baseW = Even(SourceWidth * CropW);
+        int baseH = Even(SourceHeight * CropH);
+
+        // Output frame size = the chosen aspect at that resolution (matches the old format crop).
+        int ow, oh;
+        if (SelectedAspect?.Ratio is double r && r > 0)
+        {
+            ow = Even(Math.Min(baseW, baseH * r));
+            oh = Even(Math.Min(baseH, baseW / r));
+        }
+        else { ow = baseW; oh = baseH; }
+
+        // Video placement in output pixels (may be larger than / offset beyond the frame).
+        int vw = Even(VidW * ow);
+        int vh = Even(VidH * oh);
+        int ox = (int)Math.Round(VidX * ow);
+        int oy = (int)Math.Round(VidY * oh);
+
+        // Visible portion of the scaled video, then where it lands on the black canvas.
+        int cropX = Math.Max(0, -ox), cropY = Math.Max(0, -oy);
+        int px = Math.Max(0, ox), py = Math.Max(0, oy);
+        int cw = Even(Math.Min(vw - cropX, ow - px));
+        int ch = Even(Math.Min(vh - cropY, oh - py));
+        if (cw < 2 || ch < 2) return;                     // video entirely outside the frame — skip
+        cropX -= cropX % 2; cropY -= cropY % 2;
+        px -= px % 2; py -= py % 2;
+
+        vparts.Add($"scale={vw}:{vh}");
+        vparts.Add($"crop={cw}:{ch}:{cropX}:{cropY}");
+        vparts.Add($"pad={ow}:{oh}:{px}:{py}:black");
     }
 
     private Task<int> RunExportAsync(ReplayClip clip, string outPath, double start, double duration,
@@ -915,14 +1199,30 @@ public partial class EditorViewModel : ViewModelBase, IDisposable
         var vparts = new List<string>();
         if (speedChanged)
             vparts.Add($"setpts=PTS/{speed.ToString(inv)}");
-        if (SelectedAspect.Ratio is double ratio)
-        {
-            string r = ratio.ToString("0.#####", inv);
-            vparts.Add($"crop='min(iw\\,ih*{r})':'min(ih\\,iw/{r})'");
-            vparts.Add("scale='trunc(iw/2)*2':'trunc(ih/2)*2'"); // encoders need even dimensions
-        }
         if (SelectedFilter.Graph is { } graph)
             vparts.Add(graph);
+        if (IsCropped)
+        {
+            // Crop the source to the selected sub-region first (fractions of the input frame).
+            string cx = CropX.ToString("0.#####", inv), cy = CropY.ToString("0.#####", inv);
+            string cw = CropW.ToString("0.#####", inv), ch = CropH.ToString("0.#####", inv);
+            vparts.Add($"crop=iw*{cw}:ih*{ch}:iw*{cx}:ih*{cy}");
+        }
+        AppendReframe(vparts);
+        AppendRotateFlip(vparts);
+        if (SelectedExportResolution.Height > 0)
+            vparts.Add($"scale=-2:{SelectedExportResolution.Height}");   // even width, chosen height
+
+        // GIF: a self-contained palette pipeline (no audio, no encoder choice).
+        if (ExportAsGif)
+        {
+            string vchain = vparts.Count > 0 ? string.Join(",", vparts) + "," : "";
+            args.Append($"-filter_complex \"[0:v:0]{vchain}fps=15,split[ga][gb];" +
+                        $"[ga]palettegen=max_colors=256[gp];[gb][gp]paletteuse=dither=sierra2_4a[v]\" ");
+            args.Append("-map \"[v]\" -an -loop 0 -progress pipe:1 ");
+            args.Append($"\"{outPath}\"");
+            return RunFfmpegAsync(args.ToString(), ct, progress, effectiveDuration);
+        }
 
         if (vparts.Count > 0)
         {

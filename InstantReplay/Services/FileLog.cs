@@ -6,7 +6,7 @@ using System.Text;
 namespace Lag.Services;
 
 /// <summary>
-/// Medal-style persistent logging. The app already writes rich diagnostics via
+/// Persistent file logging. The app already writes rich diagnostics via
 /// <c>Console.WriteLine("[Component] …")</c> everywhere; this tees <see cref="Console.Out"/> and
 /// <see cref="Console.Error"/> to a timestamped rolling .txt under %AppData%\Lag\logs\ (and still to
 /// the original console), so every line is captured to disk for diagnostics — no changes needed at

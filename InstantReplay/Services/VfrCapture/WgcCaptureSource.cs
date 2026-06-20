@@ -13,7 +13,7 @@ namespace Lag.Services.VfrCapture;
 
 /// <summary>
 /// Captures ONE window's swapchain via Windows Graphics Capture and raises a frame event with
-/// the underlying D3D11 texture and its real presentation time. This is the Game-Bar / Medal
+/// the underlying D3D11 texture and its real presentation time. This is the Game-Bar
 /// style capture: it reads the window's own backbuffer, so it sees a fullscreen game past
 /// independent flip (which monitor/DXGI duplication cannot) at the game's true, variable rate —
 /// no hooks, no Trusted-Mode conflicts.
@@ -65,8 +65,8 @@ public sealed class WgcCaptureSource : IDisposable
     }
 
     /// <summary>Begins capture. Throws on failure so the orchestrator can fall back cleanly.
-    /// <paramref name="maxFps"/> (0 = uncapped) sets a generous MinUpdateInterval floor — Medal
-    /// sets this explicitly and gets the full window rate; without it WGC appears to throttle to
+    /// <paramref name="maxFps"/> (0 = uncapped) sets a generous MinUpdateInterval floor —
+    /// setting it explicitly yields the full window rate; without it WGC appears to throttle to
     /// the ~60 vsync rate.</summary>
     public void Start(bool captureCursor, int maxFps = 0)
     {
@@ -95,8 +95,7 @@ public sealed class WgcCaptureSource : IDisposable
 
         // Kill the yellow WGC capture border. The earlier "just set IsBorderRequired=false" did NOT
         // remove it on Windows 10 — because the OS keeps drawing the border unless the app first
-        // REQUESTS borderless access. So do both, in order (this is exactly what Medal does — its log
-        // shows "borderless ... requested, allowed"):
+        // REQUESTS borderless access. So do both, in order:
         //   1) GraphicsCaptureAccess.RequestAccessAsync(Borderless) — get permission to hide the border.
         //   2) IsBorderRequired = false — set unconditionally inside TrySet, so a build without the
         //      property just no-ops instead of being wrongly skipped by a capability check.
@@ -116,7 +115,7 @@ public sealed class WgcCaptureSource : IDisposable
             ? "[WgcCaptureSource] disabled WinRT capture border."
             : "[WgcCaptureSource] capture-border toggle not available on this OS build.");
 
-        // MinUpdateInterval (Win11 24H2, build 26100). Medal sets this explicitly; doing so appears
+        // MinUpdateInterval (Win11 24H2, build 26100). Setting this explicitly appears
         // to switch WGC from vsync-throttled (~60) to present-driven delivery. Use a floor well
         // above the target so it never actually caps us — it's the act of setting it that matters.
         if (maxFps > 0 && OperatingSystem.IsWindowsVersionAtLeast(10, 0, 26100))

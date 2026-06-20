@@ -67,6 +67,12 @@
   <sys:String x:Key="Editor_ExportError">Помилка експорту: {0}</sys:String>
   <sys:String x:Key="Editor_Speed">Швидкість</sys:String>
   <sys:String x:Key="Editor_Format">Формат</sys:String>
+  <sys:String x:Key="Editor_Crop">Кадрування</sys:String>
+  <sys:String x:Key="Editor_Deselect">Зняти виділення</sys:String>
+  <sys:String x:Key="Editor_ExportResolution">Роздільність</sys:String>
+  <sys:String x:Key="Editor_ExportGif">Експорт у GIF</sys:String>
+  <sys:String x:Key="Editor_ExportOptions">Опції експорту</sys:String>
+  <sys:String x:Key="Editor_CancelExport">Скасувати</sys:String>
   <sys:String x:Key="Editor_TabClip">Кліп</sys:String>
   <sys:String x:Key="Editor_TabFilters">Фільтри</sys:String>
   <sys:String x:Key="Editor_Tracks">АУДІОДОРІЖКИ</sys:String>

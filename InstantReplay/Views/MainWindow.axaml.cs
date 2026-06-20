@@ -27,9 +27,13 @@ public partial class MainWindow : Window
             }
 
             // Hide to tray. Stop video playback first — the window is only hidden (the view
-            // stays attached), so without this VLC keeps playing audibly from the tray.
+            // stays attached), so without this VLC keeps playing audibly from the tray. The editor
+            // has its OWN MediaPlayer, so stop that too (the bug: editor audio kept playing in tray).
             if (DataContext is MainViewModel mainVm)
+            {
                 mainVm.Player.StopPlayback();
+                mainVm.Editor.StopPreview();
+            }
 
             e.Cancel = true;
             Hide();

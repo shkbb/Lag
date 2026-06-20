@@ -219,8 +219,8 @@ public sealed class Bgra2Nv12Converter : IDisposable
         // 8-bit path yet — they'd need tone-mapping or a P010 pipeline (see _inputCopy format).
         var inCs = new VideoProcessorColorSpace { RgbRange = false };           // false = full-range RGB in
         _videoContext.VideoProcessorSetStreamColorSpace(_processor, 0, inCs);
-        // Output LIMITED-range (16-235) BT.709 — the standard video range every recorder (incl.
-        // Medal: color_range=tv) uses and players handle unambiguously. Full-range out looked
+        // Output LIMITED-range (16-235) BT.709 — the standard video range recorders
+        // use (color_range=tv) and players handle unambiguously. Full-range out looked
         // over-contrasted/dark because the round-trip got double-expanded. Encoder tags MPEG/tv.
         var outCs = new VideoProcessorColorSpace { YCbCrMatrix = true, NominalRange = 1 }; // BT.709, 16-235
         _videoContext.VideoProcessorSetOutputColorSpace(_processor, outCs);

@@ -54,7 +54,7 @@ public partial class SettingsViewModel : ViewModelBase
 
     partial void OnSelectedBufferChanged(BufferOption value)
     {
-        SaveSettings();
+        SaveSettingsRestartRequired();
     }
 
     /// <summary>
@@ -78,7 +78,7 @@ public partial class SettingsViewModel : ViewModelBase
         // its native height. Both are rebuilt when the selected monitor changes.
         RebuildFpsOptions();
         RebuildResolutionOptions();
-        SaveSettings();
+        SaveSettingsRestartRequired();
     }
 
     private void RefreshMonitors()
@@ -99,7 +99,7 @@ public partial class SettingsViewModel : ViewModelBase
 
     partial void OnSelectedMicrophoneChanged(MicrophoneInfo? value)
     {
-        SaveSettings();
+        SaveSettingsRestartRequired();
     }
 
     private void RefreshMicrophones()
@@ -175,7 +175,7 @@ public partial class SettingsViewModel : ViewModelBase
 
     partial void OnLibraryPathChanged(string value)
     {
-        SaveSettings();
+        SaveSettingsRestartRequired();
     }
 
     // ───────────── Frame Rate ─────────────
@@ -189,7 +189,7 @@ public partial class SettingsViewModel : ViewModelBase
     partial void OnSelectedFpsChanged(FpsOption value)
     {
         OnPropertyChanged(nameof(IsCustomFps));
-        SaveSettings();
+        SaveSettingsRestartRequired();
         MaybeWarnIntensive();
     }
 
@@ -203,7 +203,7 @@ public partial class SettingsViewModel : ViewModelBase
         // starve the CBR bitrate (the fps-hint splits bit_rate across it). Re-enters once.
         int cap = CurrentRefreshCap();
         if (value > cap) { CustomFps = cap; return; }
-        SaveSettings();
+        SaveSettingsRestartRequired();
         MaybeWarnIntensive();
     }
 
@@ -271,10 +271,10 @@ public partial class SettingsViewModel : ViewModelBase
         }
     }
 
-    // ───────────── Intensive-quality tiers + warning (Medal-style) ─────────────
-    // We DON'T block high settings — we colour them by "intensity" and show a one-time disclaimer,
-    // like Medal. Tier 0 = normal, 1 = caution (amber), 2 = extreme (red). Resolution above 1080p
-    // and bitrate above ~25 Mbps / fps above 60 are the thresholds Medal calls out.
+    // ───────────── Intensive-quality tiers + warning ─────────────
+    // We DON'T block high settings — we colour them by "intensity" and show a one-time disclaimer.
+    // Tier 0 = normal, 1 = caution (amber), 2 = extreme (red). Resolution above 1080p
+    // and bitrate above ~25 Mbps / fps above 60 are the thresholds we call out.
 
     private static int FpsTier(int fps) => fps > 120 ? 2 : fps > 60 ? 1 : 0;
     private static int BitrateTier(int mbps) => mbps > 50 ? 2 : mbps > 30 ? 1 : 0;
@@ -432,17 +432,16 @@ public partial class SettingsViewModel : ViewModelBase
     // ───────────── Output File Format ─────────────
 
     /// <summary>Container formats for saved replays.</summary>
-    // mp4 + mov are verified clean with our H.264/HEVC/AV1 + AAC streams. mkv/avi are omitted: the
-    // matroska muxer rejects our stream extradata at write_header (needs separate muxer work) and avi
-    // can't carry HEVC/AV1 — offering them would produce broken files. (mkv: future task.)
-    public IReadOnlyList<string> FormatOptions { get; } = new[] { "mp4", "mov" };
+    // mp4 + mov + mkv are verified clean with our H.264/HEVC/AV1 + AAC streams (decode + stream-copy).
+    // avi is omitted: it can't carry HEVC/AV1, so offering it would produce broken files.
+    public IReadOnlyList<string> FormatOptions { get; } = new[] { "mp4", "mov", "mkv" };
 
     [ObservableProperty]
     private string _selectedFormat = "mp4";
 
     partial void OnSelectedFormatChanged(string value)
     {
-        SaveSettings();
+        SaveSettingsRestartRequired();
     }
 
     // ───────────── Output Resolution (render downscale) ─────────────
@@ -459,7 +458,7 @@ public partial class SettingsViewModel : ViewModelBase
 
     partial void OnSelectedResolutionChanged(ResolutionOption value)
     {
-        SaveSettings();
+        SaveSettingsRestartRequired();
         MaybeWarnIntensive();
     }
 
@@ -477,7 +476,7 @@ public partial class SettingsViewModel : ViewModelBase
 
     partial void OnSelectedCodecChanged(CodecOption value)
     {
-        SaveSettings();
+        SaveSettingsRestartRequired();
     }
 
     // ───────────── Library Auto-Cleanup (opt-in) ─────────────
@@ -521,7 +520,7 @@ public partial class SettingsViewModel : ViewModelBase
     partial void OnSelectedBitrateChanged(BitrateOption value)
     {
         OnPropertyChanged(nameof(IsCustomBitrate));
-        SaveSettings();
+        SaveSettingsRestartRequired();
         MaybeWarnIntensive();
     }
 
@@ -531,13 +530,13 @@ public partial class SettingsViewModel : ViewModelBase
 
     partial void OnCustomBitrateMbpsChanged(int value)
     {
-        SaveSettings();
+        SaveSettingsRestartRequired();
         MaybeWarnIntensive();
     }
 
     public bool IsCustomBitrate => SelectedBitrate.Kbps == 0;
 
-    // Bitrate range. High values are ALLOWED (Medal-style: warn, don't block) but coloured by tier
+    // Bitrate range. High values are ALLOWED (warn, don't block) but coloured by tier
     // and gated behind the intensive-quality dialog — the rolling buffer is in RAM, so RAM ≈ bitrate
     // × bufferSeconds / 8 (100 Mbps × 5 min ≈ 3.75 GB). These are just absolute sanity bounds so a
     // custom value can't go truly insane (the old code allowed 300).
@@ -580,7 +579,7 @@ public partial class SettingsViewModel : ViewModelBase
 
     partial void OnSelectedGpuChanged(GpuOption value)
     {
-        SaveSettings();
+        SaveSettingsRestartRequired();
     }
 
     private IReadOnlyList<GpuOption> BuildGpuOptions()
@@ -601,7 +600,7 @@ public partial class SettingsViewModel : ViewModelBase
     partial void OnAudioModeIndexChanged(int value)
     {
         OnPropertyChanged(nameof(IsAppsMode));
-        SaveSettings();
+        SaveSettingsRestartRequired();
     }
 
     public bool IsAppsMode => AudioModeIndex == 1;
@@ -662,34 +661,34 @@ public partial class SettingsViewModel : ViewModelBase
         }
     }
 
-    private void OnAppAudioChanged() => SaveSettings();
+    private void OnAppAudioChanged() => SaveSettingsRestartRequired();
 
     // ───────────── System audio source ("Звук системи" row: enable + volume) ─────────────
 
     /// <summary>Capture the full-system loopback (used in "Весь звук ПК" mode). Its row checkbox.</summary>
     [ObservableProperty]
     private bool _systemAudioEnabled = true;
-    partial void OnSystemAudioEnabledChanged(bool value) => SaveSettings();
+    partial void OnSystemAudioEnabledChanged(bool value) => SaveSettingsRestartRequired();
 
     /// <summary>System-audio volume in percent (0–100), applied as a 0.0–1.0 gain to the loopback.</summary>
     [ObservableProperty]
     private int _systemAudioVolume = 100;
-    partial void OnSystemAudioVolumeChanged(int value) => SaveSettings();
+    partial void OnSystemAudioVolumeChanged(int value) => SaveSettingsRestartRequired();
 
     /// <summary>Microphone row checkbox — off = no mic captured at all.</summary>
     [ObservableProperty]
     private bool _micEnabled = true;
-    partial void OnMicEnabledChanged(bool value) => SaveSettings();
+    partial void OnMicEnabledChanged(bool value) => SaveSettingsRestartRequired();
 
     /// <summary>"Звук гри" row (specific-apps mode): capture the detected game's own audio so it's
-    /// always recorded even if it isn't in the picked-apps list, with its own volume — like Medal.</summary>
+    /// always recorded even if it isn't in the picked-apps list, with its own volume.</summary>
     [ObservableProperty]
     private bool _gameAudioEnabled = true;
-    partial void OnGameAudioEnabledChanged(bool value) => SaveSettings();
+    partial void OnGameAudioEnabledChanged(bool value) => SaveSettingsRestartRequired();
 
     [ObservableProperty]
     private int _gameAudioVolume = 100;
-    partial void OnGameAudioVolumeChanged(int value) => SaveSettings();
+    partial void OnGameAudioVolumeChanged(int value) => SaveSettingsRestartRequired();
 
     // ───────────── Microphone Volume ─────────────
 
@@ -699,7 +698,7 @@ public partial class SettingsViewModel : ViewModelBase
 
     partial void OnMicVolumeChanged(int value)
     {
-        SaveSettings();
+        SaveSettingsRestartRequired();
     }
 
     // ───────────── Microphone Channels (stereo / mono) ─────────────
@@ -710,7 +709,7 @@ public partial class SettingsViewModel : ViewModelBase
 
     partial void OnMicChannelIndexChanged(int value)
     {
-        SaveSettings();
+        SaveSettingsRestartRequired();
     }
 
     public bool MicMono => MicChannelIndex == 1;
@@ -760,20 +759,7 @@ public partial class SettingsViewModel : ViewModelBase
 
     partial void OnSeparateAudioTracksChanged(bool value)
     {
-        SaveSettings();
-    }
-
-    // ───────────── Capture engine (OBS vs native VFR) ─────────────
-
-    /// <summary>Use the native WGC/NVENC VFR engine instead of the OBS replay buffer. OBS stays the
-    /// default; this is opt-in until the native engine is fully proven. Takes effect on next Start.</summary>
-    [ObservableProperty]
-    private bool _useVfrEngine;
-
-    partial void OnUseVfrEngineChanged(bool value)
-    {
-        HasPendingChanges = true;   // engine swap needs a stop/start to apply
-        SaveSettings();
+        SaveSettingsRestartRequired();
     }
 
     // ───────────── Automation ─────────────
@@ -813,7 +799,7 @@ public partial class SettingsViewModel : ViewModelBase
     }
 
     /// <summary>
-    /// Disable Windows Game Mode (Medal-style). Game Mode deprioritizes background apps
+    /// Disable Windows Game Mode. Game Mode deprioritizes background apps
     /// while a game is focused, which throttles the capture pipeline to a few FPS and
     /// delays hotkey handling. Default ON — strongly recommended.
     /// </summary>
@@ -828,7 +814,7 @@ public partial class SettingsViewModel : ViewModelBase
     }
 
     /// <summary>
-    /// Toggles Windows Game Mode via the HKCU GameBar keys (the same approach Medal uses).
+    /// Toggles Windows Game Mode via the HKCU GameBar keys.
     /// disable=true → Game Mode off; false → restored to the Windows default (on).
     /// </summary>
     private static void ApplyDisableGameMode(bool disable)
@@ -922,7 +908,7 @@ public partial class SettingsViewModel : ViewModelBase
     /// switch we regenerate the items and re-select the entry with the same underlying value.
     /// SaveSettings is suppressed during the churn — selections are value-identical.
     /// </summary>
-    /// <summary>Codec FORMATS this machine can actually encode (probed by EncoderSelector) — Medal-style:
+    /// <summary>Codec FORMATS this machine can actually encode (probed by EncoderSelector):
     /// the user picks the format (H.264 / HEVC / AV1) and the engine auto-selects the best encoder
     /// (NVENC / AMF / QSV, x264 fallback) for it. Formats with no usable encoder here never appear, so
     /// e.g. AV1 is hidden on a GPU that can't do it — no confusing dead options.</summary>
@@ -969,7 +955,7 @@ public partial class SettingsViewModel : ViewModelBase
             // ── Output resolution (default: Native; capped to the monitor, coloured by tier) ──
             RebuildResolutionOptions();
 
-            // ── Codec (default: Auto; Medal-style FORMAT picker, only what this machine can encode) ──
+            // ── Codec (default: Auto; FORMAT picker, only what this machine can encode) ──
             string selCodec = SelectedCodec?.EncoderId ?? "";
             CodecOptions.Clear();
             CodecOptions.Add(new CodecOption(Localizer.Get("Option_Auto"), ""));
@@ -977,7 +963,7 @@ public partial class SettingsViewModel : ViewModelBase
                 CodecOptions.Add(new CodecOption(label, value));
             SelectedCodec = CodecOptions.FirstOrDefault(c => c.EncoderId == selCodec) ?? CodecOptions[0];
 
-            // ── Bitrate (default: 20 Mbps; Medal-style range, high values coloured by tier) ──
+            // ── Bitrate (default: 20 Mbps; range with high values coloured by tier) ──
             int selKbps = SelectedBitrate?.Kbps ?? 20000;
             BitrateOptions.Clear();
             foreach (int kbps in new[] { 3000, 5000, 7000, 10000, 15000, 20000, 25000, 30000, 50000, 70000, 100000 })
@@ -1154,7 +1140,7 @@ public partial class SettingsViewModel : ViewModelBase
         // Listen for hotkey capture events
         _hotkeyManager.HotkeyCaptured += OnHotkeyCaptured;
 
-        // Live "apps playing audio" scanner (Medal-style picker): scan now, then every 4 s.
+        // Live "apps playing audio" scanner: scan now, then every 4 s.
         RefreshAudioAppsNow();
         _audioAppsTimer = new Avalonia.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(4) };
         _audioAppsTimer.Tick += (_, _) => RefreshAudioAppsNow();
@@ -1293,6 +1279,25 @@ public partial class SettingsViewModel : ViewModelBase
 
     // ───────────── Settings Persistence ─────────────
 
+    /// <summary>Persists settings AND, while a recording is live, flags that the change only takes
+    /// effect after the recording is restarted. Use ONLY for settings baked into the capture
+    /// pipeline snapshot (everything in <see cref="Lag.Services.ObsIntegration.RecorderOptions"/>:
+    /// monitor, fps, resolution, codec, bitrate, GPU, buffer, container, library folder, and all
+    /// audio routing/levels). Settings that apply live — language, hotkeys, push-to-talk, Game
+    /// Mode, autostart, library quota — call <see cref="SaveSettings"/> so they don't nag a
+    /// pointless restart (the original bug: changing the language showed a "restart recording" hint
+    /// even though it switches instantly).</summary>
+    private void SaveSettingsRestartRequired()
+    {
+        // Honour the SAME suppression as SaveSettings: during construction and localized-option
+        // rebuilds (a language switch reassigns the FPS/bitrate/resolution selections) the property
+        // changes aren't real user edits — without this guard, switching language while recording
+        // would raise the restart flag via that rebuild side-effect (the very bug we're fixing).
+        if (_isInitializing) return;
+        if (_engine.IsRecording) HasPendingChanges = true;
+        SaveSettings();
+    }
+
     private void SaveSettings()
     {
         // Never persist while constructing/loading — see _isInitializing.
@@ -1300,11 +1305,6 @@ public partial class SettingsViewModel : ViewModelBase
 
         try
         {
-            if (_engine.IsRecording)
-            {
-                HasPendingChanges = true;
-            }
-
             var settings = new SettingsData
             {
                 // Persist seconds (not minutes) so sub-minute buffers like "30 секунд" survive restart.
@@ -1339,7 +1339,6 @@ public partial class SettingsViewModel : ViewModelBase
                 PttKey = _pttKey.ToString(),
                 MicMono = MicMono,
                 SeparateAudioTracks = SeparateAudioTracks,
-                UseVfrEngine = UseVfrEngine,
                 SystemAudioEnabled = SystemAudioEnabled,
                 SystemAudioVolume = SystemAudioVolume,
                 MicEnabled = MicEnabled,
@@ -1465,7 +1464,6 @@ public partial class SettingsViewModel : ViewModelBase
             }
             MicChannelIndex = settings.MicMono ? 1 : 0;
             SeparateAudioTracks = settings.SeparateAudioTracks;
-            UseVfrEngine = settings.UseVfrEngine;
 
             // Restore the persisted monitor/microphone by matching against the enumerated devices.
             if (!string.IsNullOrEmpty(settings.MonitorDeviceName))
@@ -1577,8 +1575,6 @@ public partial class SettingsViewModel : ViewModelBase
         /// <summary>Save system audio and mic as separate tracks in the file.</summary>
         public bool SeparateAudioTracks { get; set; }
 
-        /// <summary>Use the native WGC/NVENC VFR engine instead of OBS (opt-in).</summary>
-        public bool UseVfrEngine { get; set; }
 
         /// <summary>Output container format: mp4 (default), mkv, mov or avi.</summary>
         public string FileFormat { get; set; } = "mp4";
@@ -1606,7 +1602,7 @@ public record LanguageOption(string Code, string Display)
 }
 
 /// <summary>Output resolution preset (TargetHeight = 0 means native screen resolution).
-/// Tier: 0 = normal, 1 = caution (amber), 2 = extreme (red) — drives the Medal-style colouring.</summary>
+/// Tier: 0 = normal, 1 = caution (amber), 2 = extreme (red) — drives the tier colouring.</summary>
 public record ResolutionOption(string Display, int TargetHeight, int Tier = 0)
 {
     public override string ToString() => Display;
@@ -1624,13 +1620,13 @@ public record StorageLimitOption(int Gb)
     public override string ToString() => $"{Gb} GB";
 }
 
-/// <summary>Video bitrate preset (Kbps = 0 means "Custom"). Tier drives Medal-style colouring.</summary>
+/// <summary>Video bitrate preset (Kbps = 0 means "Custom"). Tier drives the colouring.</summary>
 public record BitrateOption(string Display, int Kbps, int Tier = 0)
 {
     public override string ToString() => Display;
 }
 
-/// <summary>Frame-rate preset (Value = 0 means "Custom"). Tier drives Medal-style colouring.</summary>
+/// <summary>Frame-rate preset (Value = 0 means "Custom"). Tier drives the colouring.</summary>
 public record FpsOption(string Display, int Value, int Tier = 0)
 {
     public override string ToString() => Display;
@@ -1643,7 +1639,7 @@ public record GpuOption(int Index, string Display)
 }
 
 /// <summary>
-/// One row of the Medal-style "record audio from these apps" list: checkbox + per-app volume.
+/// One row of the "record audio from these apps" list: checkbox + per-app volume.
 /// Raises the supplied callback on every change so selections persist immediately.
 /// </summary>
 public partial class AppAudioItem : ObservableObject

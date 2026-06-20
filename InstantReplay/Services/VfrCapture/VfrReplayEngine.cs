@@ -9,7 +9,7 @@ using SharpDX.Direct3D11;
 namespace Lag.Services.VfrCapture;
 
 /// <summary>What the engine records. <see cref="AutoGame"/> = capture a detected game window, and
-/// fall back to the monitor when no game is running (Medal-style "record anything"). <see cref="Display"/>
+/// fall back to the monitor when no game is running ("record anything"). <see cref="Display"/>
 /// = always capture the chosen monitor, no game detection (explicit desktop recording).</summary>
 public enum CaptureMode { AutoGame, Display }
 
@@ -45,7 +45,7 @@ public sealed record VfrEngineOptions
 }
 
 /// <summary>
-/// The native VFR replay engine — our Medal-style core. It locks onto a running game window,
+/// The native VFR replay engine — our capture core. It locks onto a running game window,
 /// captures it via WGC at the game's real frame cadence, encodes each frame on the GPU with its
 /// true timestamp into a rolling buffer, and writes a variable-frame-rate MP4 on demand. No CFR
 /// padding, no duplicate frames, no system-RAM copies.
@@ -293,7 +293,7 @@ public sealed class VfrReplayEngine : IDisposable
 
             capture.Start(_options.CaptureCursor, _options.MaxFps);
             // Lift the process to High while actively capturing so the converter/encoder don't get
-            // starved by the game under GPU+CPU load (Medal does the same). Restored on teardown.
+            // starved by the game under GPU+CPU load. Restored on teardown.
             SetProcessPriority(System.Diagnostics.ProcessPriorityClass.High);
             // The rolling buffer holds hundreds of MB of packet byte[]; default GC does periodic
             // gen2/LOH collections that freeze the process ~50ms and make WGC skip presents. Defer
@@ -390,8 +390,8 @@ public sealed class VfrReplayEngine : IDisposable
             if (_options.SeparateAudioTracks)
             {
                 // Track 0: "All" = game + mic mixed. DEFAULT track, so EVERY player plays it and you
-                // hear everything; tracks 1-2 stay separate for the editor. This is Medal's layout
-                // ("All Audio" default + per-source tracks).
+                // hear everything; tracks 1-2 stay separate for the editor. This is the layout
+                // we use: an "All Audio" default + per-source tracks.
                 var allEnc = new AacAudioEncoder(gf.SampleRate, gf.Channels, MapSampleFormat(gf), 160);
                 var allRing = new PacketRingBuffer(_options.BufferSeconds);
                 allEnc.PacketReady += p => allRing.Add(p);

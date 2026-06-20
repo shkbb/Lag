@@ -121,7 +121,7 @@ public sealed unsafe class NvencVfrEncoder : IDisposable
         // Colour metadata so players decode exactly what the converter produced (full-range BT.709).
         // Missing/mismatched tags were why the picture looked darker / colour-shifted.
         _ctx->colorspace = AVColorSpace.AVCOL_SPC_BT709;
-        _ctx->color_range = AVColorRange.AVCOL_RANGE_MPEG;          // limited/tv (16-235) — like Medal
+        _ctx->color_range = AVColorRange.AVCOL_RANGE_MPEG;          // limited/tv (16-235)
         _ctx->color_primaries = AVColorPrimaries.AVCOL_PRI_BT709;
         _ctx->color_trc = AVColorTransferCharacteristic.AVCOL_TRC_BT709;
         _ctx->time_base = new AVRational { num = 1, den = TimeBaseDen };
@@ -135,6 +135,12 @@ public sealed unsafe class NvencVfrEncoder : IDisposable
         _ctx->rc_buffer_size = (int)(bps * 2);
         _ctx->gop_size = 240;
         _ctx->max_b_frames = 0;
+        // Emit the codec config (SPS/PPS for H.264, VPS/SPS/PPS for HEVC, the AV1 sequence header)
+        // as out-of-band EXTRADATA (avcC/hvcC/av1C) instead of repeating it in-band before each
+        // keyframe. mp4/mov can rebuild it from in-band NALs, but the matroska muxer needs the
+        // CodecPrivate at write_header time and rejects the file without it. Global-header extradata
+        // is the standard way and works for all three containers.
+        _ctx->flags |= ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER;
         if (_hwMode) _ctx->hw_frames_ctx = ffmpeg.av_buffer_ref(_hwFrames);
 
         ApplyCodecOptions(preset);
@@ -159,7 +165,7 @@ public sealed unsafe class NvencVfrEncoder : IDisposable
         {
             Opt("preset", $"p{Math.Clamp(preset, 1, 7)}");
             Opt("tune", "hq");          // high-quality tune (recording) — NOT "ll", which starves bits
-            // CBR (Medal-style): always FILLS the target bitrate. VBR+cq starved AV1 to ~1.5 Mbps
+            // CBR: always FILLS the target bitrate. VBR+cq starved AV1 to ~1.5 Mbps
             // (cq is a quality target and AV1 is so efficient it sat far below the ceiling). CBR puts
             // AV1's efficiency into quality at a stable, predictable size.
             Opt("rc", "cbr");

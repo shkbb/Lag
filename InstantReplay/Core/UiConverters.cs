@@ -22,7 +22,7 @@ public class EqualsConverter : IValueConverter
 
 /// <summary>
 /// Maps a quality "intensity tier" (0 = normal, 1 = caution, 2 = extreme) to a text brush, so
-/// dropdown options for high FPS / bitrate / resolution stand out (Medal-style): tier 0 keeps the
+/// dropdown options for high FPS / bitrate / resolution stand out: tier 0 keeps the
 /// inherited theme colour, tier 1 is amber, tier 2 is red.
 /// </summary>
 public class IntensityToBrushConverter : IValueConverter
