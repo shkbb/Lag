@@ -157,4 +157,14 @@
   <sys:String x:Key="Player_Used">Ocupado</sys:String>
 
   <sys:String x:Key="Library_EmptyTitle">Ainda não há replays</sys:String>
+  <!-- ════════ Pause recording ════════ -->
+  <sys:String x:Key="Settings_Hotkey_Pause">Pausar gravação</sys:String>
+  <sys:String x:Key="Btn_PauseRecording">Pausar</sys:String>
+  <sys:String x:Key="Btn_ResumeRecording">Retomar</sys:String>
+  <sys:String x:Key="Status_Paused">Em pausa</sys:String>
+  <!-- ════════ Output device + audio mode by target ════════ -->
+  <sys:String x:Key="Settings_OutputDevice">Dispositivo de saída</sys:String>
+  <sys:String x:Key="Option_DefaultDevice">Padrão</sys:String>
+  <sys:String x:Key="Settings_AudioModeByTarget">Áudio conforme a captura</sys:String>
+  <sys:String x:Key="Settings_AudioModeByTarget_Desc">Um jogo captura os apps selecionados; o ambiente de trabalho, todo o som do PC.</sys:String>
 </ResourceDictionary>

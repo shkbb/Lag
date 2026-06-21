@@ -175,4 +175,14 @@
   <sys:String x:Key="Player_Used">Зайнято</sys:String>
 
   <sys:String x:Key="Library_EmptyTitle">Поки що немає повторів</sys:String>
+  <!-- ════════ Pause recording ════════ -->
+  <sys:String x:Key="Settings_Hotkey_Pause">Пауза запису</sys:String>
+  <sys:String x:Key="Btn_PauseRecording">Пауза</sys:String>
+  <sys:String x:Key="Btn_ResumeRecording">Відновити</sys:String>
+  <sys:String x:Key="Status_Paused">Призупинено</sys:String>
+  <!-- ════════ Output device + audio mode by target ════════ -->
+  <sys:String x:Key="Settings_OutputDevice">Пристрій виводу</sys:String>
+  <sys:String x:Key="Option_DefaultDevice">За замовчуванням</sys:String>
+  <sys:String x:Key="Settings_AudioModeByTarget">Звук залежно від джерела</sys:String>
+  <sys:String x:Key="Settings_AudioModeByTarget_Desc">Запис гри бере обрані програми, робочий стіл — весь звук ПК.</sys:String>
 </ResourceDictionary>

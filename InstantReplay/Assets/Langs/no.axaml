@@ -157,4 +157,14 @@
   <sys:String x:Key="Player_Used">Brukt</sys:String>
 
   <sys:String x:Key="Library_EmptyTitle">Ingen repriser ennå</sys:String>
+  <!-- ════════ Pause recording ════════ -->
+  <sys:String x:Key="Settings_Hotkey_Pause">Sett opptak på pause</sys:String>
+  <sys:String x:Key="Btn_PauseRecording">Pause</sys:String>
+  <sys:String x:Key="Btn_ResumeRecording">Gjenoppta</sys:String>
+  <sys:String x:Key="Status_Paused">Satt på pause</sys:String>
+  <!-- ════════ Output device + audio mode by target ════════ -->
+  <sys:String x:Key="Settings_OutputDevice">Avspillingsenhet</sys:String>
+  <sys:String x:Key="Option_DefaultDevice">Standard</sys:String>
+  <sys:String x:Key="Settings_AudioModeByTarget">Lyd etter opptakstype</sys:String>
+  <sys:String x:Key="Settings_AudioModeByTarget_Desc">Spill tar opp valgte apper, skrivebordet all PC-lyd.</sys:String>
 </ResourceDictionary>

@@ -81,6 +81,22 @@
           </StackPanel>
         </Button>
 
+        <!-- Pause / Resume the buffer feed (only shown while recording) -->
+        <Button DockPanel.Dock="Top" Margin="0,8,0,0" Classes="surface"
+                Command="{Binding TogglePauseRecordingCommand}"
+                IsVisible="{Binding IsRecording}">
+          <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+            <mi:MaterialIcon Kind="Pause" Width="15" Height="15" VerticalAlignment="Center"
+                             IsVisible="{Binding !IsPaused}" />
+            <mi:MaterialIcon Kind="Play" Width="15" Height="15" VerticalAlignment="Center"
+                             IsVisible="{Binding IsPaused}" />
+            <TextBlock Text="{DynamicResource Btn_PauseRecording}" VerticalAlignment="Center"
+                       IsVisible="{Binding !IsPaused}" />
+            <TextBlock Text="{DynamicResource Btn_ResumeRecording}" VerticalAlignment="Center"
+                       IsVisible="{Binding IsPaused}" />
+          </StackPanel>
+        </Button>
+
         <!-- Hotkey hint -->
         <TextBlock DockPanel.Dock="Top" Margin="0,8,0,0"
                    Text="{Binding Settings.HotkeyDisplayText}"

@@ -157,4 +157,14 @@
   <sys:String x:Key="Player_Used">Kasutusel</sys:String>
 
   <sys:String x:Key="Library_EmptyTitle">Kordusi pole veel</sys:String>
+  <!-- ════════ Pause recording ════════ -->
+  <sys:String x:Key="Settings_Hotkey_Pause">Peata salvestus</sys:String>
+  <sys:String x:Key="Btn_PauseRecording">Peata</sys:String>
+  <sys:String x:Key="Btn_ResumeRecording">Jätka</sys:String>
+  <sys:String x:Key="Status_Paused">Peatatud</sys:String>
+  <!-- ════════ Output device + audio mode by target ════════ -->
+  <sys:String x:Key="Settings_OutputDevice">Väljundseade</sys:String>
+  <sys:String x:Key="Option_DefaultDevice">Vaikimisi</sys:String>
+  <sys:String x:Key="Settings_AudioModeByTarget">Heli vastavalt salvestusele</sys:String>
+  <sys:String x:Key="Settings_AudioModeByTarget_Desc">Mängu puhul valitud rakendused, töölaua puhul kogu arvuti heli.</sys:String>
 </ResourceDictionary>

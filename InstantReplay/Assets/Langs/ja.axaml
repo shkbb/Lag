@@ -157,4 +157,14 @@
   <sys:String x:Key="Player_Used">使用容量</sys:String>
 
   <sys:String x:Key="Library_EmptyTitle">まだリプレイがありません</sys:String>
+  <!-- ════════ Pause recording ════════ -->
+  <sys:String x:Key="Settings_Hotkey_Pause">録画を一時停止</sys:String>
+  <sys:String x:Key="Btn_PauseRecording">一時停止</sys:String>
+  <sys:String x:Key="Btn_ResumeRecording">再開</sys:String>
+  <sys:String x:Key="Status_Paused">一時停止中</sys:String>
+  <!-- ════════ Output device + audio mode by target ════════ -->
+  <sys:String x:Key="Settings_OutputDevice">出力デバイス</sys:String>
+  <sys:String x:Key="Option_DefaultDevice">既定</sys:String>
+  <sys:String x:Key="Settings_AudioModeByTarget">録画対象に合わせて音声を切替</sys:String>
+  <sys:String x:Key="Settings_AudioModeByTarget_Desc">ゲームは選択したアプリ、デスクトップはPC全体の音声を録音します。</sys:String>
 </ResourceDictionary>

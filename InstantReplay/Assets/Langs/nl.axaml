@@ -157,4 +157,14 @@
   <sys:String x:Key="Player_Used">Gebruikt</sys:String>
 
   <sys:String x:Key="Library_EmptyTitle">Nog geen replays</sys:String>
+  <!-- ════════ Pause recording ════════ -->
+  <sys:String x:Key="Settings_Hotkey_Pause">Opname pauzeren</sys:String>
+  <sys:String x:Key="Btn_PauseRecording">Pauzeren</sys:String>
+  <sys:String x:Key="Btn_ResumeRecording">Hervatten</sys:String>
+  <sys:String x:Key="Status_Paused">Gepauzeerd</sys:String>
+  <!-- ════════ Output device + audio mode by target ════════ -->
+  <sys:String x:Key="Settings_OutputDevice">Uitvoerapparaat</sys:String>
+  <sys:String x:Key="Option_DefaultDevice">Standaard</sys:String>
+  <sys:String x:Key="Settings_AudioModeByTarget">Audio volgens opname</sys:String>
+  <sys:String x:Key="Settings_AudioModeByTarget_Desc">Een game neemt de geselecteerde apps op, het bureaublad al het pc-geluid.</sys:String>
 </ResourceDictionary>

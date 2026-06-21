@@ -157,4 +157,14 @@
   <sys:String x:Key="Player_Used">Užimta</sys:String>
 
   <sys:String x:Key="Library_EmptyTitle">Pakartojimų dar nėra</sys:String>
+  <!-- ════════ Pause recording ════════ -->
+  <sys:String x:Key="Settings_Hotkey_Pause">Pristabdyti įrašymą</sys:String>
+  <sys:String x:Key="Btn_PauseRecording">Pristabdyti</sys:String>
+  <sys:String x:Key="Btn_ResumeRecording">Tęsti</sys:String>
+  <sys:String x:Key="Status_Paused">Pristabdyta</sys:String>
+  <!-- ════════ Output device + audio mode by target ════════ -->
+  <sys:String x:Key="Settings_OutputDevice">Išvesties įrenginys</sys:String>
+  <sys:String x:Key="Option_DefaultDevice">Numatytasis</sys:String>
+  <sys:String x:Key="Settings_AudioModeByTarget">Garsą pagal įrašymo tipą</sys:String>
+  <sys:String x:Key="Settings_AudioModeByTarget_Desc">Žaidimas įrašo pasirinktas programas, darbalaukis — visą kompiuterio garsą.</sys:String>
 </ResourceDictionary>

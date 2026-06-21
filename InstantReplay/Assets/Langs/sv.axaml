@@ -157,4 +157,14 @@
   <sys:String x:Key="Player_Used">Använt</sys:String>
 
   <sys:String x:Key="Library_EmptyTitle">Inga repriser ännu</sys:String>
+  <!-- ════════ Pause recording ════════ -->
+  <sys:String x:Key="Settings_Hotkey_Pause">Pausa inspelning</sys:String>
+  <sys:String x:Key="Btn_PauseRecording">Pausa</sys:String>
+  <sys:String x:Key="Btn_ResumeRecording">Återuppta</sys:String>
+  <sys:String x:Key="Status_Paused">Pausad</sys:String>
+  <!-- ════════ Output device + audio mode by target ════════ -->
+  <sys:String x:Key="Settings_OutputDevice">Uppspelningsenhet</sys:String>
+  <sys:String x:Key="Option_DefaultDevice">Standard</sys:String>
+  <sys:String x:Key="Settings_AudioModeByTarget">Ljud efter inspelningstyp</sys:String>
+  <sys:String x:Key="Settings_AudioModeByTarget_Desc">Spel spelar in valda appar, skrivbordet allt datorljud.</sys:String>
 </ResourceDictionary>

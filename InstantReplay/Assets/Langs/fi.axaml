@@ -157,4 +157,14 @@
   <sys:String x:Key="Player_Used">Käytössä</sys:String>
 
   <sys:String x:Key="Library_EmptyTitle">Ei vielä uusintoja</sys:String>
+  <!-- ════════ Pause recording ════════ -->
+  <sys:String x:Key="Settings_Hotkey_Pause">Keskeytä tallennus</sys:String>
+  <sys:String x:Key="Btn_PauseRecording">Keskeytä</sys:String>
+  <sys:String x:Key="Btn_ResumeRecording">Jatka</sys:String>
+  <sys:String x:Key="Status_Paused">Keskeytetty</sys:String>
+  <!-- ════════ Output device + audio mode by target ════════ -->
+  <sys:String x:Key="Settings_OutputDevice">Toistolaite</sys:String>
+  <sys:String x:Key="Option_DefaultDevice">Oletus</sys:String>
+  <sys:String x:Key="Settings_AudioModeByTarget">Ääni tallennuksen mukaan</sys:String>
+  <sys:String x:Key="Settings_AudioModeByTarget_Desc">Pelissä valitut sovellukset, työpöydällä koko tietokoneen ääni.</sys:String>
 </ResourceDictionary>

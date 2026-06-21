@@ -22,6 +22,7 @@ public sealed class GlobalHotkeyService : IDisposable
 
     private const int HOTKEY_ID = 9000;        // save replay
     private const int SCREENSHOT_ID = 9001;    // take screenshot
+    private const int PAUSE_ID = 9002;         // pause/resume recording
 
     [DllImport("user32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
@@ -75,12 +76,16 @@ public sealed class GlobalHotkeyService : IDisposable
     // Registered combos (read by the loop thread; written only while the loop is stopped).
     private uint _saveModifiers, _saveVk;
     private uint _shotModifiers, _shotVk; // vk 0 = screenshot hotkey not registered
+    private uint _pauseModifiers, _pauseVk; // vk 0 = pause hotkey not registered
 
     /// <summary>Save-replay hotkey pressed.</summary>
     public event EventHandler? HotkeyPressed;
 
     /// <summary>Screenshot hotkey pressed.</summary>
     public event EventHandler? ScreenshotPressed;
+
+    /// <summary>Pause/resume-recording hotkey pressed.</summary>
+    public event EventHandler? PausePressed;
 
     public void Start(uint modifiers, uint virtualKey)
     {
@@ -146,6 +151,27 @@ public sealed class GlobalHotkeyService : IDisposable
 
         _shotModifiers = ModifiersToWin32(modifiers);
         _shotVk = vk;
+
+        if (wasRunning) StartLoop();
+        return true;
+    }
+
+    /// <summary>
+    /// Sets/re-registers the pause/resume-recording hotkey (restarting the message loop when it is
+    /// already running). Returns false if the key cannot be mapped to a virtual-key code.
+    /// </summary>
+    public bool UpdatePauseHotkey(ModifierMask modifiers, KeyCode key)
+    {
+        if (_isDisposed) return false;
+
+        uint vk = VirtualKeyFromKeyCode(key);
+        if (vk == 0) return false;
+
+        bool wasRunning = _messageLoopThread != null;
+        if (wasRunning) StopMessageLoop();
+
+        _pauseModifiers = ModifiersToWin32(modifiers);
+        _pauseVk = vk;
 
         if (wasRunning) StartLoop();
         return true;
@@ -235,10 +261,15 @@ public sealed class GlobalHotkeyService : IDisposable
         if (_shotVk != 0 && !shotRegistered)
             Console.WriteLine($"[GlobalHotkeyService] Failed to register screenshot hotkey. Error: {Marshal.GetLastWin32Error()}");
 
-        if (!saveRegistered && !shotRegistered)
+        bool pauseRegistered = _pauseVk != 0 &&
+            RegisterHotKey(IntPtr.Zero, PAUSE_ID, _pauseModifiers | MOD_NOREPEAT, _pauseVk);
+        if (_pauseVk != 0 && !pauseRegistered)
+            Console.WriteLine($"[GlobalHotkeyService] Failed to register pause hotkey. Error: {Marshal.GetLastWin32Error()}");
+
+        if (!saveRegistered && !shotRegistered && !pauseRegistered)
             return;
 
-        Console.WriteLine($"[GlobalHotkeyService] Registered Win32 hotkeys: save(Mod={_saveModifiers}, Key={_saveVk}), shot(Mod={_shotModifiers}, Key={_shotVk})");
+        Console.WriteLine($"[GlobalHotkeyService] Registered Win32 hotkeys: save(Mod={_saveModifiers}, Key={_saveVk}), shot(Mod={_shotModifiers}, Key={_shotVk}), pause(Mod={_pauseModifiers}, Key={_pauseVk})");
 
         MSG msg;
         int retVal;
@@ -261,6 +292,9 @@ public sealed class GlobalHotkeyService : IDisposable
                     case SCREENSHOT_ID:
                         ScreenshotPressed?.Invoke(this, EventArgs.Empty);
                         break;
+                    case PAUSE_ID:
+                        PausePressed?.Invoke(this, EventArgs.Empty);
+                        break;
                 }
             }
 
@@ -270,6 +304,7 @@ public sealed class GlobalHotkeyService : IDisposable
 
         if (saveRegistered) UnregisterHotKey(IntPtr.Zero, HOTKEY_ID);
         if (shotRegistered) UnregisterHotKey(IntPtr.Zero, SCREENSHOT_ID);
+        if (pauseRegistered) UnregisterHotKey(IntPtr.Zero, PAUSE_ID);
         Console.WriteLine("[GlobalHotkeyService] Message loop exited and hotkeys unregistered.");
     }
 

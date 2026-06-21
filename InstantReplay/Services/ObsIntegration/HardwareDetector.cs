@@ -9,6 +9,9 @@ namespace Lag.Services.ObsIntegration;
 
 public record MicrophoneInfo(string Id, string Name);
 
+/// <summary>A playback (render) endpoint that whole-PC audio can be looped back from.</summary>
+public record OutputDeviceInfo(string Id, string Name);
+
 /// <summary>
 /// Hardware capability service that queries the system (via libobs) to detect the best
 /// available video encoder. Enforces a strict hardware-first priority queue to maximize
@@ -303,5 +306,25 @@ public sealed partial class HardwareDetector
         {
             Debug.WriteLine($"[HardwareDetector] WASAPI mic enumeration failed: {ex.Message}");
         }
+    }
+
+    // ────────────────────── Output (render) device detection ────────────────────── //
+
+    /// <summary>Enumerates the active playback endpoints whole-PC audio can be looped back from.</summary>
+    public IReadOnlyList<OutputDeviceInfo> GetOutputDevices()
+    {
+        var outputs = new List<OutputDeviceInfo>();
+        try
+        {
+            var enumerator = new MMDeviceEnumerator();
+            var devices = enumerator.EnumerateAudioEndPoints(DataFlow.Render, DeviceState.Active);
+            foreach (var endpoint in devices)
+                outputs.Add(new OutputDeviceInfo(endpoint.ID, endpoint.FriendlyName));
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[HardwareDetector] WASAPI output enumeration failed: {ex.Message}");
+        }
+        return outputs;
     }
 }

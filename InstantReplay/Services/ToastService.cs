@@ -10,9 +10,9 @@ using Avalonia.Threading;
 namespace Lag.Services;
 
 /// <summary>
-/// ShadowPlay-style on-screen toast: a small topmost card in the top-right corner of the
-/// primary display ("Replay saved", "Screenshot saved"). Shown even while the main window
-/// is hidden in the tray; never steals focus from the foreground game.
+/// On-screen save toast: a small topmost card in the top-right corner of the primary display
+/// ("Replay saved", "Screenshot saved"). Shown even while the main window is hidden in the tray;
+/// never steals focus from the foreground game.
 /// </summary>
 public static class ToastService
 {
@@ -25,13 +25,15 @@ public static class ToastService
     {
         try
         {
-            // Don't pop a visual overlay over a fullscreen game: ANY topmost window kicks an exclusive
-            // / fullscreen-optimized game out of fullscreen (Windows behaviour — not fixable without an
-            // in-game hook, which we avoid for anti-cheat safety). The save SOUND still plays separately,
-            // so there's still confirmation. The toast still shows on the desktop / windowed / alt-tabbed.
-            if (IsForegroundFullscreen())
+            // Don't pop a visual overlay over an EXCLUSIVE-fullscreen game: a topmost window yanks it
+            // out of fullscreen (Windows behaviour — not fixable without an in-game hook, which we avoid
+            // for anti-cheat safety). The save SOUND still plays, so there's still confirmation. We key
+            // off Windows' OWN "an exclusive-fullscreen D3D app is running" signal, so BORDERLESS /
+            // windowed games AND the desktop still get the visual toast (they compose fine under it) —
+            // only a true exclusive-fullscreen game falls back to sound-only.
+            if (IsExclusiveFullscreen())
             {
-                Console.WriteLine("[Toast] foreground window is fullscreen — sound-only (skipped visual toast).");
+                Console.WriteLine("[Toast] exclusive-fullscreen app running — sound-only (skipped visual toast).");
                 return;
             }
 
@@ -139,21 +141,15 @@ public static class ToastService
         }
     }
 
-    /// <summary>True when the foreground window covers its WHOLE monitor (incl. the taskbar area) —
-    /// i.e. a real fullscreen/borderless game, not just a maximized window (those leave the taskbar).</summary>
-    private static bool IsForegroundFullscreen()
+    /// <summary>True when an exclusive-fullscreen Direct3D app is running — Windows' OWN notification
+    /// signal (the same one the OS uses to mute its toasts). Borderless / windowed games and the
+    /// desktop do NOT trip this (they're DWM-composed), so they still get the visual toast; only a
+    /// true exclusive-fullscreen game falls back to sound-only.</summary>
+    private static bool IsExclusiveFullscreen()
     {
         try
         {
-            IntPtr hwnd = GetForegroundWindow();
-            if (hwnd == IntPtr.Zero || !GetWindowRect(hwnd, out RECT r)) return false;
-
-            IntPtr mon = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
-            var mi = new MONITORINFO { cbSize = Marshal.SizeOf<MONITORINFO>() };
-            if (!GetMonitorInfo(mon, ref mi)) return false;
-
-            RECT m = mi.rcMonitor;
-            return r.Left <= m.Left && r.Top <= m.Top && r.Right >= m.Right && r.Bottom >= m.Bottom;
+            return SHQueryUserNotificationState(out int state) == 0 && state == QUNS_RUNNING_D3D_FULL_SCREEN;
         }
         catch { return false; }
     }
@@ -162,7 +158,7 @@ public static class ToastService
     private const int WS_EX_TOPMOST = 0x00000008;
     private const int WS_EX_TOOLWINDOW = 0x00000080;
     private const int WS_EX_NOACTIVATE = 0x08000000;
-    private const uint MONITOR_DEFAULTTONEAREST = 2;
+    private const int QUNS_RUNNING_D3D_FULL_SCREEN = 3;   // a full-screen (exclusive) D3D app is running
 
     [DllImport("user32.dll", SetLastError = true)]
     private static extern int GetWindowLong(IntPtr hWnd, int nIndex);
@@ -170,20 +166,6 @@ public static class ToastService
     [DllImport("user32.dll", SetLastError = true)]
     private static extern int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
 
-    [DllImport("user32.dll")] private static extern IntPtr GetForegroundWindow();
-    [DllImport("user32.dll")] private static extern bool GetWindowRect(IntPtr hWnd, out RECT rect);
-    [DllImport("user32.dll")] private static extern IntPtr MonitorFromWindow(IntPtr hWnd, uint flags);
-    [DllImport("user32.dll", CharSet = CharSet.Auto)] private static extern bool GetMonitorInfo(IntPtr hMonitor, ref MONITORINFO info);
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct RECT { public int Left, Top, Right, Bottom; }
-
-    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
-    private struct MONITORINFO
-    {
-        public int cbSize;
-        public RECT rcMonitor;
-        public RECT rcWork;
-        public uint dwFlags;
-    }
+    [DllImport("shell32.dll")]
+    private static extern int SHQueryUserNotificationState(out int pquns);
 }

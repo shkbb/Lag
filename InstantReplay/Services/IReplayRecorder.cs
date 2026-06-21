@@ -36,6 +36,15 @@ public interface IReplayRecorder : IDisposable
     /// <summary>Mutes/unmutes the microphone (push-to-talk). No-op if there is no mic source.</summary>
     void SetMicMuted(bool muted);
 
+    /// <summary>Whether the rolling buffer feed is currently paused. Default false for back-ends that
+    /// don't support pausing.</summary>
+    bool IsPaused => false;
+
+    /// <summary>Temporarily suspends feeding the rolling buffer (the native engine freezes the A/V
+    /// timeline so the paused span is absent from any saved replay) or resumes it. Default no-op for
+    /// back-ends that don't support pausing.</summary>
+    void SetPaused(bool paused) { }
+
     /// <summary>What's being captured right now (game/desktop), or null when idle. Default null so
     /// back-ends that don't report it (OBS) need no changes; the native engine overrides it.</summary>
     CaptureTarget? CurrentTarget => null;

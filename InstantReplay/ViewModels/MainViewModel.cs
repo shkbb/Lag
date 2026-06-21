@@ -33,6 +33,11 @@ public partial class MainViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isRecording;
 
+    /// <summary>Whether the rolling buffer feed is paused (recording stays armed; the paused span is
+    /// kept out of any saved replay). Drives the Pause/Resume button label and icon.</summary>
+    [ObservableProperty]
+    private bool _isPaused;
+
     /// <summary>Status text shown in the status bar.</summary>
     [ObservableProperty]
     private string _statusText = Lag.Core.Localizer.Get("Status_Ready");
@@ -83,6 +88,16 @@ public partial class MainViewModel : ViewModelBase
     /// <summary>Refreshes the "now capturing X" indicator from the recorder's current target.</summary>
     private void UpdateCaptureTarget()
     {
+        // The engine can auto-switch capture target (e.g. the game closed → desktop), which begins a
+        // fresh, un-paused session. Reconcile the pause UI so it never shows "paused" over live
+        // capture. Fires only on a target change, so it never fights a normal manual pause/resume.
+        bool enginePaused = _engine.IsPaused;
+        if (IsPaused != enginePaused)
+        {
+            IsPaused = enginePaused;
+            if (enginePaused) _bufferTimer?.Stop(); else _bufferTimer?.Start();
+        }
+
         var t = _engine.CurrentTarget;
         if (t is null) { HasCaptureTarget = false; return; }
 
@@ -176,12 +191,12 @@ public partial class MainViewModel : ViewModelBase
         // replays/screenshots even when opened directly, without visiting the Library tab first.
         _ = Library.RefreshCommand.ExecuteAsync(null);
 
-        // Silent auto-update: a few seconds after launch, check GitHub in the background. A newer
-        // version downloads and applies seamlessly on the next exit (previously updates only happened
-        // when the user clicked "Check for updates" manually).
+        // Silent auto-update: shortly after launch, check GitHub in the background. If a newer version
+        // exists it downloads and the app relaunches straight into it, so you're always on the latest.
+        // Short delay so the window paints first; when already current this is a no-op (no restart).
         _ = Task.Run(async () =>
         {
-            await Task.Delay(TimeSpan.FromSeconds(8));
+            await Task.Delay(TimeSpan.FromSeconds(3));
             await Settings.AutoUpdateOnStartupAsync();
         });
 
@@ -368,6 +383,8 @@ public partial class MainViewModel : ViewModelBase
                 MicForceMono = Settings.MicMono,
                 MicStartMuted = Settings.PushToTalkEnabled,
                 AudioCaptureMode = Settings.IsAppsMode ? "apps" : "all",
+                AudioModeByTarget = Settings.AudioModeByTarget,
+                SystemAudioDeviceId = Settings.SelectedOutputDevice?.Id ?? "",
                 GameCaptureEnabled = false,   // removed from UI (dead CS2-hook setting); OBS-only, off
                 AudioApps = Settings.AudioApps
                     .Where(a => a.IsEnabled)
@@ -408,6 +425,7 @@ public partial class MainViewModel : ViewModelBase
             // codec, buffer length). The core is only shut down on app exit (DI → Dispose()).
             _engine.Teardown();
             IsRecording = false;
+            IsPaused = false;
             StatusText = Localizer.Get("Status_Stopped");
             StopBufferTicker();
             Settings.HasPendingChanges = false;
@@ -418,6 +436,7 @@ public partial class MainViewModel : ViewModelBase
             // Force UI state to stopped regardless of native error —
             // leaving IsRecording=true after a failed stop would lock out the user.
             IsRecording = false;
+            IsPaused = false;
             StatusText = Localizer.Format("Status_StopError", ex.Message);
             StopBufferTicker();
             Settings.HasPendingChanges = false;
@@ -439,6 +458,32 @@ public partial class MainViewModel : ViewModelBase
             StopRecording();
         else
             await StartRecordingAsync();
+    }
+
+    /// <summary>Pauses or resumes feeding the rolling buffer without tearing down the capture
+    /// pipeline. While paused the engine freezes the A/V timeline, so the paused span never lands in
+    /// the buffer and won't appear in a saved replay; the buffer-fill ticker holds too. Resume is
+    /// instant (capture/encoder stay alive). No-op when not recording. Bound to the sidebar button
+    /// and the global pause hotkey.</summary>
+    [RelayCommand]
+    private void TogglePauseRecording()
+    {
+        if (!IsRecording) return;
+
+        bool pause = !IsPaused;
+        _engine.SetPaused(pause);
+        IsPaused = pause;
+
+        if (pause)
+        {
+            _bufferTimer?.Stop();
+            StatusText = Localizer.Get("Status_Paused");
+        }
+        else
+        {
+            _bufferTimer?.Start();
+            StatusText = Localizer.Get("Status_Recording");
+        }
     }
 
     /// <summary>Manually triggers a replay save (same as hotkey).</summary>

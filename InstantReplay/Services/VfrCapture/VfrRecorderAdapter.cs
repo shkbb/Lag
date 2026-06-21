@@ -49,6 +49,8 @@ public sealed class VfrRecorderAdapter : IReplayRecorder
     public void SaveReplay() => _engine.SaveReplay();
     public void Teardown() => _engine.Stop();
     public void SetMicMuted(bool muted) => _engine.SetMicMuted(muted);
+    public bool IsPaused => _engine.IsPaused;
+    public void SetPaused(bool paused) => _engine.SetPaused(paused);
     public void Dispose() => _engine.Dispose();
 
     private static VfrEngineOptions Map(RecorderOptions o) => new()
@@ -69,9 +71,11 @@ public sealed class VfrRecorderAdapter : IReplayRecorder
         // "Обрані програми": capture only the selected apps' audio (process loopback) instead of the
         // whole system. o.AudioApps is already filtered to the enabled entries by the UI layer.
         AppsAudioMode = string.Equals(o.AudioCaptureMode, "apps", StringComparison.OrdinalIgnoreCase),
+        AudioModeByTarget = o.AudioModeByTarget,
         AudioApps = (o.AudioApps ?? new List<AppAudioCapture>())
             .Select(a => (a.ExeName, a.Volume)).ToList(),
         SystemAudioEnabled = o.SystemAudioEnabled,
+        SystemAudioDeviceId = o.SystemAudioDeviceId,
         SystemVolume = o.SystemAudioVolume / 100f,
         GameAudioEnabled = o.GameAudioEnabled,
         GameVolume = o.GameAudioVolume / 100f,

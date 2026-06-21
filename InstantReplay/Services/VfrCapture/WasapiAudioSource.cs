@@ -26,6 +26,7 @@ public sealed class WasapiAudioSource : IDisposable
     private volatile float _systemGain = 1f;  // linear full-system loopback volume
     private bool _systemEnabled = true;       // false = don't capture full-system audio at all
     private volatile bool _micMono;           // downmix the mic to a single channel
+    private string? _systemDeviceId;          // chosen render endpoint to loop back; null/"" = default
 
     // Per-app capture ("Обрані програми"): one process-loopback per selected app, mixed by a steady
     // timer into a single 48k/2ch/float "system" stream raised via GameDataReady — so the engine and
@@ -69,11 +70,13 @@ public sealed class WasapiAudioSource : IDisposable
     /// are non-fatal — we continue game-audio-only).</summary>
     public void Start(string? micDeviceId, bool appsMode = false, IReadOnlyList<(string Exe, float Volume)>? apps = null,
                       bool systemEnabled = true, float systemVolume = 1f, bool micMono = false,
-                      uint gamePid = 0, float gameVolume = 1f, bool gameEnabled = true)
+                      uint gamePid = 0, float gameVolume = 1f, bool gameEnabled = true,
+                      string? systemDeviceId = null)
     {
         _systemEnabled = systemEnabled;
         _systemGain = systemVolume < 0 ? 0 : systemVolume;
         _micMono = micMono;
+        _systemDeviceId = systemDeviceId;
         // Apps mode runs if the user picked apps OR there's a game to capture for the "Звук гри" row.
         _appsMode = appsMode && ((apps is { Count: > 0 }) || (gameEnabled && gamePid != 0));
         if (_appsMode) StartAppCaptures(apps ?? Array.Empty<(string, float)>(), gamePid, gameVolume, gameEnabled);
@@ -99,16 +102,33 @@ public sealed class WasapiAudioSource : IDisposable
         catch (Exception ex) { Console.WriteLine($"[WasapiAudioSource] mic unavailable — game audio only: {ex.Message}"); }
     }
 
-    /// <summary>"Весь звук ПК": loop back the whole default render endpoint (the simple, robust path).</summary>
+    /// <summary>"Весь звук ПК": loop back a render endpoint. Uses the chosen output device when set,
+    /// otherwise the default multimedia endpoint; an invalid/removed pick falls back to default.</summary>
     private void StartSystemLoopback()
     {
         using var enumerator = new MMDeviceEnumerator();
-        using var render = enumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
-        _loopback = new WasapiLoopbackCapture(render);
-        _loopback.DataAvailable += OnGameData;
-        _loopback.StartRecording();
-        var f = _loopback.WaveFormat;
-        Console.WriteLine($"[WasapiAudioSource] Loopback (full system): {f.SampleRate}Hz {f.Channels}ch {f.BitsPerSample}bit {f.Encoding}.");
+        MMDevice render;
+        if (string.IsNullOrEmpty(_systemDeviceId))
+        {
+            render = enumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
+        }
+        else
+        {
+            try { render = enumerator.GetDevice(_systemDeviceId); }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[WasapiAudioSource] output device '{_systemDeviceId}' unavailable ({ex.Message}) — using default.");
+                render = enumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
+            }
+        }
+        using (render)
+        {
+            _loopback = new WasapiLoopbackCapture(render);
+            _loopback.DataAvailable += OnGameData;
+            _loopback.StartRecording();
+            var f = _loopback.WaveFormat;
+            Console.WriteLine($"[WasapiAudioSource] Loopback (full system) on '{render.FriendlyName}': {f.SampleRate}Hz {f.Channels}ch {f.BitsPerSample}bit {f.Encoding}.");
+        }
     }
 
     /// <summary>"Обрані програми": one process-loopback per selected app, summed by <see cref="MixTick"/>

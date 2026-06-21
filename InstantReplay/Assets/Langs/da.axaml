@@ -157,4 +157,14 @@
   <sys:String x:Key="Player_Used">Brugt</sys:String>
 
   <sys:String x:Key="Library_EmptyTitle">Ingen replays endnu</sys:String>
+  <!-- ════════ Pause recording ════════ -->
+  <sys:String x:Key="Settings_Hotkey_Pause">Sæt optagelse på pause</sys:String>
+  <sys:String x:Key="Btn_PauseRecording">Pause</sys:String>
+  <sys:String x:Key="Btn_ResumeRecording">Genoptag</sys:String>
+  <sys:String x:Key="Status_Paused">Sat på pause</sys:String>
+  <!-- ════════ Output device + audio mode by target ════════ -->
+  <sys:String x:Key="Settings_OutputDevice">Afspilningsenhed</sys:String>
+  <sys:String x:Key="Option_DefaultDevice">Standard</sys:String>
+  <sys:String x:Key="Settings_AudioModeByTarget">Lyd efter optagelsestype</sys:String>
+  <sys:String x:Key="Settings_AudioModeByTarget_Desc">Spil optager valgte apps, skrivebordet al pc-lyd.</sys:String>
 </ResourceDictionary>

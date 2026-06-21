@@ -111,6 +111,30 @@ public partial class SettingsViewModel : ViewModelBase
         SelectedMicrophone = Microphones.FirstOrDefault();
     }
 
+    // ───────────── Output device (whole-PC audio source) ─────────────
+
+    /// <summary>Playback endpoints whole-PC audio can be looped back from. First entry = "Default".</summary>
+    public System.Collections.ObjectModel.ObservableCollection<OutputDeviceInfo> OutputDevices { get; } = new();
+
+    [ObservableProperty]
+    private OutputDeviceInfo? _selectedOutputDevice;
+
+    partial void OnSelectedOutputDeviceChanged(OutputDeviceInfo? value)
+    {
+        SaveSettingsRestartRequired();
+    }
+
+    /// <summary>Rebuilds the output list: a "Default" entry (empty id) first, then every active render
+    /// endpoint. The chosen device is the one looped back in whole-PC audio mode.</summary>
+    private void RefreshOutputDevices()
+    {
+        string? prevId = SelectedOutputDevice?.Id;
+        OutputDevices.Clear();
+        OutputDevices.Add(new OutputDeviceInfo("", Localizer.Get("Option_DefaultDevice")));
+        foreach (var d in _hardwareDetector.GetOutputDevices()) OutputDevices.Add(d);
+        SelectedOutputDevice = OutputDevices.FirstOrDefault(d => d.Id == prevId) ?? OutputDevices[0];
+    }
+
     // ───────────── Hotkey ─────────────
 
     [ObservableProperty]
@@ -165,6 +189,46 @@ public partial class SettingsViewModel : ViewModelBase
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"Failed to apply screenshot hotkey: {ex.Message}");
+        }
+    }
+
+    // ───────────── Pause-recording hotkey ─────────────
+
+    private KeyCode _pauseKey = KeyCode.VcF8;
+    private ModifierMask _pauseModifiers = ModifierMask.LeftAlt;
+
+    [ObservableProperty]
+    private string _pauseHotkeyDisplayText = "Alt + F8";
+
+    partial void OnPauseHotkeyDisplayTextChanged(string value) =>
+        OnPropertyChanged(nameof(PauseHotkeyParts));
+
+    /// <summary>Pause hotkey split into kbd-chip parts ("Alt","F8").</summary>
+    public IReadOnlyList<string> PauseHotkeyParts =>
+        PauseHotkeyDisplayText.Split('+', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+
+    [ObservableProperty]
+    private bool _isCapturingPauseKey;
+
+    private bool _pauseCaptureMode;
+
+    [RelayCommand]
+    private void CapturePauseHotkey()
+    {
+        _pauseCaptureMode = true;
+        IsCapturingPauseKey = true;
+        _hotkeyManager.IsCapturing = true;
+    }
+
+    private void ApplyPauseHotkeyToService()
+    {
+        try
+        {
+            _hotkeyService.UpdatePauseHotkey(_pauseModifiers, _pauseKey);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Failed to apply pause hotkey: {ex.Message}");
         }
     }
 
@@ -600,10 +664,34 @@ public partial class SettingsViewModel : ViewModelBase
     partial void OnAudioModeIndexChanged(int value)
     {
         OnPropertyChanged(nameof(IsAppsMode));
+        OnPropertyChanged(nameof(ShowSystemAudioRow));
+        OnPropertyChanged(nameof(ShowAppsList));
         SaveSettingsRestartRequired();
     }
 
     public bool IsAppsMode => AudioModeIndex == 1;
+
+    // ───────────── Switch audio mode by capture target ─────────────
+
+    /// <summary>A plain on/off switch: when on, the engine picks the audio mode by what it records —
+    /// a game uses the selected-apps audio, the desktop uses whole-PC audio — regardless of the manual
+    /// segment. Nothing is disabled by it; the manual controls and the app list stay fully editable
+    /// (so you can still tweak which apps to record during a game while it's on).</summary>
+    [ObservableProperty]
+    private bool _audioModeByTarget;
+
+    partial void OnAudioModeByTargetChanged(bool value)
+    {
+        OnPropertyChanged(nameof(ShowSystemAudioRow));
+        OnPropertyChanged(nameof(ShowAppsList));
+        SaveSettingsRestartRequired();
+    }
+
+    /// <summary>Show the whole-PC audio row: manual "all" mode, or whenever the engine may auto-pick it.</summary>
+    public bool ShowSystemAudioRow => !IsAppsMode || AudioModeByTarget;
+
+    /// <summary>Show the per-app list + game-audio row: manual "apps" mode, or when auto-pick may use it.</summary>
+    public bool ShowAppsList => IsAppsMode || AudioModeByTarget;
 
     /// <summary>Live list of apps playing audio (auto-refreshed) merged with saved selections.</summary>
     public System.Collections.ObjectModel.ObservableCollection<AppAudioItem> AudioApps { get; } = new();
@@ -974,6 +1062,9 @@ public partial class SettingsViewModel : ViewModelBase
 
             // ── FPS (default: 30; rungs capped to the selected monitor's refresh rate) ──
             RebuildFpsOptions();
+
+            // ── Output devices (re-localizes the "Default" entry; keeps the current selection) ──
+            RefreshOutputDevices();
         }
         finally
         {
@@ -1059,10 +1150,10 @@ public partial class SettingsViewModel : ViewModelBase
         }
     }
 
-    /// <summary>Silent auto-update run once at startup (there was no automatic check before — only the
-    /// manual button). Checks GitHub, downloads a newer version in the background, and STAGES it to
-    /// apply the next time the app fully exits — no mid-session restart, no UI. The manual button
-    /// still does an immediate download+restart.</summary>
+    /// <summary>Silent auto-update run once at startup: checks GitHub, and if a newer version exists,
+    /// downloads it and relaunches straight into it — so the app is up to date from the first real use
+    /// (a self-updating launcher). When already current it returns instantly with no restart. Only runs
+    /// in an installed (Velopack) build; dev / portable builds are a no-op.</summary>
     public async Task AutoUpdateOnStartupAsync()
     {
         try
@@ -1071,12 +1162,13 @@ public partial class SettingsViewModel : ViewModelBase
             if (!mgr.IsInstalled) return;                 // dev / portable build — nothing to update
 
             var newVersion = await mgr.CheckForUpdatesAsync();
-            if (newVersion == null) return;               // already up to date
+            if (newVersion == null) return;               // already up to date — no restart
 
             await mgr.DownloadUpdatesAsync(newVersion);
-            // Apply seamlessly when the app next exits; don't relaunch (the user closed it on purpose).
-            mgr.WaitExitThenApplyUpdates(newVersion.TargetFullRelease, silent: true, restart: false);
-            Console.WriteLine($"[AutoUpdate] {newVersion.TargetFullRelease.Version} downloaded — applies on next exit.");
+            Console.WriteLine($"[AutoUpdate] {newVersion.TargetFullRelease.Version} downloaded — applying and restarting.");
+            // Apply now and relaunch into the new version (same as the manual button), so the user is on
+            // the latest immediately rather than only after the next manual exit.
+            mgr.ApplyUpdatesAndRestart(newVersion);
         }
         catch (Exception ex)
         {
@@ -1113,9 +1205,10 @@ public partial class SettingsViewModel : ViewModelBase
             _appVersion = ResolveAppVersion();
             _libraryPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyVideos), "Lag");
 
-            // Populate device lists BEFORE LoadSettings so the persisted monitor/mic can be matched.
+            // Populate device lists BEFORE LoadSettings so the persisted monitor/mic/output can be matched.
             RefreshMonitors();
             RefreshMicrophones();
+            RefreshOutputDevices();
 
             // Override defaults + device selections with persisted values when settings.json exists.
             LoadSettings();
@@ -1128,6 +1221,7 @@ public partial class SettingsViewModel : ViewModelBase
         // Register the persisted (or default) hotkey with the active Win32 service at startup.
         ApplyHotkeyToGlobalService();
         ApplyScreenshotHotkeyToService();
+        ApplyPauseHotkeyToService();
 
         // Re-assert "Game Mode off" each launch when enabled (Windows updates and the
         // user toggling it back in Windows Settings would otherwise silently undo it).
@@ -1182,7 +1276,7 @@ public partial class SettingsViewModel : ViewModelBase
     /// Checked by MainViewModel and the Win32 hotkey handler in App.
     /// </summary>
     public bool AreHotkeysSuppressed =>
-        IsCapturingHotkey || IsCapturingPttKey || IsCapturingScreenshotKey ||
+        IsCapturingHotkey || IsCapturingPttKey || IsCapturingScreenshotKey || IsCapturingPauseKey ||
         DateTime.UtcNow < _hotkeySuppressedUntil;
 
     private DateTime _hotkeySuppressedUntil = DateTime.MinValue;
@@ -1205,6 +1299,19 @@ public partial class SettingsViewModel : ViewModelBase
             IsCapturingScreenshotKey = false;
 
             ApplyScreenshotHotkeyToService();
+            SaveSettings();
+            return;
+        }
+
+        if (_pauseCaptureMode)
+        {
+            _pauseCaptureMode = false;
+            _pauseKey = e.Key;
+            _pauseModifiers = e.Modifiers;
+            PauseHotkeyDisplayText = FormatHotkey(e.Modifiers, e.Key);
+            IsCapturingPauseKey = false;
+
+            ApplyPauseHotkeyToService();
             SaveSettings();
             return;
         }
@@ -1313,6 +1420,8 @@ public partial class SettingsViewModel : ViewModelBase
                 HotkeyModifiers = _hotkeyManager.RequiredModifiers.ToString(),
                 ScreenshotKey = _screenshotKey.ToString(),
                 ScreenshotModifiers = _screenshotModifiers.ToString(),
+                PauseKey = _pauseKey.ToString(),
+                PauseModifiers = _pauseModifiers.ToString(),
                 LibraryPath = LibraryPath,
                 FrameRate = EffectiveFps,
                 FileFormat = SelectedFormat,
@@ -1331,6 +1440,8 @@ public partial class SettingsViewModel : ViewModelBase
                 BitrateKbps = EffectiveBitrateKbps,
                 GpuIndex = SelectedGpu.Index,
                 AudioCaptureMode = IsAppsMode ? "apps" : "all",
+                AudioModeByTarget = AudioModeByTarget,
+                SystemAudioDeviceId = SelectedOutputDevice?.Id ?? "",
                 AudioApps = AudioApps
                     .Where(a => a.IsEnabled || a.Volume != 100)
                     .Select(a => new AppAudioSetting { Exe = a.Exe, Enabled = a.IsEnabled, Volume = a.Volume })
@@ -1387,6 +1498,12 @@ public partial class SettingsViewModel : ViewModelBase
                 _screenshotModifiers = shotMod;
             ScreenshotHotkeyDisplayText = FormatHotkey(_screenshotModifiers, _screenshotKey);
 
+            if (Enum.TryParse<KeyCode>(settings.PauseKey, out var pauseKey))
+                _pauseKey = pauseKey;
+            if (Enum.TryParse<ModifierMask>(settings.PauseModifiers, out var pauseMod))
+                _pauseModifiers = pauseMod;
+            PauseHotkeyDisplayText = FormatHotkey(_pauseModifiers, _pauseKey);
+
 
             LibraryPath = settings.LibraryPath ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyVideos), "Lag");
             // FPS: clamp to this monitor's refresh (the file may come from a faster-panel machine),
@@ -1436,8 +1553,16 @@ public partial class SettingsViewModel : ViewModelBase
 
             // System audio capture mode + saved per-app selections.
             AudioModeIndex = settings.AudioCaptureMode == "apps" ? 1 : 0;
+            AudioModeByTarget = settings.AudioModeByTarget;
             SystemAudioEnabled = settings.SystemAudioEnabled;
             SystemAudioVolume = settings.SystemAudioVolume;
+
+            // Restore the persisted whole-PC audio output device (empty id = the "Default" entry).
+            if (!string.IsNullOrEmpty(settings.SystemAudioDeviceId))
+            {
+                var outDev = OutputDevices.FirstOrDefault(d => d.Id == settings.SystemAudioDeviceId);
+                if (outDev != null) SelectedOutputDevice = outDev;
+            }
             MicEnabled = settings.MicEnabled;
             GameAudioEnabled = settings.GameAudioEnabled;
             GameAudioVolume = settings.GameAudioVolume;
@@ -1507,6 +1632,10 @@ public partial class SettingsViewModel : ViewModelBase
         /// <summary>Screenshot hotkey (separate from the save-replay one). Default Alt+F9.</summary>
         public string ScreenshotKey { get; set; } = "VcF9";
         public string ScreenshotModifiers { get; set; } = "LeftAlt";
+
+        /// <summary>Pause/resume-recording hotkey (separate combo). Default Alt+F8.</summary>
+        public string PauseKey { get; set; } = "VcF8";
+        public string PauseModifiers { get; set; } = "LeftAlt";
         public string FFmpegPath { get; set; } = "ffmpeg";
         public string LibraryPath { get; set; } = "";
         public int FrameRate { get; set; } = 30;
@@ -1550,6 +1679,12 @@ public partial class SettingsViewModel : ViewModelBase
 
         /// <summary>"all" = whole desktop audio; "apps" = selected applications only.</summary>
         public string AudioCaptureMode { get; set; } = "all";
+
+        /// <summary>On = engine picks the audio mode by capture target (game → apps, desktop → all).</summary>
+        public bool AudioModeByTarget { get; set; }
+
+        /// <summary>Render endpoint id to loop back for whole-PC audio ("" = default output).</summary>
+        public string SystemAudioDeviceId { get; set; } = "";
 
         /// <summary>Per-application audio selections (checked apps and custom volumes).</summary>
         public List<AppAudioSetting> AudioApps { get; set; } = new();

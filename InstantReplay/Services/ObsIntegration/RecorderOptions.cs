@@ -58,6 +58,13 @@ public sealed class RecorderOptions
     /// <summary>"all" = whole desktop audio; "apps" = only the selected applications.</summary>
     public string AudioCaptureMode { get; init; } = "all";
 
+    /// <summary>When true, the engine switches the audio mode by what it records: a game → selected
+    /// apps, the desktop → whole-PC audio. Overrides <see cref="AudioCaptureMode"/> at record time.</summary>
+    public bool AudioModeByTarget { get; init; }
+
+    /// <summary>Render endpoint id to loop back for whole-PC audio; null/empty = default output.</summary>
+    public string? SystemAudioDeviceId { get; init; }
+
     /// <summary>Per-application capture entries (used when <see cref="AudioCaptureMode"/> is "apps").</summary>
     public IReadOnlyList<AppAudioCapture> AudioApps { get; init; } = [];
 

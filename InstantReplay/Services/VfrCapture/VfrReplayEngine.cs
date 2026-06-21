@@ -33,8 +33,10 @@ public sealed record VfrEngineOptions
     public bool MicStartMuted { get; init; }              // start with mic muted (push-to-talk)
     public bool SeparateAudioTracks { get; init; }        // true = system + mic as separate tracks (editor); false = one mixed track
     public bool AppsAudioMode { get; init; }              // true = capture only selected apps (process loopback) vs full system
+    public bool AudioModeByTarget { get; init; }          // true = pick mode by capture target: game→apps, desktop→full system
     public IReadOnlyList<(string Exe, float Volume)> AudioApps { get; init; } = Array.Empty<(string, float)>();
     public bool SystemAudioEnabled { get; init; } = true; // false = don't capture full-system audio (mic-only / apps-only)
+    public string? SystemAudioDeviceId { get; init; }     // chosen render endpoint to loop back (null/"" = default)
     public float SystemVolume { get; init; } = 1.0f;      // linear gain for the full-system loopback (1.0 = 100%)
     public bool MicMono { get; init; }                    // downmix the microphone to a single channel
     public bool GameAudioEnabled { get; init; } = true;   // apps mode: also capture the locked game's own audio
@@ -92,6 +94,24 @@ public sealed class VfrReplayEngine : IDisposable
     private long _lastEncodedUs = long.MinValue;
     private long _minIntervalUs;
     private long _startQpc;   // engine clock origin for this capture session
+
+    /// <summary>Immutable snapshot of the pause state, swapped atomically via the volatile
+    /// <see cref="_pause"/> field. Keeping the accumulator, the pause-start timestamp and the flag
+    /// in ONE reference lets <see cref="EngineNowUs"/> read a consistent view lock-free from the hot
+    /// capture/audio threads (separate volatile fields could be read mid-update and glitch the clock).</summary>
+    private sealed class PauseState
+    {
+        public readonly long AccumUs;        // total paused microseconds folded into the clock so far
+        public readonly long PauseStartQpc;  // QPC ticks when the current pause began (0 when not paused)
+        public readonly bool Paused;
+        public PauseState(long accumUs, long pauseStartQpc, bool paused)
+        { AccumUs = accumUs; PauseStartQpc = pauseStartQpc; Paused = paused; }
+    }
+
+    /// <summary>Pause freezes the engine clock so a paused span never reaches the buffer — a saved
+    /// replay stitches the moments before and after the pause together with no held frame.</summary>
+    private volatile PauseState _pause = new(0, 0, false);
+
     private volatile bool _running;
     private volatile bool _disposed;
 
@@ -99,6 +119,7 @@ public sealed class VfrReplayEngine : IDisposable
     public event EventHandler<string>? ReplaySaved;
 
     public bool IsRunning => _running;
+    public bool IsPaused => _pause.Paused;
     public string FriendlyEncoder => _encoderChoice?.FriendlyName ?? "—";
 
     // What's currently being captured — surfaced to the UI's "now recording X" indicator.
@@ -285,6 +306,7 @@ public sealed class VfrReplayEngine : IDisposable
                 _lockedPid = pid;
                 _lastEncodedUs = long.MinValue;
                 _startQpc = System.Diagnostics.Stopwatch.GetTimestamp();
+                _pause = new PauseState(0, 0, false);   // a fresh session/clock is never paused
                 TargetActive = true;
                 TargetIsGame = kind == LockKind.Game;
                 TargetName = targetName;
@@ -347,13 +369,15 @@ public sealed class VfrReplayEngine : IDisposable
     {
         var encoder = _encoder;
         if (encoder == null) return;
+        // Paused: drop the frame. The engine clock is frozen too, so nothing reaches the buffer and
+        // the paused span is simply absent from the timeline.
+        if (_pause.Paused) return;
         System.Threading.Interlocked.Increment(ref FramesCaptured);
 
-        // PTS from the ENGINE's own QPC clock at receive time, not the source timestamp: the
-        // hybrid mixes two capture sources (duplication / WGC) whose timestamp epochs differ, so
-        // a single monotonic engine clock keeps the VFR timeline seamless across a source switch.
-        long ptsUs = (System.Diagnostics.Stopwatch.GetTimestamp() - _startQpc) * 1_000_000L
-                     / System.Diagnostics.Stopwatch.Frequency;
+        // PTS from the ENGINE's own clock at receive time, not the source timestamp: the engine clock
+        // is one monotonic timeline (paused time subtracted) shared by video and audio, so they stay
+        // in sync and a source switch / pause never breaks the VFR cadence.
+        long ptsUs = EngineNowUs();
 
         // Frame-rate cap: skip frames closer than the min interval to bound encoder load on very
         // high-fps games (the file stays VFR, just capped at MaxFps).
@@ -364,9 +388,17 @@ public sealed class VfrReplayEngine : IDisposable
         System.Threading.Interlocked.Increment(ref FramesEncoded);
     }
 
-    /// <summary>Microseconds since this capture session's clock origin — the shared A/V timeline.</summary>
-    private long EngineNowUs() => (System.Diagnostics.Stopwatch.GetTimestamp() - _startQpc) * 1_000_000L
-                                  / System.Diagnostics.Stopwatch.Frequency;
+    /// <summary>Microseconds since this capture session's clock origin — the shared A/V timeline —
+    /// with paused time subtracted, so the clock holds still while paused. Reads the pause snapshot
+    /// once so the view is consistent even when pause/resume races this hot-path call.</summary>
+    private long EngineNowUs()
+    {
+        long ts = System.Diagnostics.Stopwatch.GetTimestamp();
+        long freq = System.Diagnostics.Stopwatch.Frequency;
+        var p = _pause;
+        long pausedUs = p.AccumUs + (p.Paused ? (ts - p.PauseStartQpc) * 1_000_000L / freq : 0);
+        return (ts - _startQpc) * 1_000_000L / freq - pausedUs;
+    }
 
     /// <summary>Starts loopback game/system audio capture → AAC into its own rolling buffer, on the
     /// SAME engine clock as the video so the two stay in sync on save. Best-effort: any failure
@@ -379,9 +411,14 @@ public sealed class VfrReplayEngine : IDisposable
             var audio = new WasapiAudioSource();
             // In apps mode, also feed the locked game's own audio into the "Звук гри" row source.
             uint gamePid = _lockKind == LockKind.Game ? _lockedPid : 0;
-            audio.Start(_options.MicrophoneId, _options.AppsAudioMode, _options.AudioApps,
+            // "Switch audio by capture target": when on, the engine picks the mode by what it's
+            // recording — a game → selected-apps audio, the desktop → whole-PC audio — overriding the
+            // manual choice. Off → use the manual AppsAudioMode the user set.
+            bool appsMode = _options.AudioModeByTarget ? (_lockKind == LockKind.Game) : _options.AppsAudioMode;
+            audio.Start(_options.MicrophoneId, appsMode, _options.AudioApps,
                         _options.SystemAudioEnabled, _options.SystemVolume, _options.MicMono,
-                        gamePid, _options.GameVolume, _options.GameAudioEnabled);
+                        gamePid, _options.GameVolume, _options.GameAudioEnabled,
+                        _options.SystemAudioDeviceId);
             audio.SetMicVolume(_options.MicVolume);
             audio.SetMicMuted(_options.MicStartMuted);
             var gf = audio.GameFormat!;
@@ -405,6 +442,7 @@ public sealed class VfrReplayEngine : IDisposable
 
                 audio.GameDataReady += (buf, n, f) =>
                 {
+                    if (_pause.Paused) return;   // paused: drop audio (clock frozen) so it stays in sync
                     long t = EngineNowUs();
                     allEnc.Encode(buf, n, f.SampleRate, f.Channels, f.BitsPerSample / 8, t);   // into the mix
                     gameEnc.Encode(buf, n, f.SampleRate, f.Channels, f.BitsPerSample / 8, t);  // system-only track
@@ -415,6 +453,7 @@ public sealed class VfrReplayEngine : IDisposable
                 AacAudioEncoder? micEnc = null;
                 audio.MicDataReady += (buf, n, f) =>
                 {
+                    if (_pause.Paused) return;   // paused: drop mic too
                     long t = EngineNowUs();
                     allEnc.EncodeMic(buf, n, f.SampleRate, f.Channels, f.BitsPerSample / 8, MapSampleFormat(f)); // into the mix
                     if (micEnc == null)
@@ -435,9 +474,15 @@ public sealed class VfrReplayEngine : IDisposable
                 var allRing = new PacketRingBuffer(_options.BufferSeconds);
                 allEnc.PacketReady += p => allRing.Add(p);
                 audio.GameDataReady += (buf, n, f) =>
+                {
+                    if (_pause.Paused) return;   // paused: drop audio (clock frozen) so it stays in sync
                     allEnc.Encode(buf, n, f.SampleRate, f.Channels, f.BitsPerSample / 8, EngineNowUs());
+                };
                 audio.MicDataReady += (buf, n, f) =>
+                {
+                    if (_pause.Paused) return;
                     allEnc.EncodeMic(buf, n, f.SampleRate, f.Channels, f.BitsPerSample / 8, MapSampleFormat(f));
+                };
                 tracks.Add(new AudioTrackState("Audio", allEnc, allRing));
             }
 
@@ -537,6 +582,32 @@ public sealed class VfrReplayEngine : IDisposable
         a?.SetMicMuted(muted);
     }
 
+    /// <summary>Pauses or resumes feeding the rolling buffer. While paused, video frames and audio
+    /// are dropped and the engine clock is frozen, so the paused span is absent from the timeline — a
+    /// saved replay stitches the moments before and after the pause together with no held frame.
+    /// No-op when not running or already in the requested state. WGC and the encoder keep running, so
+    /// resume is instant (no NVENC session churn).</summary>
+    public void SetPaused(bool paused)
+    {
+        lock (_gate)
+        {
+            if (_disposed || !_running) return;
+            var cur = _pause;
+            if (paused == cur.Paused) return;
+            if (paused)
+            {
+                _pause = new PauseState(cur.AccumUs, System.Diagnostics.Stopwatch.GetTimestamp(), true);
+            }
+            else
+            {
+                long span = (System.Diagnostics.Stopwatch.GetTimestamp() - cur.PauseStartQpc)
+                            * 1_000_000L / System.Diagnostics.Stopwatch.Frequency;
+                _pause = new PauseState(cur.AccumUs + span, 0, false);
+            }
+            Console.WriteLine($"[VfrReplayEngine] {(paused ? "paused" : "resumed")} (total paused {_pause.AccumUs / 1000}ms).");
+        }
+    }
+
     private void TeardownCapture()
     {
         // Stop the audio pulse first so it can't touch an encoder we're about to dispose.
@@ -553,6 +624,7 @@ public sealed class VfrReplayEngine : IDisposable
             _capture = null; _encoder = null; _ring = null;
             _audio = null; _audioTracks.Clear();
             _lockedHwnd = IntPtr.Zero; _lockedPid = 0; _lockKind = LockKind.None;
+            _pause = new PauseState(0, 0, false);   // capture gone — clear any pause state
             wasActive = TargetActive;
             TargetActive = false; TargetIsGame = false; TargetName = ""; TargetExe = null;
         }

@@ -168,6 +168,17 @@ public class App : Application
                 });
             };
 
+            // Pause/resume-recording hotkey (separate combo, configured in Settings → General).
+            globalHotkeyService.PausePressed += (_, _) =>
+            {
+                Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                {
+                    if (mainViewModel.Settings.AreHotkeysSuppressed) return;
+                    if (mainViewModel.TogglePauseRecordingCommand.CanExecute(null))
+                        mainViewModel.TogglePauseRecordingCommand.Execute(null);
+                });
+            };
+
             // Clean up on shutdown
             desktop.ShutdownRequested += (_, _) =>
             {

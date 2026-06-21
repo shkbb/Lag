@@ -157,4 +157,14 @@
   <sys:String x:Key="Player_Used">Занята</sys:String>
 
   <sys:String x:Key="Library_EmptyTitle">Пакуль няма паўтораў</sys:String>
+  <!-- ════════ Pause recording ════════ -->
+  <sys:String x:Key="Settings_Hotkey_Pause">Паўза запісу</sys:String>
+  <sys:String x:Key="Btn_PauseRecording">Паўза</sys:String>
+  <sys:String x:Key="Btn_ResumeRecording">Узнавіць</sys:String>
+  <sys:String x:Key="Status_Paused">Прыпынена</sys:String>
+  <!-- ════════ Output device + audio mode by target ════════ -->
+  <sys:String x:Key="Settings_OutputDevice">Прылада вываду</sys:String>
+  <sys:String x:Key="Option_DefaultDevice">Па змаўчанні</sys:String>
+  <sys:String x:Key="Settings_AudioModeByTarget">Гук у залежнасці ад крыніцы</sys:String>
+  <sys:String x:Key="Settings_AudioModeByTarget_Desc">Пры запісе гульні — абраныя праграмы, працоўны стол — увесь гук ПК.</sys:String>
 </ResourceDictionary>

@@ -194,12 +194,24 @@
             </Border>
           </Grid>
 
+          <!-- Switch audio mode by what's recorded: game → selected apps, desktop → whole PC -->
+          <Grid ColumnDefinitions="*,Auto" MinHeight="46">
+            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+              <TextBlock Text="{DynamicResource Settings_AudioModeByTarget}" FontSize="13" />
+              <TextBlock Text="{DynamicResource Settings_AudioModeByTarget_Desc}" FontSize="11"
+                         Foreground="{StaticResource Fg3Brush}" TextWrapping="Wrap" Margin="0,2,12,0" />
+            </StackPanel>
+            <ToggleSwitch Grid.Column="1" VerticalAlignment="Center"
+                          IsChecked="{Binding AudioModeByTarget}"
+                          OnContent="{x:Null}" OffContent="{x:Null}" MinWidth="0" />
+          </Grid>
+
           <!-- Unified audio-source list: system, microphone, and (in apps mode) per-app rows -->
           <Border Background="{StaticResource CardBrush}" CornerRadius="12" Padding="0,4" Margin="0,6,0,4">
             <StackPanel>
 
               <!-- System audio (full-PC mode) -->
-              <Grid ColumnDefinitions="Auto,Auto,*,120,42" Margin="12,9" IsVisible="{Binding !IsAppsMode}">
+              <Grid ColumnDefinitions="Auto,Auto,*,120,42" Margin="12,9" IsVisible="{Binding ShowSystemAudioRow}">
                 <CheckBox Grid.Column="0" IsChecked="{Binding SystemAudioEnabled}" VerticalAlignment="Center" />
                 <mi:MaterialIcon Grid.Column="1" Kind="VolumeHigh" Width="20" Height="20"
                                  Margin="6,0,10,0" VerticalAlignment="Center" />
@@ -211,7 +223,7 @@
                            FontSize="11" Foreground="{StaticResource Fg3Brush}"
                            HorizontalAlignment="Right" VerticalAlignment="Center" />
               </Grid>
-              <Border Classes="divider" Margin="12,0" IsVisible="{Binding !IsAppsMode}" />
+              <Border Classes="divider" Margin="12,0" IsVisible="{Binding ShowSystemAudioRow}" />
 
               <!-- Microphone (always shown) -->
               <Grid ColumnDefinitions="Auto,Auto,*,120,42" Margin="12,9">
@@ -227,7 +239,7 @@
               </Grid>
 
               <!-- Game audio (specific-apps mode): the detected game's own sound, always recorded -->
-              <Grid ColumnDefinitions="Auto,Auto,*,120,42" Margin="12,9" IsVisible="{Binding IsAppsMode}">
+              <Grid ColumnDefinitions="Auto,Auto,*,120,42" Margin="12,9" IsVisible="{Binding ShowAppsList}">
                 <CheckBox Grid.Column="0" IsChecked="{Binding GameAudioEnabled}" VerticalAlignment="Center" />
                 <mi:MaterialIcon Grid.Column="1" Kind="Gamepad" Width="20" Height="20"
                                  Margin="6,0,10,0" VerticalAlignment="Center" />
@@ -240,7 +252,7 @@
               </Grid>
 
               <!-- Per-app rows (specific-apps mode) -->
-              <ItemsControl ItemsSource="{Binding AudioApps}" IsVisible="{Binding IsAppsMode}">
+              <ItemsControl ItemsSource="{Binding AudioApps}" IsVisible="{Binding ShowAppsList}">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="vm:AppAudioItem">
                     <Grid ColumnDefinitions="Auto,Auto,*,120,42" Margin="12,9">
@@ -260,9 +272,25 @@
               </ItemsControl>
               <TextBlock Text="{DynamicResource Settings_AppsHint}" FontSize="11"
                          Foreground="{StaticResource Fg3Brush}" Margin="12,4,12,8"
-                         TextWrapping="Wrap" IsVisible="{Binding IsAppsMode}" />
+                         TextWrapping="Wrap" IsVisible="{Binding ShowAppsList}" />
             </StackPanel>
           </Border>
+
+          <!-- Output device picker (whole-PC audio source) -->
+          <Grid ColumnDefinitions="*,Auto" MinHeight="46">
+            <TextBlock Grid.Column="0" Text="{DynamicResource Settings_OutputDevice}" FontSize="13"
+                       VerticalAlignment="Center" />
+            <ComboBox Grid.Column="1" VerticalAlignment="Center" MaxWidth="240"
+                      ItemsSource="{Binding OutputDevices}"
+                      SelectedItem="{Binding SelectedOutputDevice}">
+              <ComboBox.ItemTemplate>
+                <DataTemplate>
+                  <TextBlock Text="{Binding Name}" />
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+          </Grid>
+          <Border Classes="divider" />
 
           <!-- Microphone device picker -->
           <Grid ColumnDefinitions="*,Auto" MinHeight="46">
@@ -418,6 +446,35 @@
                   </ItemsControl.ItemTemplate>
                 </ItemsControl>
                 <Border Classes="kbd listening" IsVisible="{Binding IsCapturingScreenshotKey}">
+                  <TextBlock Text="{DynamicResource Settings_Hotkey_Listening}" />
+                </Border>
+              </Panel>
+            </Button>
+          </Grid>
+          <Border Classes="divider" />
+
+          <Grid ColumnDefinitions="*,Auto" MinHeight="50">
+            <TextBlock Grid.Column="0" Text="{DynamicResource Settings_Hotkey_Pause}" FontSize="13"
+                       VerticalAlignment="Center" />
+            <Button Grid.Column="1" Classes="bare" Padding="0" Background="Transparent" BorderThickness="0"
+                    Cursor="Hand" VerticalAlignment="Center"
+                    Command="{Binding CapturePauseHotkeyCommand}"
+                    ToolTip.Tip="{DynamicResource Settings_Hotkey_Desc}">
+              <Panel>
+                <ItemsControl ItemsSource="{Binding PauseHotkeyParts}"
+                              IsVisible="{Binding !IsCapturingPauseKey}">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                      <StackPanel Orientation="Horizontal" Spacing="6" />
+                    </ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <Border Classes="kbd"><TextBlock Text="{Binding}" /></Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <Border Classes="kbd listening" IsVisible="{Binding IsCapturingPauseKey}">
                   <TextBlock Text="{DynamicResource Settings_Hotkey_Listening}" />
                 </Border>
               </Panel>
