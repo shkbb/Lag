@@ -167,4 +167,8 @@
   <sys:String x:Key="Option_DefaultDevice">Standard</sys:String>
   <sys:String x:Key="Settings_AudioModeByTarget">Ljud efter inspelningstyp</sys:String>
   <sys:String x:Key="Settings_AudioModeByTarget_Desc">Spel spelar in valda appar, skrivbordet allt datorljud.</sys:String>
+  <!-- ════════ Logs & diagnostics ════════ -->
+  <sys:String x:Key="Settings_Logs">Loggar</sys:String>
+  <sys:String x:Key="Settings_OpenLogs">Öppna mapp</sys:String>
+  <sys:String x:Key="Settings_SaveDiagnostics">Exportera .zip</sys:String>
 </ResourceDictionary>

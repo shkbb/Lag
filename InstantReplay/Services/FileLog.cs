@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 
 namespace Lag.Services;
@@ -8,9 +9,10 @@ namespace Lag.Services;
 /// <summary>
 /// Persistent file logging. The app already writes rich diagnostics via
 /// <c>Console.WriteLine("[Component] …")</c> everywhere; this tees <see cref="Console.Out"/> and
-/// <see cref="Console.Error"/> to a timestamped rolling .txt under %AppData%\Lag\logs\ (and still to
+/// <see cref="Console.Error"/> to a timestamped rolling .txt under Documents\Lag\Logs\ (and still to
 /// the original console), so every line is captured to disk for diagnostics — no changes needed at
-/// the hundreds of existing log call-sites.
+/// the hundreds of existing log call-sites. Logs live in Documents (not hidden AppData) so they're
+/// easy to find and share for support.
 /// </summary>
 public sealed class FileLog : TextWriter
 {
@@ -23,9 +25,13 @@ public sealed class FileLog : TextWriter
 
     private FileLog(TextWriter console, StreamWriter file) { _console = console; _file = file; }
 
-    /// <summary>Folder holding the log files (%AppData%\Lag\logs).</summary>
+    /// <summary>Folder holding the log files (Documents\Lag\Logs — discoverable, easy to share).</summary>
     public static string LogDir =>
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Lag", "logs");
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Lag", "Logs");
+
+    /// <summary>Cross-session crash log (every unhandled exception, newest appended), kept next to
+    /// the per-launch logs so a single folder has everything support needs.</summary>
+    public static string CrashLogPath => Path.Combine(LogDir, "crash.log");
 
     /// <summary>Path of the current session's log file (set after <see cref="Initialize"/>).</summary>
     public static string? CurrentLogPath { get; private set; }
@@ -44,7 +50,7 @@ public sealed class FileLog : TextWriter
             var file = new StreamWriter(path, append: false) { AutoFlush = true };
 
             file.WriteLine($"===== Lag log — {DateTime.Now:yyyy-MM-dd HH:mm:ss} =====");
-            file.WriteLine($"OS {Environment.OSVersion} | 64-bit {Environment.Is64BitProcess} | CLR {Environment.Version} | machine {Environment.MachineName}");
+            file.WriteLine($"Lag {AssemblyVersion()} | OS {Environment.OSVersion} | 64-bit {Environment.Is64BitProcess} | CLR {Environment.Version} | machine {Environment.MachineName}");
             file.WriteLine(new string('-', 60));
 
             var tee = new FileLog(Console.Out, file);
@@ -83,6 +89,30 @@ public sealed class FileLog : TextWriter
         string stamped = $"[{DateTime.Now:HH:mm:ss.fff}] {line}";
         try { _file.WriteLine(stamped); } catch { }
         try { _console.WriteLine(line); } catch { }
+    }
+
+    /// <summary>Best-effort assembly version string for the log header (the authoritative Velopack
+    /// release version is logged later from the UI layer where it's available).</summary>
+    private static string AssemblyVersion()
+    {
+        try
+        {
+            return typeof(FileLog).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
+                   ?? typeof(FileLog).Assembly.GetName().Version?.ToString()
+                   ?? "?";
+        }
+        catch { return "?"; }
+    }
+
+    /// <summary>Records an unhandled exception: appends it to the cross-session <see cref="CrashLogPath"/>
+    /// AND echoes it to the current session log (via the console tee), so it's both aggregated and in
+    /// context. Never throws — crash logging must never take the process down with it.</summary>
+    public static void LogCrash(string source, Exception? ex)
+    {
+        string block = $"───── {DateTime.Now:yyyy-MM-dd HH:mm:ss} [{source}] Lag {AssemblyVersion()} ─────" +
+                       $"{Environment.NewLine}{ex}{Environment.NewLine}";
+        try { Directory.CreateDirectory(LogDir); File.AppendAllText(CrashLogPath, block + Environment.NewLine); } catch { }
+        try { Console.Error.WriteLine($"[CRASH:{source}] {ex}"); } catch { }
     }
 
     /// <summary>Keeps only the newest <paramref name="keep"/> log files.</summary>

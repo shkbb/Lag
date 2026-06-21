@@ -1176,6 +1176,50 @@ public partial class SettingsViewModel : ViewModelBase
         }
     }
 
+    /// <summary>Opens the logs folder (Documents\Lag\Logs) in Explorer so logs are one click away to share.</summary>
+    [RelayCommand]
+    private void OpenLogsFolder()
+    {
+        try
+        {
+            Directory.CreateDirectory(Lag.Services.FileLog.LogDir);
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = Lag.Services.FileLog.LogDir,
+                UseShellExecute = true
+            });
+        }
+        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Open logs folder failed: {ex.Message}"); }
+    }
+
+    /// <summary>Bundles all logs into a single timestamped .zip under Documents\Lag and reveals it —
+    /// the one-file "send this for support" export. Copies the logs to a temp dir first so the live
+    /// session log / crash.log don't cause sharing violations while zipping.</summary>
+    [RelayCommand]
+    private void SaveDiagnosticsZip()
+    {
+        try
+        {
+            string logDir = Lag.Services.FileLog.LogDir;
+            Directory.CreateDirectory(logDir);
+            string outDir = Path.GetDirectoryName(logDir.TrimEnd('\\', '/'))!;   // Documents\Lag
+            string zip = Path.Combine(outDir, $"Lag-diagnostics-{DateTime.Now:yyyy-MM-dd_HH-mm-ss}.zip");
+
+            string tmp = Path.Combine(Path.GetTempPath(), "Lag-diag-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tmp);
+            foreach (var f in Directory.GetFiles(logDir))
+            {
+                try { File.Copy(f, Path.Combine(tmp, Path.GetFileName(f)), true); } catch { }
+            }
+            if (File.Exists(zip)) File.Delete(zip);
+            System.IO.Compression.ZipFile.CreateFromDirectory(tmp, zip);
+            try { Directory.Delete(tmp, true); } catch { }
+
+            System.Diagnostics.Process.Start("explorer.exe", $"/select,\"{zip}\"");
+        }
+        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Save diagnostics zip failed: {ex.Message}"); }
+    }
+
     public SettingsViewModel(
         Lag.Services.IReplayRecorder engine,
         GlobalHotkeyManager hotkeyManager,

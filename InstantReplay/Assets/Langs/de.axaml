@@ -167,4 +167,8 @@
   <sys:String x:Key="Option_DefaultDevice">Standard</sys:String>
   <sys:String x:Key="Settings_AudioModeByTarget">Audiomodus an Aufnahme anpassen</sys:String>
   <sys:String x:Key="Settings_AudioModeByTarget_Desc">Bei einem Spiel werden die ausgewählten Apps aufgenommen, beim Desktop der gesamte PC-Ton.</sys:String>
+  <!-- ════════ Logs & diagnostics ════════ -->
+  <sys:String x:Key="Settings_Logs">Protokolle</sys:String>
+  <sys:String x:Key="Settings_OpenLogs">Ordner öffnen</sys:String>
+  <sys:String x:Key="Settings_SaveDiagnostics">Als .zip exportieren</sys:String>
 </ResourceDictionary>

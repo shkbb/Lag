@@ -185,4 +185,8 @@
   <sys:String x:Key="Option_DefaultDevice">Default (auto)</sys:String>
   <sys:String x:Key="Settings_AudioModeByTarget">Match audio mode to capture</sys:String>
   <sys:String x:Key="Settings_AudioModeByTarget_Desc">Recording a game captures the selected apps; the desktop captures all PC sound.</sys:String>
+  <!-- ════════ Logs & diagnostics ════════ -->
+  <sys:String x:Key="Settings_Logs">Logs</sys:String>
+  <sys:String x:Key="Settings_OpenLogs">Open folder</sys:String>
+  <sys:String x:Key="Settings_SaveDiagnostics">Export .zip</sys:String>
 </ResourceDictionary>

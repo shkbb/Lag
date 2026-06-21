@@ -167,4 +167,8 @@
   <sys:String x:Key="Option_DefaultDevice">Standard</sys:String>
   <sys:String x:Key="Settings_AudioModeByTarget">Lyd efter optagelsestype</sys:String>
   <sys:String x:Key="Settings_AudioModeByTarget_Desc">Spil optager valgte apps, skrivebordet al pc-lyd.</sys:String>
+  <!-- ════════ Logs & diagnostics ════════ -->
+  <sys:String x:Key="Settings_Logs">Logfiler</sys:String>
+  <sys:String x:Key="Settings_OpenLogs">Åbn mappe</sys:String>
+  <sys:String x:Key="Settings_SaveDiagnostics">Eksportér .zip</sys:String>
 </ResourceDictionary>

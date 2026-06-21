@@ -167,4 +167,8 @@
   <sys:String x:Key="Option_DefaultDevice">Па змаўчанні</sys:String>
   <sys:String x:Key="Settings_AudioModeByTarget">Гук у залежнасці ад крыніцы</sys:String>
   <sys:String x:Key="Settings_AudioModeByTarget_Desc">Пры запісе гульні — абраныя праграмы, працоўны стол — увесь гук ПК.</sys:String>
+  <!-- ════════ Logs & diagnostics ════════ -->
+  <sys:String x:Key="Settings_Logs">Логі</sys:String>
+  <sys:String x:Key="Settings_OpenLogs">Адкрыць папку</sys:String>
+  <sys:String x:Key="Settings_SaveDiagnostics">Экспарт .zip</sys:String>
 </ResourceDictionary>

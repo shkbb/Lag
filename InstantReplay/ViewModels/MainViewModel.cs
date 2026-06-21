@@ -165,6 +165,9 @@ public partial class MainViewModel : ViewModelBase
         Editor = editor;
         _currentView = settings; // Default to Settings view
 
+        // One-shot environment + config dump near the top of the session log.
+        LogStartupDiagnostics();
+
         // Wire up events
         _engine.ReplaySaved += (_, outputVideoPath) =>
         {
@@ -251,6 +254,30 @@ public partial class MainViewModel : ViewModelBase
                 () => { _ = StartRecordingCommand.ExecuteAsync(null); },
                 Avalonia.Threading.DispatcherPriority.Background);
         }
+    }
+
+    /// <summary>One-shot environment + config dump at startup. Tee'd into the session log so a single
+    /// log answers "what is this user's setup" — version, GPUs, recorder, and the active capture config
+    /// — without a back-and-forth. Never throws.</summary>
+    private void LogStartupDiagnostics()
+    {
+        try
+        {
+            Console.WriteLine("===== Diagnostics =====");
+            Console.WriteLine($"Lag {Settings.AppVersion} | recorder {_engine.GetType().Name}");
+            foreach (var gpu in Settings.GpuOptions)
+                Console.WriteLine($"  {gpu.Display}");
+            var mon = Settings.SelectedMonitor;
+            string codec = string.IsNullOrEmpty(Settings.SelectedCodec?.EncoderId) ? "auto" : Settings.SelectedCodec!.EncoderId;
+            string audio = Settings.AudioModeByTarget ? "by-target" : (Settings.IsAppsMode ? "apps" : "all");
+            Console.WriteLine(
+                $"Config: monitor={mon?.DeviceName ?? "?"} ({mon?.Width}x{mon?.Height}@{mon?.RefreshRate}Hz) " +
+                $"fps={Settings.EffectiveFps} outHeight={Settings.SelectedResolution?.TargetHeight ?? 0} codec={codec} " +
+                $"bitrate={Settings.EffectiveBitrateKbps}kbps buffer={Settings.BufferSeconds}s audio={audio} " +
+                $"gpu={Settings.SelectedGpu?.Display}");
+            Console.WriteLine("=======================");
+        }
+        catch (Exception ex) { Console.WriteLine($"[Diagnostics] dump failed: {ex.Message}"); }
     }
 
     // ───────────── Navigation Commands ─────────────

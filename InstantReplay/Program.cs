@@ -42,12 +42,13 @@ public static class Program
             return;
         }
 
-        // Crash forensics: any unhandled exception lands in %AppData%\Lag\crash.log with a
-        // full stack trace, so failures on users' machines can be diagnosed remotely.
+        // Crash forensics: any unhandled exception lands in Documents\Lag\Logs\crash.log with a full
+        // stack trace AND is echoed into the current session log, so failures on users' machines can
+        // be diagnosed remotely.
         AppDomain.CurrentDomain.UnhandledException += (_, e) =>
-            LogCrash("AppDomain", e.ExceptionObject as Exception);
+            Lag.Services.FileLog.LogCrash("AppDomain", e.ExceptionObject as Exception);
         System.Threading.Tasks.TaskScheduler.UnobservedTaskException += (_, e) =>
-            LogCrash("UnobservedTask", e.Exception);
+            Lag.Services.FileLog.LogCrash("UnobservedTask", e.Exception);
 
         // MUST run first: handles Velopack's install/update/uninstall hooks and exits early
         // for those special invocations before any UI is created. (Velopack maintenance must not
@@ -80,27 +81,8 @@ public static class Program
         }
         catch (Exception ex)
         {
-            LogCrash("Main", ex);
+            Lag.Services.FileLog.LogCrash("Main", ex);
             throw;
-        }
-    }
-
-    /// <summary>Appends a crash record to %AppData%\Lag\crash.log (never throws).</summary>
-    private static void LogCrash(string source, Exception? ex)
-    {
-        try
-        {
-            string dir = System.IO.Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Lag");
-            System.IO.Directory.CreateDirectory(dir);
-            System.IO.File.AppendAllText(
-                System.IO.Path.Combine(dir, "crash.log"),
-                $"───── {DateTime.Now:yyyy-MM-dd HH:mm:ss} [{source}] v{typeof(Program).Assembly.GetName().Version} ─────{Environment.NewLine}" +
-                $"{ex}{Environment.NewLine}{Environment.NewLine}");
-        }
-        catch
-        {
-            // logging must never take the process down with it
         }
     }
 

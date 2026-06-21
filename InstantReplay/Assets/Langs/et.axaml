@@ -167,4 +167,8 @@
   <sys:String x:Key="Option_DefaultDevice">Vaikimisi</sys:String>
   <sys:String x:Key="Settings_AudioModeByTarget">Heli vastavalt salvestusele</sys:String>
   <sys:String x:Key="Settings_AudioModeByTarget_Desc">Mängu puhul valitud rakendused, töölaua puhul kogu arvuti heli.</sys:String>
+  <!-- ════════ Logs & diagnostics ════════ -->
+  <sys:String x:Key="Settings_Logs">Logid</sys:String>
+  <sys:String x:Key="Settings_OpenLogs">Ava kaust</sys:String>
+  <sys:String x:Key="Settings_SaveDiagnostics">Ekspordi .zip</sys:String>
 </ResourceDictionary>

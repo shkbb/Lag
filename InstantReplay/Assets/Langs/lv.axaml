@@ -167,4 +167,8 @@
   <sys:String x:Key="Option_DefaultDevice">Noklusējums</sys:String>
   <sys:String x:Key="Settings_AudioModeByTarget">Skaņa atkarībā no avota</sys:String>
   <sys:String x:Key="Settings_AudioModeByTarget_Desc">Spēlei tiek ierakstītas atlasītās lietotnes, darbvirsmai — viss datora skaņa.</sys:String>
+  <!-- ════════ Logs & diagnostics ════════ -->
+  <sys:String x:Key="Settings_Logs">Žurnāli</sys:String>
+  <sys:String x:Key="Settings_OpenLogs">Atvērt mapi</sys:String>
+  <sys:String x:Key="Settings_SaveDiagnostics">Eksportēt .zip</sys:String>
 </ResourceDictionary>

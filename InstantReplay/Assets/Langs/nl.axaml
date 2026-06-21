@@ -167,4 +167,8 @@
   <sys:String x:Key="Option_DefaultDevice">Standaard</sys:String>
   <sys:String x:Key="Settings_AudioModeByTarget">Audio volgens opname</sys:String>
   <sys:String x:Key="Settings_AudioModeByTarget_Desc">Een game neemt de geselecteerde apps op, het bureaublad al het pc-geluid.</sys:String>
+  <!-- ════════ Logs & diagnostics ════════ -->
+  <sys:String x:Key="Settings_Logs">Logboeken</sys:String>
+  <sys:String x:Key="Settings_OpenLogs">Map openen</sys:String>
+  <sys:String x:Key="Settings_SaveDiagnostics">Exporteer .zip</sys:String>
 </ResourceDictionary>

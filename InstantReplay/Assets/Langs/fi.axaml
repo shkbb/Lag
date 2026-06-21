@@ -167,4 +167,8 @@
   <sys:String x:Key="Option_DefaultDevice">Oletus</sys:String>
   <sys:String x:Key="Settings_AudioModeByTarget">Ääni tallennuksen mukaan</sys:String>
   <sys:String x:Key="Settings_AudioModeByTarget_Desc">Pelissä valitut sovellukset, työpöydällä koko tietokoneen ääni.</sys:String>
+  <!-- ════════ Logs & diagnostics ════════ -->
+  <sys:String x:Key="Settings_Logs">Lokit</sys:String>
+  <sys:String x:Key="Settings_OpenLogs">Avaa kansio</sys:String>
+  <sys:String x:Key="Settings_SaveDiagnostics">Vie .zip</sys:String>
 </ResourceDictionary>

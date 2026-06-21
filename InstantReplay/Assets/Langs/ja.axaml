@@ -167,4 +167,8 @@
   <sys:String x:Key="Option_DefaultDevice">既定</sys:String>
   <sys:String x:Key="Settings_AudioModeByTarget">録画対象に合わせて音声を切替</sys:String>
   <sys:String x:Key="Settings_AudioModeByTarget_Desc">ゲームは選択したアプリ、デスクトップはPC全体の音声を録音します。</sys:String>
+  <!-- ════════ Logs & diagnostics ════════ -->
+  <sys:String x:Key="Settings_Logs">ログ</sys:String>
+  <sys:String x:Key="Settings_OpenLogs">フォルダを開く</sys:String>
+  <sys:String x:Key="Settings_SaveDiagnostics">.zipで書き出し</sys:String>
 </ResourceDictionary>

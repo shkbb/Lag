@@ -583,6 +583,19 @@
                     Command="{Binding CheckForUpdatesCommand}"
                     IsEnabled="{Binding !IsCheckingForUpdate}" />
           </Grid>
+          <Border Classes="divider" />
+
+          <!-- Logs & diagnostics -->
+          <Grid ColumnDefinitions="*,Auto,Auto" MinHeight="50">
+            <TextBlock Grid.Column="0" Text="{DynamicResource Settings_Logs}" FontSize="13"
+                       VerticalAlignment="Center" />
+            <Button Grid.Column="1" Classes="chip" VerticalAlignment="Center" Margin="0,0,6,0"
+                    Content="{DynamicResource Settings_OpenLogs}"
+                    Command="{Binding OpenLogsFolderCommand}" />
+            <Button Grid.Column="2" Classes="chip" VerticalAlignment="Center"
+                    Content="{DynamicResource Settings_SaveDiagnostics}"
+                    Command="{Binding SaveDiagnosticsZipCommand}" />
+          </Grid>
 
         </StackPanel>
       </ScrollViewer>

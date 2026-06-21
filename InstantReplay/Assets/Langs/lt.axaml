@@ -167,4 +167,8 @@
   <sys:String x:Key="Option_DefaultDevice">Numatytasis</sys:String>
   <sys:String x:Key="Settings_AudioModeByTarget">Garsą pagal įrašymo tipą</sys:String>
   <sys:String x:Key="Settings_AudioModeByTarget_Desc">Žaidimas įrašo pasirinktas programas, darbalaukis — visą kompiuterio garsą.</sys:String>
+  <!-- ════════ Logs & diagnostics ════════ -->
+  <sys:String x:Key="Settings_Logs">Žurnalai</sys:String>
+  <sys:String x:Key="Settings_OpenLogs">Atverti aplanką</sys:String>
+  <sys:String x:Key="Settings_SaveDiagnostics">Eksportuoti .zip</sys:String>
 </ResourceDictionary>
