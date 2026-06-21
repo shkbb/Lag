@@ -340,6 +340,13 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
 
         var oldMedia = _mediaPlayer.Media;
         var media = new Media(_libVLC, new Uri(clip.FilePath));
+        if (clip.FilePath.EndsWith(".gif", StringComparison.OrdinalIgnoreCase))
+        {
+            // libvlc's default image demuxer shows only the FIRST GIF frame. Force ffmpeg's
+            // avformat demuxer so every frame plays, and loop it (GIFs are meant to repeat).
+            media.AddOption(":demux=avformat");
+            media.AddOption(":input-repeat=65535");
+        }
         // SOFTWARE decode for the player (same as the editor). Two reasons:
         //   • Hardware (d3d11va) decoder init stalls audio ~1s at the start of every clip (audio waits
         //     for the HW pipeline to stabilise), and it produced a green screen on a live media swap

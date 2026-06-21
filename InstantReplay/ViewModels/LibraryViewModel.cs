@@ -45,8 +45,10 @@ public partial class LibraryViewModel : ViewModelBase
 
     private readonly SettingsViewModel _settings;
 
-    /// <summary>All container formats the recorder can produce (must match SettingsViewModel.FormatOptions).</summary>
-    private static readonly string[] VideoPatterns = ["*.mp4", "*.mkv", "*.mov", "*.avi"];
+    /// <summary>All container formats the recorder can produce (must match SettingsViewModel.FormatOptions),
+    /// plus *.gif from the editor's "Export as GIF" — GIFs are animated, so they're treated as videos
+    /// (thumbnail + play) rather than still images.</summary>
+    private static readonly string[] VideoPatterns = ["*.mp4", "*.mkv", "*.mov", "*.avi", "*.gif"];
 
     /// <summary>Screenshot formats produced by the screenshot hotkey (shown as image cards).</summary>
     private static readonly string[] ImagePatterns = ["*.png", "*.jpg", "*.jpeg"];

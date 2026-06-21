@@ -54,10 +54,28 @@ public partial class EditorAudioTrack : ObservableObject
     }
 }
 
+/// <summary>One text caption overlaid on the video: content, normalized position in the output
+/// frame (0..1), font size as a % of frame height, and a hex colour.</summary>
+public partial class EditorTextItem : ObservableObject
+{
+    [ObservableProperty] private string _text = "Text";
+    [ObservableProperty] private double _nx = 0.5;       // 0 = left edge, 1 = right edge (kept in frame)
+    [ObservableProperty] private double _ny = 0.12;      // 0 = top, 1 = bottom
+    [ObservableProperty] private int _fontPercent = 8;   // font height as % of the frame height
+    [ObservableProperty] private string _color = "#FFFFFF";
+}
+
 public record EditorSpeedOption(string Display, double Value);
 
 /// <summary>Export resolution preset; Height 0 = keep the source resolution.</summary>
 public record EditorExportRes(string Display, int Height);
+
+/// <summary>A caption colour swatch: the hex value (for the command) and a ready brush (for the chip).</summary>
+public record EditorTextColor(string Hex, Avalonia.Media.IBrush Brush);
+
+/// <summary>A removed section of the clip (seconds of the full source). On export the kept parts
+/// around it are concatenated.</summary>
+public record EditorCut(double StartSec, double EndSec);
 
 /// <summary>CropGeometry is libvlc's "W:H" crop string for the live preview.</summary>
 public record EditorAspectOption(string Display, double? Ratio, string? CropGeometry);
@@ -244,10 +262,13 @@ public partial class EditorViewModel : ViewModelBase, IDisposable
 
     // ── Undo (Ctrl+Z): a stack of edit snapshots captured just BEFORE each change ──
 
+    private sealed record TextSnap(string Text, double Nx, double Ny, int FontPercent, string Color);
+
     private sealed record EditSnap(double TrimStart, double TrimEnd, string Speed, int Aspect, int Filter,
         double CropX, double CropY, double CropW, double CropH,
         double VidX, double VidY, double VidW, double VidH,
-        int Rotation, bool FlipH, bool FlipV);
+        int Rotation, bool FlipH, bool FlipV,
+        int ColorB, int ColorC, int ColorS, EditorCut[] Cuts, TextSnap[] Texts);
 
     private readonly Stack<EditSnap> _undo = new();
     private bool _suppressUndo;   // true while loading a clip or restoring an undo snapshot
@@ -265,7 +286,9 @@ public partial class EditorViewModel : ViewModelBase, IDisposable
         if (_suppressUndo) return;
         _undo.Push(new EditSnap(TrimStartSec, TrimEndSec, SpeedText,
             IndexOf(AspectOptions, SelectedAspect), IndexOf(FilterOptions, SelectedFilter),
-            CropX, CropY, CropW, CropH, VidX, VidY, VidW, VidH, Rotation, FlipH, FlipV));
+            CropX, CropY, CropW, CropH, VidX, VidY, VidW, VidH, Rotation, FlipH, FlipV,
+            ColorBrightness, ColorContrast, ColorSaturation, Cuts.ToArray(),
+            Texts.Select(t => new TextSnap(t.Text, t.Nx, t.Ny, t.FontPercent, t.Color)).ToArray()));
         UndoCommand.NotifyCanExecuteChanged();
     }
 
@@ -287,6 +310,13 @@ public partial class EditorViewModel : ViewModelBase, IDisposable
             CropX = s.CropX; CropY = s.CropY; CropW = s.CropW; CropH = s.CropH;
             VidX = s.VidX; VidY = s.VidY; VidW = s.VidW; VidH = s.VidH;
             Rotation = s.Rotation; FlipH = s.FlipH; FlipV = s.FlipV;
+            ColorBrightness = s.ColorB; ColorContrast = s.ColorC; ColorSaturation = s.ColorS;
+            Cuts.Clear();
+            foreach (var c in s.Cuts) Cuts.Add(c);
+            SelectedText = null;
+            Texts.Clear();
+            foreach (var ts in s.Texts)
+                Texts.Add(new EditorTextItem { Text = ts.Text, Nx = ts.Nx, Ny = ts.Ny, FontPercent = ts.FontPercent, Color = ts.Color });
         }
         finally { _suppressUndo = false; }
 
@@ -294,8 +324,12 @@ public partial class EditorViewModel : ViewModelBase, IDisposable
         OnPropertyChanged(nameof(IsReframed));
         OnPropertyChanged(nameof(SourceAspect));
         OnPropertyChanged(nameof(FrameAspect));
+        OnPropertyChanged(nameof(HasCuts));
+        OnPropertyChanged(nameof(HasTexts));
         ApplyPreviewFilter();
         ReframeChanged?.Invoke();
+        CutsChanged?.Invoke();
+        TextsChanged?.Invoke();
         UndoCommand.NotifyCanExecuteChanged();
     }
 
@@ -373,6 +407,70 @@ public partial class EditorViewModel : ViewModelBase, IDisposable
 
     partial void OnSelectedFilterChanging(EditorFilterOption value) => PushUndo();
     partial void OnSelectedFilterChanged(EditorFilterOption value) => ApplyPreviewFilter();
+
+    // ── Manual colour sliders (percent, 100 = neutral) — combine with the selected preset filter ──
+    [ObservableProperty] private int _colorBrightness = 100;
+    [ObservableProperty] private int _colorContrast = 100;
+    [ObservableProperty] private int _colorSaturation = 100;
+    partial void OnColorBrightnessChanged(int value) => ApplyPreviewFilter();
+    partial void OnColorContrastChanged(int value) => ApplyPreviewFilter();
+    partial void OnColorSaturationChanged(int value) => ApplyPreviewFilter();
+
+    /// <summary>True when any manual colour slider is off its neutral 100%.</summary>
+    public bool HasColorAdjust => ColorBrightness != 100 || ColorContrast != 100 || ColorSaturation != 100;
+
+    [RelayCommand]
+    private void ResetColor()
+    {
+        PushUndo();
+        ColorBrightness = 100; ColorContrast = 100; ColorSaturation = 100;
+    }
+
+    // ── Text / captions ──
+
+    public ObservableCollection<EditorTextItem> Texts { get; } = new();
+
+    [ObservableProperty]
+    private EditorTextItem? _selectedText;
+
+    public bool HasTexts => Texts.Count > 0;
+
+    /// <summary>Preset colour swatches for captions (Hex for the command, Brush for the button fill).</summary>
+    public IReadOnlyList<EditorTextColor> TextColors { get; } = new[]
+    {
+        "#FFFFFF", "#000000", "#FFD43B", "#FF6B6B", "#4DABF7", "#51CF66"
+    }.Select(h => new EditorTextColor(h, Avalonia.Media.Brush.Parse(h))).ToList();
+
+    /// <summary>Raised when the caption list or any caption changes so the view redraws the overlays.</summary>
+    public event Action? TextsChanged;
+
+    private void OnTextItemChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e) =>
+        TextsChanged?.Invoke();
+
+    [RelayCommand]
+    private void AddText()
+    {
+        PushUndo();
+        var t = new EditorTextItem { Text = Localizer.Get("Editor_TextDefault") };
+        Texts.Add(t);
+        SelectedText = t;
+    }
+
+    [RelayCommand]
+    private void RemoveSelectedText()
+    {
+        if (SelectedText is not { } t) return;
+        PushUndo();
+        SelectedText = null;
+        Texts.Remove(t);
+    }
+
+    /// <summary>Sets the selected caption's colour (called from the swatch buttons).</summary>
+    [RelayCommand]
+    private void SetTextColor(string? hex)
+    {
+        if (SelectedText is { } t && !string.IsNullOrEmpty(hex)) t.Color = hex;
+    }
 
     /// <summary>Selected tools tab in the right panel: 0 = Clip, 1 = Filters (UI-only).</summary>
     [ObservableProperty]
@@ -516,6 +614,19 @@ public partial class EditorViewModel : ViewModelBase, IDisposable
                     t.PropertyChanged -= OnTrackPropertyChanged;
             ApplyPreviewVolume();
         };
+
+        // Caption changes (add/remove/edit) redraw the preview overlays.
+        Texts.CollectionChanged += (_, e) =>
+        {
+            if (e.NewItems != null)
+                foreach (EditorTextItem t in e.NewItems)
+                    t.PropertyChanged += OnTextItemChanged;
+            if (e.OldItems != null)
+                foreach (EditorTextItem t in e.OldItems)
+                    t.PropertyChanged -= OnTextItemChanged;
+            OnPropertyChanged(nameof(HasTexts));
+            TextsChanged?.Invoke();
+        };
     }
 
     private void OnTrackPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -538,13 +649,14 @@ public partial class EditorViewModel : ViewModelBase, IDisposable
         if (_mediaPlayer == null) return;
         try
         {
+            // Effective adjust = the preset filter combined with the manual sliders (×, neutral=1).
             var f = SelectedFilter;
-            if (f.HasAdjust)
+            if (f.HasAdjust || HasColorAdjust)
             {
                 _mediaPlayer.SetAdjustInt(VideoAdjustOption.Enable, 1);
-                _mediaPlayer.SetAdjustFloat(VideoAdjustOption.Contrast, f.Contrast);
-                _mediaPlayer.SetAdjustFloat(VideoAdjustOption.Brightness, f.Brightness);
-                _mediaPlayer.SetAdjustFloat(VideoAdjustOption.Saturation, f.Saturation);
+                _mediaPlayer.SetAdjustFloat(VideoAdjustOption.Contrast, f.Contrast * (ColorContrast / 100f));
+                _mediaPlayer.SetAdjustFloat(VideoAdjustOption.Brightness, f.Brightness * (ColorBrightness / 100f));
+                _mediaPlayer.SetAdjustFloat(VideoAdjustOption.Saturation, f.Saturation * (ColorSaturation / 100f));
                 _mediaPlayer.SetAdjustFloat(VideoAdjustOption.Hue, f.Hue);
             }
             else
@@ -644,6 +756,10 @@ public partial class EditorViewModel : ViewModelBase, IDisposable
         SelectedAspect = AspectOptions[0];
         SetCrop(0, 0, 1, 1);   // resets the source crop AND re-fits the reframe to cover
         Rotation = 0; FlipH = false; FlipV = false;
+        ColorBrightness = 100; ColorContrast = 100; ColorSaturation = 100;
+        ClearCuts();
+        SelectedText = null;
+        Texts.Clear();
         SelectedFilter = FilterOptions[0];
         IsVideoSelected = false;
         ExportStatus = string.Empty;
@@ -936,9 +1052,30 @@ public partial class EditorViewModel : ViewModelBase, IDisposable
 
         Dispatcher.UIThread.Post(() =>
         {
+            double posSec = position * DurationSec;
+
+            // Skip over removed (cut) sections during playback so the preview matches the export —
+            // when the playhead enters a cut, jump straight to its end.
+            if (IsPlaying && DurationSec > 0)
+            {
+                foreach (var c in Cuts)
+                {
+                    if (posSec >= c.StartSec - 0.03 && posSec < c.EndSec - 0.03)
+                    {
+                        double target = Math.Clamp(Math.Min(c.EndSec, TrimEndSec) / DurationSec, 0, 1);
+                        try { if (_mediaPlayer is { IsSeekable: true }) _mediaPlayer.Position = (float)target; }
+                        catch (Exception ex) { Debug.WriteLine($"[Editor] cut-skip failed: {ex.Message}"); }
+                        _isUpdatingPosition = true;
+                        Position = target;
+                        _isUpdatingPosition = false;
+                        TimeDisplay = $"{FormatTime(TimeSpan.FromSeconds(Math.Min(c.EndSec, TrimEndSec)))} / {FormatTime(total)}";
+                        return;
+                    }
+                }
+            }
+
             // The playhead lives strictly between the trim handles: when playback
             // reaches the end handle, park exactly on it and pause.
-            double posSec = position * DurationSec;
             if (IsPlaying && DurationSec > 0 && posSec >= TrimEndSec)
             {
                 try
@@ -1022,6 +1159,109 @@ public partial class EditorViewModel : ViewModelBase, IDisposable
     {
         TrimStartSec = 0;
         TrimEndSec = DurationSec;
+        ClearCuts();
+    }
+
+    // ── Cut out the middle: removed sections inside the trim, concatenated on export ──
+
+    /// <summary>Removed sections (seconds of the full source). Drawn as dark bands on the timeline.</summary>
+    public ObservableCollection<EditorCut> Cuts { get; } = new();
+
+    public bool HasCuts => Cuts.Count > 0;
+
+    /// <summary>Raised when the cut list changes so the view redraws the timeline bands.</summary>
+    public event Action? CutsChanged;
+
+    private double? _pendingCutStart;
+
+    /// <summary>Highlights the Cut button while the first edge of a new cut is set.</summary>
+    [ObservableProperty]
+    private bool _isMarkingCut;
+
+    /// <summary>Two-click cut: first press marks the start at the playhead, second marks the end and
+    /// adds the cut. (A live preview band is drawn between the start and the playhead.)</summary>
+    [RelayCommand]
+    private void ToggleCut()
+    {
+        double t = Math.Clamp(CurrentPreviewSec, TrimStartSec, TrimEndSec);
+        if (_pendingCutStart is null)
+        {
+            _pendingCutStart = t;
+            IsMarkingCut = true;
+            CutsChanged?.Invoke();
+            return;
+        }
+
+        double a = Math.Min(_pendingCutStart.Value, t);
+        double b = Math.Max(_pendingCutStart.Value, t);
+        _pendingCutStart = null;
+        IsMarkingCut = false;
+        if (b - a < 0.05) { CutsChanged?.Invoke(); return; }   // too small — discard
+        PushUndo();
+        AddCut(a, b);
+    }
+
+    /// <summary>The pending cut's first edge (for the live band), or null when not marking.</summary>
+    public double? PendingCutStart => _pendingCutStart;
+
+    private void AddCut(double a, double b)
+    {
+        var list = Cuts.ToList();
+        list.Add(new EditorCut(a, b));
+        list.Sort((x, y) => x.StartSec.CompareTo(y.StartSec));
+
+        // Merge overlapping / touching cuts.
+        var merged = new List<EditorCut>();
+        foreach (var c in list)
+        {
+            if (merged.Count > 0 && c.StartSec <= merged[^1].EndSec + 0.01)
+                merged[^1] = new EditorCut(merged[^1].StartSec, Math.Max(merged[^1].EndSec, c.EndSec));
+            else
+                merged.Add(c);
+        }
+
+        Cuts.Clear();
+        foreach (var c in merged) Cuts.Add(c);
+        OnPropertyChanged(nameof(HasCuts));
+        CutsChanged?.Invoke();
+    }
+
+    /// <summary>Removes a single cut (the view calls this when a band is right-clicked).</summary>
+    public void RemoveCut(EditorCut cut)
+    {
+        if (!Cuts.Contains(cut)) return;
+        PushUndo();
+        Cuts.Remove(cut);
+        OnPropertyChanged(nameof(HasCuts));
+        CutsChanged?.Invoke();
+    }
+
+    [RelayCommand]
+    private void ClearCuts()
+    {
+        _pendingCutStart = null;
+        IsMarkingCut = false;
+        if (Cuts.Count == 0) { CutsChanged?.Invoke(); return; }
+        Cuts.Clear();
+        OnPropertyChanged(nameof(HasCuts));
+        CutsChanged?.Invoke();
+    }
+
+    /// <summary>The kept sub-ranges of [start,end] after the cuts are removed (in source seconds).</summary>
+    private List<(double s, double e)> KeptSegments(double start, double end)
+    {
+        var segs = new List<(double s, double e)>();
+        double cur = start;
+        foreach (var c in Cuts.OrderBy(c => c.StartSec))
+        {
+            double cs = Math.Clamp(c.StartSec, start, end);
+            double ce = Math.Clamp(c.EndSec, start, end);
+            if (ce <= cur) continue;
+            if (cs > cur) segs.Add((cur, cs));
+            cur = Math.Max(cur, ce);
+        }
+        if (cur < end - 0.01) segs.Add((cur, end));
+        return segs;
     }
 
     // ───────────── Export ─────────────
@@ -1043,8 +1283,13 @@ public partial class EditorViewModel : ViewModelBase, IDisposable
         {
             double speed = EffectiveSpeed;
             double start = Math.Clamp(TrimStartSec, 0, DurationSec);
-            double duration = Math.Max(0.2, Math.Min(TrimEndSec, DurationSec) - start);
-            double effectiveDuration = duration / speed;
+            double end = Math.Min(TrimEndSec, DurationSec);
+
+            // Kept ranges after the middle cuts (GIF ignores cuts — concatenating GIFs isn't supported).
+            var segments = (ExportAsGif || Cuts.Count == 0)
+                ? new List<(double s, double e)> { (start, Math.Max(start + 0.2, end)) }
+                : KeptSegments(start, end);
+            if (segments.Count == 0) segments.Add((start, Math.Max(start + 0.2, end)));
 
             var progress = new Progress<double>(p =>
             {
@@ -1052,22 +1297,7 @@ public partial class EditorViewModel : ViewModelBase, IDisposable
                 ExportStatus = Localizer.Format("Editor_Exporting", ExportProgress);
             });
 
-            int exit;
-            if (ExportAsGif)
-            {
-                // GIF is a CPU palette pipeline — no nvenc path.
-                exit = await RunExportAsync(clip, outPath, start, duration, speed, useNvenc: false,
-                                            effectiveDuration, progress, _exportCts.Token);
-            }
-            else
-            {
-                // Hardware encode first (nvenc), transparent fallback to x264 on any failure.
-                exit = await RunExportAsync(clip, outPath, start, duration, speed, useNvenc: true,
-                                            effectiveDuration, progress, _exportCts.Token);
-                if (exit != 0)
-                    exit = await RunExportAsync(clip, outPath, start, duration, speed, useNvenc: false,
-                                                effectiveDuration, progress, _exportCts.Token);
-            }
+            int exit = await ExportSegmentsAsync(clip, outPath, segments, speed, progress, _exportCts.Token);
 
             if (exit == 0 && File.Exists(outPath))
             {
@@ -1094,6 +1324,68 @@ public partial class EditorViewModel : ViewModelBase, IDisposable
             IsExporting = false;
             ExportProgress = 0;
         }
+    }
+
+    /// <summary>Exports the kept segments to <paramref name="outPath"/>. One segment goes straight to
+    /// the file; several are each rendered to a temp file (the full editor pipeline) then concatenated
+    /// with a stream copy (identical params → no re-encode for the join).</summary>
+    private async Task<int> ExportSegmentsAsync(ReplayClip clip, string outPath,
+        List<(double s, double e)> segments, double speed, IProgress<double> progress, CancellationToken ct)
+    {
+        if (segments.Count == 1)
+        {
+            var (s, e) = segments[0];
+            return await RunOneAsync(clip, outPath, s, Math.Max(0.05, e - s), speed, progress, ct);
+        }
+
+        string ext = Path.GetExtension(outPath);
+        var temps = new List<string>();
+        try
+        {
+            for (int i = 0; i < segments.Count; i++)
+            {
+                var (s, e) = segments[i];
+                string tmp = Path.Combine(Path.GetTempPath(), $"lag-seg-{Guid.NewGuid():N}{ext}");
+                temps.Add(tmp);
+
+                int captured = i;
+                var segProgress = new Progress<double>(p =>
+                    progress.Report((captured * 100.0 + Math.Clamp(p, 0, 100)) / segments.Count));
+
+                int exit = await RunOneAsync(clip, tmp, s, Math.Max(0.05, e - s), speed, segProgress, ct);
+                if (exit != 0) return exit;
+            }
+
+            // Concatenate the rendered segments (same codec params → stream copy).
+            string listFile = Path.Combine(Path.GetTempPath(), $"lag-concat-{Guid.NewGuid():N}.txt");
+            var sb = new System.Text.StringBuilder();
+            foreach (var t in temps) sb.AppendLine($"file '{t.Replace("'", "'\\''")}'");
+            await File.WriteAllTextAsync(listFile, sb.ToString(), ct);
+
+            string fast = ext is ".mp4" or ".mov" ? "-movflags +faststart " : "";
+            int cexit = await RunFfmpegAsync(
+                $"-y -f concat -safe 0 -i \"{listFile}\" -c copy {fast}\"{outPath}\"", ct, null, 0);
+            try { File.Delete(listFile); } catch { }
+            return cexit;
+        }
+        finally
+        {
+            foreach (var t in temps) try { File.Delete(t); } catch { }
+        }
+    }
+
+    /// <summary>Renders ONE segment with the correct encoder path (GIF palette, or nvenc → x264).</summary>
+    private async Task<int> RunOneAsync(ReplayClip clip, string outPath, double start, double duration,
+        double speed, IProgress<double> progress, CancellationToken ct)
+    {
+        double effectiveDuration = duration / speed;
+        if (ExportAsGif)
+            return await RunExportAsync(clip, outPath, start, duration, speed, false, effectiveDuration, progress, ct);
+
+        int exit = await RunExportAsync(clip, outPath, start, duration, speed, true, effectiveDuration, progress, ct);
+        if (exit != 0)
+            exit = await RunExportAsync(clip, outPath, start, duration, speed, false, effectiveDuration, progress, ct);
+        return exit;
     }
 
     /// <summary>"name-edit.mp4" next to the original, with a numeric suffix when taken.</summary>
@@ -1125,6 +1417,35 @@ public partial class EditorViewModel : ViewModelBase, IDisposable
         int i = (int)Math.Round(v);
         if (i < 2) i = 2;
         return i - (i % 2);
+    }
+
+    private static string ColorToFfmpeg(string hex)
+    {
+        string h = (hex ?? "").TrimStart('#');
+        return h.Length is 6 or 8 ? "0x" + h : "white";
+    }
+
+    /// <summary>Appends a drawtext filter per caption (drawn on the FINAL framed output). The caption
+    /// text goes through a temp textfile to avoid filtergraph escaping; temp files are tracked for
+    /// cleanup by the caller.</summary>
+    private void AppendText(List<string> vparts, List<string> tempFiles)
+    {
+        var inv = CultureInfo.InvariantCulture;
+        foreach (var t in Texts)
+        {
+            if (string.IsNullOrWhiteSpace(t.Text)) continue;
+            string tf = Path.Combine(Path.GetTempPath(), $"lag-txt-{Guid.NewGuid():N}.txt");
+            File.WriteAllText(tf, t.Text);
+            tempFiles.Add(tf);
+
+            string path = tf.Replace("\\", "/").Replace(":", "\\:");
+            string nx = Math.Clamp(t.Nx, 0, 1).ToString("0.###", inv);
+            string ny = Math.Clamp(t.Ny, 0, 1).ToString("0.###", inv);
+            string frac = (Math.Clamp(t.FontPercent, 1, 50) / 100.0).ToString("0.####", inv);
+            vparts.Add($"drawtext=fontfile='C\\:/Windows/Fonts/arialbd.ttf':textfile='{path}':" +
+                       $"x=(w-text_w)*{nx}:y=(h-text_h)*{ny}:fontsize=h*{frac}:" +
+                       $"fontcolor={ColorToFfmpeg(t.Color)}:borderw=2:bordercolor=black@0.7");
+        }
     }
 
     /// <summary>Appends flip + 90° rotation to the END of the video chain (the final framed output).
@@ -1180,13 +1501,16 @@ public partial class EditorViewModel : ViewModelBase, IDisposable
         vparts.Add($"pad={ow}:{oh}:{px}:{py}:black");
     }
 
-    private Task<int> RunExportAsync(ReplayClip clip, string outPath, double start, double duration,
+    private async Task<int> RunExportAsync(ReplayClip clip, string outPath, double start, double duration,
                                      double speed, bool useNvenc, double effectiveDuration,
                                      IProgress<double> progress, CancellationToken ct)
     {
         var inv = CultureInfo.InvariantCulture;
         var args = new System.Text.StringBuilder();
+        var tempTextFiles = new List<string>();
         bool speedChanged = Math.Abs(speed - 1.0) > 0.001;
+        try
+        {
 
         // -ss/-t as INPUT options: fast keyframe seek + read exactly the trimmed segment.
         // (-t after -i would limit the OUTPUT length instead, which breaks speed ≠ 1×.)
@@ -1201,6 +1525,13 @@ public partial class EditorViewModel : ViewModelBase, IDisposable
             vparts.Add($"setpts=PTS/{speed.ToString(inv)}");
         if (SelectedFilter.Graph is { } graph)
             vparts.Add(graph);
+        if (HasColorAdjust)
+        {
+            // Manual colour: ffmpeg eq (contrast/saturation are ×, brightness is additive −1..1).
+            double c = ColorContrast / 100.0, s = ColorSaturation / 100.0, b = ColorBrightness / 100.0 - 1.0;
+            vparts.Add($"eq=contrast={c.ToString("0.###", inv)}:brightness={b.ToString("0.###", inv)}:" +
+                       $"saturation={s.ToString("0.###", inv)}");
+        }
         if (IsCropped)
         {
             // Crop the source to the selected sub-region first (fractions of the input frame).
@@ -1212,6 +1543,7 @@ public partial class EditorViewModel : ViewModelBase, IDisposable
         AppendRotateFlip(vparts);
         if (SelectedExportResolution.Height > 0)
             vparts.Add($"scale=-2:{SelectedExportResolution.Height}");   // even width, chosen height
+        AppendText(vparts, tempTextFiles);   // captions drawn last, on the final framed output
 
         // GIF: a self-contained palette pipeline (no audio, no encoder choice).
         if (ExportAsGif)
@@ -1221,7 +1553,7 @@ public partial class EditorViewModel : ViewModelBase, IDisposable
                         $"[ga]palettegen=max_colors=256[gp];[gb][gp]paletteuse=dither=sierra2_4a[v]\" ");
             args.Append("-map \"[v]\" -an -loop 0 -progress pipe:1 ");
             args.Append($"\"{outPath}\"");
-            return RunFfmpegAsync(args.ToString(), ct, progress, effectiveDuration);
+            return await RunFfmpegAsync(args.ToString(), ct, progress, effectiveDuration);
         }
 
         if (vparts.Count > 0)
@@ -1270,7 +1602,12 @@ public partial class EditorViewModel : ViewModelBase, IDisposable
         args.Append("-movflags +faststart -progress pipe:1 ");
         args.Append($"\"{outPath}\"");
 
-        return RunFfmpegAsync(args.ToString(), ct, progress, effectiveDuration);
+            return await RunFfmpegAsync(args.ToString(), ct, progress, effectiveDuration);
+        }
+        finally
+        {
+            foreach (var f in tempTextFiles) try { File.Delete(f); } catch { }
+        }
     }
 
     /// <summary>

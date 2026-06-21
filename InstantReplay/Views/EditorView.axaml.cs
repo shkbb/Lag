@@ -69,10 +69,14 @@ public partial class EditorView : UserControl
             vm.VideoRenderer.BitmapChanged += OnVideoBitmapChanged;
             vm.VideoRenderer.FrameRendered += OnVideoFrameRendered;
             vm.ReframeChanged += UpdateReframeOverlay;
+            vm.CutsChanged += RebuildCutBands;
+            vm.TextsChanged += OnTextsChanged;
 
             _reframeSelected = false;
             vm.StartPreview();
             UpdateReframeOverlay();
+            RebuildCutBands();
+            RebuildTextOverlays();
 
             _playheadTimer ??= new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(33) };
             _playheadTimer.Tick -= OnPlayheadTick;
@@ -94,6 +98,8 @@ public partial class EditorView : UserControl
             _vm.VideoRenderer.BitmapChanged -= OnVideoBitmapChanged;
             _vm.VideoRenderer.FrameRendered -= OnVideoFrameRendered;
             _vm.ReframeChanged -= UpdateReframeOverlay;
+            _vm.CutsChanged -= RebuildCutBands;
+            _vm.TextsChanged -= OnTextsChanged;
             _vm.PropertyChanged -= OnVmPropertyChanged;
             _vm.StopPreview();
             _vm = null;
@@ -153,6 +159,9 @@ public partial class EditorView : UserControl
                 _reframeSelected = false;   // a fresh clip starts unselected (clean preview)
                 Dispatcher.UIThread.Post(UpdateReframeOverlay, DispatcherPriority.Render);
                 break;
+            case nameof(EditorViewModel.SelectedText):
+                LayoutTextOverlays();   // refresh the selection highlight
+                break;
         }
     }
 
@@ -168,6 +177,17 @@ public partial class EditorView : UserControl
 
     /// <summary>Reframe mode only: the handles/dim appear only once the user clicks the video.</summary>
     private bool _reframeSelected;
+
+    /// <summary>Dark bands drawn over the timeline for removed (cut) sections; the last one with a
+    /// null cut is the live "pending" band while a cut is being marked.</summary>
+    private readonly List<(Border band, EditorCut? cut)> _cutBands = new();
+
+    /// <summary>Draggable caption overlays over the preview, paired with their VM item.</summary>
+    private readonly List<(Border container, EditorTextItem item)> _textBlocks = new();
+    private EditorTextItem? _dragText;
+    private bool _textMoved;
+    private Point _dragTextStart;
+    private double _dtNx, _dtNy;
 
     private const double HandleReach = 11;   // px radius for grabbing an edge/corner
 
@@ -270,6 +290,111 @@ public partial class EditorView : UserControl
         DeselectButton.IsVisible = !CropMode && _reframeSelected;
 
         UpdatePreviewTransform();
+        LayoutTextOverlays();   // captions sit on the (un-rotated) output frame
+    }
+
+    // ───────────── Caption (text) overlays ─────────────
+
+    private void OnTextsChanged()
+    {
+        if (_vm != null && _textBlocks.Count != _vm.Texts.Count) RebuildTextOverlays();
+        else LayoutTextOverlays();
+    }
+
+    private void RebuildTextOverlays()
+    {
+        foreach (var (c, _) in _textBlocks) TextOverlay.Children.Remove(c);
+        _textBlocks.Clear();
+        if (_vm == null) return;
+
+        foreach (var item in _vm.Texts)
+        {
+            var tb = new TextBlock { TextWrapping = TextWrapping.NoWrap, FontWeight = FontWeight.Bold };
+            var border = new Border
+            {
+                Child = tb,
+                Background = Avalonia.Media.Brushes.Transparent,
+                BorderThickness = new Thickness(1.5),
+                BorderBrush = Avalonia.Media.Brushes.Transparent,
+                Padding = new Thickness(4, 2),
+                CornerRadius = new CornerRadius(4),
+                Cursor = new Cursor(StandardCursorType.SizeAll),
+                Tag = item,
+            };
+            border.PointerPressed += OnTextPressed;
+            border.PointerMoved += OnTextMoved;
+            border.PointerReleased += OnTextReleased;
+            TextOverlay.Children.Add(border);
+            _textBlocks.Add((border, item));
+        }
+        LayoutTextOverlays();
+    }
+
+    private void LayoutTextOverlays()
+    {
+        if (_vm == null) return;
+        var fr = FrameRect();
+        if (fr.Width <= 0 || fr.Height <= 0) return;
+
+        foreach (var (container, item) in _textBlocks)
+        {
+            if (container.Child is TextBlock tb)
+            {
+                tb.Text = item.Text;
+                tb.FontSize = Math.Max(6, fr.Height * Math.Clamp(item.FontPercent, 1, 50) / 100.0);
+                try { tb.Foreground = Avalonia.Media.Brush.Parse(item.Color); }
+                catch { tb.Foreground = Avalonia.Media.Brushes.White; }
+            }
+            container.BorderBrush = ReferenceEquals(item, _vm.SelectedText)
+                ? Avalonia.Media.Brush.Parse("#22D3EE") : Avalonia.Media.Brushes.Transparent;
+
+            container.Measure(Size.Infinity);
+            double cw = container.DesiredSize.Width, ch = container.DesiredSize.Height;
+            double x = fr.X + (fr.Width - cw) * Math.Clamp(item.Nx, 0, 1);
+            double y = fr.Y + (fr.Height - ch) * Math.Clamp(item.Ny, 0, 1);
+            Canvas.SetLeft(container, x);
+            Canvas.SetTop(container, y);
+        }
+    }
+
+    private void OnTextPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (_vm == null || sender is not Border b || b.Tag is not EditorTextItem item) return;
+        if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) return;
+
+        _vm.SelectedText = item;
+        _vm.SelectedToolsTab = 2;   // reveal the caption editor
+        _dragText = item;
+        _textMoved = false;
+        _dragTextStart = e.GetPosition(TextOverlay);
+        _dtNx = item.Nx; _dtNy = item.Ny;
+        e.Pointer.Capture(b);
+        e.Handled = true;
+    }
+
+    private void OnTextMoved(object? sender, PointerEventArgs e)
+    {
+        if (_vm == null || _dragText is null || sender is not Border b) return;
+        var fr = FrameRect();
+        if (fr.Width <= 0) return;
+
+        var p = e.GetPosition(TextOverlay);
+        if (!_textMoved && (Math.Abs(p.X - _dragTextStart.X) > 3 || Math.Abs(p.Y - _dragTextStart.Y) > 3))
+        {
+            _textMoved = true;
+            _vm.PushUndo();
+        }
+        double cw = b.Bounds.Width, ch = b.Bounds.Height;
+        double dx = p.X - _dragTextStart.X, dy = p.Y - _dragTextStart.Y;
+        _dragText.Nx = Math.Clamp(_dtNx + dx / Math.Max(1, fr.Width - cw), 0, 1);
+        _dragText.Ny = Math.Clamp(_dtNy + dy / Math.Max(1, fr.Height - ch), 0, 1);
+        e.Handled = true;
+    }
+
+    private void OnTextReleased(object? sender, PointerReleasedEventArgs e)
+    {
+        _dragText = null;
+        e.Pointer.Capture(null);
     }
 
     /// <summary>Applies rotate + flip to the whole preview (video + overlay together), scaled to fit
@@ -294,6 +419,9 @@ public partial class EditorView : UserControl
         _reframeSelected = false;
         UpdateReframeOverlay();
     }
+
+    /// <summary>Snapshots the state before a colour-slider drag so Ctrl+Z reverts it.</summary>
+    private void OnColorSliderPressed(object? sender, PointerPressedEventArgs e) => _vm?.PushUndo();
 
     private static void Place(Border b, double x, double y, double w, double h)
     {
@@ -495,6 +623,11 @@ public partial class EditorView : UserControl
         double elapsed = (DateTime.UtcNow - _lastVmPositionAt).TotalSeconds;
         double predicted = _lastVmPosition + elapsed * _vm.EffectiveSpeed / _vm.DurationSec;
 
+        // Glide the playhead OVER removed sections so it visibly skips the red cut bands.
+        double predSec = predicted * _vm.DurationSec;
+        foreach (var c in _vm.Cuts)
+            if (predSec >= c.StartSec && predSec < c.EndSec) { predicted = c.EndSec / _vm.DurationSec; break; }
+
         // The playhead never leaves the trimmed range.
         double lo = _vm.TrimStartSec / _vm.DurationSec;
         double hi = _vm.TrimEndSec / _vm.DurationSec;
@@ -531,6 +664,52 @@ public partial class EditorView : UserControl
             Canvas.SetLeft(Playhead, Math.Clamp(px - 1, 0, w - 2));
 
         LeftShade.Height = RightShade.Height = StartHandle.Height = EndHandle.Height = Playhead.Height = h;
+
+        // Cut bands (removed sections) + the live pending band while marking.
+        foreach (var (band, cut) in _cutBands)
+        {
+            double cs, ce;
+            if (cut is { } c) { cs = c.StartSec; ce = c.EndSec; }
+            else
+            {
+                double p = _vm.PendingCutStart ?? 0;
+                double playSec = Math.Clamp(_vm.Position, 0, 1) * _vm.DurationSec;
+                cs = Math.Min(p, playSec); ce = Math.Max(p, playSec);
+            }
+            double bx = Math.Clamp(cs / _vm.DurationSec, 0, 1) * w;
+            double be = Math.Clamp(ce / _vm.DurationSec, 0, 1) * w;
+            Canvas.SetLeft(band, bx);
+            band.Width = Math.Max(0, be - bx);
+            band.Height = h;
+        }
+    }
+
+    /// <summary>Rebuilds the timeline cut bands from the VM's cut list (+ a pending band).</summary>
+    private void RebuildCutBands()
+    {
+        foreach (var (band, _) in _cutBands) TimelineOverlay.Children.Remove(band);
+        _cutBands.Clear();
+        if (_vm == null) return;
+
+        foreach (var cut in _vm.Cuts) AddCutBand(cut);
+        if (_vm.PendingCutStart is not null) AddCutBand(null);   // live preview band
+
+        UpdateOverlay();
+    }
+
+    private void AddCutBand(EditorCut? cut)
+    {
+        bool pending = cut is null;
+        var b = new Border
+        {
+            Background = Avalonia.Media.Brush.Parse(pending ? "#66F04848" : "#CC2A0E12"),
+            BorderBrush = Avalonia.Media.Brush.Parse("#F04848"),
+            BorderThickness = new Thickness(1, 0, 1, 0),
+            IsHitTestVisible = false,
+        };
+        Canvas.SetTop(b, 0);
+        TimelineOverlay.Children.Insert(0, b);   // below the trim handles / playhead
+        _cutBands.Add((b, cut));
     }
 
     private void OnTimelinePointerPressed(object? sender, PointerPressedEventArgs e)
