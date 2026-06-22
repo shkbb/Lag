@@ -2,19 +2,21 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
   <!-- ═══════════════════════════════════════════════════════════════════════
-       Lag "Lag Studio" lime redesign — design tokens.
-       Source of truth: design-mockup/Lag Studio.dc.html (accent #bef264).
-       These are the NEW redesign tokens; the old cyan brushes in DarkTheme.axaml
-       stay until each view is migrated, so the build never breaks mid-redesign.
+       Lag "Lag Studio" redesign — design tokens.
+       Layout/structure from design-mockup/Lag Studio.dc.html, but the accent is
+       our brand cyan #22D3EE (not the mockup's lime) — everything else identical.
+       These are the NEW redesign tokens; the old brushes in DarkTheme.axaml stay
+       until each view is migrated, so the build never breaks mid-redesign.
        ═══════════════════════════════════════════════════════════════════════ -->
 
-  <!-- ── Accent (lime) ── -->
-  <Color x:Key="AccentLimeColor">#FFBEF264</Color>
-  <SolidColorBrush x:Key="AccentLime" Color="#FFBEF264" />
-  <SolidColorBrush x:Key="AccentLimeDim" Color="#1FBEF264" />     <!-- ~rgba(190,242,100,.12) -->
-  <SolidColorBrush x:Key="AccentLimeRing" Color="#52BEF264" />    <!-- ~.32 inset ring -->
-  <SolidColorBrush x:Key="AccentLimeHover" Color="#80BEF264" />   <!-- dropdown hover border ~.5 -->
-  <SolidColorBrush x:Key="OnAccent" Color="#FF0C0D11" />          <!-- text/glyph on lime -->
+  <!-- ── Accent (brand cyan #22D3EE) ── -->
+  <Color x:Key="AccentColor">#FF22D3EE</Color>
+  <SolidColorBrush x:Key="Accent" Color="#FF22D3EE" />
+  <SolidColorBrush x:Key="AccentDim" Color="#1F22D3EE" />        <!-- ~rgba(34,211,238,.12) tinted fills -->
+  <SolidColorBrush x:Key="AccentRing" Color="#5222D3EE" />       <!-- ~.32 inset ring on active segments -->
+  <SolidColorBrush x:Key="AccentHover" Color="#8022D3EE" />      <!-- dropdown hover border ~.5 -->
+  <SolidColorBrush x:Key="AccentText" Color="#FF7BE7F5" />       <!-- light tint for accent-coloured text on dark -->
+  <SolidColorBrush x:Key="OnAccent" Color="#FF06222A" />         <!-- text/glyph on the cyan accent -->
 
   <!-- ── Surfaces ── -->
   <SolidColorBrush x:Key="SurfaceApp" Color="#FF0C0D11" />        <!-- app / panels / rail / top bar -->
