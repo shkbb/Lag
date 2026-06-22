@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{ --accent:#3fd0e0; --accent-dim:rgba(63,208,224,.13); --accent-text:#8fe7f2; --radius:11px; }
+*{ box-sizing:border-box; }
+html,body{ margin:0; padding:0; height:100%; background:#08090b; font-family:'Geist',system-ui,sans-serif; -webkit-font-smoothing:antialiased; }
+::-webkit-scrollbar{ width:11px; height:11px; }
+::-webkit-scrollbar-thumb{ background:rgba(255,255,255,.10); border-radius:8px; border:3px solid transparent; background-clip:padding-box; }
+::-webkit-scrollbar-thumb:hover{ background:rgba(255,255,255,.18); background-clip:padding-box; }
+::-webkit-scrollbar-track{ background:transparent; }
+@keyframes recpulse{ 0%,100%{ opacity:1; transform:scale(1); } 50%{ opacity:.4; transform:scale(.82); } }
+input[type=range]{ -webkit-appearance:none; appearance:none; height:3px; border-radius:3px; background:rgba(255,255,255,.16); outline:none; cursor:pointer; }
+input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; appearance:none; width:12px; height:12px; border-radius:50%; background:#eef1f3; box-shadow:0 1px 3px rgba(0,0,0,.5); }
+::selection{ background:rgba(63,208,224,.3); }
+</style>
+</helmet>
+
+<div style="position:fixed; inset:0; display:flex; flex-direction:column; background:#08090b; color:#e7ebee; font-family:'Geist',system-ui,sans-serif; overflow:hidden;">
+
+  <!-- ===== TITLE BAR ===== -->
+  <div style="height:38px; flex:none; display:flex; align-items:center; justify-content:space-between; padding:0 0 0 18px; background:#0a0c0e; border-bottom:1px solid rgba(255,255,255,.05);">
+    <div style="display:flex; align-items:center; gap:9px;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 9a8.5 8.5 0 1 0 2.2-4.7"/><polyline points="3 3 3.6 8.4 9 7.8"/><path d="M12 8.5V12l2.6 1.5"/></svg>
+      <span style="font-size:12.5px; font-weight:600; letter-spacing:.02em; color:#c9d0d6;">Lag</span>
+      <span style="font-size:11px; color:#4f565d; margin-left:2px;">{{ titleBarMeta }}</span>
+    </div>
+    <div style="display:flex; height:100%;">
+      <div style="width:46px; display:flex; align-items:center; justify-content:center; color:#8b939c; cursor:default;" style-hover="background:rgba(255,255,255,.06);"><svg width="11" height="11" viewBox="0 0 11 11" stroke="currentColor" stroke-width="1.1"><line x1="1" y1="9" x2="10" y2="9"/></svg></div>
+      <div style="width:46px; display:flex; align-items:center; justify-content:center; color:#8b939c; cursor:default;" style-hover="background:rgba(255,255,255,.06);"><svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.1"><rect x="1.2" y="1.2" width="8.6" height="8.6" rx="1"/></svg></div>
+      <div style="width:46px; display:flex; align-items:center; justify-content:center; color:#8b939c; cursor:default;" style-hover="background:#e23b4e; color:#fff;"><svg width="11" height="11" viewBox="0 0 11 11" stroke="currentColor" stroke-width="1.1"><line x1="1.5" y1="1.5" x2="9.5" y2="9.5"/><line x1="9.5" y1="1.5" x2="1.5" y2="9.5"/></svg></div>
+    </div>
+  </div>
+
+  <!-- ===== BODY ===== -->
+  <div style="flex:1; display:flex; min-height:0;">
+
+    <!-- ===== SIDEBAR ===== -->
+    <div style="width:236px; flex:none; background:#0a0c0e; border-right:1px solid rgba(255,255,255,.05); display:flex; flex-direction:column; padding:16px 14px 14px;">
+
+      <button onClick="{{ recPrimaryClick }}" style="{{ recPrimaryStyle }}" style-hover="filter:brightness(1.06);">
+        <sc-if value="{{ isRec }}" hint-placeholder-val="{{ false }}"><span style="width:11px; height:11px; border-radius:2px; background:#fff; display:inline-block;"></span></sc-if>
+        <sc-if value="{{ notRec }}" hint-placeholder-val="{{ true }}"><span style="width:9px; height:9px; border-radius:50%; background:#0a2b30; display:inline-block;"></span></sc-if>
+        {{ recPrimaryLabel }}
+      </button>
+
+      <button style="margin-top:9px; width:100%; height:38px; display:flex; align-items:center; justify-content:center; gap:8px; background:#16191d; border:1px solid rgba(255,255,255,.07); border-radius:var(--radius); color:#cdd3d8; font-size:13px; font-weight:500; font-family:inherit; cursor:pointer;" style-hover="background:#1c2024; border-color:rgba(255,255,255,.12);">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v11"/><polyline points="8 10 12 14 16 10"/><path d="M4 17v2a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-2"/></svg>
+        Save Replay
+      </button>
+
+      <sc-if value="{{ isRec }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex; flex-direction:column; gap:9px; margin-top:9px;">
+          <button onClick="{{ pauseClick }}" style="width:100%; height:38px; display:flex; align-items:center; justify-content:center; gap:8px; background:#16191d; border:1px solid rgba(255,255,255,.07); border-radius:var(--radius); color:#cdd3d8; font-size:13px; font-weight:500; font-family:inherit; cursor:pointer;" style-hover="background:#1c2024;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+            {{ pauseLabel }}
+          </button>
+          <button style="width:100%; height:38px; display:flex; align-items:center; justify-content:center; gap:8px; background:#16191d; border:1px solid rgba(255,255,255,.07); border-radius:var(--radius); color:#cdd3d8; font-size:13px; font-weight:500; font-family:inherit; cursor:pointer;" style-hover="background:#1c2024;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 20h8"/></svg>
+            Desktop
+          </button>
+        </div>
+      </sc-if>
+
+      <div style="text-align:center; font-size:11.5px; color:#565d64; margin:11px 0 4px; font-family:'Geist Mono',monospace;">Alt + F10</div>
+
+      <div style="height:1px; background:rgba(255,255,255,.06); margin:12px 4px;"></div>
+
+      <div style="display:flex; flex-direction:column; gap:3px;">
+        <div onClick="{{ goSettings }}" style="{{ navSettingsStyle }}" style-hover="filter:brightness(1.22);">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><line x1="4" y1="8" x2="20" y2="8"/><circle cx="15" cy="8" r="2.4" fill="#0a0c0e"/><line x1="4" y1="16" x2="20" y2="16"/><circle cx="9" cy="16" r="2.4" fill="#0a0c0e"/></svg>
+          Settings
+        </div>
+        <div onClick="{{ goLibrary }}" style="{{ navLibraryStyle }}" style-hover="filter:brightness(1.22);">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg>
+          Library
+        </div>
+        <div onClick="{{ goPlayer }}" style="{{ navPlayerStyle }}" style-hover="filter:brightness(1.22);">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M7 5.5v13a1 1 0 0 0 1.5.86l11-6.5a1 1 0 0 0 0-1.72l-11-6.5A1 1 0 0 0 7 5.5z"/></svg>
+          Player
+        </div>
+      </div>
+
+      <div style="flex:1;"></div>
+
+      <div style="border-top:1px solid rgba(255,255,255,.06); padding-top:12px; margin:0 2px;">
+        <div style="display:flex; align-items:center; gap:8px; font-size:12.5px; color:#aeb5bb; margin-bottom:9px;">
+          <span style="width:7px; height:7px; border-radius:50%; {{ statusDotStyle }}"></span>
+          {{ statusLabel }}
+        </div>
+        <div style="display:flex; align-items:center; justify-content:space-between; font-size:11px; color:#5d646c; margin-bottom:5px; font-family:'Geist Mono',monospace;">
+          <span>Buffer</span><span>{{ bufferLabel }}</span>
+        </div>
+        <div style="height:3px; border-radius:3px; background:rgba(255,255,255,.08); overflow:hidden;">
+          <div style="height:100%; border-radius:3px; background:var(--accent); width:{{ bufferPct }}; transition:width .3s;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== MAIN ===== -->
+    <div style="flex:1; min-width:0; background:#0a0c0e; overflow:hidden; display:flex; flex-direction:column;">
+
+      <!-- ============ SETTINGS ============ -->
+      <sc-if value="{{ isSettings }}" hint-placeholder-val="{{ true }}">
+      <div style="flex:1; overflow-y:auto;">
+        <div style="max-width:780px; margin:0 auto; padding:30px 36px 64px;">
+          <h1 style="font-size:23px; font-weight:600; margin:0 0 3px; letter-spacing:-.01em;">Settings</h1>
+          <p style="font-size:13px; color:#6b727a; margin:0 0 22px;">Configure capture, audio and app behavior.</p>
+
+          <div style="display:flex; gap:26px; border-bottom:1px solid rgba(255,255,255,.07); margin-bottom:26px;">
+            <div onClick="{{ tabVideoClick }}" style="{{ tabVideoStyle }}">Video</div>
+            <div onClick="{{ tabAudioClick }}" style="{{ tabAudioStyle }}">Audio</div>
+            <div onClick="{{ tabGeneralClick }}" style="{{ tabGeneralStyle }}">General</div>
+          </div>
+
+          <!-- VIDEO -->
+          <sc-if value="{{ tabVideo }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex; flex-direction:column; gap:26px;">
+            <div>
+              <div style="font-size:11.5px; letter-spacing:.05em; text-transform:uppercase; color:#646b73; font-weight:600; margin:0 0 10px 3px;">Recording</div>
+              <div style="background:#101316; border:1px solid rgba(255,255,255,.07); border-radius:14px; overflow:hidden;">
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; padding:15px 18px; border-bottom:1px solid rgba(255,255,255,.05);">
+                  <span style="font-size:13.5px; color:#dfe3e6;">Replay buffer length</span>
+                  <div style="display:flex; align-items:center; gap:7px; padding:7px 11px; background:#16191e; border:1px solid rgba(255,255,255,.08); border-radius:9px; font-size:13px; color:#e7ebee; cursor:pointer;" style-hover="border-color:rgba(255,255,255,.16);">2 min <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#7c838a" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></div>
+                </div>
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; padding:15px 18px; border-bottom:1px solid rgba(255,255,255,.05);">
+                  <span style="font-size:13.5px; color:#dfe3e6;">Display</span>
+                  <div style="display:flex; align-items:center; gap:7px; padding:7px 11px; background:#16191e; border:1px solid rgba(255,255,255,.08); border-radius:9px; font-size:13px; color:#e7ebee; cursor:pointer;" style-hover="border-color:rgba(255,255,255,.16);">DISPLAY1 · 2560×1440 @170Hz <span style="color:#6b727a; font-size:11px;">Primary</span> <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#7c838a" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></div>
+                </div>
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; padding:15px 18px; border-bottom:1px solid rgba(255,255,255,.05);">
+                  <span style="font-size:13.5px; color:#dfe3e6;">Frame rate <span style="color:#6b727a; font-size:12px;">FPS</span></span>
+                  <div style="display:inline-flex; background:#0c0f12; border:1px solid rgba(255,255,255,.07); border-radius:9px; padding:3px; gap:2px;">
+                    <sc-for list="{{ fpsOptions }}" as="opt" hint-placeholder-count="6"><div onClick="{{ opt.on }}" style="{{ opt.style }}">{{ opt.label }}</div></sc-for>
+                  </div>
+                </div>
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; padding:15px 18px;">
+                  <span style="font-size:13.5px; color:#dfe3e6;">Output resolution</span>
+                  <div style="display:flex; align-items:center; gap:7px; padding:7px 11px; background:#16191e; border:1px solid rgba(255,255,255,.08); border-radius:9px; font-size:13px; color:#e7ebee; cursor:pointer;" style-hover="border-color:rgba(255,255,255,.16);">1080p <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#7c838a" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div style="font-size:11.5px; letter-spacing:.05em; text-transform:uppercase; color:#646b73; font-weight:600; margin:0 0 10px 3px;">Encoding</div>
+              <div style="background:#101316; border:1px solid rgba(255,255,255,.07); border-radius:14px; overflow:hidden;">
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; padding:15px 18px; border-bottom:1px solid rgba(255,255,255,.05);">
+                  <span style="font-size:13.5px; color:#dfe3e6;">Video codec</span>
+                  <div style="display:inline-flex; background:#0c0f12; border:1px solid rgba(255,255,255,.07); border-radius:9px; padding:3px; gap:2px;">
+                    <sc-for list="{{ codecOptions }}" as="opt" hint-placeholder-count="4"><div onClick="{{ opt.on }}" style="{{ opt.style }}">{{ opt.label }}</div></sc-for>
+                  </div>
+                </div>
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; padding:15px 18px; border-bottom:1px solid rgba(255,255,255,.05);">
+                  <span style="font-size:13.5px; color:#dfe3e6;">Bitrate</span>
+                  <div style="display:flex; align-items:center; gap:7px; padding:7px 11px; background:#16191e; border:1px solid rgba(255,255,255,.08); border-radius:9px; font-size:13px; color:#e7ebee; cursor:pointer;" style-hover="border-color:rgba(255,255,255,.16);">30 Mbps <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#7c838a" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></div>
+                </div>
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; padding:15px 18px; border-bottom:1px solid rgba(255,255,255,.05);">
+                  <span style="font-size:13.5px; color:#dfe3e6;">Recording GPU</span>
+                  <div style="display:flex; align-items:center; gap:7px; padding:7px 11px; background:#16191e; border:1px solid rgba(255,255,255,.08); border-radius:9px; font-size:13px; color:#e7ebee; cursor:pointer;" style-hover="border-color:rgba(255,255,255,.16);">Auto · NVIDIA RTX 5060 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#7c838a" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></div>
+                </div>
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; padding:15px 18px;">
+                  <span style="font-size:13.5px; color:#dfe3e6;">File format</span>
+                  <div style="display:flex; align-items:center; gap:7px; padding:7px 11px; background:#16191e; border:1px solid rgba(255,255,255,.08); border-radius:9px; font-size:13px; color:#e7ebee; cursor:pointer;" style-hover="border-color:rgba(255,255,255,.16);">MKV <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#7c838a" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          </sc-if>
+
+          <!-- AUDIO -->
+          <sc-if value="{{ tabAudio }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex; flex-direction:column; gap:26px;">
+            <div>
+              <div style="font-size:11.5px; letter-spacing:.05em; text-transform:uppercase; color:#646b73; font-weight:600; margin:0 0 10px 3px;">System sound</div>
+              <div style="background:#101316; border:1px solid rgba(255,255,255,.07); border-radius:14px; overflow:hidden;">
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; padding:15px 18px; border-bottom:1px solid rgba(255,255,255,.05);">
+                  <span style="font-size:13.5px; color:#dfe3e6;">Recording mode</span>
+                  <div style="display:inline-flex; background:#0c0f12; border:1px solid rgba(255,255,255,.07); border-radius:9px; padding:3px; gap:2px;">
+                    <sc-for list="{{ recModeOptions }}" as="opt" hint-placeholder-count="2"><div onClick="{{ opt.on }}" style="{{ opt.style }}">{{ opt.label }}</div></sc-for>
+                  </div>
+                </div>
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; padding:15px 18px; border-bottom:1px solid rgba(255,255,255,.05);">
+                  <div><div style="font-size:13.5px; color:#dfe3e6;">Match audio mode to capture</div><div style="font-size:12px; color:#6b727a; margin-top:2px;">Recording a game captures the selected apps; desktop captures all PC sound.</div></div>
+                  <div onClick="{{ tMatch.on }}" style="{{ tMatch.trackStyle }}"><div style="{{ tMatch.knobStyle }}"></div></div>
+                </div>
+                <div style="padding:6px 18px 10px;">
+                  <sc-for list="{{ appsList }}" as="app" hint-placeholder-count="5">
+                    <div style="display:flex; align-items:center; gap:13px; padding:9px 0;">
+                      <div onClick="{{ app.onCheck }}" style="{{ app.boxStyle }}"><sc-if value="{{ app.checked }}" hint-placeholder-val="{{ true }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#06222a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4 10-11"/></svg></sc-if></div>
+                      <div style="{{ app.iconStyle }}">{{ app.letter }}</div>
+                      <span style="font-size:13px; color:#d7dbdf; flex:1;">{{ app.name }}</span>
+                      <input type="range" min="0" max="100" value="100" style="width:140px;">
+                      <span style="font-size:11.5px; color:#6b727a; width:34px; text-align:right; font-family:'Geist Mono',monospace;">100%</span>
+                    </div>
+                  </sc-for>
+                  <div style="font-size:11.5px; color:#565d64; margin-top:4px;">Apps appear here when they start playing audio.</div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div style="font-size:11.5px; letter-spacing:.05em; text-transform:uppercase; color:#646b73; font-weight:600; margin:0 0 10px 3px;">Devices</div>
+              <div style="background:#101316; border:1px solid rgba(255,255,255,.07); border-radius:14px; overflow:hidden;">
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; padding:15px 18px; border-bottom:1px solid rgba(255,255,255,.05);">
+                  <span style="font-size:13.5px; color:#dfe3e6;">Output device</span>
+                  <div style="display:flex; align-items:center; gap:7px; padding:7px 11px; background:#16191e; border:1px solid rgba(255,255,255,.08); border-radius:9px; font-size:13px; color:#e7ebee; cursor:pointer;" style-hover="border-color:rgba(255,255,255,.16);">Headphones · G522 LIGHTSPEED <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#7c838a" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></div>
+                </div>
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; padding:15px 18px; border-bottom:1px solid rgba(255,255,255,.05);">
+                  <span style="font-size:13.5px; color:#dfe3e6;">Microphone</span>
+                  <div style="display:flex; align-items:center; gap:7px; padding:7px 11px; background:#16191e; border:1px solid rgba(255,255,255,.08); border-radius:9px; font-size:13px; color:#e7ebee; cursor:pointer;" style-hover="border-color:rgba(255,255,255,.16);">G522 LIGHTSPEED · Wireless <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#7c838a" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></div>
+                </div>
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; padding:15px 18px;">
+                  <span style="font-size:13.5px; color:#dfe3e6;">Channels</span>
+                  <div style="display:inline-flex; background:#0c0f12; border:1px solid rgba(255,255,255,.07); border-radius:9px; padding:3px; gap:2px;">
+                    <sc-for list="{{ channelOptions }}" as="opt" hint-placeholder-count="2"><div onClick="{{ opt.on }}" style="{{ opt.style }}">{{ opt.label }}</div></sc-for>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div style="font-size:11.5px; letter-spacing:.05em; text-transform:uppercase; color:#646b73; font-weight:600; margin:0 0 10px 3px;">Advanced</div>
+              <div style="background:#101316; border:1px solid rgba(255,255,255,.07); border-radius:14px; overflow:hidden;">
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; padding:15px 18px; border-bottom:1px solid rgba(255,255,255,.05);">
+                  <div><div style="font-size:13.5px; color:#dfe3e6;">Push-to-talk</div><div style="font-size:12px; color:#6b727a; margin-top:2px;">Microphone is live only while the key is held.</div></div>
+                  <div style="display:flex; align-items:center; gap:12px;"><span style="font-family:'Geist Mono',monospace; font-size:11px; color:#aeb5bb; background:#1a1e22; border:1px solid rgba(255,255,255,.1); border-radius:6px; padding:3px 8px;">V</span><div onClick="{{ tPush.on }}" style="{{ tPush.trackStyle }}"><div style="{{ tPush.knobStyle }}"></div></div></div>
+                </div>
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; padding:15px 18px;">
+                  <div><div style="font-size:13.5px; color:#dfe3e6;">Separate audio tracks</div><div style="font-size:12px; color:#6b727a; margin-top:2px;">System sound and microphone are saved as separate tracks in the file.</div></div>
+                  <div onClick="{{ tSep.on }}" style="{{ tSep.trackStyle }}"><div style="{{ tSep.knobStyle }}"></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          </sc-if>
+
+          <!-- GENERAL -->
+          <sc-if value="{{ tabGeneral }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex; flex-direction:column; gap:26px;">
+            <div>
+              <div style="background:#101316; border:1px solid rgba(255,255,255,.07); border-radius:14px;">
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; padding:15px 18px;">
+                  <span style="font-size:13.5px; color:#dfe3e6;">Language</span>
+                  <div style="display:flex; align-items:center; gap:7px; padding:7px 11px; background:#16191e; border:1px solid rgba(255,255,255,.08); border-radius:9px; font-size:13px; color:#e7ebee; cursor:pointer;" style-hover="border-color:rgba(255,255,255,.16);">English <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#7c838a" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div style="font-size:11.5px; letter-spacing:.05em; text-transform:uppercase; color:#646b73; font-weight:600; margin:0 0 10px 3px;">Hotkeys</div>
+              <div style="background:#101316; border:1px solid rgba(255,255,255,.07); border-radius:14px; overflow:hidden;">
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; padding:15px 18px; border-bottom:1px solid rgba(255,255,255,.05);">
+                  <span style="font-size:13.5px; color:#dfe3e6;">Save replay</span>
+                  <div style="display:flex; gap:5px;"><span style="font-family:'Geist Mono',monospace; font-size:11.5px; color:#c2c8cd; background:#1a1e22; border:1px solid rgba(255,255,255,.1); border-radius:6px; padding:4px 9px;">Alt</span><span style="font-family:'Geist Mono',monospace; font-size:11.5px; color:#c2c8cd; background:#1a1e22; border:1px solid rgba(255,255,255,.1); border-radius:6px; padding:4px 9px;">F10</span></div>
+                </div>
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; padding:15px 18px; border-bottom:1px solid rgba(255,255,255,.05);">
+                  <span style="font-size:13.5px; color:#dfe3e6;">Screenshot</span>
+                  <div style="display:flex; gap:5px;"><span style="font-family:'Geist Mono',monospace; font-size:11.5px; color:#c2c8cd; background:#1a1e22; border:1px solid rgba(255,255,255,.1); border-radius:6px; padding:4px 9px;">Alt</span><span style="font-family:'Geist Mono',monospace; font-size:11.5px; color:#c2c8cd; background:#1a1e22; border:1px solid rgba(255,255,255,.1); border-radius:6px; padding:4px 9px;">F9</span></div>
+                </div>
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; padding:15px 18px;">
+                  <span style="font-size:13.5px; color:#dfe3e6;">Pause recording</span>
+                  <div style="display:flex; gap:5px;"><span style="font-family:'Geist Mono',monospace; font-size:11.5px; color:#c2c8cd; background:#1a1e22; border:1px solid rgba(255,255,255,.1); border-radius:6px; padding:4px 9px;">Alt</span><span style="font-family:'Geist Mono',monospace; font-size:11.5px; color:#c2c8cd; background:#1a1e22; border:1px solid rgba(255,255,255,.1); border-radius:6px; padding:4px 9px;">F8</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div style="font-size:11.5px; letter-spacing:.05em; text-transform:uppercase; color:#646b73; font-weight:600; margin:0 0 10px 3px;">Startup &amp; performance</div>
+              <div style="background:#101316; border:1px solid rgba(255,255,255,.07); border-radius:14px; overflow:hidden;">
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; padding:15px 18px; border-bottom:1px solid rgba(255,255,255,.05);">
+                  <span style="font-size:13.5px; color:#dfe3e6;">Start with Windows</span>
+                  <div onClick="{{ tStartWin.on }}" style="{{ tStartWin.trackStyle }}"><div style="{{ tStartWin.knobStyle }}"></div></div>
+                </div>
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; padding:15px 18px; border-bottom:1px solid rgba(255,255,255,.05);">
+                  <div><div style="font-size:13.5px; color:#dfe3e6;">Start minimized</div><div style="font-size:12px; color:#6b727a; margin-top:2px;">Launches hidden in the system tray.</div></div>
+                  <div onClick="{{ tStartMin.on }}" style="{{ tStartMin.trackStyle }}"><div style="{{ tStartMin.knobStyle }}"></div></div>
+                </div>
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; padding:15px 18px; border-bottom:1px solid rgba(255,255,255,.05);">
+                  <span style="font-size:13.5px; color:#dfe3e6;">Start recording automatically</span>
+                  <div onClick="{{ tStartAuto.on }}" style="{{ tStartAuto.trackStyle }}"><div style="{{ tStartAuto.knobStyle }}"></div></div>
+                </div>
+                <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:16px; padding:15px 18px;">
+                  <div style="max-width:560px;"><div style="font-size:13.5px; color:#dfe3e6;">Disable Windows Game Mode</div><div style="font-size:12px; color:#6b727a; margin-top:2px; line-height:1.5;">Game Mode throttles background apps: recordings can drop to 1–2 FPS and a replay may not save until you alt-tab. Strongly recommended to keep enabled.</div></div>
+                  <div onClick="{{ tGameMode.on }}" style="{{ tGameMode.trackStyle }}"><div style="{{ tGameMode.knobStyle }}"></div></div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div style="font-size:11.5px; letter-spacing:.05em; text-transform:uppercase; color:#646b73; font-weight:600; margin:0 0 10px 3px;">Storage</div>
+              <div style="background:#101316; border:1px solid rgba(255,255,255,.07); border-radius:14px; overflow:hidden;">
+                <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:16px; padding:15px 18px; border-bottom:1px solid rgba(255,255,255,.05);">
+                  <div><div style="font-size:13.5px; color:#dfe3e6;">Auto-clean library</div><div style="font-size:12px; color:#6b727a; margin-top:2px;">Delete the oldest clips when the library exceeds the limit.</div></div>
+                  <div onClick="{{ tAutoClean.on }}" style="{{ tAutoClean.trackStyle }}"><div style="{{ tAutoClean.knobStyle }}"></div></div>
+                </div>
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; padding:15px 18px; border-bottom:1px solid rgba(255,255,255,.05);">
+                  <span style="font-size:13.5px; color:#dfe3e6;">Library size limit</span>
+                  <div style="display:flex; align-items:center; gap:7px; padding:7px 11px; background:#16191e; border:1px solid rgba(255,255,255,.08); border-radius:9px; font-size:13px; color:#e7ebee; cursor:pointer;" style-hover="border-color:rgba(255,255,255,.16);">50 GB <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#7c838a" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></div>
+                </div>
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; padding:15px 18px;">
+                  <div><div style="font-size:13.5px; color:#dfe3e6;">Library folder</div><div style="font-size:12px; color:#6b727a; margin-top:2px; font-family:'Geist Mono',monospace;">C:\Users\valer\Videos\Lag</div></div>
+                  <button style="padding:7px 14px; background:#16191e; border:1px solid rgba(255,255,255,.1); border-radius:8px; font-size:12.5px; color:#d7dbdf; font-family:inherit; cursor:pointer;" style-hover="background:#1c2025;">Change</button>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div style="font-size:11.5px; letter-spacing:.05em; text-transform:uppercase; color:#646b73; font-weight:600; margin:0 0 10px 3px;">About</div>
+              <div style="background:#101316; border:1px solid rgba(255,255,255,.07); border-radius:14px; overflow:hidden;">
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; padding:15px 18px; border-bottom:1px solid rgba(255,255,255,.05);">
+                  <div><div style="font-size:13.5px; color:#dfe3e6;">Lag</div><div style="font-size:12px; color:#6b727a; margin-top:2px;">Version 1.4.9 · up to date</div></div>
+                  <button style="padding:7px 14px; background:#16191e; border:1px solid rgba(255,255,255,.1); border-radius:8px; font-size:12.5px; color:#d7dbdf; font-family:inherit; cursor:pointer;" style-hover="background:#1c2025;">Check for Updates</button>
+                </div>
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; padding:15px 18px;">
+                  <span style="font-size:13.5px; color:#dfe3e6;">Logs</span>
+                  <div style="display:flex; gap:8px;"><button style="padding:7px 14px; background:#16191e; border:1px solid rgba(255,255,255,.1); border-radius:8px; font-size:12.5px; color:#d7dbdf; font-family:inherit; cursor:pointer;" style-hover="background:#1c2025;">Open folder</button><button style="padding:7px 14px; background:#16191e; border:1px solid rgba(255,255,255,.1); border-radius:8px; font-size:12.5px; color:#d7dbdf; font-family:inherit; cursor:pointer;" style-hover="background:#1c2025;">Export .zip</button></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          </sc-if>
+
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ============ LIBRARY ============ -->
+      <sc-if value="{{ isLibrary }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1; display:flex; flex-direction:column; min-height:0;">
+        <div style="padding:24px 32px 0; flex:none;">
+          <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:16px;">
+            <div>
+              <h1 style="font-size:23px; font-weight:600; margin:0 0 3px; letter-spacing:-.01em;">Library</h1>
+              <p style="font-size:13px; color:#6b727a; margin:0;">{{ libCount }} clips · {{ libFree }} free</p>
+            </div>
+            <button style="display:flex; align-items:center; gap:8px; padding:8px 14px; background:#16191e; border:1px solid rgba(255,255,255,.1); border-radius:9px; font-size:12.5px; color:#d7dbdf; font-family:inherit; cursor:pointer;" style-hover="background:#1c2025;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+              Open folder
+            </button>
+          </div>
+
+          <div style="display:flex; align-items:center; gap:11px; margin:20px 0 4px;">
+            <div style="flex:1; max-width:340px; display:flex; align-items:center; gap:9px; padding:8px 13px; background:#101316; border:1px solid rgba(255,255,255,.08); border-radius:10px;" style-hover="border-color:rgba(255,255,255,.14);">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#6b727a" stroke-width="1.9" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
+              <input value="{{ searchVal }}" onInput="{{ onSearch }}" placeholder="Search by game, date or name" style="flex:1; background:transparent; border:none; outline:none; color:#e7ebee; font-size:13px; font-family:inherit;">
+            </div>
+            <div style="display:flex; gap:7px;">
+              <sc-for list="{{ gameChips }}" as="chip" hint-placeholder-count="4"><div onClick="{{ chip.on }}" style="{{ chip.style }}">{{ chip.label }}</div></sc-for>
+            </div>
+            <div style="flex:1;"></div>
+            <div onClick="{{ chipFavOn }}" style="{{ chipFavStyle }}">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="{{ chipFavFill }}" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 17.9 6.8 19.7l1-5.8L3.5 9.7l5.9-.9z"/></svg>
+              Favorites
+            </div>
+          </div>
+        </div>
+
+        <div style="flex:1; overflow-y:auto; padding:14px 32px 48px;">
+          <sc-for list="{{ groups }}" as="g" hint-placeholder-count="2">
+            <div style="margin-bottom:26px;">
+              <div style="display:flex; align-items:center; gap:10px; margin:0 0 13px 2px;">
+                <span style="font-size:14px; font-weight:600; color:#cfd5da;">{{ g.label }}</span>
+                <span style="font-size:12px; color:#5d646c;">{{ g.sub }}</span>
+                <span style="font-size:11px; color:#565d64; background:rgba(255,255,255,.06); border-radius:20px; padding:2px 8px;">{{ g.count }}</span>
+              </div>
+              <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(242px,1fr)); gap:18px;">
+                <sc-for list="{{ g.items }}" as="c" hint-placeholder-count="4">
+                  <div onClick="{{ c.onOpen }}" style="cursor:pointer;">
+                    <div style="position:relative; aspect-ratio:16/9; border-radius:var(--radius); overflow:hidden; background:#15171b; background-image:{{ c.thumb }};">
+                      <sc-if value="{{ c.fav }}" hint-placeholder-val="{{ false }}"><div style="position:absolute; top:8px; right:8px; z-index:2; width:26px; height:26px; border-radius:7px; background:rgba(8,10,12,.55); display:flex; align-items:center; justify-content:center; backdrop-filter:blur(4px);"><svg width="14" height="14" viewBox="0 0 24 24" fill="var(--accent)" stroke="var(--accent)" stroke-width="1.5" stroke-linejoin="round"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 17.9 6.8 19.7l1-5.8L3.5 9.7l5.9-.9z"/></svg></div></sc-if>
+                      <sc-if value="{{ c.isEdit }}" hint-placeholder-val="{{ false }}"><div style="position:absolute; top:8px; left:8px; z-index:2; font-size:10px; font-weight:600; letter-spacing:.03em; color:#8fe7f2; background:rgba(8,10,12,.6); border:1px solid rgba(63,208,224,.3); border-radius:6px; padding:3px 7px; backdrop-filter:blur(4px);">EDITED</div></sc-if>
+                      <div style="position:absolute; bottom:8px; right:8px; z-index:2; font-size:11px; font-weight:500; color:#fff; background:rgba(8,10,12,.72); border-radius:6px; padding:2px 7px; font-family:'Geist Mono',monospace;">{{ c.dur }}</div>
+                      <div style="position:absolute; inset:0; z-index:3; opacity:0; transition:opacity .15s; background:linear-gradient(to top, rgba(6,8,10,.78), rgba(6,8,10,.12) 55%); display:flex; align-items:center; justify-content:center;" style-hover="opacity:1;">
+                        <div style="width:46px; height:46px; border-radius:50%; background:rgba(255,255,255,.95); display:flex; align-items:center; justify-content:center; box-shadow:0 4px 16px rgba(0,0,0,.4);"><svg width="20" height="20" viewBox="0 0 24 24" fill="#0a0c0e" style="margin-left:2px;"><path d="M7 5.5v13a1 1 0 0 0 1.5.86l11-6.5a1 1 0 0 0 0-1.72l-11-6.5A1 1 0 0 0 7 5.5z"/></svg></div>
+                        <div style="position:absolute; top:8px; right:8px; display:flex; gap:6px;">
+                          <div onClick="{{ c.onFav }}" style="width:28px; height:28px; border-radius:8px; background:rgba(20,23,27,.85); display:flex; align-items:center; justify-content:center; cursor:pointer; color:#d7dbdf;" style-hover="background:rgba(40,45,50,.95);"><svg width="15" height="15" viewBox="0 0 24 24" fill="{{ c.favFill }}" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 17.9 6.8 19.7l1-5.8L3.5 9.7l5.9-.9z"/></svg></div>
+                        </div>
+                        <div style="position:absolute; bottom:8px; left:8px; display:flex; gap:6px;">
+                          <div onClick="{{ c.onEdit }}" style="display:flex; align-items:center; gap:6px; height:28px; padding:0 11px; border-radius:8px; background:rgba(20,23,27,.85); cursor:pointer; color:#e7ebee; font-size:12px; font-weight:500;" style-hover="background:rgba(40,45,50,.95);"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5.5l4 4L8 20l-4.5 1 1-4.5z"/></svg>Edit</div>
+                          <div onClick="{{ c.onStop }}" style="width:28px; height:28px; border-radius:8px; background:rgba(20,23,27,.85); display:flex; align-items:center; justify-content:center; cursor:pointer; color:#d7dbdf;" style-hover="background:rgba(40,45,50,.95);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v11"/><polyline points="8 10 12 14 16 10"/><path d="M4 17v2a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-2"/></svg></div>
+                          <div onClick="{{ c.onStop }}" style="width:28px; height:28px; border-radius:8px; background:rgba(20,23,27,.85); display:flex; align-items:center; justify-content:center; cursor:pointer; color:#d7dbdf;" style-hover="background:rgba(74,33,38,.95); color:#ff8a8a;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13"/></svg></div>
+                        </div>
+                      </div>
+                    </div>
+                    <div style="padding:9px 2px 0;">
+                      <div style="font-size:12.5px; font-weight:500; color:#dfe3e6; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ c.name }}</div>
+                      <div style="display:flex; align-items:center; gap:7px; margin-top:3px;"><span style="font-size:11.5px; color:#6b727a;">{{ c.time }}</span><span style="width:3px; height:3px; border-radius:50%; background:#404750;"></span><span style="font-size:11.5px; color:#6b727a;">{{ c.game }}</span></div>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-for>
+          <sc-if value="{{ noResults }}" hint-placeholder-val="{{ false }}"><div style="text-align:center; padding:60px 0; color:#5d646c; font-size:13px;">No clips match your search.</div></sc-if>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ============ PLAYER (windowed) ============ -->
+      <sc-if value="{{ isPlayer }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1; display:flex; min-height:0;">
+        <div style="flex:1; min-width:0; display:flex; flex-direction:column; padding:22px 22px 18px;">
+          <div style="flex:none; margin-bottom:14px;">
+            <h1 style="font-size:18px; font-weight:600; margin:0 0 2px;">{{ selName }}</h1>
+            <p style="font-size:12.5px; color:#6b727a; margin:0; font-family:'Geist Mono',monospace;">{{ selDate }} · {{ selDur }}</p>
+          </div>
+          <div style="flex:1; min-height:0; border-radius:14px; overflow:hidden; position:relative; background:#0c0f12; background-image:{{ selThumb }}; background-size:cover; background-position:center; display:flex; align-items:center; justify-content:center; border:1px solid rgba(255,255,255,.06);">
+            <div onClick="{{ playClick }}" style="width:64px; height:64px; border-radius:50%; background:rgba(10,12,14,.55); backdrop-filter:blur(6px); border:1px solid rgba(255,255,255,.18); display:flex; align-items:center; justify-content:center; cursor:pointer;" style-hover="background:rgba(10,12,14,.75);">
+              <sc-if value="{{ isPlaying }}" hint-placeholder-val="{{ false }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="#fff"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg></sc-if>
+              <sc-if value="{{ notPlaying }}" hint-placeholder-val="{{ true }}"><svg width="26" height="26" viewBox="0 0 24 24" fill="#fff" style="margin-left:3px;"><path d="M7 5.5v13a1 1 0 0 0 1.5.86l11-6.5a1 1 0 0 0 0-1.72l-11-6.5A1 1 0 0 0 7 5.5z"/></svg></sc-if>
+            </div>
+          </div>
+          <!-- transport -->
+          <div style="flex:none; margin-top:14px;">
+            <div style="display:flex; align-items:center; gap:11px; margin-bottom:11px;">
+              <span style="font-size:11.5px; color:#9aa1a8; font-family:'Geist Mono',monospace; width:78px;">0:26 / {{ selDur }}</span>
+              <div style="flex:1; height:4px; border-radius:4px; background:rgba(255,255,255,.12); position:relative; cursor:pointer;"><div style="position:absolute; left:0; top:0; bottom:0; width:22%; background:var(--accent); border-radius:4px;"></div><div style="position:absolute; left:22%; top:50%; transform:translate(-50%,-50%); width:12px; height:12px; border-radius:50%; background:#fff; box-shadow:0 1px 4px rgba(0,0,0,.5);"></div></div>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:center; gap:6px; position:relative;">
+              <div style="width:38px; height:38px; border-radius:9px; display:flex; align-items:center; justify-content:center; color:#aeb5bb; cursor:pointer;" style-hover="background:rgba(255,255,255,.06); color:#fff;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg></div>
+              <div style="width:38px; height:38px; border-radius:9px; display:flex; align-items:center; justify-content:center; color:#aeb5bb; cursor:pointer;" style-hover="background:rgba(255,255,255,.06); color:#fff;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 4 3 9 8 9"/></svg></div>
+              <div onClick="{{ playClick }}" style="width:46px; height:46px; border-radius:50%; background:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; margin:0 4px;" style-hover="filter:brightness(.92);">
+                <sc-if value="{{ isPlaying }}" hint-placeholder-val="{{ false }}"><svg width="19" height="19" viewBox="0 0 24 24" fill="#0a0c0e"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg></sc-if>
+                <sc-if value="{{ notPlaying }}" hint-placeholder-val="{{ true }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="#0a0c0e" style="margin-left:2px;"><path d="M7 5.5v13a1 1 0 0 0 1.5.86l11-6.5a1 1 0 0 0 0-1.72l-11-6.5A1 1 0 0 0 7 5.5z"/></svg></sc-if>
+              </div>
+              <div style="width:38px; height:38px; border-radius:9px; display:flex; align-items:center; justify-content:center; color:#aeb5bb; cursor:pointer;" style-hover="background:rgba(255,255,255,.06); color:#fff;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><polyline points="21 4 21 9 16 9"/></svg></div>
+              <div style="width:38px; height:38px; border-radius:9px; display:flex; align-items:center; justify-content:center; color:#aeb5bb; cursor:pointer;" style-hover="background:rgba(255,255,255,.06); color:#fff;"><svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M5 5.5v13a1 1 0 0 0 1.5.86l9-6.5a1 1 0 0 0 0-1.72l-9-6.5A1 1 0 0 0 5 5.5z"/><rect x="17" y="5" width="2.6" height="14" rx="1"/></svg></div>
+              <div style="position:absolute; right:0; display:flex; align-items:center; gap:6px;">
+                <span style="font-size:12px; color:#aeb5bb; padding:6px 9px; border-radius:7px; cursor:pointer; font-family:'Geist Mono',monospace;" style-hover="background:rgba(255,255,255,.06);">1×</span>
+                <div style="width:34px; height:34px; border-radius:8px; display:flex; align-items:center; justify-content:center; color:#aeb5bb; cursor:pointer;" style-hover="background:rgba(255,255,255,.06);"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 14h3M13 14h4" stroke-linecap="round"/></svg></div>
+                <div style="width:34px; height:34px; border-radius:8px; display:flex; align-items:center; justify-content:center; color:#aeb5bb; cursor:pointer;" style-hover="background:rgba(255,255,255,.06);"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg></div>
+                <div onClick="{{ enterFull }}" style="width:34px; height:34px; border-radius:8px; display:flex; align-items:center; justify-content:center; color:#aeb5bb; cursor:pointer;" style-hover="background:rgba(255,255,255,.06); color:#fff;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V5a1 1 0 0 1 1-1h4M20 9V5a1 1 0 0 0-1-1h-4M4 15v4a1 1 0 0 0 1 1h4M20 15v4a1 1 0 0 1-1 1h-4"/></svg></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- replays side panel -->
+        <div style="width:296px; flex:none; border-left:1px solid rgba(255,255,255,.06); display:flex; flex-direction:column; background:#0a0c0e;">
+          <div style="display:flex; align-items:center; justify-content:space-between; padding:18px 18px 12px; flex:none;">
+            <span style="font-size:11.5px; letter-spacing:.06em; text-transform:uppercase; color:#6b727a; font-weight:600;">Replays</span>
+            <span style="font-size:11.5px; color:#565d64; font-family:'Geist Mono',monospace;">{{ libCount }}</span>
+          </div>
+          <div style="flex:1; overflow-y:auto; padding:0 10px;">
+            <sc-for list="{{ replays }}" as="r" hint-placeholder-count="10">
+              <div onClick="{{ r.onClick }}" style="{{ r.style }}">
+                <div style="width:62px; height:35px; flex:none; border-radius:7px; background:#15171b; background-image:{{ r.thumb }}; background-size:cover;"></div>
+                <div style="min-width:0; flex:1;"><div style="font-size:12px; color:#d7dbdf; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ r.name }}</div><div style="font-size:10.5px; color:#646b73; margin-top:2px; font-family:'Geist Mono',monospace;">{{ r.meta }}</div></div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="flex:none; border-top:1px solid rgba(255,255,255,.06); padding:13px 18px; display:flex; flex-direction:column; gap:7px;">
+            <div style="display:flex; justify-content:space-between; font-size:12px;"><span style="color:#6b727a;">Clips</span><span style="color:#cfd5da; font-family:'Geist Mono',monospace;">{{ libCount }}</span></div>
+            <div style="display:flex; justify-content:space-between; font-size:12px;"><span style="color:#6b727a;">Duration</span><span style="color:#cfd5da; font-family:'Geist Mono',monospace;">1h 57m</span></div>
+            <div style="display:flex; justify-content:space-between; font-size:12px;"><span style="color:#6b727a;">Used</span><span style="color:#cfd5da; font-family:'Geist Mono',monospace;">25.1 GB</span></div>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ============ EDITOR ============ -->
+      <sc-if value="{{ isEditor }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1; display:flex; flex-direction:column; min-height:0;">
+        <div style="flex:none; display:flex; align-items:center; justify-content:space-between; padding:18px 22px 14px;">
+          <div><h1 style="font-size:18px; font-weight:600; margin:0 0 2px;">Editor</h1><p style="font-size:12px; color:#6b727a; margin:0; font-family:'Geist Mono',monospace;">{{ selName }}</p></div>
+          <div style="display:flex; gap:9px;">
+            <button onClick="{{ goLibrary }}" style="padding:8px 16px; background:#16191e; border:1px solid rgba(255,255,255,.1); border-radius:9px; font-size:13px; color:#d7dbdf; font-family:inherit; cursor:pointer;" style-hover="background:#1c2025;">Back</button>
+            <button style="display:flex; align-items:center; gap:8px; padding:8px 16px; background:var(--accent); border:none; border-radius:9px; font-size:13px; font-weight:600; color:#06222a; font-family:inherit; cursor:pointer;" style-hover="filter:brightness(1.06);"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><polyline points="7 10 12 15 17 10"/><path d="M5 19h14"/></svg>Export</button>
+          </div>
+        </div>
+
+        <div style="flex:1; display:flex; min-height:0; padding:0 22px;">
+          <div style="flex:1; min-width:0; display:flex; flex-direction:column; min-height:0;">
+            <div style="flex:1; min-height:0; border-radius:12px; overflow:hidden; background:#0c0f12; background-image:{{ selThumb }}; background-size:cover; background-position:center; border:1px solid rgba(255,255,255,.06); position:relative;">
+              <div style="position:absolute; inset:0; box-shadow:inset 0 0 0 2px rgba(63,208,224,.0);"></div>
+            </div>
+            <div style="flex:none; display:flex; align-items:center; gap:12px; padding:11px 2px 0;">
+              <div onClick="{{ playClick }}" style="width:34px; height:34px; border-radius:50%; background:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer;"><svg width="15" height="15" viewBox="0 0 24 24" fill="#0a0c0e" style="margin-left:2px;"><path d="M7 5.5v13a1 1 0 0 0 1.5.86l11-6.5a1 1 0 0 0 0-1.72l-11-6.5A1 1 0 0 0 7 5.5z"/></svg></div>
+              <span style="font-size:11.5px; color:#9aa1a8; font-family:'Geist Mono',monospace;">0:01 / {{ selDur }}</span>
+              <div style="flex:1;"></div>
+              <div style="display:flex; align-items:center; gap:5px; padding:6px 11px; background:#16191e; border:1px solid rgba(255,255,255,.09); border-radius:8px; font-size:12px; color:#c2c8cd; cursor:pointer; font-family:'Geist Mono',monospace;" style-hover="background:#1c2025;">0:00 ▸</div>
+              <div style="display:flex; align-items:center; gap:5px; padding:6px 11px; background:#16191e; border:1px solid rgba(255,255,255,.09); border-radius:8px; font-size:12px; color:#c2c8cd; cursor:pointer; font-family:'Geist Mono',monospace;" style-hover="background:#1c2025;">◂ {{ selDur }}</div>
+              <div style="display:flex; align-items:center; gap:6px; padding:6px 12px; background:rgba(63,208,224,.12); border:1px solid rgba(63,208,224,.3); border-radius:8px; font-size:12px; color:#8fe7f2; cursor:pointer; font-weight:500;" style-hover="background:rgba(63,208,224,.18);"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><line x1="20" y1="4" x2="8.5" y2="15.5"/><line x1="14" y1="14" x2="20" y2="20"/></svg>Cut</div>
+            </div>
+            <!-- timeline -->
+            <div style="flex:none; margin-top:12px; padding-bottom:16px;">
+              <div style="display:flex; justify-content:space-between; font-size:10px; color:#565d64; margin-bottom:5px; font-family:'Geist Mono',monospace;"><span>0:00</span><span>{{ selDur }}</span></div>
+              <div style="display:flex; gap:2px; height:46px; border-radius:8px; overflow:hidden; border:1px solid rgba(255,255,255,.08); position:relative;">
+                <sc-for list="{{ stripFrames }}" as="f" hint-placeholder-count="14"><div style="flex:1; background:#15171b; background-image:{{ f.thumb }}; background-size:cover; background-position:center;"></div></sc-for>
+                <div style="position:absolute; left:48%; top:-3px; bottom:-3px; width:2px; background:var(--accent); box-shadow:0 0 8px rgba(63,208,224,.6);"><div style="position:absolute; top:-4px; left:-4px; width:10px; height:10px; border-radius:50%; background:var(--accent);"></div></div>
+              </div>
+              <div style="display:flex; flex-direction:column; gap:7px; margin-top:9px;">
+                <div style="display:flex; align-items:center; gap:11px;">
+                  <div style="display:flex; align-items:center; gap:8px; width:130px; flex:none;"><div style="width:16px; height:16px; border-radius:4px; background:var(--accent); display:flex; align-items:center; justify-content:center;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#06222a" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4 10-11"/></svg></div><span style="font-size:12px; color:#c2c8cd;">System sound</span></div>
+                  <div style="flex:1; height:24px; border-radius:6px; background:rgba(63,208,224,.07); border:1px solid rgba(63,208,224,.14); background-image:repeating-linear-gradient(90deg, rgba(63,208,224,.45) 0 2px, transparent 2px 5px);"></div>
+                  <input type="range" min="0" max="100" value="100" style="width:90px; flex:none;">
+                </div>
+                <div style="display:flex; align-items:center; gap:11px;">
+                  <div style="display:flex; align-items:center; gap:8px; width:130px; flex:none;"><div style="width:16px; height:16px; border-radius:4px; background:var(--accent); display:flex; align-items:center; justify-content:center;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#06222a" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4 10-11"/></svg></div><span style="font-size:12px; color:#c2c8cd;">Microphone</span></div>
+                  <div style="flex:1; height:24px; border-radius:6px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.09); background-image:repeating-linear-gradient(90deg, rgba(160,170,180,.4) 0 1px, transparent 1px 6px);"></div>
+                  <input type="range" min="0" max="100" value="100" style="width:90px; flex:none;">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- editor right panel -->
+          <div style="width:284px; flex:none; margin-left:18px; display:flex; flex-direction:column; min-height:0;">
+            <div style="display:flex; gap:22px; border-bottom:1px solid rgba(255,255,255,.07); margin-bottom:18px; flex:none;">
+              <div onClick="{{ edClipClick }}" style="{{ edClipStyle }}">Clip</div>
+              <div onClick="{{ edFiltersClick }}" style="{{ edFiltersStyle }}">Filters</div>
+              <div onClick="{{ edTextClick }}" style="{{ edTextStyle }}">Text</div>
+            </div>
+            <div style="flex:1; overflow-y:auto;">
+              <sc-if value="{{ edClip }}" hint-placeholder-val="{{ true }}">
+                <div style="font-size:11.5px; color:#7c838a; margin-bottom:8px;">Format</div>
+                <div style="display:flex; align-items:center; justify-content:space-between; padding:9px 12px; background:#16191e; border:1px solid rgba(255,255,255,.08); border-radius:9px; font-size:13px; color:#e7ebee; cursor:pointer; margin-bottom:16px;" style-hover="border-color:rgba(255,255,255,.16);">Native (16:9) <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#7c838a" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></div>
+                <button style="width:100%; display:flex; align-items:center; justify-content:center; gap:8px; padding:11px; background:#16191e; border:1px solid rgba(255,255,255,.1); border-radius:9px; font-size:13px; color:#d7dbdf; font-family:inherit; cursor:pointer; margin-bottom:14px;" style-hover="background:#1c2025;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M6 2v16a1 1 0 0 0 1 1h16M2 6h16a1 1 0 0 1 1 1v16" stroke-linecap="round"/></svg>Crop</button>
+                <div style="display:flex; gap:8px; margin-bottom:20px;">
+                  <div style="flex:1; height:38px; border-radius:9px; background:#16191e; border:1px solid rgba(255,255,255,.09); display:flex; align-items:center; justify-content:center; color:#aeb5bb; cursor:pointer;" style-hover="background:#1c2025;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 4 3 9 8 9"/></svg></div>
+                  <div style="flex:1; height:38px; border-radius:9px; background:#16191e; border:1px solid rgba(255,255,255,.09); display:flex; align-items:center; justify-content:center; color:#aeb5bb; cursor:pointer;" style-hover="background:#1c2025;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><polyline points="21 4 21 9 16 9"/></svg></div>
+                  <div style="flex:1; height:38px; border-radius:9px; background:#16191e; border:1px solid rgba(255,255,255,.09); display:flex; align-items:center; justify-content:center; color:#aeb5bb; cursor:pointer;" style-hover="background:#1c2025;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M7 8l-4 4 4 4M17 8l4 4-4 4"/></svg></div>
+                  <div style="flex:1; height:38px; border-radius:9px; background:#16191e; border:1px solid rgba(255,255,255,.09); display:flex; align-items:center; justify-content:center; color:#aeb5bb; cursor:pointer;" style-hover="background:#1c2025;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h18M8 7l-4 4 4 4M16 7l4 4-4 4"/></svg></div>
+                </div>
+                <div style="font-size:11.5px; color:#7c838a; margin-bottom:9px;">Speed</div>
+                <div style="display:flex; gap:7px;">
+                  <sc-for list="{{ speedOptions }}" as="opt" hint-placeholder-count="4"><div onClick="{{ opt.on }}" style="{{ opt.style }}">{{ opt.label }}</div></sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{ edFilters }}" hint-placeholder-val="{{ false }}">
+                <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:9px; margin-bottom:20px;">
+                  <sc-for list="{{ filterOptions }}" as="opt" hint-placeholder-count="8">
+                    <div onClick="{{ opt.on }}" style="cursor:pointer;">
+                      <div style="{{ opt.thumbStyle }}"></div>
+                      <div style="{{ opt.labelStyle }}">{{ opt.label }}</div>
+                    </div>
+                  </sc-for>
+                </div>
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;"><span style="font-size:11.5px; color:#7c838a;">Color</span><div style="color:#6b727a; cursor:pointer;" style-hover="color:#aeb5bb;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 4 3 9 8 9"/></svg></div></div>
+                <div style="display:flex; flex-direction:column; gap:15px;">
+                  <div><div style="display:flex; justify-content:space-between; font-size:12px; color:#aeb5bb; margin-bottom:7px;"><span>Brightness</span><span style="color:#6b727a; font-family:'Geist Mono',monospace;">100%</span></div><input type="range" min="0" max="200" value="100" style="width:100%;"></div>
+                  <div><div style="display:flex; justify-content:space-between; font-size:12px; color:#aeb5bb; margin-bottom:7px;"><span>Contrast</span><span style="color:#6b727a; font-family:'Geist Mono',monospace;">100%</span></div><input type="range" min="0" max="200" value="100" style="width:100%;"></div>
+                  <div><div style="display:flex; justify-content:space-between; font-size:12px; color:#aeb5bb; margin-bottom:7px;"><span>Saturation</span><span style="color:#6b727a; font-family:'Geist Mono',monospace;">100%</span></div><input type="range" min="0" max="200" value="100" style="width:100%;"></div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ edText }}" hint-placeholder-val="{{ false }}">
+                <button style="width:100%; display:flex; align-items:center; justify-content:center; gap:8px; padding:11px; background:var(--accent); border:none; border-radius:9px; font-size:13px; font-weight:600; color:#06222a; font-family:inherit; cursor:pointer; margin-bottom:12px;" style-hover="filter:brightness(1.06);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add text</button>
+                <p style="font-size:12px; color:#6b727a; text-align:center; margin:4px 0 0;">Add a text layer, then drag it onto the video.</p>
+              </sc-if>
+            </div>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+    </div>
+  </div>
+
+  <!-- ============ FULLSCREEN PLAYER OVERLAY ============ -->
+  <sc-if value="{{ fullscreen }}" hint-placeholder-val="{{ false }}">
+  <div style="position:fixed; inset:0; z-index:50; background:#000; background-image:{{ selThumb }}; background-size:cover; background-position:center; display:flex;">
+    <div style="flex:1; position:relative;">
+      <!-- exit -->
+      <div onClick="{{ exitFull }}" style="position:absolute; top:18px; left:18px; display:flex; align-items:center; gap:8px; padding:8px 13px; border-radius:9px; background:rgba(10,12,14,.55); backdrop-filter:blur(8px); color:#e7ebee; font-size:13px; cursor:pointer; border:1px solid rgba(255,255,255,.1);" style-hover="background:rgba(10,12,14,.8);"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5V3a1 1 0 0 0-1-1H4M9 19v2a1 1 0 0 1-1 1H4M15 5V3a1 1 0 0 1 1-1h4M15 19v2a1 1 0 0 0 1 1h4"/></svg>Exit fullscreen</div>
+      <div onClick="{{ toggleSide }}" style="position:absolute; top:18px; right:18px; display:flex; align-items:center; gap:8px; padding:8px 13px; border-radius:9px; background:rgba(10,12,14,.55); backdrop-filter:blur(8px); color:#e7ebee; font-size:13px; cursor:pointer; border:1px solid rgba(255,255,255,.1);" style-hover="background:rgba(10,12,14,.8);"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="15" y1="4" x2="15" y2="20"/></svg>{{ sidePanelLabel }}</div>
+
+      <!-- bottom transport overlay -->
+      <div style="position:absolute; left:0; right:0; bottom:0; padding:60px 26px 22px; background:linear-gradient(to top, rgba(0,0,0,.82), transparent);">
+        <div style="display:flex; align-items:center; gap:13px; margin-bottom:13px;">
+          <span style="font-size:12px; color:#dfe3e6; font-family:'Geist Mono',monospace; width:88px;">0:42 / {{ selDur }}</span>
+          <div style="flex:1; height:5px; border-radius:5px; background:rgba(255,255,255,.22); position:relative; cursor:pointer;"><div style="position:absolute; left:0; top:0; bottom:0; width:35%; background:var(--accent); border-radius:5px;"></div><div style="position:absolute; left:35%; top:50%; transform:translate(-50%,-50%); width:13px; height:13px; border-radius:50%; background:#fff;"></div></div>
+        </div>
+        <div style="display:flex; align-items:center; gap:7px; position:relative;">
+          <div style="width:40px; height:40px; border-radius:9px; display:flex; align-items:center; justify-content:center; color:#dfe3e6; cursor:pointer;" style-hover="background:rgba(255,255,255,.12);"><svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg></div>
+          <div style="width:40px; height:40px; border-radius:9px; display:flex; align-items:center; justify-content:center; color:#dfe3e6; cursor:pointer;" style-hover="background:rgba(255,255,255,.12);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 4 3 9 8 9"/></svg></div>
+          <div onClick="{{ playClick }}" style="width:50px; height:50px; border-radius:50%; background:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; margin:0 5px;" style-hover="filter:brightness(.92);">
+            <sc-if value="{{ isPlaying }}" hint-placeholder-val="{{ true }}"><svg width="21" height="21" viewBox="0 0 24 24" fill="#0a0c0e"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg></sc-if>
+            <sc-if value="{{ notPlaying }}" hint-placeholder-val="{{ false }}"><svg width="22" height="22" viewBox="0 0 24 24" fill="#0a0c0e" style="margin-left:2px;"><path d="M7 5.5v13a1 1 0 0 0 1.5.86l11-6.5a1 1 0 0 0 0-1.72l-11-6.5A1 1 0 0 0 7 5.5z"/></svg></sc-if>
+          </div>
+          <div style="width:40px; height:40px; border-radius:9px; display:flex; align-items:center; justify-content:center; color:#dfe3e6; cursor:pointer;" style-hover="background:rgba(255,255,255,.12);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><polyline points="21 4 21 9 16 9"/></svg></div>
+          <div style="width:40px; height:40px; border-radius:9px; display:flex; align-items:center; justify-content:center; color:#dfe3e6; cursor:pointer;" style-hover="background:rgba(255,255,255,.12);"><svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M5 5.5v13a1 1 0 0 0 1.5.86l9-6.5a1 1 0 0 0 0-1.72l-9-6.5A1 1 0 0 0 5 5.5z"/><rect x="17" y="5" width="2.6" height="14" rx="1"/></svg></div>
+          <div style="position:absolute; right:0; display:flex; align-items:center; gap:6px;">
+            <span style="font-size:13px; color:#dfe3e6; padding:7px 10px; border-radius:8px; cursor:pointer; font-family:'Geist Mono',monospace;" style-hover="background:rgba(255,255,255,.12);">1×</span>
+            <div style="width:38px; height:38px; border-radius:9px; display:flex; align-items:center; justify-content:center; color:#dfe3e6; cursor:pointer;" style-hover="background:rgba(255,255,255,.12);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 14h3M13 14h4" stroke-linecap="round"/></svg></div>
+            <div style="width:38px; height:38px; border-radius:9px; display:flex; align-items:center; justify-content:center; color:#dfe3e6; cursor:pointer;" style-hover="background:rgba(255,255,255,.12);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg></div>
+            <div onClick="{{ exitFull }}" style="width:38px; height:38px; border-radius:9px; display:flex; align-items:center; justify-content:center; color:#dfe3e6; cursor:pointer;" style-hover="background:rgba(255,255,255,.12);"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5V3a1 1 0 0 0-1-1H4M9 19v2a1 1 0 0 1-1 1H4M15 5V3a1 1 0 0 1 1-1h4M15 19v2a1 1 0 0 0 1 1h4"/></svg></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <sc-if value="{{ sidePanel }}" hint-placeholder-val="{{ true }}">
+    <div style="width:300px; flex:none; background:rgba(10,12,14,.86); backdrop-filter:blur(16px); border-left:1px solid rgba(255,255,255,.1); display:flex; flex-direction:column;">
+      <div style="display:flex; align-items:center; justify-content:space-between; padding:18px 18px 12px;"><span style="font-size:11.5px; letter-spacing:.06em; text-transform:uppercase; color:#8b939c; font-weight:600;">Replays</span><span style="font-size:11.5px; color:#6b727a; font-family:'Geist Mono',monospace;">{{ libCount }}</span></div>
+      <div style="flex:1; overflow-y:auto; padding:0 10px;">
+        <sc-for list="{{ replays }}" as="r" hint-placeholder-count="10">
+          <div onClick="{{ r.onClick }}" style="{{ r.style }}">
+            <div style="width:62px; height:35px; flex:none; border-radius:7px; background:#15171b; background-image:{{ r.thumb }}; background-size:cover;"></div>
+            <div style="min-width:0; flex:1;"><div style="font-size:12px; color:#e1e5e8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ r.name }}</div><div style="font-size:10.5px; color:#6b727a; margin-top:2px; font-family:'Geist Mono',monospace;">{{ r.meta }}</div></div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="flex:none; border-top:1px solid rgba(255,255,255,.1); padding:13px 18px; display:flex; flex-direction:column; gap:7px;">
+        <div style="display:flex; justify-content:space-between; font-size:12px;"><span style="color:#7c838a;">Clips</span><span style="color:#dfe3e6; font-family:'Geist Mono',monospace;">{{ libCount }}</span></div>
+        <div style="display:flex; justify-content:space-between; font-size:12px;"><span style="color:#7c838a;">Duration</span><span style="color:#dfe3e6; font-family:'Geist Mono',monospace;">1h 57m</span></div>
+        <div style="display:flex; justify-content:space-between; font-size:12px;"><span style="color:#7c838a;">Used</span><span style="color:#dfe3e6; font-family:'Geist Mono',monospace;">25.1 GB</span></div>
+      </div>
+    </div>
+    </sc-if>
+  </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:860},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#3fd0e0&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;corners&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Rounded&quot;,&quot;Sharp&quot;],&quot;default&quot;:&quot;Rounded&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;startInRecording&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
+class Component extends DCLogic {
+  state = {
+    screen: 'library',
+    settingsTab: 'video',
+    editorTab: 'clip',
+    recording: false,
+    paused: false,
+    playing: false,
+    fullscreen: false,
+    sidePanel: true,
+    selected: '2026-06-21_22-17-51-Replay',
+    search: '',
+    gameFilter: 'All',
+    favOnly: false,
+    seg: { fps: '170', codec: 'Auto', recMode: 'apps', channels: 'Stereo', speed: '1', filter: 'Normal' },
+    toggles: { matchAudio: true, push: false, sep: true, startWin: false, startMin: false, startAuto: true, gameMode: true, autoClean: false },
+    apps: { sys: true, mic: true, game: true, discord: true, wallpaper: false },
+    favs: { '2026-06-21_22-17-51-Replay': true, '2026-06-21_20-52-14-Replay': true },
+  };
+
+  componentDidMount() { this.applyVars(); if (this.props.startInRecording) this.setState({ recording: true }); }
+  componentDidUpdate() { this.applyVars(); }
+  applyVars() {
+    const r = document.documentElement;
+    r.style.setProperty('--accent', this.props.accent || '#3fd0e0');
+    r.style.setProperty('--radius', (this.props.corners === 'Sharp') ? '5px' : '11px');
+    const hex = (this.props.accent || '#3fd0e0').replace('#', '');
+    if (hex.length === 6) {
+      const n = parseInt(hex, 16);
+      r.style.setProperty('--accent-dim', `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},.13)`);
+    }
+  }
+
+  grad(a, b, c) {
+    return `radial-gradient(120% 95% at 25% 18%, ${a}, transparent 55%), radial-gradient(120% 100% at 82% 78%, ${b}, transparent 60%), linear-gradient(150deg, ${c}, #0a0e16)`;
+  }
+
+  clips() {
+    const G = { hs: 'Human Hide & Seek', cs: 'Counter-Strike 2', mc: 'Minecraft', dc: 'Discord', con: 'Concert' };
+    const g = this.grad.bind(this);
+    return [
+      ['2026-06-21_22-21-34-Replay', '22:21', 'hs', '2:00', g('#ff5da2', '#7b5bff', '#241a3a'), 'today', false],
+      ['2026-06-21_22-18-25-Replay', '22:18', 'hs', '2:01', g('#6a78ff', '#3b2d7a', '#161a40'), 'today', false],
+      ['2026-06-21_22-17-51-Replay', '22:17', 'hs', '2:00', g('#4f7bff', '#9b5bff', '#16203f'), 'today', false],
+      ['2026-06-21_21-20-17-Replay', '21:20', 'hs', '2:00', g('#ff7a5b', '#ffd15b', '#3a2416'), 'today', false],
+      ['2026-06-21_21-13-29-Replay', '21:13', 'hs', '2:00', g('#e05b6a', '#7b3b46', '#2a1418'), 'today', false],
+      ['2026-06-21_20-52-14-Replay', '20:52', 'hs', '2:01', g('#ffcf5b', '#5b9bff', '#2a2616'), 'today', true],
+      ['2026-06-21_20-50-53-Replay', '20:50', 'hs', '2:01', g('#5bd0ff', '#3b5b7a', '#142028'), 'today', false],
+      ['2026-06-21_20-38-06-Replay', '20:38', 'hs', '2:00', g('#9b9bff', '#5b3b7a', '#1a1630'), 'today', false],
+      ['2026-06-21_19-46-21-Replay', '19:46', 'cs', '2:00', g('#c9a06a', '#5b4a3b', '#231c16'), 'today', false],
+      ['2026-06-21_19-42-45-Replay', '19:42', 'cs', '0:36', g('#d4b483', '#6a5640', '#2a2218'), 'today', false],
+      ['2026-06-21_19-19-48-Replay', '19:19', 'con', '0:41', g('#ff5b8a', '#ffb05b', '#2a1620'), 'today', false],
+      ['2026-06-20_21-59-24-Replay', '21:59', 'cs', '2:00', g('#caa06a', '#4a3b2c', '#1e1810'), 'y20', true],
+      ['2026-06-20_22-42-57-Replay', '22:42', 'dc', '0:02', g('#5865f2', '#3b3b7a', '#16183a'), 'y20', false],
+      ['2026-06-20_21-36-02-Replay', '21:36', 'mc', '2:01', g('#7bbf5b', '#3b5b2c', '#16200f'), 'y20', false],
+      ['2026-06-20_20-40-06-Replay', '20:40', 'mc', '2:01', g('#a08050', '#5b4630', '#241c10'), 'y20', false],
+      ['2026-06-18_22-09-44-Replay', '22:09', 'cs', '2:00', g('#c2783b', '#6a3b2c', '#281610'), 'j18', false],
+      ['2026-06-18_21-30-12-Replay', '21:30', 'mc', '2:00', g('#5b8fbf', '#3b4a5b', '#141c24'), 'j18', false],
+    ].map(c => ({ name: c[0], time: c[1], game: G[c[2]], gk: c[2], dur: c[3], thumb: c[4], day: c[5], isEdit: c[0].indexOf('-edit') >= 0 }));
+  }
+
+  go(s) { this.setState({ screen: s }); }
+  setSeg(k, v) { this.setState(st => ({ seg: { ...st.seg, [k]: v } })); }
+  flip(k) { this.setState(st => ({ toggles: { ...st.toggles, [k]: !st.toggles[k] } })); }
+
+  tog(on, k) {
+    return {
+      on: () => this.flip(k),
+      trackStyle: `width:38px;height:22px;border-radius:99px;padding:2px;cursor:pointer;display:flex;flex:none;transition:all .15s;background:${on ? 'var(--accent)' : 'rgba(255,255,255,.14)'};justify-content:${on ? 'flex-end' : 'flex-start'};`,
+      knobStyle: 'width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.45);transition:all .15s;',
+    };
+  }
+
+  segOpts(key, labels) {
+    const cur = this.state.seg[key];
+    return labels.map(l => ({
+      label: l, on: () => this.setSeg(key, l),
+      style: (l === cur)
+        ? 'padding:6px 12px;border-radius:7px;font-size:12.5px;font-weight:500;cursor:pointer;white-space:nowrap;transition:all .12s;background:var(--accent-dim);color:var(--accent-text);box-shadow:inset 0 0 0 1px rgba(63,208,224,.32);'
+        : 'padding:6px 12px;border-radius:7px;font-size:12.5px;font-weight:500;cursor:pointer;white-space:nowrap;transition:all .12s;background:transparent;color:#9aa3ad;',
+    }));
+  }
+
+  renderVals() {
+    const st = this.state;
+    const rec = st.recording, full = st.fullscreen;
+    const accentText = 'color:#06222a;';
+    const navBase = 'display:flex;align-items:center;gap:11px;padding:8px 11px;border-radius:9px;cursor:pointer;font-size:13.5px;font-weight:500;transition:all .12s;';
+    const nav = (a) => navBase + (a ? 'color:#eafaff;background:var(--accent-dim);' : 'color:#9aa3ad;background:transparent;');
+    const tab = (a) => 'padding:0 0 12px;font-size:14px;font-weight:500;cursor:pointer;transition:color .12s;' + (a ? 'color:#fff;border-bottom:2px solid var(--accent);' : 'color:#8b939c;border-bottom:2px solid transparent;');
+    const edtab = (a) => 'padding:0 0 11px;font-size:13.5px;font-weight:500;cursor:pointer;' + (a ? 'color:#fff;border-bottom:2px solid var(--accent);' : 'color:#8b939c;border-bottom:2px solid transparent;');
+
+    const all = this.clips();
+    const sel = all.find(c => c.name === st.selected) || all[0];
+
+    // library filter + group
+    const q = st.search.trim().toLowerCase();
+    const filtered = all.filter(c => {
+      if (st.favOnly && !st.favs[c.name]) return false;
+      if (st.gameFilter !== 'All' && c.game !== st.gameFilter) return false;
+      if (q && (c.name.toLowerCase().indexOf(q) < 0 && c.game.toLowerCase().indexOf(q) < 0 && c.time.indexOf(q) < 0)) return false;
+      return true;
+    });
+    const stop = (e) => { if (e && e.stopPropagation) e.stopPropagation(); };
+    const mkItem = (c) => ({
+      name: c.name, time: c.time, game: c.game, dur: c.dur, thumb: c.thumb,
+      fav: !!st.favs[c.name], favFill: st.favs[c.name] ? 'var(--accent)' : 'none', isEdit: c.isEdit,
+      onOpen: () => this.setState({ screen: 'player', selected: c.name }),
+      onEdit: (e) => { stop(e); this.setState({ screen: 'editor', selected: c.name, editorTab: 'clip' }); },
+      onFav: (e) => { stop(e); this.setState(s => ({ favs: { ...s.favs, [c.name]: !s.favs[c.name] } })); },
+      onStop: stop,
+    });
+    const dayMeta = { today: ['Today', 'June 21'], y20: ['Yesterday', 'June 20'], j18: ['June 18', ''] };
+    const order = ['today', 'y20', 'j18'];
+    const groups = order.map(d => {
+      const items = filtered.filter(c => c.day === d).map(mkItem);
+      return items.length ? { label: dayMeta[d][0], sub: dayMeta[d][1], count: String(items.length), items } : null;
+    }).filter(Boolean);
+
+    // game chips
+    const chip = (label, active) => ({
+      label, on: () => this.setState({ gameFilter: active ? 'All' : label }),
+      style: 'padding:7px 12px;border-radius:8px;font-size:12.5px;font-weight:500;cursor:pointer;transition:all .12s;' + (active ? 'background:var(--accent-dim);color:var(--accent-text);box-shadow:inset 0 0 0 1px rgba(63,208,224,.32);' : 'background:#101316;color:#9aa3ad;border:1px solid rgba(255,255,255,.07);'),
+    });
+    const gameChips = [
+      chip('Human Hide & Seek', st.gameFilter === 'Human Hide & Seek'),
+      chip('Counter-Strike 2', st.gameFilter === 'Counter-Strike 2'),
+      chip('Minecraft', st.gameFilter === 'Minecraft'),
+    ];
+
+    // replays
+    const replays = all.map(c => ({
+      name: c.name, meta: c.dur + ' · ' + c.game, thumb: c.thumb,
+      onClick: () => this.setState({ selected: c.name }),
+      style: 'display:flex;align-items:center;gap:11px;padding:8px;border-radius:9px;cursor:pointer;margin-bottom:2px;transition:background .12s;' + (c.name === st.selected ? 'background:var(--accent-dim);' : 'background:transparent;'),
+    }));
+
+    // apps
+    const appDefs = [
+      ['sys', 'System sound', 'spk', '#3a4046'],
+      ['mic', 'Microphone', 'mic', '#3a4046'],
+      ['game', 'Game audio', 'game', '#2c5a4a'],
+      ['discord', 'Discord', 'D', '#5865f2'],
+      ['wallpaper', 'wallpaper64', 'W', '#7a5b3b'],
+    ];
+    const appsList = appDefs.map(a => ({
+      name: a[1], letter: (a[2].length === 1 ? a[2] : ''), checked: !!st.apps[a[0]],
+      onCheck: () => this.setState(s => ({ apps: { ...s.apps, [a[0]]: !s.apps[a[0]] } })),
+      boxStyle: 'width:18px;height:18px;border-radius:5px;flex:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .12s;' + (st.apps[a[0]] ? 'background:var(--accent);' : 'background:transparent;border:1.5px solid rgba(255,255,255,.2);'),
+      iconStyle: `width:26px;height:26px;border-radius:7px;flex:none;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#dfe3e6;background:${a[3]};`,
+    }));
+
+    // editor filters
+    const fg = this.grad.bind(this);
+    const fdefs = [
+      ['Normal', 'none'], ['Grayscale', 'grayscale(1)'], ['Sepia', 'sepia(.7)'],
+      ['Warm', 'saturate(1.4) hue-rotate(-12deg)'], ['Cold', 'saturate(1.2) hue-rotate(18deg)'], ['Vibrant', 'saturate(1.8) contrast(1.1)'],
+      ['Dramatic', 'contrast(1.4) brightness(.85)'], ['Bright', 'brightness(1.25) saturate(1.1)'],
+    ];
+    const filterOptions = fdefs.map(f => ({
+      label: f[0], on: () => this.setSeg('filter', f[0]),
+      thumbStyle: `width:100%;aspect-ratio:16/10;border-radius:8px;background-image:${sel.thumb};background-size:cover;background-position:center;filter:${f[1]};box-shadow:${st.seg.filter === f[0] ? 'inset 0 0 0 2px var(--accent)' : 'inset 0 0 0 1px rgba(255,255,255,.08)'};transition:box-shadow .12s;`,
+      labelStyle: 'font-size:11px;text-align:center;margin-top:5px;' + (st.seg.filter === f[0] ? 'color:var(--accent-text);font-weight:500;' : 'color:#8b939c;'),
+    }));
+
+    const stripFrames = all.slice(0, 14).map(c => ({ thumb: c.thumb }));
+
+    return {
+      titleBarMeta: ({ settings: '— Settings', library: '— Library', player: '— Player', editor: '— Editor' })[st.screen] || '',
+      // sidebar
+      isRec: rec, notRec: !rec,
+      recPrimaryClick: () => this.setState({ recording: !rec, paused: false }),
+      recPrimaryLabel: rec ? 'Stop Recording' : 'Start Recording',
+      recPrimaryStyle: 'width:100%;height:40px;display:flex;align-items:center;justify-content:center;gap:9px;border:none;border-radius:var(--radius);font-size:13.5px;font-weight:600;font-family:inherit;cursor:pointer;transition:all .12s;' + (rec ? 'background:#ef4d62;color:#fff;' : 'background:var(--accent);color:#06222a;'),
+      pauseClick: () => this.setState(s => ({ paused: !s.paused })),
+      pauseLabel: st.paused ? 'Resume' : 'Pause',
+      goSettings: () => this.go('settings'), goLibrary: () => this.go('library'), goPlayer: () => this.go('player'),
+      navSettingsStyle: nav(st.screen === 'settings'), navLibraryStyle: nav(st.screen === 'library'), navPlayerStyle: nav(st.screen === 'player' || st.screen === 'editor'),
+      statusDotStyle: rec ? 'background:#ef4d62;animation:recpulse 1.4s ease-in-out infinite;' : 'background:#5d646c;',
+      statusLabel: rec ? (st.paused ? 'Paused' : 'Recording…') : 'Stopped',
+      bufferLabel: rec ? '0:08 / 2:00' : '0:00 / 2:00',
+      bufferPct: rec ? '7%' : '0%',
+      // screens
+      isSettings: st.screen === 'settings', isLibrary: st.screen === 'library', isPlayer: st.screen === 'player', isEditor: st.screen === 'editor',
+      // settings tabs
+      tabVideoClick: () => this.setState({ settingsTab: 'video' }), tabAudioClick: () => this.setState({ settingsTab: 'audio' }), tabGeneralClick: () => this.setState({ settingsTab: 'general' }),
+      tabVideoStyle: tab(st.settingsTab === 'video'), tabAudioStyle: tab(st.settingsTab === 'audio'), tabGeneralStyle: tab(st.settingsTab === 'general'),
+      tabVideo: st.settingsTab === 'video', tabAudio: st.settingsTab === 'audio', tabGeneral: st.settingsTab === 'general',
+      fpsOptions: this.segOpts('fps', ['24', '30', '60', '120', '170', 'Custom']),
+      codecOptions: this.segOpts('codec', ['Auto', 'H.264', 'H.265', 'AV1']),
+      recModeOptions: [
+        { label: 'All PC audio', on: () => this.setSeg('recMode', 'all'), style: (st.seg.recMode === 'all') ? 'padding:6px 12px;border-radius:7px;font-size:12.5px;font-weight:500;cursor:pointer;background:var(--accent-dim);color:var(--accent-text);box-shadow:inset 0 0 0 1px rgba(63,208,224,.32);' : 'padding:6px 12px;border-radius:7px;font-size:12.5px;font-weight:500;cursor:pointer;color:#9aa3ad;' },
+        { label: 'Specific apps', on: () => this.setSeg('recMode', 'apps'), style: (st.seg.recMode === 'apps') ? 'padding:6px 12px;border-radius:7px;font-size:12.5px;font-weight:500;cursor:pointer;background:var(--accent-dim);color:var(--accent-text);box-shadow:inset 0 0 0 1px rgba(63,208,224,.32);' : 'padding:6px 12px;border-radius:7px;font-size:12.5px;font-weight:500;cursor:pointer;color:#9aa3ad;' },
+      ],
+      channelOptions: this.segOpts('channels', ['Mono', 'Stereo']),
+      tMatch: this.tog(st.toggles.matchAudio, 'matchAudio'),
+      tPush: this.tog(st.toggles.push, 'push'),
+      tSep: this.tog(st.toggles.sep, 'sep'),
+      tStartWin: this.tog(st.toggles.startWin, 'startWin'),
+      tStartMin: this.tog(st.toggles.startMin, 'startMin'),
+      tStartAuto: this.tog(st.toggles.startAuto, 'startAuto'),
+      tGameMode: this.tog(st.toggles.gameMode, 'gameMode'),
+      tAutoClean: this.tog(st.toggles.autoClean, 'autoClean'),
+      appsList,
+      // library
+      libCount: String(all.length), libFree: '54.2 GB',
+      searchVal: st.search, onSearch: (e) => this.setState({ search: e.target.value }),
+      gameChips,
+      chipFavOn: () => this.setState(s => ({ favOnly: !s.favOnly })),
+      chipFavFill: st.favOnly ? 'var(--accent)' : 'none',
+      chipFavStyle: 'display:flex;align-items:center;gap:7px;padding:7px 12px;border-radius:8px;font-size:12.5px;font-weight:500;cursor:pointer;transition:all .12s;' + (st.favOnly ? 'background:var(--accent-dim);color:var(--accent-text);box-shadow:inset 0 0 0 1px rgba(63,208,224,.32);' : 'background:#101316;color:#9aa3ad;border:1px solid rgba(255,255,255,.07);'),
+      groups, noResults: groups.length === 0,
+      // player / editor shared
+      selName: sel.name, selDate: sel.day === 'today' ? 'June 21, 22:17' : (sel.day === 'y20' ? 'June 20' : 'June 18'), selDur: sel.dur, selThumb: sel.thumb,
+      isPlaying: st.playing, notPlaying: !st.playing,
+      playClick: () => this.setState(s => ({ playing: !s.playing })),
+      replays,
+      enterFull: () => this.setState({ fullscreen: true }),
+      exitFull: () => this.setState({ fullscreen: false }),
+      fullscreen: full, sidePanel: st.sidePanel, sidePanelLabel: st.sidePanel ? 'Hide panel' : 'Show panel',
+      toggleSide: () => this.setState(s => ({ sidePanel: !s.sidePanel })),
+      // editor
+      edClipClick: () => this.setState({ editorTab: 'clip' }), edFiltersClick: () => this.setState({ editorTab: 'filters' }), edTextClick: () => this.setState({ editorTab: 'text' }),
+      edClipStyle: edtab(st.editorTab === 'clip'), edFiltersStyle: edtab(st.editorTab === 'filters'), edTextStyle: edtab(st.editorTab === 'text'),
+      edClip: st.editorTab === 'clip', edFilters: st.editorTab === 'filters', edText: st.editorTab === 'text',
+      speedOptions: this.segOpts('speed', ['0.5×', '1×', '1.5×', '2×']),
+      filterOptions, stripFrames,
+    };
+  }
+}
+</script>
+</body>
+</html>

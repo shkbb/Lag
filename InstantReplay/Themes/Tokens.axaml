@@ -1,0 +1,63 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       Lag "Lag Studio" lime redesign — design tokens.
+       Source of truth: design-mockup/Lag Studio.dc.html (accent #bef264).
+       These are the NEW redesign tokens; the old cyan brushes in DarkTheme.axaml
+       stay until each view is migrated, so the build never breaks mid-redesign.
+       ═══════════════════════════════════════════════════════════════════════ -->
+
+  <!-- ── Accent (lime) ── -->
+  <Color x:Key="AccentLimeColor">#FFBEF264</Color>
+  <SolidColorBrush x:Key="AccentLime" Color="#FFBEF264" />
+  <SolidColorBrush x:Key="AccentLimeDim" Color="#1FBEF264" />     <!-- ~rgba(190,242,100,.12) -->
+  <SolidColorBrush x:Key="AccentLimeRing" Color="#52BEF264" />    <!-- ~.32 inset ring -->
+  <SolidColorBrush x:Key="AccentLimeHover" Color="#80BEF264" />   <!-- dropdown hover border ~.5 -->
+  <SolidColorBrush x:Key="OnAccent" Color="#FF0C0D11" />          <!-- text/glyph on lime -->
+
+  <!-- ── Surfaces ── -->
+  <SolidColorBrush x:Key="SurfaceApp" Color="#FF0C0D11" />        <!-- app / panels / rail / top bar -->
+  <SolidColorBrush x:Key="SurfaceCard" Color="#FF14161C" />      <!-- settings cards / status pill / search -->
+  <SolidColorBrush x:Key="SurfaceInput" Color="#FF1A1D25" />     <!-- dropdowns / segmented / kbd -->
+  <SolidColorBrush x:Key="SurfaceHover" Color="#FF1E222B" />     <!-- button hover -->
+  <SolidColorBrush x:Key="SurfaceHover2" Color="#FF22262F" />    <!-- secondary button hover -->
+
+  <!-- ── Borders (white at low alpha) ── -->
+  <SolidColorBrush x:Key="BorderFaint" Color="#0EFFFFFF" />      <!-- card row dividers (~.055) -->
+  <SolidColorBrush x:Key="BorderCard" Color="#12FFFFFF" />       <!-- card / top bar (~.07) -->
+  <SolidColorBrush x:Key="BorderInput" Color="#17FFFFFF" />      <!-- inputs (~.09) -->
+  <SolidColorBrush x:Key="BorderStrong" Color="#1AFFFFFF" />     <!-- buttons / kbd (~.10) -->
+
+  <!-- ── Text ── -->
+  <SolidColorBrush x:Key="TextHi" Color="#FFECEDEF" />           <!-- primary / titles -->
+  <SolidColorBrush x:Key="TextRow" Color="#FFDDE0E4" />          <!-- card row labels (weight 500) -->
+  <SolidColorBrush x:Key="TextBtn" Color="#FFD7DADE" />          <!-- button text -->
+  <SolidColorBrush x:Key="TextKbd" Color="#FFC4C8CE" />          <!-- kbd / status -->
+  <SolidColorBrush x:Key="TextMid" Color="#FF9AA0AA" />          <!-- secondary / inactive seg -->
+  <SolidColorBrush x:Key="TextMuted" Color="#FF8B919C" />        <!-- muted -->
+  <SolidColorBrush x:Key="TextFaint" Color="#FF7C828D" />        <!-- faint / chevrons -->
+  <SolidColorBrush x:Key="TextFaintest" Color="#FF6A707B" />     <!-- faintest / group titles -->
+  <SolidColorBrush x:Key="DotDivider" Color="#FF4A505B" />       <!-- middot between meta -->
+
+  <!-- ── Danger / status ── -->
+  <SolidColorBrush x:Key="DangerClose" Color="#FFE5484D" />      <!-- close-button hover -->
+  <SolidColorBrush x:Key="DangerStop" Color="#FFEF4D62" />       <!-- "Stop Recording" -->
+  <SolidColorBrush x:Key="RecDot" Color="#FFFF5C5C" />           <!-- recording status dot -->
+  <SolidColorBrush x:Key="StatusIdle" Color="#FF5D646C" />       <!-- stopped status dot -->
+
+  <!-- ── Typography (Inter approximation of Geist/Space Grotesk; mono = system monospace) ── -->
+  <FontFamily x:Key="FontUi">Inter</FontFamily>
+  <FontFamily x:Key="FontDisplay">Inter</FontFamily>            <!-- headings (Space Grotesk → Inter, heavy weight at use) -->
+  <FontFamily x:Key="FontMono">Cascadia Code, Consolas, Courier New, monospace</FontFamily>
+
+  <!-- ── Corner radii ── -->
+  <CornerRadius x:Key="RadCard">15</CornerRadius>
+  <CornerRadius x:Key="RadGeneral">13</CornerRadius>
+  <CornerRadius x:Key="RadPill">11</CornerRadius>
+  <CornerRadius x:Key="RadButton">10</CornerRadius>
+  <CornerRadius x:Key="RadInput">9</CornerRadius>
+  <CornerRadius x:Key="RadSeg">7</CornerRadius>
+  <CornerRadius x:Key="RadKbd">6</CornerRadius>
+
+</ResourceDictionary>

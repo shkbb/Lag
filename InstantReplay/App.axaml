@@ -6,6 +6,11 @@
              RequestedThemeVariant="Dark">
 
   <Application.Resources>
+    <ResourceDictionary>
+    <ResourceDictionary.MergedDictionaries>
+      <!-- Lime redesign design tokens (additive; old cyan brushes stay until each view migrates) -->
+      <ResourceInclude Source="avares://Lag/Themes/Tokens.axaml" />
+    </ResourceDictionary.MergedDictionaries>
     <core:BoolToStringConverter x:Key="BoolToString" />
     <core:LanguageToFlagConverter x:Key="LangFlag" />
 
@@ -286,6 +291,7 @@
     <Color x:Key="SystemAccentColorDark1">#FF18B8D6</Color>
     <Color x:Key="SystemAccentColorDark2">#FF129BB8</Color>
     <Color x:Key="SystemAccentColorDark3">#FF0C7E96</Color>
+    </ResourceDictionary>
   </Application.Resources>
 
   <Application.Styles>
