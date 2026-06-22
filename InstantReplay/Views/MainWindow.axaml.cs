@@ -68,23 +68,18 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// Toggles the "nav-active" vs "nav" class on sidebar navigation buttons based on the
-    /// current view. Avalonia's Classes property doesn't support bindings, so this is imperative.
+    /// Toggles the "active" class on the icon-rail items based on the current view. Avalonia's
+    /// Classes property doesn't support bindings, so this is imperative.
     /// </summary>
     private void UpdateActiveNav(ViewModelBase? currentView)
     {
-        SetNavClass(NavSettings, currentView is SettingsViewModel);
-        SetNavClass(NavLibrary, currentView is LibraryViewModel);
-        SetNavClass(NavPlayer, currentView is PlayerViewModel);
+        RailLibrary.Classes.Set("active", currentView is LibraryViewModel);
+        RailPlayer.Classes.Set("active", currentView is PlayerViewModel);
+        RailEditor.Classes.Set("active", currentView is EditorViewModel);
+        RailSettings.Classes.Set("active", currentView is SettingsViewModel);
     }
 
-    private static void SetNavClass(Button button, bool isActive)
-    {
-        button.Classes.Set("nav", !isActive);
-        button.Classes.Set("nav-active", isActive);
-    }
-
-    /// <summary>Swaps the CTA between cyan "Start" and red "Stop" (Figma .rec state).</summary>
+    /// <summary>Swaps the CTA between cyan "Start" and red "Stop" recording state.</summary>
     private void UpdateRecordCta(bool isRecording) => RecordCta.Classes.Set("rec", isRecording);
 
     /// <summary>True fullscreen: window state only — sidebar/titlebar collapse via bindings.</summary>
