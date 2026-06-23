@@ -185,6 +185,15 @@
   <sys:String x:Key="Option_DefaultDevice">Default (auto)</sys:String>
   <sys:String x:Key="Settings_AudioModeByTarget">Match audio mode to capture</sys:String>
   <sys:String x:Key="Settings_AudioModeByTarget_Desc">Recording a game captures the selected apps; the desktop captures all PC sound.</sys:String>
+  <!-- ════════ Settings redesign group headers ════════ -->
+  <sys:String x:Key="Settings_Subtitle">Configure capture, audio and app behavior.</sys:String>
+  <sys:String x:Key="Settings_Group_Recording">Recording</sys:String>
+  <sys:String x:Key="Settings_Group_Encoding">Encoding</sys:String>
+  <sys:String x:Key="Settings_Group_Devices">Devices</sys:String>
+  <sys:String x:Key="Settings_Group_Advanced">Advanced</sys:String>
+  <sys:String x:Key="Settings_Group_Startup">Startup &amp; performance</sys:String>
+  <sys:String x:Key="Settings_Group_Storage">Storage &amp; about</sys:String>
+
   <!-- ════════ Logs & diagnostics ════════ -->
   <sys:String x:Key="Settings_Logs">Logs</sys:String>
   <sys:String x:Key="Settings_OpenLogs">Open folder</sys:String>

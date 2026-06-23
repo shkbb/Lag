@@ -5,620 +5,464 @@
              x:Class="Lag.Views.SettingsView"
              x:DataType="vm:SettingsViewModel">
 
-  <Grid RowDefinitions="Auto,Auto,Auto,*" Margin="24,20,24,0">
+  <UserControl.Styles>
+    <!-- One card row: label/control split, comfortable padding -->
+    <Style Selector="Grid.row">
+      <Setter Property="Margin" Value="18,15" />
+    </Style>
+  </UserControl.Styles>
 
-    <!-- Title -->
-    <TextBlock Grid.Row="0" Text="{DynamicResource Settings_Title}"
-               FontSize="16" FontWeight="Medium" />
+  <Grid Background="{StaticResource SurfaceApp}">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+      <StackPanel MaxWidth="800" HorizontalAlignment="Center" Margin="40,34,40,64">
 
-    <!-- Pending changes hint -->
-    <TextBlock Grid.Row="0" Text="{DynamicResource Settings_PendingChanges}"
-               FontSize="11" Foreground="#F0B45A" HorizontalAlignment="Right"
-               VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="420"
-               IsVisible="{Binding HasPendingChanges}" />
+        <!-- Heading -->
+        <Grid ColumnDefinitions="*,Auto">
+          <StackPanel Grid.Column="0" Spacing="4">
+            <TextBlock Text="{DynamicResource Settings_Title}" FontFamily="{StaticResource FontDisplay}"
+                       FontSize="32" FontWeight="Bold" Foreground="{StaticResource TextHi}" />
+            <TextBlock Text="{DynamicResource Settings_Subtitle}" FontSize="13.5"
+                       Foreground="{StaticResource TextMuted}" />
+          </StackPanel>
+          <TextBlock Grid.Column="1" Text="{DynamicResource Settings_PendingChanges}"
+                     FontSize="11" Foreground="#F0B45A" VerticalAlignment="Bottom"
+                     TextWrapping="Wrap" MaxWidth="280" TextAlignment="Right"
+                     IsVisible="{Binding HasPendingChanges}" />
+        </Grid>
 
-    <!-- Tabs (animated underline) -->
-    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="24" Margin="0,18,0,0">
-      <Button Classes="tab" Classes.sel="{Binding SelectedSettingsTab, Converter={StaticResource Eq}, ConverterParameter=0}"
-              Click="OnTabClick" Tag="0">
-        <StackPanel>
-          <TextBlock Classes="tabtxt" Text="{DynamicResource Tab_Video}" />
-          <Border Classes="tabline" />
+        <!-- Tab pills -->
+        <Border Classes="rsegtrack" HorizontalAlignment="Left" Margin="0,26,0,0">
+          <StackPanel Orientation="Horizontal" Spacing="3">
+            <Button Classes="rseg" Classes.sel="{Binding SelectedSettingsTab, Converter={StaticResource Eq}, ConverterParameter=0}"
+                    Click="OnTabClick" Tag="0" Content="{DynamicResource Tab_Video}" />
+            <Button Classes="rseg" Classes.sel="{Binding SelectedSettingsTab, Converter={StaticResource Eq}, ConverterParameter=1}"
+                    Click="OnTabClick" Tag="1" Content="{DynamicResource Tab_Audio}" />
+            <Button Classes="rseg" Classes.sel="{Binding SelectedSettingsTab, Converter={StaticResource Eq}, ConverterParameter=2}"
+                    Click="OnTabClick" Tag="2" Content="{DynamicResource Tab_General}" />
+          </StackPanel>
+        </Border>
+
+        <!-- ════════════════ VIDEO ════════════════ -->
+        <StackPanel Spacing="26" Margin="0,28,0,0"
+                    IsVisible="{Binding SelectedSettingsTab, Converter={StaticResource Eq}, ConverterParameter=0}">
+
+          <StackPanel>
+            <TextBlock Classes="rgroup" Text="{DynamicResource Settings_Group_Recording}" />
+            <Border Classes="rcard">
+              <StackPanel>
+                <Grid Classes="row" ColumnDefinitions="*,Auto">
+                  <TextBlock Grid.Column="0" Classes="rrow" Text="{DynamicResource Settings_BufferLength}" VerticalAlignment="Center" />
+                  <ComboBox Grid.Column="1" VerticalAlignment="Center"
+                            ItemsSource="{Binding BufferOptions}" SelectedItem="{Binding SelectedBuffer}" />
+                </Grid>
+                <Border Classes="rdivider" />
+                <Grid Classes="row" ColumnDefinitions="*,Auto">
+                  <TextBlock Grid.Column="0" Classes="rrow" Text="{DynamicResource Settings_Display}" VerticalAlignment="Center" />
+                  <ComboBox Grid.Column="1" VerticalAlignment="Center"
+                            ItemsSource="{Binding Monitors}" SelectedItem="{Binding SelectedMonitor}" />
+                </Grid>
+                <Border Classes="rdivider" />
+                <Grid Classes="row" ColumnDefinitions="*,Auto">
+                  <TextBlock Grid.Column="0" Classes="rrow" Text="{DynamicResource Settings_FrameRate}" VerticalAlignment="Center" />
+                  <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <TextBox Text="{Binding CustomFps}" Width="56" IsVisible="{Binding IsCustomFps}" />
+                    <ListBox Classes="segctl" ItemsSource="{Binding FpsOptions}" SelectedItem="{Binding SelectedFps}">
+                      <ListBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:FpsOption">
+                          <TextBlock Text="{Binding Display}" Foreground="{Binding Tier, Converter={StaticResource Intensity}}" />
+                        </DataTemplate>
+                      </ListBox.ItemTemplate>
+                    </ListBox>
+                  </StackPanel>
+                </Grid>
+                <Border Classes="rdivider" />
+                <Grid Classes="row" ColumnDefinitions="*,Auto">
+                  <TextBlock Grid.Column="0" Classes="rrow" Text="{DynamicResource Settings_OutputResolution}" VerticalAlignment="Center" />
+                  <ComboBox Grid.Column="1" VerticalAlignment="Center"
+                            ItemsSource="{Binding ResolutionOptions}" SelectedItem="{Binding SelectedResolution}">
+                    <ComboBox.ItemTemplate>
+                      <DataTemplate x:DataType="vm:ResolutionOption">
+                        <TextBlock Text="{Binding Display}" Foreground="{Binding Tier, Converter={StaticResource Intensity}}" />
+                      </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                  </ComboBox>
+                </Grid>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+
+          <StackPanel>
+            <TextBlock Classes="rgroup" Text="{DynamicResource Settings_Group_Encoding}" />
+            <Border Classes="rcard">
+              <StackPanel>
+                <Grid Classes="row" ColumnDefinitions="*,Auto">
+                  <TextBlock Grid.Column="0" Classes="rrow" Text="{DynamicResource Settings_Codec}" VerticalAlignment="Center" />
+                  <ListBox Grid.Column="1" Classes="segctl" VerticalAlignment="Center"
+                           ItemsSource="{Binding CodecOptions}" SelectedItem="{Binding SelectedCodec}" />
+                </Grid>
+                <Border Classes="rdivider" />
+                <Grid Classes="row" ColumnDefinitions="*,Auto">
+                  <TextBlock Grid.Column="0" Classes="rrow" Text="{DynamicResource Settings_Bitrate}" VerticalAlignment="Center" />
+                  <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                    <ComboBox MinWidth="120" VerticalAlignment="Center"
+                              ItemsSource="{Binding BitrateOptions}" SelectedItem="{Binding SelectedBitrate}">
+                      <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:BitrateOption">
+                          <TextBlock Text="{Binding Display}" Foreground="{Binding Tier, Converter={StaticResource Intensity}}" />
+                        </DataTemplate>
+                      </ComboBox.ItemTemplate>
+                    </ComboBox>
+                    <Slider Width="120" Minimum="3" Maximum="100" TickFrequency="1" IsSnapToTickEnabled="True"
+                            VerticalAlignment="Center" Value="{Binding BitrateSliderValue}" IsVisible="{Binding IsCustomBitrate}" />
+                    <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center" IsVisible="{Binding IsCustomBitrate}">
+                      <TextBlock Text="{Binding BitrateDisplayMbps}" FontSize="13" Foreground="{StaticResource TextHi}" />
+                      <TextBlock Text="{DynamicResource Settings_Bitrate_CustomSuffix}" FontSize="13" Foreground="{StaticResource TextHi}" />
+                    </StackPanel>
+                  </StackPanel>
+                </Grid>
+                <Border Classes="rdivider" />
+                <Grid Classes="row" ColumnDefinitions="*,Auto">
+                  <TextBlock Grid.Column="0" Classes="rrow" Text="{DynamicResource Settings_Gpu}" VerticalAlignment="Center" />
+                  <ComboBox Grid.Column="1" VerticalAlignment="Center"
+                            ItemsSource="{Binding GpuOptions}" SelectedItem="{Binding SelectedGpu}" />
+                </Grid>
+                <Border Classes="rdivider" />
+                <Grid Classes="row" ColumnDefinitions="*,Auto">
+                  <TextBlock Grid.Column="0" Classes="rrow" Text="{DynamicResource Settings_Format}" VerticalAlignment="Center" />
+                  <ComboBox Grid.Column="1" VerticalAlignment="Center"
+                            ItemsSource="{Binding FormatOptions}" SelectedItem="{Binding SelectedFormat}">
+                    <ComboBox.ItemTemplate>
+                      <DataTemplate><TextBlock Text="{Binding Converter={StaticResource Upper}}" /></DataTemplate>
+                    </ComboBox.ItemTemplate>
+                  </ComboBox>
+                </Grid>
+              </StackPanel>
+            </Border>
+          </StackPanel>
         </StackPanel>
-      </Button>
-      <Button Classes="tab" Classes.sel="{Binding SelectedSettingsTab, Converter={StaticResource Eq}, ConverterParameter=1}"
-              Click="OnTabClick" Tag="1">
-        <StackPanel>
-          <TextBlock Classes="tabtxt" Text="{DynamicResource Tab_Audio}" />
-          <Border Classes="tabline" />
+
+        <!-- ════════════════ AUDIO ════════════════ -->
+        <StackPanel Spacing="26" Margin="0,28,0,0"
+                    IsVisible="{Binding SelectedSettingsTab, Converter={StaticResource Eq}, ConverterParameter=1}">
+
+          <StackPanel>
+            <TextBlock Classes="rgroup" Text="{DynamicResource Settings_Group_SystemAudio}" />
+            <Border Classes="rcard">
+              <StackPanel>
+                <Grid Classes="row" ColumnDefinitions="*,Auto">
+                  <TextBlock Grid.Column="0" Classes="rrow" Text="{DynamicResource Settings_AudioMode}" VerticalAlignment="Center" />
+                  <Border Grid.Column="1" Classes="segment" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal" Spacing="2">
+                      <Button Classes="seg" Classes.sel="{Binding AudioModeIndex, Converter={StaticResource Eq}, ConverterParameter=0}"
+                              Click="OnSourceSegClick" Tag="0" Content="{DynamicResource AudioMode_All}" />
+                      <Button Classes="seg" Classes.sel="{Binding AudioModeIndex, Converter={StaticResource Eq}, ConverterParameter=1}"
+                              Click="OnSourceSegClick" Tag="1" Content="{DynamicResource AudioMode_Apps}" />
+                    </StackPanel>
+                  </Border>
+                </Grid>
+                <Border Classes="rdivider" />
+                <Grid Classes="row" ColumnDefinitions="*,Auto">
+                  <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,12,0">
+                    <TextBlock Classes="rrow" Text="{DynamicResource Settings_AudioModeByTarget}" />
+                    <TextBlock Classes="rsub" Text="{DynamicResource Settings_AudioModeByTarget_Desc}" Margin="0,2,0,0" />
+                  </StackPanel>
+                  <ToggleSwitch Grid.Column="1" VerticalAlignment="Center" IsChecked="{Binding AudioModeByTarget}"
+                                OnContent="{x:Null}" OffContent="{x:Null}" MinWidth="0" />
+                </Grid>
+                <Border Classes="rdivider" />
+
+                <!-- source list -->
+                <Grid ColumnDefinitions="Auto,Auto,*,120,42" Margin="18,11" IsVisible="{Binding ShowSystemAudioRow}">
+                  <CheckBox Grid.Column="0" IsChecked="{Binding SystemAudioEnabled}" VerticalAlignment="Center" />
+                  <mi:MaterialIcon Grid.Column="1" Kind="VolumeHigh" Width="20" Height="20" Margin="6,0,10,0" VerticalAlignment="Center" Foreground="{StaticResource TextFaint}" />
+                  <TextBlock Grid.Column="2" Text="Звук системи" FontSize="14" Foreground="{StaticResource TextRow}" VerticalAlignment="Center" />
+                  <Slider Grid.Column="3" Minimum="0" Maximum="100" TickFrequency="1" IsSnapToTickEnabled="True"
+                          Value="{Binding SystemAudioVolume}" IsEnabled="{Binding SystemAudioEnabled}" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="4" Text="{Binding SystemAudioVolume, StringFormat='{}{0}%'}" FontFamily="{StaticResource FontMono}"
+                             FontSize="11" Foreground="{StaticResource TextFaint}" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                </Grid>
+                <Grid ColumnDefinitions="Auto,Auto,*,120,42" Margin="18,11">
+                  <CheckBox Grid.Column="0" IsChecked="{Binding MicEnabled}" VerticalAlignment="Center" />
+                  <mi:MaterialIcon Grid.Column="1" Kind="Microphone" Width="20" Height="20" Margin="6,0,10,0" VerticalAlignment="Center" Foreground="{StaticResource TextFaint}" />
+                  <TextBlock Grid.Column="2" Text="{DynamicResource Settings_Microphone}" FontSize="14" Foreground="{StaticResource TextRow}" VerticalAlignment="Center" />
+                  <Slider Grid.Column="3" Minimum="0" Maximum="100" TickFrequency="1" IsSnapToTickEnabled="True"
+                          Value="{Binding MicVolume}" IsEnabled="{Binding MicEnabled}" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="4" Text="{Binding MicVolume, StringFormat='{}{0}%'}" FontFamily="{StaticResource FontMono}"
+                             FontSize="11" Foreground="{StaticResource TextFaint}" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                </Grid>
+                <Grid ColumnDefinitions="Auto,Auto,*,120,42" Margin="18,11" IsVisible="{Binding ShowAppsList}">
+                  <CheckBox Grid.Column="0" IsChecked="{Binding GameAudioEnabled}" VerticalAlignment="Center" />
+                  <mi:MaterialIcon Grid.Column="1" Kind="Gamepad" Width="20" Height="20" Margin="6,0,10,0" VerticalAlignment="Center" Foreground="{StaticResource TextFaint}" />
+                  <TextBlock Grid.Column="2" Text="Звук гри" FontSize="14" Foreground="{StaticResource TextRow}" VerticalAlignment="Center" />
+                  <Slider Grid.Column="3" Minimum="0" Maximum="100" TickFrequency="1" IsSnapToTickEnabled="True"
+                          Value="{Binding GameAudioVolume}" IsEnabled="{Binding GameAudioEnabled}" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="4" Text="{Binding GameAudioVolume, StringFormat='{}{0}%'}" FontFamily="{StaticResource FontMono}"
+                             FontSize="11" Foreground="{StaticResource TextFaint}" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                </Grid>
+                <ItemsControl ItemsSource="{Binding AudioApps}" IsVisible="{Binding ShowAppsList}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:AppAudioItem">
+                      <Grid ColumnDefinitions="Auto,Auto,*,120,42" Margin="18,11">
+                        <CheckBox Grid.Column="0" IsChecked="{Binding IsEnabled}" VerticalAlignment="Center" />
+                        <Image Grid.Column="1" Source="{Binding Icon}" Width="20" Height="20" Margin="6,0,10,0" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="2" Text="{Binding DisplayName}" FontSize="14" Foreground="{StaticResource TextRow}"
+                                   VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                        <Slider Grid.Column="3" Minimum="0" Maximum="100" TickFrequency="1" IsSnapToTickEnabled="True"
+                                Value="{Binding Volume}" IsEnabled="{Binding IsEnabled}" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="4" Text="{Binding Volume, StringFormat='{}{0}%'}" FontFamily="{StaticResource FontMono}"
+                                   FontSize="11" Foreground="{StaticResource TextFaint}" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                      </Grid>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <TextBlock Text="{DynamicResource Settings_AppsHint}" FontSize="11.5" Foreground="{StaticResource TextFaintest}"
+                           Margin="18,2,18,12" TextWrapping="Wrap" IsVisible="{Binding ShowAppsList}" />
+              </StackPanel>
+            </Border>
+          </StackPanel>
+
+          <StackPanel>
+            <TextBlock Classes="rgroup" Text="{DynamicResource Settings_Group_Devices}" />
+            <Border Classes="rcard">
+              <StackPanel>
+                <Grid Classes="row" ColumnDefinitions="*,Auto">
+                  <TextBlock Grid.Column="0" Classes="rrow" Text="{DynamicResource Settings_OutputDevice}" VerticalAlignment="Center" />
+                  <ComboBox Grid.Column="1" VerticalAlignment="Center" MaxWidth="240"
+                            ItemsSource="{Binding OutputDevices}" SelectedItem="{Binding SelectedOutputDevice}">
+                    <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Name}" /></DataTemplate></ComboBox.ItemTemplate>
+                  </ComboBox>
+                </Grid>
+                <Border Classes="rdivider" />
+                <Grid Classes="row" ColumnDefinitions="*,Auto">
+                  <TextBlock Grid.Column="0" Classes="rrow" Text="{DynamicResource Settings_Microphone}" VerticalAlignment="Center" />
+                  <ComboBox Grid.Column="1" VerticalAlignment="Center"
+                            ItemsSource="{Binding Microphones}" SelectedItem="{Binding SelectedMicrophone}">
+                    <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Name}" /></DataTemplate></ComboBox.ItemTemplate>
+                  </ComboBox>
+                </Grid>
+                <Border Classes="rdivider" />
+                <Grid Classes="row" ColumnDefinitions="*,Auto">
+                  <TextBlock Grid.Column="0" Classes="rrow" Text="{DynamicResource Settings_MicChannels}" VerticalAlignment="Center" />
+                  <Border Grid.Column="1" Classes="segment" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal" Spacing="2">
+                      <Button Classes="seg" Classes.sel="{Binding MicChannelIndex, Converter={StaticResource Eq}, ConverterParameter=1}"
+                              Click="OnChannelSegClick" Tag="1" Content="{DynamicResource Channels_Mono}" />
+                      <Button Classes="seg" Classes.sel="{Binding MicChannelIndex, Converter={StaticResource Eq}, ConverterParameter=0}"
+                              Click="OnChannelSegClick" Tag="0" Content="{DynamicResource Channels_Stereo}" />
+                    </StackPanel>
+                  </Border>
+                </Grid>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+
+          <StackPanel>
+            <TextBlock Classes="rgroup" Text="{DynamicResource Settings_Group_Advanced}" />
+            <Border Classes="rcard">
+              <StackPanel>
+                <Grid Classes="row" ColumnDefinitions="*,Auto">
+                  <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,12,0">
+                    <TextBlock Classes="rrow" Text="{DynamicResource Settings_Ptt}" />
+                    <TextBlock Classes="rsub" Text="{DynamicResource Settings_Ptt_Desc}" Margin="0,2,0,0" />
+                  </StackPanel>
+                  <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                    <Button Classes="bare" Padding="0" Background="Transparent" BorderThickness="0" Cursor="Hand"
+                            Command="{Binding CapturePttKeyCommand}" IsEnabled="{Binding PushToTalkEnabled}"
+                            ToolTip.Tip="{DynamicResource Settings_Hotkey_Desc}">
+                      <Panel>
+                        <Border Classes="kbd" IsVisible="{Binding !IsCapturingPttKey}"><TextBlock Text="{Binding PttKeyDisplayText}" /></Border>
+                        <Border Classes="kbd listening" IsVisible="{Binding IsCapturingPttKey}"><TextBlock Text="..." /></Border>
+                      </Panel>
+                    </Button>
+                    <ToggleSwitch IsChecked="{Binding PushToTalkEnabled}" OnContent="{x:Null}" OffContent="{x:Null}" MinWidth="0" />
+                  </StackPanel>
+                </Grid>
+                <Border Classes="rdivider" />
+                <Grid Classes="row" ColumnDefinitions="*,Auto">
+                  <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,12,0">
+                    <TextBlock Classes="rrow" Text="{DynamicResource Settings_SeparateTracks}" />
+                    <TextBlock Classes="rsub" Text="{DynamicResource Settings_SeparateTracks_Desc}" Margin="0,2,0,0" />
+                  </StackPanel>
+                  <ToggleSwitch Grid.Column="1" VerticalAlignment="Center" IsChecked="{Binding SeparateAudioTracks}"
+                                OnContent="{x:Null}" OffContent="{x:Null}" MinWidth="0" />
+                </Grid>
+              </StackPanel>
+            </Border>
+          </StackPanel>
         </StackPanel>
-      </Button>
-      <Button Classes="tab" Classes.sel="{Binding SelectedSettingsTab, Converter={StaticResource Eq}, ConverterParameter=2}"
-              Click="OnTabClick" Tag="2">
-        <StackPanel>
-          <TextBlock Classes="tabtxt" Text="{DynamicResource Tab_General}" />
-          <Border Classes="tabline" />
-        </StackPanel>
-      </Button>
-    </StackPanel>
 
-    <Border Grid.Row="2" Height="1" Background="{StaticResource Divider6Brush}" />
+        <!-- ════════════════ GENERAL ════════════════ -->
+        <StackPanel Spacing="26" Margin="0,28,0,0"
+                    IsVisible="{Binding SelectedSettingsTab, Converter={StaticResource Eq}, ConverterParameter=2}">
 
-    <!-- Animated tab pages -->
-    <Carousel Grid.Row="3" SelectedIndex="{Binding SelectedSettingsTab}">
-      <Carousel.PageTransition>
-        <CrossFade Duration="0:0:0.15" />
-      </Carousel.PageTransition>
-
-      <!-- ════════════════ TAB 0 · VIDEO ════════════════ -->
-      <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel Margin="0,6,0,24">
-
-          <Grid ColumnDefinitions="*,Auto" MinHeight="50">
-            <StackPanel Grid.Column="0" Spacing="3" VerticalAlignment="Center">
-              <TextBlock Text="{DynamicResource Settings_BufferLength}" FontSize="13" />
-              <TextBlock Text="{DynamicResource Settings_AutoStart_Desc}" IsVisible="False" />
-            </StackPanel>
-            <ComboBox Grid.Column="1" VerticalAlignment="Center"
-                      ItemsSource="{Binding BufferOptions}"
-                      SelectedItem="{Binding SelectedBuffer}" />
-          </Grid>
-          <Border Classes="divider" />
-
-          <Grid ColumnDefinitions="*,Auto" MinHeight="50">
-            <TextBlock Grid.Column="0" Text="{DynamicResource Settings_Display}" FontSize="13"
-                       VerticalAlignment="Center" />
-            <ComboBox Grid.Column="1" VerticalAlignment="Center"
-                      ItemsSource="{Binding Monitors}"
-                      SelectedItem="{Binding SelectedMonitor}" />
-          </Grid>
-          <Border Classes="divider" />
-
-          <Grid ColumnDefinitions="*,Auto" MinHeight="50">
-            <TextBlock Grid.Column="0" Text="{DynamicResource Settings_FrameRate}" FontSize="13"
-                       VerticalAlignment="Center" />
-            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-              <TextBox Text="{Binding CustomFps}" Width="56"
-                       IsVisible="{Binding IsCustomFps}" />
-              <ListBox Classes="segctl"
-                       ItemsSource="{Binding FpsOptions}"
-                       SelectedItem="{Binding SelectedFps}">
-                <ListBox.ItemTemplate>
-                  <DataTemplate x:DataType="vm:FpsOption">
-                    <TextBlock Text="{Binding Display}"
-                               Foreground="{Binding Tier, Converter={StaticResource Intensity}}" />
-                  </DataTemplate>
-                </ListBox.ItemTemplate>
-              </ListBox>
-            </StackPanel>
-          </Grid>
-          <Border Classes="divider" />
-
-          <Grid ColumnDefinitions="*,Auto" MinHeight="50">
-            <TextBlock Grid.Column="0" Text="{DynamicResource Settings_OutputResolution}" FontSize="13"
-                       VerticalAlignment="Center" />
-            <ComboBox Grid.Column="1" VerticalAlignment="Center"
-                      ItemsSource="{Binding ResolutionOptions}"
-                      SelectedItem="{Binding SelectedResolution}">
-              <ComboBox.ItemTemplate>
-                <DataTemplate x:DataType="vm:ResolutionOption">
-                  <TextBlock Text="{Binding Display}"
-                             Foreground="{Binding Tier, Converter={StaticResource Intensity}}" />
-                </DataTemplate>
-              </ComboBox.ItemTemplate>
-            </ComboBox>
-          </Grid>
-          <Border Classes="divider" />
-
-          <Grid ColumnDefinitions="*,Auto" MinHeight="50">
-            <TextBlock Grid.Column="0" Text="{DynamicResource Settings_Codec}" FontSize="13"
-                       VerticalAlignment="Center" />
-            <ListBox Grid.Column="1" Classes="segctl" VerticalAlignment="Center"
-                     ItemsSource="{Binding CodecOptions}"
-                     SelectedItem="{Binding SelectedCodec}" />
-          </Grid>
-          <Border Classes="divider" />
-
-          <Grid ColumnDefinitions="*,Auto" MinHeight="50">
-            <TextBlock Grid.Column="0" Text="{DynamicResource Settings_Bitrate}" FontSize="13"
-                       VerticalAlignment="Center" />
-            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-              <!-- Discrete bitrate presets; the slider appears only for "Custom". -->
-              <ComboBox MinWidth="120" VerticalAlignment="Center"
-                        ItemsSource="{Binding BitrateOptions}"
-                        SelectedItem="{Binding SelectedBitrate}">
+          <Border Classes="rcard">
+            <Grid Classes="row" ColumnDefinitions="*,Auto">
+              <TextBlock Grid.Column="0" Classes="rrow" Text="{DynamicResource Settings_Language}" VerticalAlignment="Center" />
+              <ComboBox Grid.Column="1" VerticalAlignment="Center"
+                        ItemsSource="{Binding LanguageOptions}" SelectedItem="{Binding SelectedLanguage}">
                 <ComboBox.ItemTemplate>
-                  <DataTemplate x:DataType="vm:BitrateOption">
-                    <TextBlock Text="{Binding Display}"
-                               Foreground="{Binding Tier, Converter={StaticResource Intensity}}" />
+                  <DataTemplate x:DataType="vm:LanguageOption">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                      <Border CornerRadius="3" ClipToBounds="True" VerticalAlignment="Center">
+                        <Image Source="{Binding Code, Converter={StaticResource LangFlag}}" Width="17" Height="12" Stretch="Fill" />
+                      </Border>
+                      <TextBlock Text="{Binding Display}" VerticalAlignment="Center" />
+                    </StackPanel>
                   </DataTemplate>
                 </ComboBox.ItemTemplate>
               </ComboBox>
-              <Slider Width="120" Minimum="3" Maximum="100" TickFrequency="1" IsSnapToTickEnabled="True"
-                      VerticalAlignment="Center" Value="{Binding BitrateSliderValue}"
-                      IsVisible="{Binding IsCustomBitrate}" />
-              <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center"
-                          IsVisible="{Binding IsCustomBitrate}">
-                <TextBlock Text="{Binding BitrateDisplayMbps}" FontSize="13" />
-                <TextBlock Text="{DynamicResource Settings_Bitrate_CustomSuffix}" FontSize="13" />
-              </StackPanel>
-            </StackPanel>
-          </Grid>
-          <Border Classes="divider" />
-
-          <Grid ColumnDefinitions="*,Auto" MinHeight="50">
-            <TextBlock Grid.Column="0" Text="{DynamicResource Settings_Gpu}" FontSize="13"
-                       VerticalAlignment="Center" />
-            <ComboBox Grid.Column="1" VerticalAlignment="Center"
-                      ItemsSource="{Binding GpuOptions}"
-                      SelectedItem="{Binding SelectedGpu}" />
-          </Grid>
-          <Border Classes="divider" />
-
-          <Grid ColumnDefinitions="*,Auto" MinHeight="50">
-            <TextBlock Grid.Column="0" Text="{DynamicResource Settings_Format}" FontSize="13"
-                       VerticalAlignment="Center" />
-            <ComboBox Grid.Column="1" VerticalAlignment="Center"
-                      ItemsSource="{Binding FormatOptions}"
-                      SelectedItem="{Binding SelectedFormat}">
-              <ComboBox.ItemTemplate>
-                <DataTemplate>
-                  <TextBlock Text="{Binding Converter={StaticResource Upper}}" />
-                </DataTemplate>
-              </ComboBox.ItemTemplate>
-            </ComboBox>
-          </Grid>
-
-        </StackPanel>
-      </ScrollViewer>
-
-      <!-- ════════════════ TAB 1 · AUDIO ════════════════ -->
-      <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel Margin="0,12,0,24">
-
-          <TextBlock Classes="section" Text="{DynamicResource Settings_Group_SystemAudio}" Margin="0,0,0,2" />
-
-          <!-- Recording mode: all PC audio vs specific apps -->
-          <Grid ColumnDefinitions="*,Auto" MinHeight="46">
-            <TextBlock Grid.Column="0" Text="{DynamicResource Settings_AudioMode}" FontSize="13"
-                       VerticalAlignment="Center" />
-            <Border Grid.Column="1" Classes="segment" VerticalAlignment="Center">
-              <StackPanel Orientation="Horizontal" Spacing="2">
-                <Button Classes="seg" Classes.sel="{Binding AudioModeIndex, Converter={StaticResource Eq}, ConverterParameter=0}"
-                        Click="OnSourceSegClick" Tag="0"
-                        Content="{DynamicResource AudioMode_All}" />
-                <Button Classes="seg" Classes.sel="{Binding AudioModeIndex, Converter={StaticResource Eq}, ConverterParameter=1}"
-                        Click="OnSourceSegClick" Tag="1"
-                        Content="{DynamicResource AudioMode_Apps}" />
-              </StackPanel>
-            </Border>
-          </Grid>
-
-          <!-- Switch audio mode by what's recorded: game → selected apps, desktop → whole PC -->
-          <Grid ColumnDefinitions="*,Auto" MinHeight="46">
-            <StackPanel Grid.Column="0" VerticalAlignment="Center">
-              <TextBlock Text="{DynamicResource Settings_AudioModeByTarget}" FontSize="13" />
-              <TextBlock Text="{DynamicResource Settings_AudioModeByTarget_Desc}" FontSize="11"
-                         Foreground="{StaticResource Fg3Brush}" TextWrapping="Wrap" Margin="0,2,12,0" />
-            </StackPanel>
-            <ToggleSwitch Grid.Column="1" VerticalAlignment="Center"
-                          IsChecked="{Binding AudioModeByTarget}"
-                          OnContent="{x:Null}" OffContent="{x:Null}" MinWidth="0" />
-          </Grid>
-
-          <!-- Unified audio-source list: system, microphone, and (in apps mode) per-app rows -->
-          <Border Background="{StaticResource CardBrush}" CornerRadius="12" Padding="0,4" Margin="0,6,0,4">
-            <StackPanel>
-
-              <!-- System audio (full-PC mode) -->
-              <Grid ColumnDefinitions="Auto,Auto,*,120,42" Margin="12,9" IsVisible="{Binding ShowSystemAudioRow}">
-                <CheckBox Grid.Column="0" IsChecked="{Binding SystemAudioEnabled}" VerticalAlignment="Center" />
-                <mi:MaterialIcon Grid.Column="1" Kind="VolumeHigh" Width="20" Height="20"
-                                 Margin="6,0,10,0" VerticalAlignment="Center" />
-                <TextBlock Grid.Column="2" Text="Звук системи" FontSize="14" VerticalAlignment="Center" />
-                <Slider Grid.Column="3" Minimum="0" Maximum="100" TickFrequency="1" IsSnapToTickEnabled="True"
-                        Value="{Binding SystemAudioVolume}" IsEnabled="{Binding SystemAudioEnabled}"
-                        VerticalAlignment="Center" />
-                <TextBlock Grid.Column="4" Text="{Binding SystemAudioVolume, StringFormat='{}{0}%'}"
-                           FontSize="11" Foreground="{StaticResource Fg3Brush}"
-                           HorizontalAlignment="Right" VerticalAlignment="Center" />
-              </Grid>
-              <Border Classes="divider" Margin="12,0" IsVisible="{Binding ShowSystemAudioRow}" />
-
-              <!-- Microphone (always shown) -->
-              <Grid ColumnDefinitions="Auto,Auto,*,120,42" Margin="12,9">
-                <CheckBox Grid.Column="0" IsChecked="{Binding MicEnabled}" VerticalAlignment="Center" />
-                <mi:MaterialIcon Grid.Column="1" Kind="Microphone" Width="20" Height="20"
-                                 Margin="6,0,10,0" VerticalAlignment="Center" />
-                <TextBlock Grid.Column="2" Text="{DynamicResource Settings_Microphone}" FontSize="14" VerticalAlignment="Center" />
-                <Slider Grid.Column="3" Minimum="0" Maximum="100" TickFrequency="1" IsSnapToTickEnabled="True"
-                        Value="{Binding MicVolume}" IsEnabled="{Binding MicEnabled}" VerticalAlignment="Center" />
-                <TextBlock Grid.Column="4" Text="{Binding MicVolume, StringFormat='{}{0}%'}"
-                           FontSize="11" Foreground="{StaticResource Fg3Brush}"
-                           HorizontalAlignment="Right" VerticalAlignment="Center" />
-              </Grid>
-
-              <!-- Game audio (specific-apps mode): the detected game's own sound, always recorded -->
-              <Grid ColumnDefinitions="Auto,Auto,*,120,42" Margin="12,9" IsVisible="{Binding ShowAppsList}">
-                <CheckBox Grid.Column="0" IsChecked="{Binding GameAudioEnabled}" VerticalAlignment="Center" />
-                <mi:MaterialIcon Grid.Column="1" Kind="Gamepad" Width="20" Height="20"
-                                 Margin="6,0,10,0" VerticalAlignment="Center" />
-                <TextBlock Grid.Column="2" Text="Звук гри" FontSize="14" VerticalAlignment="Center" />
-                <Slider Grid.Column="3" Minimum="0" Maximum="100" TickFrequency="1" IsSnapToTickEnabled="True"
-                        Value="{Binding GameAudioVolume}" IsEnabled="{Binding GameAudioEnabled}" VerticalAlignment="Center" />
-                <TextBlock Grid.Column="4" Text="{Binding GameAudioVolume, StringFormat='{}{0}%'}"
-                           FontSize="11" Foreground="{StaticResource Fg3Brush}"
-                           HorizontalAlignment="Right" VerticalAlignment="Center" />
-              </Grid>
-
-              <!-- Per-app rows (specific-apps mode) -->
-              <ItemsControl ItemsSource="{Binding AudioApps}" IsVisible="{Binding ShowAppsList}">
-                <ItemsControl.ItemTemplate>
-                  <DataTemplate x:DataType="vm:AppAudioItem">
-                    <Grid ColumnDefinitions="Auto,Auto,*,120,42" Margin="12,9">
-                      <CheckBox Grid.Column="0" IsChecked="{Binding IsEnabled}" VerticalAlignment="Center" />
-                      <Image Grid.Column="1" Source="{Binding Icon}" Width="20" Height="20"
-                             Margin="6,0,10,0" VerticalAlignment="Center" />
-                      <TextBlock Grid.Column="2" Text="{Binding DisplayName}" FontSize="14"
-                                 VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                      <Slider Grid.Column="3" Minimum="0" Maximum="100" TickFrequency="1" IsSnapToTickEnabled="True"
-                              Value="{Binding Volume}" IsEnabled="{Binding IsEnabled}" VerticalAlignment="Center" />
-                      <TextBlock Grid.Column="4" Text="{Binding Volume, StringFormat='{}{0}%'}"
-                                 FontSize="11" Foreground="{StaticResource Fg3Brush}"
-                                 HorizontalAlignment="Right" VerticalAlignment="Center" />
-                    </Grid>
-                  </DataTemplate>
-                </ItemsControl.ItemTemplate>
-              </ItemsControl>
-              <TextBlock Text="{DynamicResource Settings_AppsHint}" FontSize="11"
-                         Foreground="{StaticResource Fg3Brush}" Margin="12,4,12,8"
-                         TextWrapping="Wrap" IsVisible="{Binding ShowAppsList}" />
-            </StackPanel>
+            </Grid>
           </Border>
 
-          <!-- Output device picker (whole-PC audio source) -->
-          <Grid ColumnDefinitions="*,Auto" MinHeight="46">
-            <TextBlock Grid.Column="0" Text="{DynamicResource Settings_OutputDevice}" FontSize="13"
-                       VerticalAlignment="Center" />
-            <ComboBox Grid.Column="1" VerticalAlignment="Center" MaxWidth="240"
-                      ItemsSource="{Binding OutputDevices}"
-                      SelectedItem="{Binding SelectedOutputDevice}">
-              <ComboBox.ItemTemplate>
-                <DataTemplate>
-                  <TextBlock Text="{Binding Name}" />
-                </DataTemplate>
-              </ComboBox.ItemTemplate>
-            </ComboBox>
-          </Grid>
-          <Border Classes="divider" />
-
-          <!-- Microphone device picker -->
-          <Grid ColumnDefinitions="*,Auto" MinHeight="46">
-            <TextBlock Grid.Column="0" Text="{DynamicResource Settings_Microphone}" FontSize="13"
-                       VerticalAlignment="Center" />
-            <ComboBox Grid.Column="1" VerticalAlignment="Center"
-                      ItemsSource="{Binding Microphones}"
-                      SelectedItem="{Binding SelectedMicrophone}">
-              <ComboBox.ItemTemplate>
-                <DataTemplate>
-                  <TextBlock Text="{Binding Name}" />
-                </DataTemplate>
-              </ComboBox.ItemTemplate>
-            </ComboBox>
-          </Grid>
-          <Border Classes="divider" />
-
-          <!-- Microphone channels (mono / stereo) -->
-          <Grid ColumnDefinitions="*,Auto" MinHeight="46">
-            <TextBlock Grid.Column="0" Text="{DynamicResource Settings_MicChannels}" FontSize="13"
-                       VerticalAlignment="Center" />
-            <Border Grid.Column="1" Classes="segment" VerticalAlignment="Center">
-              <StackPanel Orientation="Horizontal" Spacing="2">
-                <Button Classes="seg" Classes.sel="{Binding MicChannelIndex, Converter={StaticResource Eq}, ConverterParameter=1}"
-                        Click="OnChannelSegClick" Tag="1"
-                        Content="{DynamicResource Channels_Mono}" />
-                <Button Classes="seg" Classes.sel="{Binding MicChannelIndex, Converter={StaticResource Eq}, ConverterParameter=0}"
-                        Click="OnChannelSegClick" Tag="0"
-                        Content="{DynamicResource Channels_Stereo}" />
+          <StackPanel>
+            <TextBlock Classes="rgroup" Text="{DynamicResource Settings_Group_Hotkey}" />
+            <Border Classes="rcard">
+              <StackPanel>
+                <Grid Classes="row" ColumnDefinitions="*,Auto">
+                  <TextBlock Grid.Column="0" Classes="rrow" Text="{DynamicResource Settings_Hotkey_SaveReplay}" VerticalAlignment="Center" />
+                  <Button Grid.Column="1" Classes="bare" Padding="0" Background="Transparent" BorderThickness="0" Cursor="Hand"
+                          VerticalAlignment="Center" Command="{Binding CaptureHotkeyCommand}" ToolTip.Tip="{DynamicResource Settings_Hotkey_Desc}">
+                    <Panel>
+                      <ItemsControl ItemsSource="{Binding HotkeyParts}" IsVisible="{Binding !IsCapturingHotkey}">
+                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="6" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate><DataTemplate><Border Classes="kbd"><TextBlock Text="{Binding}" /></Border></DataTemplate></ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                      <Border Classes="kbd listening" IsVisible="{Binding IsCapturingHotkey}"><TextBlock Text="{DynamicResource Settings_Hotkey_Listening}" /></Border>
+                    </Panel>
+                  </Button>
+                </Grid>
+                <Border Classes="rdivider" />
+                <Grid Classes="row" ColumnDefinitions="*,Auto">
+                  <TextBlock Grid.Column="0" Classes="rrow" Text="{DynamicResource Settings_Hotkey_Screenshot}" VerticalAlignment="Center" />
+                  <Button Grid.Column="1" Classes="bare" Padding="0" Background="Transparent" BorderThickness="0" Cursor="Hand"
+                          VerticalAlignment="Center" Command="{Binding CaptureScreenshotHotkeyCommand}" ToolTip.Tip="{DynamicResource Settings_Hotkey_Desc}">
+                    <Panel>
+                      <ItemsControl ItemsSource="{Binding ScreenshotHotkeyParts}" IsVisible="{Binding !IsCapturingScreenshotKey}">
+                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="6" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate><DataTemplate><Border Classes="kbd"><TextBlock Text="{Binding}" /></Border></DataTemplate></ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                      <Border Classes="kbd listening" IsVisible="{Binding IsCapturingScreenshotKey}"><TextBlock Text="{DynamicResource Settings_Hotkey_Listening}" /></Border>
+                    </Panel>
+                  </Button>
+                </Grid>
+                <Border Classes="rdivider" />
+                <Grid Classes="row" ColumnDefinitions="*,Auto">
+                  <TextBlock Grid.Column="0" Classes="rrow" Text="{DynamicResource Settings_Hotkey_Pause}" VerticalAlignment="Center" />
+                  <Button Grid.Column="1" Classes="bare" Padding="0" Background="Transparent" BorderThickness="0" Cursor="Hand"
+                          VerticalAlignment="Center" Command="{Binding CapturePauseHotkeyCommand}" ToolTip.Tip="{DynamicResource Settings_Hotkey_Desc}">
+                    <Panel>
+                      <ItemsControl ItemsSource="{Binding PauseHotkeyParts}" IsVisible="{Binding !IsCapturingPauseKey}">
+                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="6" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate><DataTemplate><Border Classes="kbd"><TextBlock Text="{Binding}" /></Border></DataTemplate></ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                      <Border Classes="kbd listening" IsVisible="{Binding IsCapturingPauseKey}"><TextBlock Text="{DynamicResource Settings_Hotkey_Listening}" /></Border>
+                    </Panel>
+                  </Button>
+                </Grid>
               </StackPanel>
             </Border>
-          </Grid>
-          <Border Classes="divider" />
+          </StackPanel>
 
-          <!-- Push-to-talk -->
-          <Grid ColumnDefinitions="*,Auto" MinHeight="46">
-            <StackPanel Grid.Column="0" Spacing="3" VerticalAlignment="Center">
-              <TextBlock Text="{DynamicResource Settings_Ptt}" FontSize="13" />
-              <TextBlock Text="{DynamicResource Settings_Ptt_Desc}" FontSize="11"
-                         Foreground="{StaticResource Fg3Brush}" />
-            </StackPanel>
-            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-              <Button Classes="bare" Padding="0" Background="Transparent" BorderThickness="0" Cursor="Hand"
-                      Command="{Binding CapturePttKeyCommand}"
-                      IsEnabled="{Binding PushToTalkEnabled}"
-                      ToolTip.Tip="{DynamicResource Settings_Hotkey_Desc}">
-                <Panel>
-                  <Border Classes="kbd" IsVisible="{Binding !IsCapturingPttKey}">
-                    <TextBlock Text="{Binding PttKeyDisplayText}" />
-                  </Border>
-                  <Border Classes="kbd listening" IsVisible="{Binding IsCapturingPttKey}">
-                    <TextBlock Text="..." />
-                  </Border>
-                </Panel>
-              </Button>
-              <ToggleSwitch IsChecked="{Binding PushToTalkEnabled}"
-                            OnContent="{x:Null}" OffContent="{x:Null}" MinWidth="0" />
-            </StackPanel>
-          </Grid>
-          <Border Classes="divider" />
-
-          <!-- Separate audio tracks -->
-          <Grid ColumnDefinitions="*,Auto" MinHeight="46">
-            <StackPanel Grid.Column="0" Spacing="3" VerticalAlignment="Center">
-              <TextBlock Text="{DynamicResource Settings_SeparateTracks}" FontSize="13" />
-              <TextBlock Text="{DynamicResource Settings_SeparateTracks_Desc}" FontSize="11"
-                         Foreground="{StaticResource Fg3Brush}" />
-            </StackPanel>
-            <ToggleSwitch Grid.Column="1" VerticalAlignment="Center"
-                          IsChecked="{Binding SeparateAudioTracks}"
-                          OnContent="{x:Null}" OffContent="{x:Null}" MinWidth="0" />
-          </Grid>
-
-        </StackPanel>
-      </ScrollViewer>
-
-      <!-- ════════════════ TAB 2 · GENERAL ════════════════ -->
-      <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel Margin="0,6,0,24">
-
-          <Grid ColumnDefinitions="*,Auto" MinHeight="50">
-            <TextBlock Grid.Column="0" Text="{DynamicResource Settings_Language}" FontSize="13"
-                       VerticalAlignment="Center" />
-            <ComboBox Grid.Column="1" VerticalAlignment="Center"
-                      ItemsSource="{Binding LanguageOptions}"
-                      SelectedItem="{Binding SelectedLanguage}">
-              <ComboBox.ItemTemplate>
-                <DataTemplate x:DataType="vm:LanguageOption">
-                  <StackPanel Orientation="Horizontal" Spacing="8">
-                    <Border CornerRadius="3" ClipToBounds="True" VerticalAlignment="Center">
-                      <Image Source="{Binding Code, Converter={StaticResource LangFlag}}"
-                             Width="17" Height="12" Stretch="Fill" />
-                    </Border>
-                    <TextBlock Text="{Binding Display}" VerticalAlignment="Center" />
+          <StackPanel>
+            <TextBlock Classes="rgroup" Text="{DynamicResource Settings_Group_Startup}" />
+            <Border Classes="rcard">
+              <StackPanel>
+                <Grid Classes="row" ColumnDefinitions="*,Auto">
+                  <TextBlock Grid.Column="0" Classes="rrow" Text="{DynamicResource Settings_StartWithWindows}" VerticalAlignment="Center" />
+                  <ToggleSwitch Grid.Column="1" VerticalAlignment="Center" IsChecked="{Binding StartWithWindows}" OnContent="{x:Null}" OffContent="{x:Null}" MinWidth="0" />
+                </Grid>
+                <Border Classes="rdivider" />
+                <Grid Classes="row" ColumnDefinitions="*,Auto">
+                  <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,12,0">
+                    <TextBlock Classes="rrow" Text="{DynamicResource Settings_StartMinimized}" />
+                    <TextBlock Classes="rsub" Text="{DynamicResource Settings_StartMinimized_Desc}" Margin="0,2,0,0" />
                   </StackPanel>
-                </DataTemplate>
-              </ComboBox.ItemTemplate>
-            </ComboBox>
-          </Grid>
-          <Border Classes="divider" />
+                  <ToggleSwitch Grid.Column="1" VerticalAlignment="Center" IsChecked="{Binding StartMinimized}" OnContent="{x:Null}" OffContent="{x:Null}" MinWidth="0" />
+                </Grid>
+                <Border Classes="rdivider" />
+                <Grid Classes="row" ColumnDefinitions="*,Auto">
+                  <TextBlock Grid.Column="0" Classes="rrow" Text="{DynamicResource Settings_AutoStart}" VerticalAlignment="Center" />
+                  <ToggleSwitch Grid.Column="1" VerticalAlignment="Center" IsChecked="{Binding AutoStartRecording}" OnContent="{x:Null}" OffContent="{x:Null}" MinWidth="0" />
+                </Grid>
+                <Border Classes="rdivider" />
+                <Grid Classes="row" ColumnDefinitions="*,Auto">
+                  <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,16,0">
+                    <TextBlock Classes="rrow" Text="{DynamicResource Settings_DisableGameMode}" />
+                    <TextBlock Classes="rsub" Text="{DynamicResource Settings_DisableGameMode_Desc}" Margin="0,2,0,0" MaxWidth="560" HorizontalAlignment="Left" />
+                  </StackPanel>
+                  <ToggleSwitch Grid.Column="1" VerticalAlignment="Center" IsChecked="{Binding DisableGameMode}" OnContent="{x:Null}" OffContent="{x:Null}" MinWidth="0" />
+                </Grid>
+              </StackPanel>
+            </Border>
+          </StackPanel>
 
-          <!-- ── HOTKEYS section: header + one clean row per action ── -->
-          <TextBlock Classes="section" Text="{DynamicResource Settings_Group_Hotkey}" Margin="0,14,0,2" />
-
-          <Grid ColumnDefinitions="*,Auto" MinHeight="50">
-            <TextBlock Grid.Column="0" Text="{DynamicResource Settings_Hotkey_SaveReplay}" FontSize="13"
-                       VerticalAlignment="Center" />
-            <Button Grid.Column="1" Classes="bare" Padding="0" Background="Transparent" BorderThickness="0"
-                    Cursor="Hand" VerticalAlignment="Center"
-                    Command="{Binding CaptureHotkeyCommand}"
-                    ToolTip.Tip="{DynamicResource Settings_Hotkey_Desc}">
-              <Panel>
-                <ItemsControl ItemsSource="{Binding HotkeyParts}"
-                              IsVisible="{Binding !IsCapturingHotkey}">
-                  <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                      <StackPanel Orientation="Horizontal" Spacing="6" />
-                    </ItemsPanelTemplate>
-                  </ItemsControl.ItemsPanel>
-                  <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                      <Border Classes="kbd"><TextBlock Text="{Binding}" /></Border>
-                    </DataTemplate>
-                  </ItemsControl.ItemTemplate>
-                </ItemsControl>
-                <Border Classes="kbd listening" IsVisible="{Binding IsCapturingHotkey}">
-                  <TextBlock Text="{DynamicResource Settings_Hotkey_Listening}" />
-                </Border>
-              </Panel>
-            </Button>
-          </Grid>
-          <Border Classes="divider" />
-
-          <Grid ColumnDefinitions="*,Auto" MinHeight="50">
-            <TextBlock Grid.Column="0" Text="{DynamicResource Settings_Hotkey_Screenshot}" FontSize="13"
-                       VerticalAlignment="Center" />
-            <Button Grid.Column="1" Classes="bare" Padding="0" Background="Transparent" BorderThickness="0"
-                    Cursor="Hand" VerticalAlignment="Center"
-                    Command="{Binding CaptureScreenshotHotkeyCommand}"
-                    ToolTip.Tip="{DynamicResource Settings_Hotkey_Desc}">
-              <Panel>
-                <ItemsControl ItemsSource="{Binding ScreenshotHotkeyParts}"
-                              IsVisible="{Binding !IsCapturingScreenshotKey}">
-                  <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                      <StackPanel Orientation="Horizontal" Spacing="6" />
-                    </ItemsPanelTemplate>
-                  </ItemsControl.ItemsPanel>
-                  <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                      <Border Classes="kbd"><TextBlock Text="{Binding}" /></Border>
-                    </DataTemplate>
-                  </ItemsControl.ItemTemplate>
-                </ItemsControl>
-                <Border Classes="kbd listening" IsVisible="{Binding IsCapturingScreenshotKey}">
-                  <TextBlock Text="{DynamicResource Settings_Hotkey_Listening}" />
-                </Border>
-              </Panel>
-            </Button>
-          </Grid>
-          <Border Classes="divider" />
-
-          <Grid ColumnDefinitions="*,Auto" MinHeight="50">
-            <TextBlock Grid.Column="0" Text="{DynamicResource Settings_Hotkey_Pause}" FontSize="13"
-                       VerticalAlignment="Center" />
-            <Button Grid.Column="1" Classes="bare" Padding="0" Background="Transparent" BorderThickness="0"
-                    Cursor="Hand" VerticalAlignment="Center"
-                    Command="{Binding CapturePauseHotkeyCommand}"
-                    ToolTip.Tip="{DynamicResource Settings_Hotkey_Desc}">
-              <Panel>
-                <ItemsControl ItemsSource="{Binding PauseHotkeyParts}"
-                              IsVisible="{Binding !IsCapturingPauseKey}">
-                  <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                      <StackPanel Orientation="Horizontal" Spacing="6" />
-                    </ItemsPanelTemplate>
-                  </ItemsControl.ItemsPanel>
-                  <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                      <Border Classes="kbd"><TextBlock Text="{Binding}" /></Border>
-                    </DataTemplate>
-                  </ItemsControl.ItemTemplate>
-                </ItemsControl>
-                <Border Classes="kbd listening" IsVisible="{Binding IsCapturingPauseKey}">
-                  <TextBlock Text="{DynamicResource Settings_Hotkey_Listening}" />
-                </Border>
-              </Panel>
-            </Button>
-          </Grid>
-          <Border Classes="divider" />
-
-          <Grid ColumnDefinitions="*,Auto" MinHeight="50">
-            <TextBlock Grid.Column="0" Text="{DynamicResource Settings_StartWithWindows}" FontSize="13"
-                       VerticalAlignment="Center" />
-            <ToggleSwitch Grid.Column="1" VerticalAlignment="Center"
-                          IsChecked="{Binding StartWithWindows}"
-                          OnContent="{x:Null}" OffContent="{x:Null}" MinWidth="0" />
-          </Grid>
-          <Border Classes="divider" />
-
-          <Grid ColumnDefinitions="*,Auto" MinHeight="50">
-            <StackPanel Grid.Column="0" Spacing="3" VerticalAlignment="Center">
-              <TextBlock Text="{DynamicResource Settings_StartMinimized}" FontSize="13" />
-              <TextBlock Text="{DynamicResource Settings_StartMinimized_Desc}" FontSize="11"
-                         Foreground="{StaticResource Fg3Brush}" />
-            </StackPanel>
-            <ToggleSwitch Grid.Column="1" VerticalAlignment="Center"
-                          IsChecked="{Binding StartMinimized}"
-                          OnContent="{x:Null}" OffContent="{x:Null}" MinWidth="0" />
-          </Grid>
-          <Border Classes="divider" />
-
-          <Grid ColumnDefinitions="*,Auto" MinHeight="50">
-            <TextBlock Grid.Column="0" Text="{DynamicResource Settings_AutoStart}" FontSize="13"
-                       VerticalAlignment="Center" />
-            <ToggleSwitch Grid.Column="1" VerticalAlignment="Center"
-                          IsChecked="{Binding AutoStartRecording}"
-                          OnContent="{x:Null}" OffContent="{x:Null}" MinWidth="0" />
-          </Grid>
-          <Border Classes="divider" />
-
-          <!-- Game Mode kill-switch: emphasized description, default ON -->
-          <Grid ColumnDefinitions="*,Auto" MinHeight="56">
-            <StackPanel Grid.Column="0" Spacing="3" VerticalAlignment="Center" Margin="0,8">
-              <TextBlock Text="{DynamicResource Settings_DisableGameMode}" FontSize="13" />
-              <TextBlock Text="{DynamicResource Settings_DisableGameMode_Desc}" FontSize="11"
-                         Foreground="{StaticResource Fg3Brush}"
-                         TextWrapping="Wrap" MaxWidth="560" HorizontalAlignment="Left" />
-            </StackPanel>
-            <ToggleSwitch Grid.Column="1" VerticalAlignment="Center"
-                          IsChecked="{Binding DisableGameMode}"
-                          OnContent="{x:Null}" OffContent="{x:Null}" MinWidth="0" />
-          </Grid>
-          <Border Classes="divider" />
-
-          <Grid ColumnDefinitions="*,Auto" MinHeight="50">
-            <StackPanel Grid.Column="0" Spacing="3" VerticalAlignment="Center">
-              <TextBlock Text="{DynamicResource Settings_AutoCleanup}" FontSize="13" />
-              <TextBlock Text="{DynamicResource Settings_AutoCleanup_Desc}" FontSize="11"
-                         Foreground="{StaticResource Fg3Brush}" />
-            </StackPanel>
-            <ToggleSwitch Grid.Column="1" VerticalAlignment="Center"
-                          IsChecked="{Binding AutoCleanupEnabled}"
-                          OnContent="{x:Null}" OffContent="{x:Null}" MinWidth="0" />
-          </Grid>
-          <Border Classes="divider" />
-
-          <Grid ColumnDefinitions="*,Auto" MinHeight="50" IsEnabled="{Binding AutoCleanupEnabled}">
-            <TextBlock Grid.Column="0" Text="{DynamicResource Settings_StorageLimit}" FontSize="13"
-                       VerticalAlignment="Center" />
-            <ComboBox Grid.Column="1" VerticalAlignment="Center"
-                      ItemsSource="{Binding StorageLimitOptions}"
-                      SelectedItem="{Binding SelectedStorageLimit}" />
-          </Grid>
-          <Border Classes="divider" />
-
-          <Grid ColumnDefinitions="*,Auto" MinHeight="50">
-            <TextBlock Grid.Column="0" Text="{DynamicResource Settings_LibraryFolder}" FontSize="13"
-                       VerticalAlignment="Center" />
-            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-              <TextBlock Text="{Binding LibraryPath}" FontSize="13"
-                         Foreground="{StaticResource Fg2Brush}"
-                         MaxWidth="320" TextTrimming="CharacterEllipsis"
-                         ToolTip.Tip="{Binding LibraryPath}"
-                         VerticalAlignment="Center" />
-              <Button Classes="chip" Content="{DynamicResource Settings_Hotkey_Change}"
-                      Command="{Binding BrowseFolderCommand}" />
-            </StackPanel>
-          </Grid>
-          <Border Classes="divider" />
-
-          <Grid ColumnDefinitions="*,Auto" MinHeight="50">
-            <StackPanel Grid.Column="0" Spacing="3" VerticalAlignment="Center">
-              <TextBlock Text="{DynamicResource About_Group}" FontSize="13" />
-              <Panel>
-                <StackPanel Orientation="Horizontal" Spacing="4"
-                            IsVisible="{Binding UpdateStatus, Converter={x:Static StringConverters.IsNullOrEmpty}}">
-                  <TextBlock Text="{DynamicResource About_Version}" FontSize="11"
-                             Foreground="{StaticResource Fg3Brush}" />
-                  <TextBlock Text="{Binding AppVersion}" FontSize="11"
-                             Foreground="{StaticResource Fg3Brush}" />
-                </StackPanel>
-                <TextBlock Text="{Binding UpdateStatus}" FontSize="11"
-                           Foreground="{StaticResource Fg3Brush}"
-                           IsVisible="{Binding UpdateStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-              </Panel>
-            </StackPanel>
-            <Button Grid.Column="1" Classes="chip" VerticalAlignment="Center"
-                    Content="{DynamicResource About_CheckUpdates}"
-                    Command="{Binding CheckForUpdatesCommand}"
-                    IsEnabled="{Binding !IsCheckingForUpdate}" />
-          </Grid>
-          <Border Classes="divider" />
-
-          <!-- Logs & diagnostics -->
-          <Grid ColumnDefinitions="*,Auto,Auto" MinHeight="50">
-            <TextBlock Grid.Column="0" Text="{DynamicResource Settings_Logs}" FontSize="13"
-                       VerticalAlignment="Center" />
-            <Button Grid.Column="1" Classes="chip" VerticalAlignment="Center" Margin="0,0,6,0"
-                    Content="{DynamicResource Settings_OpenLogs}"
-                    Command="{Binding OpenLogsFolderCommand}" />
-            <Button Grid.Column="2" Classes="chip" VerticalAlignment="Center"
-                    Content="{DynamicResource Settings_SaveDiagnostics}"
-                    Command="{Binding SaveDiagnosticsZipCommand}" />
-          </Grid>
-
+          <StackPanel>
+            <TextBlock Classes="rgroup" Text="{DynamicResource Settings_Group_Storage}" />
+            <Border Classes="rcard">
+              <StackPanel>
+                <Grid Classes="row" ColumnDefinitions="*,Auto">
+                  <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,12,0">
+                    <TextBlock Classes="rrow" Text="{DynamicResource Settings_AutoCleanup}" />
+                    <TextBlock Classes="rsub" Text="{DynamicResource Settings_AutoCleanup_Desc}" Margin="0,2,0,0" />
+                  </StackPanel>
+                  <ToggleSwitch Grid.Column="1" VerticalAlignment="Center" IsChecked="{Binding AutoCleanupEnabled}" OnContent="{x:Null}" OffContent="{x:Null}" MinWidth="0" />
+                </Grid>
+                <Border Classes="rdivider" />
+                <Grid Classes="row" ColumnDefinitions="*,Auto" IsEnabled="{Binding AutoCleanupEnabled}">
+                  <TextBlock Grid.Column="0" Classes="rrow" Text="{DynamicResource Settings_StorageLimit}" VerticalAlignment="Center" />
+                  <ComboBox Grid.Column="1" VerticalAlignment="Center" ItemsSource="{Binding StorageLimitOptions}" SelectedItem="{Binding SelectedStorageLimit}" />
+                </Grid>
+                <Border Classes="rdivider" />
+                <Grid Classes="row" ColumnDefinitions="*,Auto">
+                  <TextBlock Grid.Column="0" Classes="rrow" Text="{DynamicResource Settings_LibraryFolder}" VerticalAlignment="Center" />
+                  <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding LibraryPath}" Classes="rmono" FontSize="11.5" MaxWidth="300" TextTrimming="CharacterEllipsis"
+                               ToolTip.Tip="{Binding LibraryPath}" VerticalAlignment="Center" />
+                    <Button Classes="rchip" Content="{DynamicResource Settings_Hotkey_Change}" Command="{Binding BrowseFolderCommand}" />
+                  </StackPanel>
+                </Grid>
+                <Border Classes="rdivider" />
+                <Grid Classes="row" ColumnDefinitions="*,Auto">
+                  <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                    <TextBlock Classes="rrow" Text="{DynamicResource About_Group}" />
+                    <Panel Margin="0,2,0,0">
+                      <StackPanel Orientation="Horizontal" Spacing="4" IsVisible="{Binding UpdateStatus, Converter={x:Static StringConverters.IsNullOrEmpty}}">
+                        <TextBlock Classes="rsub" Text="{DynamicResource About_Version}" />
+                        <TextBlock Classes="rsub" Text="{Binding AppVersion}" />
+                      </StackPanel>
+                      <TextBlock Classes="rsub" Text="{Binding UpdateStatus}" IsVisible="{Binding UpdateStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                    </Panel>
+                  </StackPanel>
+                  <Button Grid.Column="1" Classes="rchip" VerticalAlignment="Center" Content="{DynamicResource About_CheckUpdates}"
+                          Command="{Binding CheckForUpdatesCommand}" IsEnabled="{Binding !IsCheckingForUpdate}" />
+                </Grid>
+                <Border Classes="rdivider" />
+                <Grid Classes="row" ColumnDefinitions="*,Auto,Auto">
+                  <TextBlock Grid.Column="0" Classes="rrow" Text="{DynamicResource Settings_Logs}" VerticalAlignment="Center" />
+                  <Button Grid.Column="1" Classes="rchip" VerticalAlignment="Center" Margin="0,0,6,0"
+                          Content="{DynamicResource Settings_OpenLogs}" Command="{Binding OpenLogsFolderCommand}" />
+                  <Button Grid.Column="2" Classes="rchip" VerticalAlignment="Center"
+                          Content="{DynamicResource Settings_SaveDiagnostics}" Command="{Binding SaveDiagnosticsZipCommand}" />
+                </Grid>
+              </StackPanel>
+            </Border>
+          </StackPanel>
         </StackPanel>
-      </ScrollViewer>
 
-    </Carousel>
+      </StackPanel>
+    </ScrollViewer>
 
-    <!-- Intensive-quality disclaimer: choosing high FPS / bitrate / resolution shows
-         this once per session. High settings are allowed — this just sets expectations. -->
-    <Border Grid.Row="0" Grid.RowSpan="4" ZIndex="100"
-            Background="#B0000000" IsVisible="{Binding ShowIntensiveWarning}">
-      <Border Width="560" MaxWidth="560" Padding="28" CornerRadius="12"
-              Background="#161A21" BorderBrush="#2A2F37" BorderThickness="1"
-              HorizontalAlignment="Center" VerticalAlignment="Center"
-              BoxShadow="0 12 40 0 #80000000">
+    <!-- Intensive-quality disclaimer overlay -->
+    <Border ZIndex="100" Background="#B0000000" IsVisible="{Binding ShowIntensiveWarning}">
+      <Border Width="560" MaxWidth="560" Padding="28" CornerRadius="14"
+              Background="{StaticResource SurfaceCard}" BorderBrush="{StaticResource BorderStrong}" BorderThickness="1"
+              HorizontalAlignment="Center" VerticalAlignment="Center" BoxShadow="0 12 40 0 #80000000">
         <StackPanel Spacing="14">
-          <TextBlock Text="{Binding IntensiveWarnTitle}" FontSize="17" FontWeight="SemiBold"
-                     TextWrapping="Wrap" />
-          <TextBlock Text="{Binding IntensiveWarnSummary}" FontSize="13" FontWeight="Medium"
-                     Foreground="#E5B84C" TextWrapping="Wrap" />
-          <TextBlock Text="{Binding IntensiveWarnBody}" FontSize="13"
-                     Foreground="{StaticResource Fg2Brush}" TextWrapping="Wrap" LineHeight="20" />
-          <Button Content="{Binding IntensiveWarnOk}" Classes="chip" HorizontalAlignment="Right"
-                  Click="OnIntensiveUnderstood" />
+          <TextBlock Text="{Binding IntensiveWarnTitle}" FontFamily="{StaticResource FontDisplay}" FontSize="18" FontWeight="Bold"
+                     Foreground="{StaticResource TextHi}" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding IntensiveWarnSummary}" FontSize="13" FontWeight="Medium" Foreground="#E5B84C" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding IntensiveWarnBody}" FontSize="13" Foreground="{StaticResource TextMid}" TextWrapping="Wrap" LineHeight="20" />
+          <Button Content="{Binding IntensiveWarnOk}" Classes="rchip" HorizontalAlignment="Right" Click="OnIntensiveUnderstood" />
         </StackPanel>
       </Border>
     </Border>
