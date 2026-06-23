@@ -174,6 +174,16 @@ public partial class MainViewModel : ViewModelBase
             IsSaving = false;
             StatusText = Localizer.Format("Status_ReplaySaved", Path.GetFileName(outputVideoPath));
 
+            // Tag the saved clip with the game/app that was captured, so the Library can group and
+            // filter by it. The engine already knows the target; write it to the clip's sidecar
+            // BEFORE the refresh below picks the clip up. Recorder-agnostic (uses CurrentTarget).
+            var target = _engine.CurrentTarget;
+            Lag.Services.ClipMetadataStore.Write(outputVideoPath, new Lag.Services.ClipMetadata
+            {
+                Game = target is { IsGame: true } ? target.Value.Name : null,
+                Exe = target?.Exe,
+            });
+
             // Auto-refresh library
             _ = Library.RefreshCommand.ExecuteAsync(null);
 

@@ -11,6 +11,22 @@ public partial class ReplayClip : ObservableObject
     [ObservableProperty]
     private bool _isSelected;
 
+    /// <summary>Favourite star (persisted in the clip's sidecar metadata). Observable — toggled live.</summary>
+    [ObservableProperty]
+    private bool _isFavorite;
+
+    /// <summary>Friendly name of the captured game/app (from the sidecar). Empty = desktop/unknown.</summary>
+    public string? Game { get; set; }
+
+    /// <summary>Captured process exe (for icon lookup), from the sidecar.</summary>
+    public string? Exe { get; set; }
+
+    /// <summary>Produced/overwritten by the built-in editor (sidecar flag or a "-edit" filename).</summary>
+    public bool IsEdited { get; set; }
+
+    /// <summary>Whether a game/app name is known for this clip.</summary>
+    public bool HasGame => !string.IsNullOrWhiteSpace(Game);
+
     /// <summary>True for screenshots (PNG/JPG): no duration, opens in the system viewer.</summary>
     public bool IsImage { get; set; }
 

@@ -160,6 +160,7 @@ public partial class LibraryViewModel : ViewModelBase
                 {
                     long size = file.Length;
                     file.Delete();
+                    Lag.Services.ClipMetadataStore.Delete(file.FullName);
 
                     string thumb = GetThumbnailCachePath(file.FullName);
                     if (File.Exists(thumb)) File.Delete(thumb);
@@ -288,6 +289,12 @@ public partial class LibraryViewModel : ViewModelBase
                         }
                     }
 
+                    // Per-clip sidecar metadata (game/app, favourite, edited). "-edit" in the name is
+                    // a fallback "edited" signal for clips the editor named that way without a sidecar.
+                    var meta = Lag.Services.ClipMetadataStore.Read(filePath);
+                    bool edited = (meta?.Edited ?? false) ||
+                        Path.GetFileNameWithoutExtension(filePath).Contains("-edit", StringComparison.OrdinalIgnoreCase);
+
                     result.Add(new ReplayClip
                     {
                         FilePath = filePath,
@@ -296,7 +303,11 @@ public partial class LibraryViewModel : ViewModelBase
                         Duration = duration,
                         CreatedDate = fileInfo.CreationTime,
                         FileSize = fileInfo.Length,
-                        IsImage = isImage
+                        IsImage = isImage,
+                        Game = meta?.Game,
+                        Exe = meta?.Exe,
+                        IsFavorite = meta?.Favorite ?? false,
+                        IsEdited = edited
                     });
                 }
                 return result;
@@ -346,6 +357,15 @@ public partial class LibraryViewModel : ViewModelBase
         PlayClipRequested?.Invoke(this, clip);
     }
 
+    /// <summary>Card star button: toggles the favourite flag and persists it to the clip's sidecar.</summary>
+    [RelayCommand]
+    private void ToggleFavorite(ReplayClip? clip)
+    {
+        if (clip == null) return;
+        clip.IsFavorite = !clip.IsFavorite;
+        Lag.Services.ClipMetadataStore.SetFavorite(clip.FilePath, clip.IsFavorite);
+    }
+
     /// <summary>
     /// Deletes the selected clip from disk and removes it from the collection.
     /// Also removes the associated thumbnail file.
@@ -361,6 +381,7 @@ public partial class LibraryViewModel : ViewModelBase
                 File.Delete(clip.FilePath);
             if (File.Exists(clip.ThumbnailPath))
                 File.Delete(clip.ThumbnailPath);
+            Lag.Services.ClipMetadataStore.Delete(clip.FilePath);
 
             Clips.Remove(clip);
         }
