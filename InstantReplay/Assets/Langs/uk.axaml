@@ -124,6 +124,14 @@
   <sys:String x:Key="Library_OpenFolder">Відкрити папку</sys:String>
   <sys:String x:Key="Library_ShowInFolder">Показати в папці</sys:String>
   <sys:String x:Key="Library_FreeSpace">Вільно</sys:String>
+  <sys:String x:Key="Library_Search">Пошук кліпів</sys:String>
+  <sys:String x:Key="Library_Favorites">Улюблені</sys:String>
+  <sys:String x:Key="Library_Today">Сьогодні</sys:String>
+  <sys:String x:Key="Library_Yesterday">Вчора</sys:String>
+  <sys:String x:Key="Library_NoResults">Немає кліпів за вашим запитом.</sys:String>
+  <sys:String x:Key="Library_ClipCount">{0} КЛІПІВ</sys:String>
+  <sys:String x:Key="Library_GroupCount">{0} кліпів</sys:String>
+  <sys:String x:Key="Library_ClearSelection">Скасувати виділення</sys:String>
 
   <!-- ════════ Player ════════ -->
   <sys:String x:Key="Player_Replays">ПОВТОРИ</sys:String>

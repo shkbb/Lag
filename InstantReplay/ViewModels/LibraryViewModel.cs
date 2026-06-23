@@ -23,6 +23,128 @@ public partial class LibraryViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isLoading;
 
+    // ───────────── Filtering / grouping (the visible library) ─────────────
+
+    /// <summary>Search box text — matches a clip's name or game (case-insensitive).</summary>
+    [ObservableProperty]
+    private string _searchText = string.Empty;
+
+    /// <summary>Favorites toggle in the filter row — when on, only starred clips show.</summary>
+    [ObservableProperty]
+    private bool _favoritesOnly;
+
+    /// <summary>Active game filter (null = All). Set by clicking a game chip.</summary>
+    private string? _gameFilter;
+
+    /// <summary>Distinct games present across the clips — rendered as filter chips.</summary>
+    public ObservableCollection<GameChip> GameChips { get; } = new();
+
+    /// <summary>Clips bucketed by day (Today / Yesterday / date) after filtering — the grid source.</summary>
+    public ObservableCollection<ClipGroup> Groups { get; } = new();
+
+    /// <summary>True when there ARE clips but the current filter/search hides them all.</summary>
+    [ObservableProperty]
+    private bool _hasNoResults;
+
+    /// <summary>Header clip count, e.g. "24 CLIPS" (mono, uppercase).</summary>
+    public string ClipCountLabel => Lag.Core.Localizer.Format("Library_ClipCount", Clips.Count);
+
+    partial void OnSearchTextChanged(string value) { ClearSelection(); RebuildGroups(); }
+    partial void OnFavoritesOnlyChanged(bool value) { ClearSelection(); RebuildGroups(); }
+
+    /// <summary>Game chip click: toggle the filter (click the active chip → back to All), then regroup.</summary>
+    [RelayCommand]
+    private void SetGameFilter(string? label)
+    {
+        _gameFilter = string.Equals(_gameFilter, label, StringComparison.OrdinalIgnoreCase) ? null : label;
+        foreach (var ch in GameChips)
+            ch.IsActive = string.Equals(ch.Label, _gameFilter, StringComparison.OrdinalIgnoreCase);
+        ClearSelection();
+        RebuildGroups();
+    }
+
+    /// <summary>Favorites chip click: flip the favourites-only filter (regroups via the property handler).</summary>
+    [RelayCommand]
+    private void ToggleFavoritesOnly() => FavoritesOnly = !FavoritesOnly;
+
+    /// <summary>Rebuilds the game-chip list from the games actually present, preserving the active filter.</summary>
+    private void RebuildGameChips()
+    {
+        var games = Clips.Where(c => c.HasGame).Select(c => c.Game!)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(g => g, StringComparer.CurrentCultureIgnoreCase)
+            .ToList();
+
+        // Drop a stale filter whose game no longer exists.
+        if (_gameFilter != null && !games.Contains(_gameFilter, StringComparer.OrdinalIgnoreCase))
+            _gameFilter = null;
+
+        GameChips.Clear();
+        foreach (var g in games)
+            GameChips.Add(new GameChip(g, string.Equals(g, _gameFilter, StringComparison.OrdinalIgnoreCase)));
+    }
+
+    /// <summary>Applies search + game + favourites filters, then buckets the result by day into <see cref="Groups"/>.</summary>
+    private void RebuildGroups()
+    {
+        string q = (SearchText ?? string.Empty).Trim();
+
+        IEnumerable<ReplayClip> filtered = Clips;
+        if (FavoritesOnly)
+            filtered = filtered.Where(c => c.IsFavorite);
+        if (_gameFilter != null)
+            filtered = filtered.Where(c => string.Equals(c.Game, _gameFilter, StringComparison.OrdinalIgnoreCase));
+        if (q.Length > 0)
+            filtered = filtered.Where(c =>
+                c.DisplayName.Contains(q, StringComparison.OrdinalIgnoreCase) ||
+                (c.Game?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false));
+
+        var list = filtered.ToList();
+        var today = DateTime.Today;
+        var ci = System.Globalization.CultureInfo.CurrentCulture;
+
+        Groups.Clear();
+        foreach (var bucket in list.GroupBy(c => c.CreatedDate.Date).OrderByDescending(g => g.Key))
+        {
+            DateTime date = bucket.Key;
+            string label, sub;
+            if (date == today)
+            {
+                label = Lag.Core.Localizer.Get("Library_Today");
+                sub = date.ToString("d MMM", ci);
+            }
+            else if (date == today.AddDays(-1))
+            {
+                label = Lag.Core.Localizer.Get("Library_Yesterday");
+                sub = date.ToString("d MMM", ci);
+            }
+            else
+            {
+                label = date.ToString("d MMMM", ci);
+                sub = date.ToString("dddd", ci);
+            }
+
+            var group = new ClipGroup
+            {
+                Label = label.ToUpper(ci), // section headings are uppercase in the design
+                Sub = sub,
+                CountLabel = Lag.Core.Localizer.Format("Library_GroupCount", bucket.Count()),
+            };
+            foreach (var c in bucket) group.Items.Add(c);
+            Groups.Add(group);
+        }
+
+        HasNoResults = Clips.Count > 0 && Groups.Count == 0;
+    }
+
+    /// <summary>Recomputes chips, groups and the header count after the clip set changes.</summary>
+    private void RebuildView()
+    {
+        RebuildGameChips();
+        RebuildGroups();
+        OnPropertyChanged(nameof(ClipCountLabel));
+    }
+
     /// <summary>
     /// Fired when the user wants to play a clip. The MainViewModel handles
     /// navigation to the Player view.
@@ -100,6 +222,15 @@ public partial class LibraryViewModel : ViewModelBase
     [ObservableProperty]
     private double _usedSpacePercent;
 
+    /// <summary>Drive usage as "used / total", e.g. "25.1 / 80 GB" (next to the indicator bar).</summary>
+    [ObservableProperty]
+    private string _usedSpaceDisplay = "—";
+
+    /// <summary>Filled width (px) of the 120px usage bar, derived from <see cref="UsedSpacePercent"/>.</summary>
+    public double UsedSpaceBarWidth => Math.Clamp(UsedSpacePercent, 0, 100) / 100.0 * 120.0;
+
+    partial void OnUsedSpacePercentChanged(double value) => OnPropertyChanged(nameof(UsedSpaceBarWidth));
+
     /// <summary>Header subtitle per the design: "24 кліпи · вільно 412 GB" (localized).</summary>
     public string LibraryStats => Lag.Core.Localizer.Format("Library_Stats", Clips.Count, FreeSpaceDisplay);
 
@@ -115,8 +246,11 @@ public partial class LibraryViewModel : ViewModelBase
 
             var drive = new DriveInfo(root);
             double freeGb = drive.AvailableFreeSpace / 1_073_741_824.0;
+            double totalGb = drive.TotalSize / 1_073_741_824.0;
+            double usedGb = totalGb - freeGb;
             FreeSpaceDisplay = freeGb >= 100 ? $"{freeGb:F0} GB" : $"{freeGb:F1} GB";
             UsedSpacePercent = 100.0 * (drive.TotalSize - drive.AvailableFreeSpace) / drive.TotalSize;
+            UsedSpaceDisplay = $"{usedGb:F1} / {totalGb:F0} GB";
         }
         catch (Exception ex)
         {
@@ -319,6 +453,10 @@ public partial class LibraryViewModel : ViewModelBase
             // Publish to the UI-bound collection — on the UI thread (continuation of the await), once.
             Clips.Clear();
             foreach (var c in built) Clips.Add(c);
+            _selectionAnchor = null; // clips are fresh instances — old selection/anchor is gone
+
+            // Rebuild the filter chips + day groups from the freshly published clips.
+            RebuildView();
         }
         catch (OperationCanceledException) { /* superseded by a newer refresh */ }
         finally
@@ -357,6 +495,13 @@ public partial class LibraryViewModel : ViewModelBase
         PlayClipRequested?.Invoke(this, clip);
     }
 
+    /// <summary>Card hover overlay "Edit" button: opens the clip in the editor (no-op for screenshots).</summary>
+    [RelayCommand]
+    private void RequestEditClip(ReplayClip? clip)
+    {
+        if (clip != null) RequestEdit(clip);
+    }
+
     /// <summary>Card star button: toggles the favourite flag and persists it to the clip's sidecar.</summary>
     [RelayCommand]
     private void ToggleFavorite(ReplayClip? clip)
@@ -364,6 +509,7 @@ public partial class LibraryViewModel : ViewModelBase
         if (clip == null) return;
         clip.IsFavorite = !clip.IsFavorite;
         Lag.Services.ClipMetadataStore.SetFavorite(clip.FilePath, clip.IsFavorite);
+        RebuildGroups(); // un-starring while "Favorites" is on should drop it from view
     }
 
     /// <summary>
@@ -384,6 +530,7 @@ public partial class LibraryViewModel : ViewModelBase
             Lag.Services.ClipMetadataStore.Delete(clip.FilePath);
 
             Clips.Remove(clip);
+            RebuildView(); // drop it from the groups + refresh chips/count
         }
         catch (Exception ex)
         {
@@ -393,10 +540,18 @@ public partial class LibraryViewModel : ViewModelBase
         NotifySelectionChanged();
     }
 
-    // ───────────── Multi-select (bulk delete) ─────────────
+    // ───────────── Multi-select (Explorer-style) ─────────────
 
-    /// <summary>Any cards selected → the bulk "Delete (N)" button is shown in the header.</summary>
+    /// <summary>Anchor clip for Shift-range selection (the last clip a plain/Ctrl click landed on).</summary>
+    private ReplayClip? _selectionAnchor;
+
+    /// <summary>Any cards selected → the bulk "Delete (N)" + "Clear" buttons show, and we're in
+    /// selection mode (a plain card click then toggles selection instead of playing).</summary>
     public bool HasSelection => Clips.Any(c => c.IsSelected);
+
+    /// <summary>Inverse of <see cref="HasSelection"/> — bound by the card hover overlay so the
+    /// play/star/edit actions hide while a selection is in progress.</summary>
+    public bool IsNotSelecting => !HasSelection;
 
     /// <summary>Header button caption, e.g. "Delete (3)" (reuses the Library_Delete string).</summary>
     public string DeleteSelectedLabel =>
@@ -405,15 +560,52 @@ public partial class LibraryViewModel : ViewModelBase
     private void NotifySelectionChanged()
     {
         OnPropertyChanged(nameof(HasSelection));
+        OnPropertyChanged(nameof(IsNotSelecting));
         OnPropertyChanged(nameof(DeleteSelectedLabel));
     }
 
-    /// <summary>Card hover button: toggles the clip's membership in the selection.</summary>
-    [RelayCommand]
-    private void ToggleSelect(ReplayClip? clip)
+    /// <summary>The clips in the exact order they are displayed (groups top-to-bottom, cards
+    /// within a group) — the order Shift-range selection walks over.</summary>
+    private List<ReplayClip> VisibleClips() => Groups.SelectMany(g => g.Items).ToList();
+
+    /// <summary>Click the corner circle / a card while selecting / Ctrl+click: flip this clip's
+    /// membership (accumulating — never clears the rest) and make it the new range anchor.</summary>
+    public void ToggleSelectClip(ReplayClip clip)
     {
-        if (clip == null) return;
         clip.IsSelected = !clip.IsSelected;
+        if (clip.IsSelected) _selectionAnchor = clip;
+        NotifySelectionChanged();
+    }
+
+    /// <summary>Shift+click: select the contiguous run between the anchor and this clip
+    /// (replacing the selection). With no anchor it just adds this clip.</summary>
+    public void SelectRange(ReplayClip clip)
+    {
+        var order = VisibleClips();
+        int to = order.IndexOf(clip);
+        if (to < 0) return;
+        int from = _selectionAnchor != null ? order.IndexOf(_selectionAnchor) : -1;
+        if (from < 0) { clip.IsSelected = true; _selectionAnchor = clip; NotifySelectionChanged(); return; }
+
+        int lo = Math.Min(from, to), hi = Math.Max(from, to);
+        for (int i = 0; i < order.Count; i++) order[i].IsSelected = i >= lo && i <= hi;
+        NotifySelectionChanged(); // anchor stays put for subsequent shift-clicks
+    }
+
+    /// <summary>Ctrl+A: select every clip currently shown.</summary>
+    [RelayCommand]
+    private void SelectAll()
+    {
+        foreach (var c in VisibleClips()) c.IsSelected = true;
+        NotifySelectionChanged();
+    }
+
+    /// <summary>Esc / click on empty space: drop the whole selection.</summary>
+    [RelayCommand]
+    private void ClearSelection()
+    {
+        foreach (var c in Clips) c.IsSelected = false;
+        _selectionAnchor = null;
         NotifySelectionChanged();
     }
 
@@ -423,6 +615,7 @@ public partial class LibraryViewModel : ViewModelBase
     {
         foreach (var clip in Clips.Where(c => c.IsSelected).ToList())
             await DeleteClipAsync(clip);
+        _selectionAnchor = null;
     }
 
     /// <summary>
@@ -463,5 +656,36 @@ public partial class LibraryViewModel : ViewModelBase
             System.Diagnostics.Debug.WriteLine($"Failed to open folder: {ex.Message}");
         }
     }
+}
+
+/// <summary>A game filter chip in the library header (label + live active state for styling).</summary>
+public partial class GameChip : ObservableObject
+{
+    public string Label { get; }
+
+    [ObservableProperty]
+    private bool _isActive;
+
+    public GameChip(string label, bool active)
+    {
+        Label = label;
+        _isActive = active;
+    }
+}
+
+/// <summary>A day-bucket of clips (Today / Yesterday / a date) rendered as one library section.</summary>
+public class ClipGroup
+{
+    /// <summary>Section heading, e.g. "Today" or "18 June".</summary>
+    public string Label { get; init; } = string.Empty;
+
+    /// <summary>Secondary heading text (the date for Today/Yesterday, the weekday otherwise).</summary>
+    public string Sub { get; init; } = string.Empty;
+
+    /// <summary>Localized "N clips" count shown at the right of the section header.</summary>
+    public string CountLabel { get; init; } = string.Empty;
+
+    /// <summary>The clips in this day bucket.</summary>
+    public ObservableCollection<ReplayClip> Items { get; init; } = new();
 }
 

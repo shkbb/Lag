@@ -124,6 +124,14 @@
   <sys:String x:Key="Library_OpenFolder">Open folder</sys:String>
   <sys:String x:Key="Library_ShowInFolder">Show in folder</sys:String>
   <sys:String x:Key="Library_FreeSpace">Free space</sys:String>
+  <sys:String x:Key="Library_Search">Search clips</sys:String>
+  <sys:String x:Key="Library_Favorites">Favorites</sys:String>
+  <sys:String x:Key="Library_Today">Today</sys:String>
+  <sys:String x:Key="Library_Yesterday">Yesterday</sys:String>
+  <sys:String x:Key="Library_NoResults">No clips match your search.</sys:String>
+  <sys:String x:Key="Library_ClipCount">{0} CLIPS</sys:String>
+  <sys:String x:Key="Library_GroupCount">{0} clips</sys:String>
+  <sys:String x:Key="Library_ClearSelection">Clear selection</sys:String>
 
   <!-- ════════ Player ════════ -->
   <sys:String x:Key="Player_Replays">REPLAYS</sys:String>

@@ -6,45 +6,414 @@
              x:Class="Lag.Views.LibraryView"
              x:DataType="vm:LibraryViewModel">
 
-  <Grid RowDefinitions="Auto,*" Margin="24,20,24,0">
+  <UserControl.Styles>
+    <!-- ── Filter chip: game chips AND the Favorites toggle share this look ── -->
+    <Style Selector="Button.gamechip">
+      <Setter Property="Background" Value="{StaticResource SurfaceCard}" />
+      <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+      <Setter Property="BorderBrush" Value="{StaticResource BorderCard}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="{StaticResource RadInput}" />
+      <Setter Property="Padding" Value="12,7" />
+      <Setter Property="FontSize" Value="12.5" />
+      <Setter Property="FontWeight" Value="Medium" />
+      <Setter Property="Cursor" Value="Hand" />
+    </Style>
+    <Style Selector="Button.gamechip /template/ ContentPresenter">
+      <Setter Property="Transitions"><Transitions><BrushTransition Property="Background" Duration="0:0:0.12" /></Transitions></Setter>
+    </Style>
+    <Style Selector="Button.gamechip:pointerover">
+      <Setter Property="Foreground" Value="{StaticResource TextHi}" />
+    </Style>
+    <Style Selector="Button.gamechip.sel">
+      <Setter Property="Foreground" Value="{StaticResource AccentText}" />
+      <Setter Property="BorderBrush" Value="{StaticResource AccentRing}" />
+    </Style>
+    <Style Selector="Button.gamechip.sel /template/ ContentPresenter">
+      <Setter Property="Background" Value="{StaticResource AccentDim}" />
+    </Style>
 
-    <!-- ── Header: title + stats | Open folder ── -->
-    <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
-      <StackPanel Grid.Column="0" Spacing="4">
-        <TextBlock Text="{DynamicResource Library_Title}" FontSize="16" FontWeight="Medium" />
-        <TextBlock Text="{Binding LibraryStats}" FontSize="12"
-                   Foreground="{StaticResource Fg2Brush}" />
-      </StackPanel>
-      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-        <!-- Bulk delete — appears once any card is selected -->
-        <Button Classes="chip danger" VerticalAlignment="Center"
-                IsVisible="{Binding HasSelection}"
-                Command="{Binding DeleteSelectedCommand}">
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <mi:MaterialIcon Kind="TrashCanOutline" Width="14" Height="14" VerticalAlignment="Center" />
-            <TextBlock Text="{Binding DeleteSelectedLabel}" VerticalAlignment="Center" />
+    <!-- ── Search field surface ── -->
+    <Style Selector="Border.searchbox">
+      <Setter Property="Background" Value="{StaticResource SurfaceCard}" />
+      <Setter Property="BorderBrush" Value="{StaticResource BorderCard}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="{StaticResource RadPill}" />
+      <Setter Property="Transitions"><Transitions><BrushTransition Property="BorderBrush" Duration="0:0:0.12" /></Transitions></Setter>
+    </Style>
+    <Style Selector="Border.searchbox:pointerover">
+      <Setter Property="BorderBrush" Value="{StaticResource BorderInput}" />
+    </Style>
+    <!-- Strip the themed TextBox chrome so it reads as plain text inside the pill -->
+    <Style Selector="Border.searchbox TextBox">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="MinHeight" Value="0" />
+    </Style>
+    <Style Selector="Border.searchbox TextBox /template/ Border#PART_BorderElement">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+    </Style>
+
+    <!-- ── Clip card (selectable surface) ── -->
+    <Style Selector="Border.clipcardr">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Cursor" Value="Hand" />
+    </Style>
+
+    <!-- Accent ring + hover overlay; the ring also stays lit while the card is selected -->
+    <Style Selector="Border.cardring">
+      <Setter Property="Opacity" Value="0" />
+      <Setter Property="Transitions"><Transitions><DoubleTransition Property="Opacity" Duration="0:0:0.15" /></Transitions></Setter>
+    </Style>
+    <Style Selector="Border.cardoverlay">
+      <Setter Property="Opacity" Value="0" />
+      <Setter Property="IsHitTestVisible" Value="False" />
+      <Setter Property="Transitions"><Transitions><DoubleTransition Property="Opacity" Duration="0:0:0.15" /></Transitions></Setter>
+    </Style>
+    <Style Selector="Border.clipcardr:pointerover Border.cardring">
+      <Setter Property="Opacity" Value="1" />
+    </Style>
+    <Style Selector="Border.clipcardr.selected Border.cardring">
+      <Setter Property="Opacity" Value="1" />
+    </Style>
+    <Style Selector="Border.clipcardr:pointerover Border.cardoverlay">
+      <Setter Property="Opacity" Value="1" />
+      <Setter Property="IsHitTestVisible" Value="True" />
+    </Style>
+
+    <!-- Selection circle: hidden until the card is hovered, stays lit while selected -->
+    <Style Selector="Button.selcircle">
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="13" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="Opacity" Value="0" />
+      <Setter Property="IsHitTestVisible" Value="False" />
+      <Setter Property="Transitions"><Transitions><DoubleTransition Property="Opacity" Duration="0:0:0.12" /></Transitions></Setter>
+    </Style>
+    <Style Selector="Button.selcircle /template/ ContentPresenter">
+      <Setter Property="Background" Value="#B30C0D11" />
+    </Style>
+    <Style Selector="Button.selcircle:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="#C70C0D11" />
+    </Style>
+    <Style Selector="Border.clipcardr:pointerover Button.selcircle">
+      <Setter Property="Opacity" Value="1" />
+      <Setter Property="IsHitTestVisible" Value="True" />
+    </Style>
+    <Style Selector="Border.clipcardr.selected Button.selcircle">
+      <Setter Property="Opacity" Value="1" />
+      <Setter Property="IsHitTestVisible" Value="True" />
+    </Style>
+
+    <!-- EDITED badge fades out on hover / while selecting (the circle owns that corner) -->
+    <Style Selector="Border.editedbadge">
+      <Setter Property="Transitions"><Transitions><DoubleTransition Property="Opacity" Duration="0:0:0.12" /></Transitions></Setter>
+    </Style>
+    <Style Selector="Border.clipcardr:pointerover Border.editedbadge">
+      <Setter Property="Opacity" Value="0" />
+    </Style>
+    <Style Selector="Border.clipcardr.selected Border.editedbadge">
+      <Setter Property="Opacity" Value="0" />
+    </Style>
+
+    <!-- ── Overlay action buttons (play / fav / edit) ── -->
+    <Style Selector="Button.ovplay">
+      <Setter Property="Background" Value="{StaticResource Accent}" />
+      <Setter Property="Width" Value="48" />
+      <Setter Property="Height" Value="48" />
+      <Setter Property="CornerRadius" Value="24" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Cursor" Value="Hand" />
+    </Style>
+    <Style Selector="Button.ov">
+      <Setter Property="Background" Value="#EB1A1D25" />
+      <Setter Property="Foreground" Value="{StaticResource TextBtn}" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Cursor" Value="Hand" />
+    </Style>
+    <Style Selector="Button.ov /template/ ContentPresenter">
+      <Setter Property="Transitions"><Transitions><BrushTransition Property="Background" Duration="0:0:0.12" /></Transitions></Setter>
+    </Style>
+    <Style Selector="Button.ov:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="{StaticResource SurfaceHover2}" />
+    </Style>
+  </UserControl.Styles>
+
+  <UserControl.KeyBindings>
+    <KeyBinding Gesture="Ctrl+A" Command="{Binding SelectAllCommand}" />
+    <KeyBinding Gesture="Escape" Command="{Binding ClearSelectionCommand}" />
+  </UserControl.KeyBindings>
+
+  <Grid Background="{StaticResource SurfaceApp}" RowDefinitions="Auto,*">
+
+    <!-- ════════════════ Header ════════════════ -->
+    <StackPanel Grid.Row="0" Margin="38,30,38,0">
+
+      <!-- Title + storage stats | Open folder -->
+      <Grid ColumnDefinitions="*,Auto">
+        <StackPanel Grid.Column="0">
+          <TextBlock Text="{DynamicResource Library_Title}" FontFamily="{StaticResource FontDisplay}"
+                     FontSize="32" FontWeight="Bold" Foreground="{StaticResource TextHi}" />
+          <StackPanel Orientation="Horizontal" Spacing="16" VerticalAlignment="Center" Margin="0,8,0,0">
+            <TextBlock Text="{Binding ClipCountLabel}" FontFamily="{StaticResource FontMono}"
+                       FontSize="12" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding UsedSpaceDisplay}" FontFamily="{StaticResource FontMono}"
+                       FontSize="12" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" />
+            <Border Width="120" Height="5" CornerRadius="3" Background="{StaticResource BorderStrong}"
+                    ClipToBounds="True" VerticalAlignment="Center">
+              <Border HorizontalAlignment="Left" Height="5" CornerRadius="3"
+                      Background="{StaticResource Accent}" Width="{Binding UsedSpaceBarWidth}" />
+            </Border>
+          </StackPanel>
+        </StackPanel>
+
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Bottom">
+          <!-- Bulk delete — appears once any card is selected -->
+          <Button Classes="rchip" IsVisible="{Binding HasSelection}"
+                  Foreground="{StaticResource DangerStop}" Command="{Binding DeleteSelectedCommand}">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <mi:MaterialIcon Kind="TrashCanOutline" Width="15" Height="15" VerticalAlignment="Center"
+                               Foreground="{StaticResource DangerStop}" />
+              <TextBlock Text="{Binding DeleteSelectedLabel}" VerticalAlignment="Center"
+                         Foreground="{StaticResource DangerStop}" />
+            </StackPanel>
+          </Button>
+          <!-- Clear the whole selection in one click -->
+          <Button Classes="rchip" IsVisible="{Binding HasSelection}" Command="{Binding ClearSelectionCommand}">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <mi:MaterialIcon Kind="CloseCircleOutline" Width="15" Height="15" VerticalAlignment="Center" />
+              <TextBlock Text="{DynamicResource Library_ClearSelection}" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+          <Button Classes="rchip" Command="{Binding OpenLibraryFolderCommand}">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <mi:MaterialIcon Kind="FolderOutline" Width="15" Height="15" VerticalAlignment="Center" />
+              <TextBlock Text="{DynamicResource Library_OpenFolder}" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+        </StackPanel>
+      </Grid>
+
+      <!-- Search + game chips ........ Favorites -->
+      <Grid ColumnDefinitions="Auto,Auto,*,Auto" Margin="0,24,0,4" IsVisible="{Binding Clips.Count}">
+        <Border Grid.Column="0" Classes="searchbox" Width="320" Height="38" Padding="14,0" VerticalAlignment="Center">
+          <Grid ColumnDefinitions="Auto,*">
+            <mi:MaterialIcon Grid.Column="0" Kind="Magnify" Width="15" Height="15"
+                             Foreground="{StaticResource TextFaint}" VerticalAlignment="Center" Margin="0,0,9,0" />
+            <TextBox Grid.Column="1" Text="{Binding SearchText, Mode=TwoWay}"
+                     Watermark="{DynamicResource Library_Search}" VerticalAlignment="Center"
+                     VerticalContentAlignment="Center" FontSize="13.5" Foreground="{StaticResource TextHi}" />
+          </Grid>
+        </Border>
+
+        <ItemsControl Grid.Column="1" ItemsSource="{Binding GameChips}" Margin="10,0,0,0" VerticalAlignment="Center">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="7" /></ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:GameChip">
+              <Button Classes="gamechip" Classes.sel="{Binding IsActive}" Content="{Binding Label}"
+                      Command="{Binding $parent[ItemsControl].((vm:LibraryViewModel)DataContext).SetGameFilterCommand}"
+                      CommandParameter="{Binding Label}" />
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <Button Grid.Column="3" Classes="gamechip" Classes.sel="{Binding FavoritesOnly}"
+                Command="{Binding ToggleFavoritesOnlyCommand}" VerticalAlignment="Center">
+          <StackPanel Orientation="Horizontal" Spacing="7">
+            <Panel Width="14" Height="14" VerticalAlignment="Center">
+              <mi:MaterialIcon Kind="Star" Width="14" Height="14" Foreground="{StaticResource AccentText}"
+                               IsVisible="{Binding FavoritesOnly}" />
+              <mi:MaterialIcon Kind="StarOutline" Width="14" Height="14" Foreground="{StaticResource TextMuted}"
+                               IsVisible="{Binding !FavoritesOnly}" />
+            </Panel>
+            <TextBlock Text="{DynamicResource Library_Favorites}" VerticalAlignment="Center" />
           </StackPanel>
         </Button>
-        <Button Classes="chip" VerticalAlignment="Center"
-                Command="{Binding OpenLibraryFolderCommand}">
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <mi:MaterialIcon Kind="FolderOutline" Width="14" Height="14" VerticalAlignment="Center" />
-            <TextBlock Text="{DynamicResource Library_OpenFolder}" VerticalAlignment="Center" />
-          </StackPanel>
-        </Button>
-      </StackPanel>
-    </Grid>
+      </Grid>
+    </StackPanel>
 
-    <ProgressBar Grid.Row="0" IsIndeterminate="True"
-                 IsVisible="{Binding IsLoading}"
-                 Height="2" VerticalAlignment="Bottom" Margin="0,0,0,-10"
-                 Foreground="{StaticResource AccentBrush}" Background="Transparent" />
-
-    <!-- ── Clip grid ── -->
-    <ScrollViewer Grid.Row="1" Margin="0,20,0,0" VerticalScrollBarVisibility="Auto">
+    <!-- ════════════════ Body ════════════════ -->
+    <ScrollViewer Grid.Row="1" Padding="38,16,38,48" VerticalScrollBarVisibility="Auto"
+                  Background="Transparent" PointerPressed="OnBodyPressed">
       <Panel>
 
-        <!-- Empty state (frame 2:2) -->
+        <!-- Day-grouped clip grid -->
+        <ItemsControl ItemsSource="{Binding Groups}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:ClipGroup">
+              <StackPanel Margin="0,0,0,34">
+                <!-- group header -->
+                <Grid ColumnDefinitions="Auto,Auto,*,Auto" Margin="0,0,0,16">
+                  <TextBlock Grid.Column="0" Text="{Binding Label}" FontFamily="{StaticResource FontDisplay}"
+                             FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource TextHi}" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="1" Text="{Binding Sub}" FontFamily="{StaticResource FontMono}"
+                             FontSize="11" Foreground="{StaticResource TextFaintest}" VerticalAlignment="Center" Margin="13,0,0,0" />
+                  <Border Grid.Column="2" Height="1" Background="{StaticResource BorderFaint}"
+                          VerticalAlignment="Center" Margin="13,0,13,0" />
+                  <TextBlock Grid.Column="3" Text="{Binding CountLabel}" FontFamily="{StaticResource FontMono}"
+                             FontSize="11" Foreground="{StaticResource TextFaintest}" VerticalAlignment="Center" />
+                </Grid>
+
+                <!-- cards -->
+                <ItemsControl ItemsSource="{Binding Items}">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate><WrapPanel Orientation="Horizontal" /></ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="models:ReplayClip">
+                      <Border Classes="clipcardr" Width="248" Margin="0,0,20,20" Focusable="True"
+                              Classes.selected="{Binding IsSelected}" PointerPressed="OnClipPressed">
+
+                        <Border.ContextMenu>
+                          <ContextMenu>
+                            <MenuItem Header="{DynamicResource Editor_Edit}" Click="OnEditClipClick">
+                              <MenuItem.Icon><mi:MaterialIcon Kind="MovieEditOutline" Width="16" Height="16" /></MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="{DynamicResource Library_ShowInFolder}" Click="OnShowInFolderClick">
+                              <MenuItem.Icon><mi:MaterialIcon Kind="FolderSearchOutline" Width="16" Height="16" /></MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="{DynamicResource Library_Delete}" Click="OnDeleteClipClick">
+                              <MenuItem.Icon><mi:MaterialIcon Kind="TrashCanOutline" Width="16" Height="16" /></MenuItem.Icon>
+                            </MenuItem>
+                          </ContextMenu>
+                        </Border.ContextMenu>
+
+                        <StackPanel>
+                          <!-- preview (16:9 at 248px ≈ 140) -->
+                          <Panel>
+                            <Border CornerRadius="{StaticResource RadGeneral}" ClipToBounds="True" Height="140">
+                              <Panel>
+                                <Border Background="#16181E" />
+                                <Image Source="{Binding Thumbnail}" Stretch="UniformToFill" />
+                              </Panel>
+                            </Border>
+
+                            <!-- accent hover ring -->
+                            <Border Classes="cardring" CornerRadius="{StaticResource RadGeneral}"
+                                    BorderBrush="{StaticResource Accent}" BorderThickness="2" IsHitTestVisible="False" />
+
+                            <!-- favourite badge -->
+                            <Border IsVisible="{Binding IsFavorite}" Width="26" Height="26" CornerRadius="8"
+                                    Background="#B30C0D11" HorizontalAlignment="Right" VerticalAlignment="Top"
+                                    Margin="0,9,9,0" IsHitTestVisible="False">
+                              <mi:MaterialIcon Kind="Star" Width="14" Height="14" Foreground="{StaticResource Accent}"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+
+                            <!-- EDITED badge (top-left; fades out on hover / while selecting — the circle owns that corner) -->
+                            <Border Classes="editedbadge" IsVisible="{Binding IsEdited}" Background="{StaticResource Accent}"
+                                    CornerRadius="5" Padding="6,3" HorizontalAlignment="Left" VerticalAlignment="Top"
+                                    Margin="9,9,0,0" IsHitTestVisible="False">
+                              <TextBlock Text="EDITED" FontFamily="{StaticResource FontMono}" FontSize="9"
+                                         FontWeight="Medium" Foreground="{StaticResource OnAccent}" />
+                            </Border>
+
+                            <!-- duration -->
+                            <Border IsVisible="{Binding !IsImage}" Background="#C70C0D11" CornerRadius="6" Padding="7,2"
+                                    HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,9,9" IsHitTestVisible="False">
+                              <TextBlock Text="{Binding DurationDisplay}" FontFamily="{StaticResource FontMono}"
+                                         FontSize="11" Foreground="White" />
+                            </Border>
+
+                            <!-- hover overlay (play/star/edit) — hidden once a selection is in progress -->
+                            <Border Classes="cardoverlay" CornerRadius="{StaticResource RadGeneral}" ClipToBounds="True"
+                                    IsVisible="{Binding $parent[UserControl].((vm:LibraryViewModel)DataContext).IsNotSelecting}">
+                              <Panel>
+                                <Border>
+                                  <Border.Background>
+                                    <LinearGradientBrush StartPoint="0%,100%" EndPoint="0%,0%">
+                                      <GradientStop Offset="0" Color="#D108090C" />
+                                      <GradientStop Offset="0.55" Color="#1A08090C" />
+                                      <GradientStop Offset="1" Color="#1A08090C" />
+                                    </LinearGradientBrush>
+                                  </Border.Background>
+                                </Border>
+
+                                <!-- play -->
+                                <Button Classes="ovplay" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                        Command="{Binding $parent[UserControl].((vm:LibraryViewModel)DataContext).PlayClipCommand}"
+                                        CommandParameter="{Binding}">
+                                  <mi:MaterialIcon Kind="Play" Width="24" Height="24" Foreground="{StaticResource OnAccent}"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center" Margin="2,0,0,0" />
+                                </Button>
+
+                                <!-- favourite toggle (top-right) -->
+                                <Button Classes="ov" Width="28" Height="28" HorizontalAlignment="Right" VerticalAlignment="Top"
+                                        Margin="0,9,9,0"
+                                        Command="{Binding $parent[UserControl].((vm:LibraryViewModel)DataContext).ToggleFavoriteCommand}"
+                                        CommandParameter="{Binding}">
+                                  <Panel>
+                                    <mi:MaterialIcon Kind="Star" Width="15" Height="15" Foreground="{StaticResource AccentText}"
+                                                     IsVisible="{Binding IsFavorite}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    <mi:MaterialIcon Kind="StarOutline" Width="15" Height="15" Foreground="{StaticResource TextBtn}"
+                                                     IsVisible="{Binding !IsFavorite}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                  </Panel>
+                                </Button>
+
+                                <!-- edit (bottom-left); delete is bulk in the header + the context menu -->
+                                <Button Classes="ov ovedit" Height="28" Padding="11,0" IsVisible="{Binding !IsImage}"
+                                        HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="9,0,0,9"
+                                        Command="{Binding $parent[UserControl].((vm:LibraryViewModel)DataContext).RequestEditClipCommand}"
+                                        CommandParameter="{Binding}">
+                                  <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                    <mi:MaterialIcon Kind="PencilOutline" Width="13" Height="13" VerticalAlignment="Center" />
+                                    <TextBlock Text="{DynamicResource Editor_Edit}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                  </StackPanel>
+                                </Button>
+                              </Panel>
+                            </Border>
+
+                            <!-- selection circle: kept ON TOP of the overlay so it stays clickable while
+                                 hovering. Revealed on hover, lit while selected; click to start/continue a selection. -->
+                            <Button Classes="selcircle" Width="26" Height="26" HorizontalAlignment="Left" VerticalAlignment="Top"
+                                    Margin="9,9,0,0" Click="OnSelectCircleClick">
+                              <Panel>
+                                <mi:MaterialIcon Kind="CheckboxBlankCircleOutline" Width="20" Height="20" Foreground="White"
+                                                 IsVisible="{Binding !IsSelected}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                <mi:MaterialIcon Kind="CheckCircle" Width="20" Height="20" Foreground="{StaticResource Accent}"
+                                                 IsVisible="{Binding IsSelected}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                              </Panel>
+                            </Button>
+                          </Panel>
+
+                          <!-- meta -->
+                          <StackPanel Margin="2,10,2,0" Spacing="3">
+                            <TextBlock Text="{Binding DisplayName}" FontSize="13" FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextHi}" TextTrimming="CharacterEllipsis" />
+                            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                              <TextBlock Text="{Binding CreatedDate, StringFormat='{}{0:HH:mm}'}"
+                                         FontFamily="{StaticResource FontMono}" FontSize="10.5"
+                                         Foreground="{StaticResource TextFaint}" VerticalAlignment="Center" />
+                              <Ellipse Width="3" Height="3" Fill="{StaticResource DotDivider}"
+                                       VerticalAlignment="Center" IsVisible="{Binding HasGame}" />
+                              <TextBlock Text="{Binding Game}" FontSize="11.5" Foreground="{StaticResource TextMuted}"
+                                         VerticalAlignment="Center" IsVisible="{Binding HasGame}" />
+                            </StackPanel>
+                          </StackPanel>
+                        </StackPanel>
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <!-- No-results (clips exist but the filter/search hides them all) -->
+        <TextBlock Text="{DynamicResource Library_NoResults}" IsVisible="{Binding HasNoResults}"
+                   HorizontalAlignment="Center" Margin="0,60,0,0"
+                   Foreground="{StaticResource TextFaintest}" FontSize="13.5" />
+
+        <!-- Empty library (no clips at all) -->
         <StackPanel IsVisible="{Binding !Clips.Count}"
                     HorizontalAlignment="Center" VerticalAlignment="Center"
                     Margin="0,140,0,0" Spacing="14">
@@ -59,9 +428,9 @@
             </Canvas>
           </Viewbox>
           <TextBlock Text="{DynamicResource Library_EmptyTitle}" FontSize="16" FontWeight="Medium"
-                     HorizontalAlignment="Center" />
+                     Foreground="{StaticResource TextHi}" HorizontalAlignment="Center" />
           <TextBlock Text="{DynamicResource Library_Empty}" FontSize="13" LineHeight="20"
-                     Foreground="{StaticResource Fg2Brush}"
+                     Foreground="{StaticResource TextMuted}"
                      TextWrapping="Wrap" TextAlignment="Center" MaxWidth="430"
                      HorizontalAlignment="Center" />
           <ItemsControl ItemsSource="{Binding $parent[Window].DataContext.Settings.HotkeyParts}"
@@ -74,103 +443,18 @@
             </ItemsControl.ItemsPanel>
             <ItemsControl.ItemTemplate>
               <DataTemplate>
-                <StackPanel Orientation="Horizontal" Spacing="6">
-                  <Border Classes="kbd"><TextBlock Text="{Binding}" /></Border>
-                </StackPanel>
+                <Border Classes="rkbd"><TextBlock Text="{Binding}" /></Border>
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>
         </StackPanel>
-
-        <!-- Cards (frame 1:2): 300px, r12, preview 16:9, meta -->
-        <ItemsControl ItemsSource="{Binding Clips}" IsVisible="{Binding Clips.Count}">
-          <ItemsControl.ItemsPanel>
-            <ItemsPanelTemplate>
-              <WrapPanel Orientation="Horizontal" />
-            </ItemsPanelTemplate>
-          </ItemsControl.ItemsPanel>
-          <ItemsControl.ItemTemplate>
-            <DataTemplate x:DataType="models:ReplayClip">
-              <Button Classes="clipcard" Width="300" Margin="0,0,16,16"
-                      Classes.selected="{Binding IsSelected}"
-                      Command="{Binding $parent[UserControl].((vm:LibraryViewModel)DataContext).PlayClipCommand}"
-                      CommandParameter="{Binding}">
-
-                <Button.ContextMenu>
-                  <ContextMenu>
-                    <MenuItem Header="{DynamicResource Editor_Edit}" Click="OnEditClipClick">
-                      <MenuItem.Icon>
-                        <mi:MaterialIcon Kind="MovieEditOutline" Width="16" Height="16" />
-                      </MenuItem.Icon>
-                    </MenuItem>
-                    <MenuItem Header="{DynamicResource Library_ShowInFolder}" Click="OnShowInFolderClick">
-                      <MenuItem.Icon>
-                        <mi:MaterialIcon Kind="FolderSearchOutline" Width="16" Height="16" />
-                      </MenuItem.Icon>
-                    </MenuItem>
-                    <MenuItem Header="{DynamicResource Library_Delete}" Click="OnDeleteClipClick">
-                      <MenuItem.Icon>
-                        <mi:MaterialIcon Kind="TrashCanOutline" Width="16" Height="16" />
-                      </MenuItem.Icon>
-                    </MenuItem>
-                  </ContextMenu>
-                </Button.ContextMenu>
-
-                <StackPanel>
-                  <!-- Preview 300×169. The clip geometry is 12px taller than the preview,
-                       so only the TOP corners are rounded (r12, like the card) while the
-                       bottom edge stays square against the meta block. -->
-                  <Grid Height="169" ClipToBounds="True">
-                    <Grid.Clip>
-                      <RectangleGeometry Rect="0,0,300,181" RadiusX="12" RadiusY="12" />
-                    </Grid.Clip>
-                    <Border Background="#232A33" />
-                    <Image Source="{Binding Thumbnail}" Stretch="UniformToFill" />
-
-                    <!-- hover veil (4% white) -->
-                    <Border x:Name="HoverVeil" Background="{StaticResource HoverVeilBrush}" />
-
-                    <!-- duration chip (hidden for screenshots) -->
-                    <Border Background="{StaticResource Overlay85Brush}" CornerRadius="6"
-                            Padding="6,2" Margin="0,0,8,8"
-                            IsVisible="{Binding !IsImage}"
-                            HorizontalAlignment="Right" VerticalAlignment="Bottom">
-                      <TextBlock Text="{Binding DurationDisplay}" FontSize="11" FontWeight="Medium" />
-                    </Border>
-
-                    <!-- select toggle (reveals on hover, stays while selected) -->
-                    <Button x:Name="SelectBtn" Width="28" Height="28" CornerRadius="8" Padding="0"
-                            Classes.checked="{Binding IsSelected}"
-                            Background="{StaticResource Overlay88Brush}" BorderThickness="0"
-                            HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,8,8,0"
-                            Cursor="Hand"
-                            Command="{Binding $parent[ItemsControl].((vm:LibraryViewModel)DataContext).ToggleSelectCommand}"
-                            CommandParameter="{Binding}">
-                      <Panel>
-                        <mi:MaterialIcon Kind="CheckboxBlankCircleOutline" Width="15" Height="15"
-                                         Foreground="{StaticResource FgBrush}"
-                                         IsVisible="{Binding !IsSelected}" />
-                        <mi:MaterialIcon Kind="CheckCircle" Width="15" Height="15"
-                                         Foreground="{StaticResource AccentBrush}"
-                                         IsVisible="{Binding IsSelected}" />
-                      </Panel>
-                    </Button>
-                  </Grid>
-
-                  <!-- Meta -->
-                  <StackPanel Margin="12,10,12,12" Spacing="3">
-                    <TextBlock Text="{Binding DisplayName}" FontSize="13" FontWeight="Medium"
-                               TextTrimming="CharacterEllipsis" />
-                    <TextBlock Text="{Binding CreatedDate, StringFormat='{}{0:d MMM, HH:mm}'}"
-                               FontSize="11" Foreground="{StaticResource Fg3Brush}" />
-                  </StackPanel>
-                </StackPanel>
-              </Button>
-            </DataTemplate>
-          </ItemsControl.ItemTemplate>
-        </ItemsControl>
       </Panel>
     </ScrollViewer>
+
+    <!-- Indeterminate refresh bar -->
+    <ProgressBar Grid.Row="1" IsIndeterminate="True" IsVisible="{Binding IsLoading}"
+                 Height="2" VerticalAlignment="Top" Margin="38,0"
+                 Foreground="{StaticResource Accent}" Background="Transparent" />
 
   </Grid>
 
