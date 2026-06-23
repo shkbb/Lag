@@ -298,6 +298,8 @@
     <FluentTheme />
     <materialIcons:MaterialIconStyles />
     <StyleInclude Source="avares://Lag/Themes/DarkTheme.axaml" />
+    <!-- Redesign reusable component styles (cyan; additive, prefixed "r") -->
+    <StyleInclude Source="avares://Lag/Themes/Components.axaml" />
   </Application.Styles>
 
   <TrayIcon.Icons>
