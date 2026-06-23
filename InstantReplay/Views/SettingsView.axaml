@@ -14,7 +14,10 @@
 
   <Grid Background="{StaticResource SurfaceApp}">
     <ScrollViewer VerticalScrollBarVisibility="Auto">
-      <StackPanel MaxWidth="800" HorizontalAlignment="Center" Margin="40,34,40,64">
+      <!-- Fixed-width centered column (min window is 900, so 800 always fits). A MaxWidth + Center
+           StackPanel shrinks to content, so tabs of different content width made the whole column
+           (heading + tabs + cards) jump horizontally when switching. Fixed width = stable. -->
+      <StackPanel Width="800" HorizontalAlignment="Center" Margin="0,34,0,64">
 
         <!-- Heading -->
         <Grid ColumnDefinitions="*,Auto">
