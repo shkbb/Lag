@@ -104,6 +104,14 @@ public partial class MainWindow : Window
 
     private void OnCloseClick(object? sender, RoutedEventArgs e) => Close();
 
+    // ── Capture-target hover flyout (rail icon → animated panel with the game/desktop name) ──
+
+    private void OnCaptureEntered(object? sender, PointerEventArgs e) =>
+        CaptureFlyout.Classes.Set("shown", true);
+
+    private void OnCaptureExited(object? sender, PointerEventArgs e) =>
+        CaptureFlyout.Classes.Set("shown", false);
+
     /// <summary>ESC exits fullscreen (restores the normal layout).</summary>
     private void OnPreviewKeyDown(object? sender, KeyEventArgs e)
     {
