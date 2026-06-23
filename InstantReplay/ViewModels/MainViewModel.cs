@@ -290,19 +290,24 @@ public partial class MainViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private async Task NavigateToLibrary()
+    private void NavigateToLibrary()
     {
         if (CurrentView == Player) Player.StopPlayback();
         CurrentView = Library;
-        await Library.RefreshCommand.ExecuteAsync(null);
+        // Refresh in the BACKGROUND. Awaiting it inside the command would make this an async
+        // RelayCommand that disables itself (CanExecute=false) while the refresh runs — and if a
+        // refresh ever stalls, the rail item stays greyed/unclickable. Fire-and-forget keeps the
+        // view switch instant and the nav button always enabled; RefreshAsync guards re-entrancy.
+        _ = Library.RefreshCommand.ExecuteAsync(null);
     }
 
     [RelayCommand]
-    private async Task NavigateToPlayer()
+    private void NavigateToPlayer()
     {
         CurrentView = Player;
-        // Ensure the Player sidebar shows the latest clips even on direct navigation.
-        await Library.RefreshCommand.ExecuteAsync(null);
+        // Background refresh (see NavigateToLibrary) so the Player sidebar shows the latest clips
+        // on direct navigation without ever disabling the nav command.
+        _ = Library.RefreshCommand.ExecuteAsync(null);
     }
 
     /// <summary>
