@@ -139,6 +139,17 @@
     <Style Selector="Button.railitem.active mi|MaterialIcon">
       <Setter Property="Foreground" Value="{StaticResource Accent}" />
     </Style>
+    <!-- Rail label: wrap to max 2 centred lines (then ellipsis) so long-language captions
+         like "Бібліотека" / "Налаштування" are never hard-clipped on the narrow rail. -->
+    <Style Selector="Button.railitem TextBlock">
+      <Setter Property="TextWrapping" Value="Wrap" />
+      <Setter Property="TextAlignment" Value="Center" />
+      <Setter Property="MaxLines" Value="2" />
+      <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+      <Setter Property="MaxWidth" Value="56" />
+      <Setter Property="FontSize" Value="9.5" />
+      <Setter Property="LineHeight" Value="11" />
+    </Style>
 
     <!-- Recording status dot: gentle pulse -->
     <Style Selector="Ellipse.recpulse">
