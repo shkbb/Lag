@@ -13,15 +13,58 @@
   </UserControl.KeyBindings>
 
   <UserControl.Styles>
-    <!-- Cyan play marker on the selected replay thumb -->
-    <Style Selector="ListBox.replays ListBoxItem mi|MaterialIcon.selplay">
-      <Setter Property="Opacity" Value="0" />
-      <Setter Property="Transitions">
-        <Transitions><DoubleTransition Property="Opacity" Duration="0:0:0.15" /></Transitions>
-      </Setter>
+    <!-- Player control icon button (stop / rewind / forward / next / edit / fullscreen / speed) -->
+    <Style Selector="Button.pbtn">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="{StaticResource TextMid}" />
+      <Setter Property="Width" Value="38" />
+      <Setter Property="Height" Value="38" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
     </Style>
-    <Style Selector="ListBox.replays ListBoxItem:selected mi|MaterialIcon.selplay">
-      <Setter Property="Opacity" Value="1" />
+    <Style Selector="Button.pbtn /template/ ContentPresenter">
+      <Setter Property="Transitions"><Transitions><BrushTransition Property="Background" Duration="0:0:0.12" /></Transitions></Setter>
+    </Style>
+    <Style Selector="Button.pbtn:pointerover">
+      <Setter Property="Foreground" Value="{StaticResource TextHi}" />
+    </Style>
+    <Style Selector="Button.pbtn:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="{StaticResource BorderFaint}" />
+    </Style>
+
+    <!-- Accent play/pause buttons (big centre overlay + the transport one) -->
+    <Style Selector="Button.playbtn">
+      <Setter Property="Background" Value="{StaticResource Accent}" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+
+    <!-- Replays list: row look + selected highlight (the dimmed accent, per the mockup) -->
+    <Style Selector="ListBox.replays">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="0" />
+    </Style>
+    <Style Selector="ListBox.replays ListBoxItem">
+      <Setter Property="Padding" Value="8" />
+      <Setter Property="Margin" Value="0,0,0,2" />
+      <Setter Property="CornerRadius" Value="9" />
+    </Style>
+    <Style Selector="ListBox.replays ListBoxItem /template/ ContentPresenter">
+      <Setter Property="Transitions"><Transitions><BrushTransition Property="Background" Duration="0:0:0.12" /></Transitions></Setter>
+    </Style>
+    <Style Selector="ListBox.replays ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{StaticResource SurfaceCard}" />
+    </Style>
+    <Style Selector="ListBox.replays ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{StaticResource AccentDim}" />
     </Style>
 
     <!-- Floating control bar: slides/fades away in fullscreen until the cursor
@@ -62,212 +105,212 @@
     </Style>
   </UserControl.Styles>
 
-  <Grid x:Name="PlayerArea" RowDefinitions="Auto,*" Margin="24,20,24,24">
+  <Grid x:Name="PlayerArea" RowDefinitions="*" Margin="24,20,24,24" Background="{StaticResource SurfaceApp}">
 
-    <!-- ── Clip title + meta ── -->
-    <StackPanel Grid.Row="0" Spacing="3" Margin="0,0,0,14"
-                x:Name="HeaderBlock"
-                x:CompileBindings="False"
-                IsVisible="{Binding !DataContext.IsFullscreen, RelativeSource={RelativeSource AncestorType=Window}}">
-      <TextBlock Text="{Binding CurrentClip.DisplayName, FallbackValue=''}"
-                 FontSize="16" FontWeight="Medium" TextTrimming="CharacterEllipsis" />
-      <StackPanel Orientation="Horizontal" Spacing="4">
-        <TextBlock Text="{Binding CurrentClip.CreatedDate, StringFormat='{}{0:d MMM, HH:mm}', FallbackValue=''}"
-                   FontSize="12" Foreground="{StaticResource Fg2Brush}" />
-        <TextBlock Text="·" FontSize="12" Foreground="{StaticResource Fg2Brush}"
-                   IsVisible="{Binding CurrentClip, Converter={x:Static ObjectConverters.IsNotNull}}" />
-        <TextBlock Text="{Binding CurrentClip.DurationDisplay, FallbackValue=''}"
-                   FontSize="12" Foreground="{StaticResource Fg2Brush}" />
-      </StackPanel>
-    </StackPanel>
+    <!-- ── Player row: video column | replay panel ── -->
+    <Grid ColumnDefinitions="*,Auto">
 
-    <!-- ── Player row: video | replay list ── -->
-    <Grid Grid.Row="1" ColumnDefinitions="*,Auto">
+      <!-- Video column: title + meta, then the video frame, then the control strip -->
+      <Grid Grid.Column="0" RowDefinitions="Auto,*">
 
-      <!-- Video container (#07090C, r12). The control bar OVERLAYS the video (no native
-           HWND anymore), so the picture gets the full height — like the Figma frame. -->
-      <Border x:Name="VideoFrame" Grid.Column="0"
-              Background="{StaticResource VideoBrush}"
-              CornerRadius="12" ClipToBounds="True">
-        <Panel>
-
-          <!-- Video surface: decoded frames land in an Avalonia bitmap, so this is a plain
-               Image — clipping/overlays work, and click-to-pause is a normal pointer event. -->
-          <Panel x:Name="VideoSurface" Background="Transparent"
-                 PointerPressed="OnVideoSurfacePressed">
-            <Image x:Name="VideoImage" Stretch="Uniform"
-                   RenderOptions.BitmapInterpolationMode="HighQuality"
-                   HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
-          </Panel>
-
-          <!-- Placeholder when no clip is loaded -->
-          <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
-                      Spacing="10" IsHitTestVisible="False"
-                      IsVisible="{Binding CurrentClip, Converter={x:Static ObjectConverters.IsNull}}">
-            <Viewbox Width="44" Height="44" HorizontalAlignment="Center">
-              <Canvas Width="22" Height="22">
-                <Path Data="{StaticResource LogoArcGeometry}" Stroke="{StaticResource EmptyIconBrush}"
-                      StrokeThickness="0.8" StrokeLineCap="Round" StrokeJoin="Round" />
-                <Path Data="{StaticResource LogoCornerGeometry}" Stroke="{StaticResource EmptyIconBrush}"
-                      StrokeThickness="0.8" StrokeLineCap="Round" StrokeJoin="Round" />
-                <Path Data="{StaticResource LogoHandsGeometry}" Stroke="{StaticResource EmptyIconBrush}"
-                      StrokeThickness="0.8" StrokeLineCap="Round" StrokeJoin="Round" />
-              </Canvas>
-            </Viewbox>
-            <TextBlock Text="{DynamicResource Player_Placeholder}"
-                       FontSize="13" Foreground="{StaticResource Fg3Brush}"
-                       HorizontalAlignment="Center" />
+        <!-- Clip title + meta (hidden in fullscreen) -->
+        <StackPanel Grid.Row="0" Spacing="3" Margin="0,0,0,16"
+                    x:Name="HeaderBlock"
+                    x:CompileBindings="False"
+                    IsVisible="{Binding !DataContext.IsFullscreen, RelativeSource={RelativeSource AncestorType=Window}}">
+          <TextBlock Text="{Binding CurrentClip.DisplayName, FallbackValue=''}"
+                     FontFamily="{StaticResource FontDisplay}" FontSize="22" FontWeight="SemiBold"
+                     Foreground="{StaticResource TextHi}" TextTrimming="CharacterEllipsis" />
+          <StackPanel Orientation="Horizontal" Spacing="5">
+            <TextBlock Text="{Binding CurrentClip.CreatedDate, StringFormat='{}{0:d MMM, HH:mm}', FallbackValue=''}"
+                       FontFamily="{StaticResource FontMono}" FontSize="11.5" Foreground="{StaticResource TextFaint}" />
+            <TextBlock Text="·" FontFamily="{StaticResource FontMono}" FontSize="11.5" Foreground="{StaticResource TextFaint}"
+                       IsVisible="{Binding CurrentClip, Converter={x:Static ObjectConverters.IsNotNull}}" />
+            <TextBlock Text="{Binding CurrentClip.DurationDisplay, FallbackValue=''}"
+                       FontFamily="{StaticResource FontMono}" FontSize="11.5" Foreground="{StaticResource TextFaint}" />
           </StackPanel>
+        </StackPanel>
 
-          <!-- Control bar (design: rgba(10,12,15,.82), r10, floating over the video).
-               Screenshot mode hides everything except the fullscreen toggle. -->
-          <Border x:Name="ControlsBar" Margin="12" VerticalAlignment="Bottom"
-                  Classes.compact="{Binding IsViewingImage}"
-                  Background="#D10A0C0F" CornerRadius="10"
-                  Padding="14,12,14,10">
-            <StackPanel Spacing="10">
+        <!-- Video frame (#07090C, r16). The control bar OVERLAYS the video bottom; the big
+             play sits centred over the picture (shown while paused). -->
+        <Border x:Name="VideoFrame" Grid.Row="1"
+                Background="#FF07090C" BorderBrush="{StaticResource BorderCard}" BorderThickness="1"
+                CornerRadius="12" ClipToBounds="True">
+          <Panel>
 
-              <!-- Timeline (hidden while a screenshot is displayed) -->
-              <Slider Minimum="0" Maximum="1"
-                      Value="{Binding Position, Mode=TwoWay}"
-                      IsVisible="{Binding !IsViewingImage}"
-                      VerticalAlignment="Center" />
+            <!-- Video surface: decoded frames land in an Avalonia bitmap, so this is a plain
+                 Image — clipping/overlays work, and click-to-pause is a normal pointer event. -->
+            <Panel x:Name="VideoSurface" Background="Transparent"
+                   PointerPressed="OnVideoSurfacePressed">
+              <Image x:Name="VideoImage" Stretch="Uniform"
+                     RenderOptions.BitmapInterpolationMode="HighQuality"
+                     HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+            </Panel>
 
-              <!-- Buttons row -->
-              <Grid ColumnDefinitions="Auto,*,Auto" Height="30">
-
-                <TextBlock Grid.Column="0" Text="{Binding TimeDisplay, FallbackValue='0:00 / 0:00'}"
-                           FontSize="11" Foreground="{StaticResource Fg2Brush}"
-                           IsVisible="{Binding !IsViewingImage}"
-                           VerticalAlignment="Center" />
-
-                <!-- Transport (centered, hidden for screenshots) -->
-                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="16"
-                            IsVisible="{Binding !IsViewingImage}"
-                            HorizontalAlignment="Center" VerticalAlignment="Center">
-                  <Button Classes="transport" Command="{Binding StopCommand}"
-                          ToolTip.Tip="{DynamicResource Tooltip_Stop}">
-                    <mi:MaterialIcon Kind="Stop" Width="17" Height="17" />
-                  </Button>
-                  <Button Classes="transport" Command="{Binding SeekBackwardCommand}"
-                          ToolTip.Tip="{DynamicResource Tooltip_Rewind}">
-                    <mi:MaterialIcon Kind="RotateLeft" Width="17" Height="17" />
-                  </Button>
-                  <Button Width="30" Height="30" CornerRadius="15" Padding="0"
-                          Background="White" BorderThickness="0" Cursor="Hand"
-                          Focusable="False"
-                          Command="{Binding PlayPauseCommand}"
-                          ToolTip.Tip="{DynamicResource Tooltip_PlayPause}">
-                    <Panel>
-                      <mi:MaterialIcon Kind="Play" Width="15" Height="15"
-                                       Foreground="{StaticResource OnAccentBrush}"
-                                       IsVisible="{Binding !IsPlaying}" />
-                      <mi:MaterialIcon Kind="Pause" Width="14" Height="14"
-                                       Foreground="{StaticResource OnAccentBrush}"
-                                       IsVisible="{Binding IsPlaying}" />
-                    </Panel>
-                  </Button>
-                  <Button Classes="transport" Command="{Binding SeekForwardCommand}"
-                          ToolTip.Tip="{DynamicResource Tooltip_Forward}">
-                    <mi:MaterialIcon Kind="RotateRight" Width="17" Height="17" />
-                  </Button>
-                  <Button Classes="transport" Command="{Binding PlayNextCommand}"
-                          ToolTip.Tip="{DynamicResource Tooltip_Next}">
-                    <mi:MaterialIcon Kind="SkipNext" Width="17" Height="17" />
-                  </Button>
-                </StackPanel>
-
-                <!-- Speed + edit + volume + fullscreen (right; screenshots keep only fullscreen) -->
-                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10"
-                            VerticalAlignment="Center">
-                  <!-- Playback speed: deep slow-mo down to 0.05x -->
-                  <Button Classes="transport" MinWidth="40"
-                          IsVisible="{Binding !IsViewingImage}">
-                    <TextBlock Text="{Binding SpeedLabel}" FontSize="12" FontWeight="Medium" />
-                    <Button.Flyout>
-                      <Flyout Placement="Top">
-                        <ListBox x:CompileBindings="False" Width="80" MaxHeight="300"
-                                 ItemsSource="{Binding SpeedOptions}"
-                                 SelectedItem="{Binding PlaybackSpeed, Mode=TwoWay}">
-                          <ListBox.ItemTemplate>
-                            <DataTemplate>
-                              <TextBlock Text="{Binding, StringFormat='{}{0}x'}" FontSize="12" />
-                            </DataTemplate>
-                          </ListBox.ItemTemplate>
-                        </ListBox>
-                      </Flyout>
-                    </Button.Flyout>
-                  </Button>
-                  <Button Classes="transport"
-                          x:CompileBindings="False"
-                          IsVisible="{Binding !IsViewingImage}"
-                          Command="{Binding DataContext.OpenEditorFromPlayerCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                          ToolTip.Tip="{DynamicResource Editor_Edit}">
-                    <mi:MaterialIcon Kind="MovieEditOutline" Width="16" Height="16" />
-                  </Button>
-                  <mi:MaterialIcon Kind="VolumeHigh" Width="16" Height="16"
-                                   IsVisible="{Binding !IsViewingImage}"
-                                   Foreground="{StaticResource Fg2Brush}" VerticalAlignment="Center" />
-                  <Slider Classes="volume" Width="56" Minimum="0" Maximum="100"
-                          Value="{Binding Volume, Mode=TwoWay}"
-                          IsVisible="{Binding !IsViewingImage}"
-                          VerticalAlignment="Center"
-                          ToolTip.Tip="{DynamicResource Tooltip_Volume}" />
-                  <Button Classes="transport"
-                          x:CompileBindings="False"
-                          Command="{Binding DataContext.ToggleFullscreenCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                          ToolTip.Tip="{DynamicResource Tooltip_Fullscreen}">
-                    <mi:MaterialIcon Kind="Fullscreen" Width="16" Height="16" />
-                  </Button>
-                </StackPanel>
-              </Grid>
+            <!-- Placeholder when no clip is loaded -->
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
+                        Spacing="10" IsHitTestVisible="False"
+                        IsVisible="{Binding CurrentClip, Converter={x:Static ObjectConverters.IsNull}}">
+              <Viewbox Width="44" Height="44" HorizontalAlignment="Center">
+                <Canvas Width="22" Height="22">
+                  <Path Data="{StaticResource LogoArcGeometry}" Stroke="{StaticResource EmptyIconBrush}"
+                        StrokeThickness="0.8" StrokeLineCap="Round" StrokeJoin="Round" />
+                  <Path Data="{StaticResource LogoCornerGeometry}" Stroke="{StaticResource EmptyIconBrush}"
+                        StrokeThickness="0.8" StrokeLineCap="Round" StrokeJoin="Round" />
+                  <Path Data="{StaticResource LogoHandsGeometry}" Stroke="{StaticResource EmptyIconBrush}"
+                        StrokeThickness="0.8" StrokeLineCap="Round" StrokeJoin="Round" />
+                </Canvas>
+              </Viewbox>
+              <TextBlock Text="{DynamicResource Player_Placeholder}"
+                         FontSize="13" Foreground="{StaticResource TextFaint}"
+                         HorizontalAlignment="Center" />
             </StackPanel>
-          </Border>
-        </Panel>
-      </Border>
 
-      <!-- ── Replay list (w248, design card). In fullscreen the code-behind turns it
-           into a right-edge overlay revealed by cursor proximity. ── -->
-      <Border Grid.Column="1" Width="248" Margin="16,0,0,0"
+            <!-- Big centre play (mockup): shown while paused, over the picture -->
+            <Button Classes="playbtn" Width="66" Height="66" CornerRadius="33"
+                    HorizontalAlignment="Center" VerticalAlignment="Center"
+                    Focusable="False" Command="{Binding PlayPauseCommand}"
+                    IsVisible="{Binding !IsPlaying}">
+              <mi:MaterialIcon Kind="Play" Width="26" Height="26" Foreground="{StaticResource OnAccent}"
+                               Margin="3,0,0,0" HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Button>
+
+            <!-- Control bar (floating over the video). Screenshot mode hides all but fullscreen. -->
+            <Border x:Name="ControlsBar" Margin="12" VerticalAlignment="Bottom"
+                    Classes.compact="{Binding IsViewingImage}"
+                    Background="#D10A0C0F" CornerRadius="12" Padding="14,12,14,10">
+              <StackPanel Spacing="10">
+
+                <!-- Progress: time + timeline -->
+                <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding !IsViewingImage}">
+                  <TextBlock Grid.Column="0" Text="{Binding TimeDisplay, FallbackValue='0:00 / 0:00'}"
+                             FontFamily="{StaticResource FontMono}" FontSize="11.5" Foreground="{StaticResource TextMid}"
+                             VerticalAlignment="Center" Margin="0,0,12,0" MinWidth="82" />
+                  <Slider Grid.Column="1" Minimum="0" Maximum="1"
+                          Value="{Binding Position, Mode=TwoWay}" VerticalAlignment="Center" />
+                </Grid>
+
+                <!-- Buttons row: transport centred, right cluster pinned right -->
+                <Grid Height="40">
+
+                  <!-- Transport (centred, hidden for screenshots) -->
+                  <StackPanel Orientation="Horizontal" Spacing="6"
+                              IsVisible="{Binding !IsViewingImage}"
+                              HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <Button Classes="pbtn" Command="{Binding StopCommand}"
+                            ToolTip.Tip="{DynamicResource Tooltip_Stop}">
+                      <mi:MaterialIcon Kind="Stop" Width="17" Height="17" />
+                    </Button>
+                    <Button Classes="pbtn" Command="{Binding SeekBackwardCommand}"
+                            ToolTip.Tip="{DynamicResource Tooltip_Rewind}">
+                      <mi:MaterialIcon Kind="RotateLeft" Width="18" Height="18" />
+                    </Button>
+                    <Button Classes="playbtn" Width="48" Height="48" CornerRadius="24" Margin="4,0"
+                            Focusable="False" Command="{Binding PlayPauseCommand}"
+                            ToolTip.Tip="{DynamicResource Tooltip_PlayPause}">
+                      <Panel>
+                        <mi:MaterialIcon Kind="Play" Width="19" Height="19" Foreground="{StaticResource OnAccent}"
+                                         Margin="2,0,0,0" IsVisible="{Binding !IsPlaying}" />
+                        <mi:MaterialIcon Kind="Pause" Width="18" Height="18" Foreground="{StaticResource OnAccent}"
+                                         IsVisible="{Binding IsPlaying}" />
+                      </Panel>
+                    </Button>
+                    <Button Classes="pbtn" Command="{Binding SeekForwardCommand}"
+                            ToolTip.Tip="{DynamicResource Tooltip_Forward}">
+                      <mi:MaterialIcon Kind="RotateRight" Width="18" Height="18" />
+                    </Button>
+                    <Button Classes="pbtn" Command="{Binding PlayNextCommand}"
+                            ToolTip.Tip="{DynamicResource Tooltip_Next}">
+                      <mi:MaterialIcon Kind="SkipNext" Width="18" Height="18" />
+                    </Button>
+                  </StackPanel>
+
+                  <!-- Right cluster: speed · edit · volume · fullscreen -->
+                  <StackPanel Orientation="Horizontal" Spacing="6"
+                              HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <!-- Playback speed (deep slow-mo via the flyout list) -->
+                    <Button Classes="pbtn" Width="NaN" MinWidth="40" Padding="9,0"
+                            IsVisible="{Binding !IsViewingImage}">
+                      <TextBlock Text="{Binding SpeedLabel}" FontFamily="{StaticResource FontMono}" FontSize="12" />
+                      <Button.Flyout>
+                        <Flyout Placement="Top">
+                          <ListBox x:CompileBindings="False" Width="80" MaxHeight="300"
+                                   ItemsSource="{Binding SpeedOptions}"
+                                   SelectedItem="{Binding PlaybackSpeed, Mode=TwoWay}">
+                            <ListBox.ItemTemplate>
+                              <DataTemplate>
+                                <TextBlock Text="{Binding, StringFormat='{}{0}x'}" FontSize="12" />
+                              </DataTemplate>
+                            </ListBox.ItemTemplate>
+                          </ListBox>
+                        </Flyout>
+                      </Button.Flyout>
+                    </Button>
+                    <Button Classes="pbtn" Width="34" Height="34" CornerRadius="9"
+                            x:CompileBindings="False"
+                            IsVisible="{Binding !IsViewingImage}"
+                            Command="{Binding DataContext.OpenEditorFromPlayerCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                            ToolTip.Tip="{DynamicResource Editor_Edit}">
+                      <mi:MaterialIcon Kind="MovieEditOutline" Width="16" Height="16" />
+                    </Button>
+                    <mi:MaterialIcon Kind="VolumeHigh" Width="16" Height="16"
+                                     IsVisible="{Binding !IsViewingImage}"
+                                     Foreground="{StaticResource TextMid}" VerticalAlignment="Center" />
+                    <Slider Classes="volume" Width="56" Minimum="0" Maximum="100"
+                            Value="{Binding Volume, Mode=TwoWay}"
+                            IsVisible="{Binding !IsViewingImage}"
+                            VerticalAlignment="Center"
+                            ToolTip.Tip="{DynamicResource Tooltip_Volume}" />
+                    <Button Classes="pbtn" Width="34" Height="34" CornerRadius="9"
+                            x:CompileBindings="False"
+                            Command="{Binding DataContext.ToggleFullscreenCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                            ToolTip.Tip="{DynamicResource Tooltip_Fullscreen}">
+                      <mi:MaterialIcon Kind="Fullscreen" Width="16" Height="16" />
+                    </Button>
+                  </StackPanel>
+                </Grid>
+              </StackPanel>
+            </Border>
+          </Panel>
+        </Border>
+      </Grid>
+
+      <!-- ── Replay panel (w300). In fullscreen the code-behind turns it into a right-edge
+           overlay revealed by cursor proximity. ── -->
+      <Border Grid.Column="1" Width="300" Margin="16,0,0,0"
               x:Name="ReplayPanel"
-              Background="{StaticResource CardBrush}" CornerRadius="12"
-              Padding="10,12">
+              Background="{StaticResource SurfaceApp}" BorderBrush="{StaticResource BorderCard}"
+              BorderThickness="1" CornerRadius="14">
         <Grid RowDefinitions="Auto,*,Auto">
 
-          <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="4,0,4,8">
+          <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="18,18,18,12">
             <TextBlock Grid.Column="0" Text="{DynamicResource Player_Replays}"
-                       FontSize="13" FontWeight="Medium" />
+                       FontFamily="{StaticResource FontMono}" FontSize="11" Foreground="{StaticResource TextFaintest}" />
             <TextBlock Grid.Column="1" Text="{Binding TotalClips}"
-                       FontSize="12" Foreground="{StaticResource Fg3Brush}" />
+                       FontFamily="{StaticResource FontMono}" FontSize="11" Foreground="{StaticResource TextFaintest}" />
           </Grid>
 
-          <ListBox Grid.Row="1" Classes="replays"
+          <ListBox Grid.Row="1" Classes="replays" Margin="10,0"
                    ItemsSource="{Binding Clips}"
                    SelectedItem="{Binding ActiveSidebarClip, Mode=TwoWay}"
                    ScrollViewer.HorizontalScrollBarVisibility="Disabled">
             <ListBox.ItemTemplate>
               <DataTemplate x:DataType="models:ReplayClip">
-                <Grid ColumnDefinitions="Auto,*" >
-                  <Border Grid.Column="0" Width="64" Height="36" CornerRadius="6"
-                          ClipToBounds="True" Background="#232A33">
-                    <!-- Border.ClipToBounds clips to the rectangle, not the corner radius —
-                         a rounded Clip geometry is what actually rounds the thumbnail. -->
+                <Grid ColumnDefinitions="Auto,*">
+                  <Border Grid.Column="0" Width="64" Height="36" CornerRadius="7"
+                          ClipToBounds="True" Background="#16181E">
                     <Panel>
                       <Panel.Clip>
-                        <RectangleGeometry Rect="0,0,64,36" RadiusX="6" RadiusY="6" />
+                        <RectangleGeometry Rect="0,0,64,36" RadiusX="7" RadiusY="7" />
                       </Panel.Clip>
                       <Image Source="{Binding Thumbnail}" Stretch="UniformToFill" />
-                      <mi:MaterialIcon Classes="selplay" Kind="Play" Width="12" Height="12"
-                                       Foreground="{StaticResource AccentBrush}"
-                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Panel>
                   </Border>
-                  <StackPanel Grid.Column="1" Margin="10,0,0,0" Spacing="2"
-                              VerticalAlignment="Center">
-                    <TextBlock Text="{Binding DisplayName}" FontSize="12" FontWeight="Medium"
-                               TextTrimming="CharacterEllipsis" />
-                    <TextBlock Text="{Binding ShortMeta}" FontSize="11"
-                               Foreground="{StaticResource Fg3Brush}" />
+                  <StackPanel Grid.Column="1" Margin="11,0,0,0" Spacing="2" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding DisplayName}" FontSize="12" FontWeight="SemiBold"
+                               Foreground="{StaticResource TextHi}" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Text="{Binding ShortMeta}" FontFamily="{StaticResource FontMono}"
+                               FontSize="10" Foreground="{StaticResource TextFaint}" />
                   </StackPanel>
                 </Grid>
               </DataTemplate>
@@ -275,25 +318,25 @@
           </ListBox>
 
           <!-- Stats footer -->
-          <StackPanel Grid.Row="2" Spacing="8">
-            <Border Height="1" Background="{StaticResource Divider6Brush}" Margin="0,2,0,2" />
-            <Grid ColumnDefinitions="*,Auto" Margin="4,0">
+          <StackPanel Grid.Row="2" Spacing="8" Margin="18,14">
+            <Border Height="1" Background="{StaticResource BorderCard}" Margin="0,0,0,2" />
+            <Grid ColumnDefinitions="*,Auto">
               <TextBlock Grid.Column="0" Text="{DynamicResource Player_Clips}"
-                         FontSize="12" Foreground="{StaticResource Fg2Brush}" />
+                         FontSize="12.5" Foreground="{StaticResource TextMuted}" />
               <TextBlock Grid.Column="1" Text="{Binding TotalClips}"
-                         FontSize="12" FontWeight="Medium" />
+                         FontFamily="{StaticResource FontMono}" FontSize="12.5" Foreground="{StaticResource TextHi}" />
             </Grid>
-            <Grid ColumnDefinitions="*,Auto" Margin="4,0">
+            <Grid ColumnDefinitions="*,Auto">
               <TextBlock Grid.Column="0" Text="{DynamicResource Player_Duration}"
-                         FontSize="12" Foreground="{StaticResource Fg2Brush}" />
+                         FontSize="12.5" Foreground="{StaticResource TextMuted}" />
               <TextBlock Grid.Column="1" Text="{Binding TotalDurationDisplay}"
-                         FontSize="12" FontWeight="Medium" />
+                         FontFamily="{StaticResource FontMono}" FontSize="12.5" Foreground="{StaticResource TextHi}" />
             </Grid>
-            <Grid ColumnDefinitions="*,Auto" Margin="4,0">
+            <Grid ColumnDefinitions="*,Auto">
               <TextBlock Grid.Column="0" Text="{DynamicResource Player_Used}"
-                         FontSize="12" Foreground="{StaticResource Fg2Brush}" />
+                         FontSize="12.5" Foreground="{StaticResource TextMuted}" />
               <TextBlock Grid.Column="1" Text="{Binding TotalSizeDisplay}"
-                         FontSize="12" FontWeight="Medium" />
+                         FontFamily="{StaticResource FontMono}" FontSize="12.5" Foreground="{StaticResource TextHi}" />
             </Grid>
           </StackPanel>
         </Grid>

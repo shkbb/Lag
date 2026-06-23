@@ -71,12 +71,14 @@ public partial class PlayerView : UserControl
 
         if (!(_mainVm?.IsFullscreen ?? false))
         {
-            SetControlsVisible(true);
+            // Windowed: the control bar reveals only while the cursor is over the video (YouTube-style);
+            // the replays column stays put.
+            SetControlsVisible(IsPointerOverVideo(e));
             SetReplaysVisible(true);
             return;
         }
 
-        // The bottom strip belongs to the control bar; the right zone stops above it so the
+        // Fullscreen: the bottom strip belongs to the control bar; the right zone stops above it so the
         // two overlays (and their reveal zones) never fight over the bottom-right corner.
         var p = e.GetPosition(PlayerArea);
         bool inBottomZone = p.Y >= PlayerArea.Bounds.Height - RevealZoneHeight;
@@ -85,13 +87,21 @@ public partial class PlayerView : UserControl
         SetReplaysVisible(inRightZone);
     }
 
+    /// <summary>True when the pointer is currently within the video frame (incl. the control bar,
+    /// which lives inside it) — used to reveal the windowed control bar.</summary>
+    private bool IsPointerOverVideo(PointerEventArgs e)
+    {
+        var pt = e.GetPosition(VideoFrame);
+        return pt.X >= 0 && pt.Y >= 0
+            && pt.X <= VideoFrame.Bounds.Width && pt.Y <= VideoFrame.Bounds.Height;
+    }
+
     private void OnAreaPointerExited(object? sender, PointerEventArgs e)
     {
-        if (_mainVm?.IsFullscreen ?? false)
-        {
-            SetControlsVisible(false);
-            SetReplaysVisible(false);
-        }
+        // Leaving the player area hides the control bar in both modes; the replays column
+        // stays visible while windowed.
+        SetControlsVisible(false);
+        if (_mainVm?.IsFullscreen ?? false) SetReplaysVisible(false);
     }
 
     private void OnAttached(object? sender, EventArgs e)
@@ -206,9 +216,10 @@ public partial class PlayerView : UserControl
             ReplayPanel.Margin = new Thickness(16, 0, 0, 0);
         }
 
-        // Entering fullscreen: overlays start hidden (slide in on cursor approach).
-        // Leaving it: everything visible again.
-        SetControlsVisible(!fs);
+        // The control bar starts hidden in BOTH modes — it reveals on cursor proximity
+        // (over the video windowed; near the bottom edge in fullscreen). The replays column
+        // is shown windowed and hidden (reveal-on-approach) in fullscreen.
+        SetControlsVisible(false);
         SetReplaysVisible(!fs);
 
         // Cursor: armed to auto-hide in fullscreen, always shown windowed.
