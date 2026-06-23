@@ -224,24 +224,44 @@
         <!-- Spacer (drag zone) -->
         <Panel Grid.Column="5" Background="Transparent" PointerPressed="OnTitleBarPointerPressed" />
 
-        <!-- Status pill -->
-        <Border Grid.Column="6" Background="{StaticResource SurfaceCard}"
-                BorderBrush="{StaticResource BorderCard}" BorderThickness="1"
-                CornerRadius="11" Padding="14,7" VerticalAlignment="Center">
-          <StackPanel Orientation="Horizontal" Spacing="11" VerticalAlignment="Center">
-            <Ellipse Width="8" Height="8" Fill="{StaticResource StatusIdle}"
-                     IsVisible="{Binding !IsRecording}" VerticalAlignment="Center" />
-            <Ellipse Width="8" Height="8" Classes="recpulse" Fill="{StaticResource RecDot}"
-                     IsVisible="{Binding IsRecording}" VerticalAlignment="Center" />
-            <TextBlock Text="{Binding StatusText}" FontSize="12.5" FontWeight="SemiBold"
-                       Foreground="{StaticResource TextKbd}" VerticalAlignment="Center"
-                       MinWidth="62" TextTrimming="CharacterEllipsis" MaxWidth="160" />
-            <ProgressBar Classes="buffer" Width="74" Height="5" VerticalAlignment="Center"
-                         Minimum="0" Maximum="100" Value="{Binding BufferFillPercent}" />
-            <TextBlock Text="{Binding BufferStatus}" FontFamily="{StaticResource FontMono}"
-                       FontSize="11" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" />
-          </StackPanel>
-        </Border>
+        <!-- Capture-target pill (now recording game/desktop) + status pill -->
+        <StackPanel Grid.Column="6" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+
+          <!-- What's being captured right now -->
+          <Border Background="{StaticResource SurfaceCard}" BorderBrush="{StaticResource BorderCard}"
+                  BorderThickness="1" CornerRadius="11" Padding="13,7" VerticalAlignment="Center"
+                  IsVisible="{Binding HasCaptureTarget}">
+            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+              <mi:MaterialIcon Width="16" Height="16" VerticalAlignment="Center"
+                               Foreground="{StaticResource Accent}" Kind="Controller"
+                               IsVisible="{Binding CaptureTargetIsGame}" />
+              <mi:MaterialIcon Width="16" Height="16" VerticalAlignment="Center"
+                               Foreground="{StaticResource Accent}" Kind="Monitor"
+                               IsVisible="{Binding !CaptureTargetIsGame}" />
+              <TextBlock Text="{Binding CaptureTargetName}" FontSize="12.5" FontWeight="SemiBold"
+                         Foreground="{StaticResource TextHi}" VerticalAlignment="Center"
+                         TextTrimming="CharacterEllipsis" MaxWidth="150" />
+            </StackPanel>
+          </Border>
+
+          <!-- Status pill -->
+          <Border Background="{StaticResource SurfaceCard}" BorderBrush="{StaticResource BorderCard}"
+                  BorderThickness="1" CornerRadius="11" Padding="14,7" VerticalAlignment="Center">
+            <StackPanel Orientation="Horizontal" Spacing="11" VerticalAlignment="Center">
+              <Ellipse Width="8" Height="8" Fill="{StaticResource StatusIdle}"
+                       IsVisible="{Binding !IsRecording}" VerticalAlignment="Center" />
+              <Ellipse Width="8" Height="8" Classes="recpulse" Fill="{StaticResource RecDot}"
+                       IsVisible="{Binding IsRecording}" VerticalAlignment="Center" />
+              <TextBlock Text="{Binding StatusText}" FontSize="12.5" FontWeight="SemiBold"
+                         Foreground="{StaticResource TextKbd}" VerticalAlignment="Center"
+                         MinWidth="62" TextTrimming="CharacterEllipsis" MaxWidth="160" />
+              <ProgressBar Classes="buffer" Width="74" Height="5" VerticalAlignment="Center"
+                           Minimum="0" Maximum="100" Value="{Binding BufferFillPercent}" />
+              <TextBlock Text="{Binding BufferStatus}" FontFamily="{StaticResource FontMono}"
+                         FontSize="11" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" />
+            </StackPanel>
+          </Border>
+        </StackPanel>
 
         <!-- Window controls -->
         <StackPanel Grid.Column="7" Orientation="Horizontal" Margin="4,0,0,0">
