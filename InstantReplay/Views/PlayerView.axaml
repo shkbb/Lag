@@ -67,6 +67,33 @@
       <Setter Property="Background" Value="{StaticResource AccentDim}" />
     </Style>
 
+    <!-- Playback-speed flyout list: on-theme rows, accent-dim selection (not a solid block) -->
+    <Style Selector="ListBox.speedlist">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="0" />
+    </Style>
+    <Style Selector="ListBox.speedlist ListBoxItem">
+      <Setter Property="Padding" Value="10,7" />
+      <Setter Property="Margin" Value="0,1" />
+      <Setter Property="CornerRadius" Value="7" />
+      <Setter Property="Foreground" Value="{StaticResource TextMid}" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    </Style>
+    <Style Selector="ListBox.speedlist ListBoxItem /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Transitions"><Transitions><BrushTransition Property="Background" Duration="0:0:0.12" /></Transitions></Setter>
+    </Style>
+    <Style Selector="ListBox.speedlist ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{StaticResource SurfaceInput}" />
+    </Style>
+    <Style Selector="ListBox.speedlist ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{StaticResource AccentDim}" />
+    </Style>
+    <Style Selector="ListBox.speedlist ListBoxItem:selected">
+      <Setter Property="Foreground" Value="{StaticResource AccentText}" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+
     <!-- Floating control bar: slides/fades away in fullscreen until the cursor
          approaches the bottom edge (class "hidden" is toggled in code-behind). -->
     <Style Selector="Border#ControlsBar">
@@ -183,9 +210,9 @@
 
                 <!-- Progress: time + timeline -->
                 <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding !IsViewingImage}">
-                  <TextBlock Grid.Column="0" Text="{Binding TimeDisplay, FallbackValue='0:00 / 0:00'}"
+                  <TextBlock x:Name="TimeText" Grid.Column="0" Text="0:00.000 / 0:00.000"
                              FontFamily="{StaticResource FontMono}" FontSize="11.5" Foreground="{StaticResource TextMid}"
-                             VerticalAlignment="Center" Margin="0,0,12,0" MinWidth="82" />
+                             VerticalAlignment="Center" Margin="0,0,12,0" MinWidth="120" />
                   <Slider Grid.Column="1" Minimum="0" Maximum="1"
                           Value="{Binding Position, Mode=TwoWay}" VerticalAlignment="Center" />
                 </Grid>
@@ -229,17 +256,17 @@
                   <StackPanel Orientation="Horizontal" Spacing="6"
                               HorizontalAlignment="Right" VerticalAlignment="Center">
                     <!-- Playback speed (deep slow-mo via the flyout list) -->
-                    <Button Classes="pbtn" Width="NaN" MinWidth="40" Padding="9,0"
+                    <Button x:Name="SpeedButton" Classes="pbtn" Width="NaN" MinWidth="40" Padding="9,0"
                             IsVisible="{Binding !IsViewingImage}">
                       <TextBlock Text="{Binding SpeedLabel}" FontFamily="{StaticResource FontMono}" FontSize="12" />
                       <Button.Flyout>
                         <Flyout Placement="Top">
-                          <ListBox x:CompileBindings="False" Width="80" MaxHeight="300"
+                          <ListBox Classes="speedlist" x:CompileBindings="False" Width="96" MaxHeight="320"
                                    ItemsSource="{Binding SpeedOptions}"
                                    SelectedItem="{Binding PlaybackSpeed, Mode=TwoWay}">
                             <ListBox.ItemTemplate>
                               <DataTemplate>
-                                <TextBlock Text="{Binding, StringFormat='{}{0}x'}" FontSize="12" />
+                                <TextBlock Text="{Binding, StringFormat='{}{0}x'}" FontSize="12.5" />
                               </DataTemplate>
                             </ListBox.ItemTemplate>
                           </ListBox>

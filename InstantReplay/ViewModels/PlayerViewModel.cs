@@ -1,6 +1,8 @@
+using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Linq;
+using System.Threading;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -25,6 +27,13 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
     private MediaPlayer? _mediaPlayer;
     private bool _disposed;
     private System.Timers.Timer? _positionTimer;
+
+    // EVERY libvlc control call (Play/Stop/Media swap/SetRate/seek) runs on this single
+    // background thread, never the UI thread. At deep slow-mo (0.05x) those calls can block
+    // for seconds inside libvlc; on the UI thread that froze the whole app (and switching a
+    // clip mid-stall deadlocked it). Serialised here → the UI never blocks and ops stay ordered.
+    private readonly BlockingCollection<Action> _vlcQueue = new();
+    private Thread? _vlcWorker;
 
     /// <summary>
     /// Shared library VM — the single source of truth for the saved replay collection.
@@ -96,12 +105,20 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private double _position;
 
+    /// <summary>Current/total time in seconds — the view interpolates between these (resynced
+    /// every position tick) to render a smooth millisecond clock at display framerate.</summary>
+    [ObservableProperty]
+    private double _positionSeconds;
+
+    [ObservableProperty]
+    private double _durationSeconds;
+
     /// <summary>When set by the user (via slider), seeks to the new position (throttled).</summary>
     partial void OnPositionChanged(double value)
     {
         if (_isUpdatingPosition) return;
-        _pendingSeekPosition = (float)Math.Clamp(value, 0.0, 1.0);
-        StartVlcApplyTimer();
+        lock (_pendingLock) _pendingSeekPosition = (float)Math.Clamp(value, 0.0, 1.0);
+        RequestFlush();
     }
 
     private bool _isUpdatingPosition;
@@ -116,13 +133,13 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
 
     partial void OnVolumeChanged(int value)
     {
-        _pendingVolume = Math.Clamp(value, 0, 100);
-        StartVlcApplyTimer();
+        lock (_pendingLock) _pendingVolume = Math.Clamp(value, 0, 100);
+        RequestFlush();
     }
 
     // ── Playback speed (incl. deep slow-mo: down to 0.05x = 20× slower) ──
     /// <summary>Speed presets shown in the player's speed menu (fast → slow).</summary>
-    public IReadOnlyList<double> SpeedOptions { get; } = new[] { 2.0, 1.5, 1.0, 0.5, 0.25, 0.1, 0.05 };
+    public IReadOnlyList<double> SpeedOptions { get; } = new[] { 2.0, 1.5, 1.0, 0.5, 0.25, 0.1 };
 
     /// <summary>Current playback rate (1.0 = normal). Applied to libvlc via SetRate.</summary>
     [ObservableProperty]
@@ -134,68 +151,74 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
     partial void OnPlaybackSpeedChanged(double value)
     {
         OnPropertyChanged(nameof(SpeedLabel));
-        try { _mediaPlayer?.SetRate((float)value); }
-        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[Player] SetRate failed: {ex.Message}"); }
+        EnqueueVlc(() => ApplyRate(value));
     }
 
-    // ── Throttled writes into libvlc ──
-    // Dragging a slider produces dozens of property changes per second; pushing each one
-    // straight into libvlc (volume/seek) floods its audio/input threads — the UI starts
-    // stuttering and libvlc eventually crashes the process. Instead the latest value is
-    // parked here and flushed at most every 80ms (the first change applies immediately).
-    private DispatcherTimer? _vlcApplyTimer;
+    // ── Coalesced writes into libvlc (volume / seek) ──
+    // A timeline drag fires dozens of changes per second; at deep slow-mo each seek is slow, so
+    // queueing them all backs the worker up and the UI lags. Instead we keep only the LATEST value
+    // and run ONE flush op that re-reads it until drained — intermediate drag positions are dropped,
+    // so at most one seek is ever in flight (no backlog, always the newest target).
+    private readonly object _pendingLock = new();
     private int? _pendingVolume;
     private float? _pendingSeekPosition;
+    private bool _flushQueued;
 
-    private void StartVlcApplyTimer()
+    private void RequestFlush()
     {
-        if (_vlcApplyTimer == null)
-        {
-            _vlcApplyTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(80) };
-            _vlcApplyTimer.Tick += (_, _) => ApplyPendingVlcWrites();
-        }
+        if (_disposed) return;
+        lock (_pendingLock) { if (_flushQueued) return; _flushQueued = true; }
+        EnqueueVlc(FlushPendingWrites);
+    }
 
-        if (!_vlcApplyTimer.IsEnabled)
+    private void FlushPendingWrites()
+    {
+        while (true)
         {
-            ApplyPendingVlcWrites(); // leading edge — the first change feels instant
-            _vlcApplyTimer.Start();  // trailing ticks pick up whatever arrives while dragging
+            int? vol; float? pos;
+            lock (_pendingLock)
+            {
+                vol = _pendingVolume; _pendingVolume = null;
+                pos = _pendingSeekPosition; _pendingSeekPosition = null;
+                if ((vol == null && pos == null) || _mediaPlayer == null) { _flushQueued = false; return; }
+            }
+            var mp = _mediaPlayer;
+            try { if (vol is int v) mp.Volume = v; } catch { }
+            // Seeks always run at normal speed (OnPositionChanged snaps slow-mo back to 1.0 first),
+            // so Position= returns promptly and never blocks the worker.
+            try { if (pos is float p && mp.IsSeekable) mp.Position = p; } catch { }
         }
     }
 
-    private void ApplyPendingVlcWrites()
-    {
-        if (_mediaPlayer == null || _disposed)
-        {
-            _pendingVolume = null;
-            _pendingSeekPosition = null;
-            _vlcApplyTimer?.Stop();
-            return;
-        }
+    // ── Serialised libvlc control worker ──
 
-        bool appliedAnything = false;
+    private void VlcWorkerLoop()
+    {
         try
         {
-            if (_pendingVolume is int vol)
+            foreach (var op in _vlcQueue.GetConsumingEnumerable())
             {
-                _pendingVolume = null;
-                _mediaPlayer.Volume = vol;
-                appliedAnything = true;
-            }
-            if (_pendingSeekPosition is float pos)
-            {
-                _pendingSeekPosition = null;
-                if (_mediaPlayer.IsSeekable)
-                    _mediaPlayer.Position = pos;
-                appliedAnything = true;
+                try { op(); }
+                catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[Player] VLC op failed: {ex.Message}"); }
             }
         }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"VLC write failed: {ex.Message}");
-        }
+        catch (Exception) { /* queue completed/disposed during shutdown */ }
+    }
 
-        if (!appliedAnything)
-            _vlcApplyTimer?.Stop();
+    /// <summary>Queues a libvlc control call to run (in order) on the background worker.</summary>
+    private void EnqueueVlc(Action op)
+    {
+        if (_disposed) return;
+        try { _vlcQueue.Add(op); } catch (Exception) { /* completed */ }
+    }
+
+    /// <summary>Applies the playback rate (worker thread). Kept minimal: changing the audio track at
+    /// runtime re-inits libvlc's whole pipeline, which made deep slow-mo stall for 10-20s and turned
+    /// the picture into a slideshow — so we ONLY set the rate. SetRate returns fast, so the worker
+    /// stays free for the next command (pause / switch).</summary>
+    private void ApplyRate(double rate)
+    {
+        try { _mediaPlayer?.SetRate((float)rate); } catch { }
     }
 
     public PlayerViewModel(LibraryViewModel library)
@@ -251,8 +274,12 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
 
             Player = _mediaPlayer;
 
-            // Position update timer (fires every 250ms to update the timeline)
-            _positionTimer = new System.Timers.Timer(250);
+            // Dedicated worker that serialises all libvlc control calls off the UI thread.
+            _vlcWorker = new Thread(VlcWorkerLoop) { IsBackground = true, Name = "Lag.VlcControl" };
+            _vlcWorker.Start();
+
+            // Position update timer (100ms → the timeline + millisecond time readout stay responsive)
+            _positionTimer = new System.Timers.Timer(100);
             _positionTimer.Elapsed += (_, _) => UpdatePlaybackPosition();
 
             // LibVLC raises these on its own threads — marshal all bound-property writes to the UI.
@@ -261,10 +288,11 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
                 IsPlaying = true;
                 _positionTimer?.Start();
                 // libvlc applies volume per audio output instance — re-assert ours on each start.
-                _pendingVolume = Volume;
-                StartVlcApplyTimer();
-                // Rate resets to 1 on a new media — re-assert the chosen speed so it persists per clip.
-                try { _mediaPlayer.SetRate((float)PlaybackSpeed); } catch { }
+                lock (_pendingLock) _pendingVolume = Volume;
+                RequestFlush();
+                // Rate resets to 1 on a new media — re-assert the chosen speed (off the UI thread,
+                // and drop audio if we're in deep slow-mo) so it persists per clip.
+                EnqueueVlc(() => ApplyRate(PlaybackSpeed));
             });
             _mediaPlayer.Paused += (_, _) => Dispatcher.UIThread.Post(() => { IsPlaying = false; _positionTimer?.Stop(); });
             _mediaPlayer.Stopped += (_, _) => Dispatcher.UIThread.Post(() =>
@@ -274,7 +302,7 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
                 _isUpdatingPosition = true;
                 Position = 0;
                 _isUpdatingPosition = false;
-                TimeDisplay = "0:00 / 0:00";
+                TimeDisplay = "0:00.000 / 0:00.000";
             });
             // Natural end of the clip: show the play button and park the timeline at 100%
             // (PlayPause restarts from zero in this state).
@@ -299,6 +327,10 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
     public void LoadAndPlay(ReplayClip clip)
     {
         if (_mediaPlayer == null || _libVLC == null) return;
+
+        // A new clip always starts at normal speed: carrying deep slow-mo onto the next clip made it
+        // re-buffer slowly on start (laggy switch), and resetting is nicer UX anyway.
+        PlaybackSpeed = 1.0;
 
         CurrentClip = clip;
 
@@ -338,32 +370,41 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
             oldStill?.Dispose();
         }
 
-        var oldMedia = _mediaPlayer.Media;
-        var media = new Media(_libVLC, new Uri(clip.FilePath));
-        if (clip.FilePath.EndsWith(".gif", StringComparison.OrdinalIgnoreCase))
+        string path = clip.FilePath;
+        bool isGif = path.EndsWith(".gif", StringComparison.OrdinalIgnoreCase);
+
+        // Build + swap the media on the worker thread. Assigning Media stops the current input,
+        // which can block for SECONDS at deep slow-mo — doing it off the UI thread is what stops the
+        // app from freezing when you switch clips mid-stall. Play() is queued separately afterwards
+        // (StartPlayback), and the queue preserves order so the swap always lands first.
+        EnqueueVlc(() =>
         {
-            // libvlc's default image demuxer shows only the FIRST GIF frame. Force ffmpeg's
-            // avformat demuxer so every frame plays, and loop it (GIFs are meant to repeat).
-            media.AddOption(":demux=avformat");
-            media.AddOption(":input-repeat=65535");
-        }
-        // SOFTWARE decode for the player (same as the editor). Two reasons:
-        //   • Hardware (d3d11va) decoder init stalls audio ~1s at the start of every clip (audio waits
-        //     for the HW pipeline to stabilise), and it produced a green screen on a live media swap
-        //     unless we fully Stop() first (which itself re-opened the audio output, delaying sound).
-        //   • The player is used to REVIEW clips, not while a game is hammering the GPU/CPU — the
-        //     "~2 fps software decode" problem only happened under game load. 1080p H.264 (the default)
-        //     decodes far above real-time on the CPU when no game is running.
-        // Net: no green screen (so no Stop() needed → audio output stays warm), and sound starts
-        // immediately. Heavy codecs (AV1/HEVC) on a weak CPU are the only caveat.
-        media.AddOption(":avcodec-hw=none");
-        _mediaPlayer.Media = media;
-        // The player keeps its own native reference — release ours (and the previous one)
-        // so switching clips doesn't leak native Media handles.
-        media.Dispose();
-        oldMedia?.Dispose();
-        // DO NOT call Play() here to prevent the VLC popup.
-        // The View will call StartPlayback() when the VideoView is loaded.
+            var mp = _mediaPlayer; var vlc = _libVLC;
+            if (mp == null || vlc == null) return;
+
+            // Stopping a 0.05x input is slow — normalise the rate first so the swap is quick.
+            // The new clip starts at 1.0 and the Playing handler re-applies the chosen speed.
+            try { mp.SetRate(1.0f); } catch { }
+
+            var media = new Media(vlc, new Uri(path));
+            if (isGif)
+            {
+                // libvlc's default image demuxer shows only the FIRST GIF frame. Force ffmpeg's
+                // avformat demuxer so every frame plays, and loop it (GIFs are meant to repeat).
+                media.AddOption(":demux=avformat");
+                media.AddOption(":input-repeat=65535");
+            }
+            // SOFTWARE decode for the player (same as the editor): hardware d3d11va stalled audio
+            // ~1s per clip and green-screened on a live swap unless fully stopped first. On the CPU,
+            // 1080p H.264 decodes far above real-time when no game is hammering the machine.
+            media.AddOption(":avcodec-hw=none");
+
+            var old = mp.Media;
+            mp.Media = media;
+            media.Dispose();   // the player keeps its own native ref — release ours + the previous
+            old?.Dispose();
+        });
+        // DO NOT Play() here — the View calls StartPlayback() once the surface is ready.
     }
 
     /// <summary>Plays a clip chosen from the sidebar list (loads it and starts playback immediately).</summary>
@@ -399,7 +440,7 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
     public void StartPlayback()
     {
         if (IsViewingImage) return; // a screenshot is on display — nothing to play
-        _mediaPlayer?.Play();
+        EnqueueVlc(() => _mediaPlayer?.Play());
     }
 
     /// <summary>Toggles between play and pause states; replays from the start after the end.</summary>
@@ -408,19 +449,16 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
     {
         if (_mediaPlayer == null || IsViewingImage) return;
 
-        // After EndReached libvlc sits in the Ended state where Play() is a no-op —
-        // a "watch it again" click must restart the clip from the beginning.
-        if (_mediaPlayer.State == VLCState.Ended)
+        EnqueueVlc(() =>
         {
-            _mediaPlayer.Stop();
-            _mediaPlayer.Play();
-            return;
-        }
-
-        if (_mediaPlayer.IsPlaying)
-            _mediaPlayer.Pause();
-        else
-            _mediaPlayer.Play();
+            var mp = _mediaPlayer;
+            if (mp == null) return;
+            // After EndReached libvlc sits in the Ended state where Play() is a no-op —
+            // a "watch it again" click must restart the clip from the beginning.
+            if (mp.State == VLCState.Ended) { mp.Stop(); mp.Play(); }
+            else if (mp.IsPlaying) mp.Pause();
+            else mp.Play();
+        });
     }
 
     /// <summary>Stops playback and resets position.</summary>
@@ -435,23 +473,21 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
     /// </summary>
     public void StopPlayback()
     {
-        _mediaPlayer?.Stop();
+        EnqueueVlc(() => _mediaPlayer?.Stop());
     }
 
     /// <summary>Seeks forward by 10 seconds.</summary>
     [RelayCommand]
     private void SeekForward()
     {
-        if (_mediaPlayer == null) return;
-        _mediaPlayer.Time += 10_000; // milliseconds
+        EnqueueVlc(() => { var mp = _mediaPlayer; if (mp != null) try { mp.Time += 10_000; } catch { } });
     }
 
     /// <summary>Seeks backward by 10 seconds.</summary>
     [RelayCommand]
     private void SeekBackward()
     {
-        if (_mediaPlayer == null) return;
-        _mediaPlayer.Time = Math.Max(0, _mediaPlayer.Time - 10_000);
+        EnqueueVlc(() => { var mp = _mediaPlayer; if (mp != null) try { mp.Time = Math.Max(0, mp.Time - 10_000); } catch { } });
     }
 
     /// <summary>
@@ -473,12 +509,14 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
             Position = position;
             _isUpdatingPosition = false;
 
+            PositionSeconds = current.TotalSeconds;
+            DurationSeconds = total.TotalSeconds;
             TimeDisplay = $"{FormatTime(current)} / {FormatTime(total)}";
         });
     }
 
     private static string FormatTime(TimeSpan ts) =>
-        ts.TotalHours >= 1 ? ts.ToString(@"h\:mm\:ss") : ts.ToString(@"m\:ss");
+        ts.TotalHours >= 1 ? ts.ToString(@"h\:mm\:ss\.fff") : ts.ToString(@"m\:ss\.fff");
 
     public void Dispose()
     {
@@ -487,10 +525,15 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
 
         _library.Clips.CollectionChanged -= OnClipsCollectionChanged;
 
-        _vlcApplyTimer?.Stop();
         _positionTimer?.Stop();
         _positionTimer?.Dispose();
-        _mediaPlayer?.Stop();
+
+        // Queue a final stop, then let the worker drain and exit before tearing down libvlc.
+        try { _vlcQueue.Add(() => { try { _mediaPlayer?.Stop(); } catch { } }); } catch { }
+        _vlcQueue.CompleteAdding();
+        _vlcWorker?.Join(2000);
+        _vlcQueue.Dispose();
+
         _mediaPlayer?.Dispose();
         _libVLC?.Dispose();
         VideoRenderer.Dispose();

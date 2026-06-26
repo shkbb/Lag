@@ -17,6 +17,16 @@ public partial class PlayerView : UserControl
     private static readonly Cursor HiddenCursor = new(StandardCursorType.None);
     private readonly DispatcherTimer _cursorIdleTimer = new() { Interval = TimeSpan.FromSeconds(2.5) };
 
+    // Smooth millisecond clock: VLC reports time only every ~100ms, so a display-rate timer
+    // interpolates between ticks (wall time × playback speed), like the editor's playhead.
+    private readonly DispatcherTimer _timeTimer = new() { Interval = TimeSpan.FromMilliseconds(33) };
+    private double _lastTimeSec;
+    private DateTime _lastTimeAt = DateTime.UtcNow;
+
+    // While the speed flyout is open the control bar must stay put (it would otherwise auto-hide
+    // when the cursor moves onto the popup).
+    private bool _controlsPinned;
+
     public PlayerView()
     {
         InitializeComponent();
@@ -25,6 +35,7 @@ public partial class PlayerView : UserControl
         DetachedFromVisualTree += OnDetached;
 
         _cursorIdleTimer.Tick += OnCursorIdle;
+        _timeTimer.Tick += OnTimeTick;
 
         // Fullscreen: the control bar hides until the cursor approaches the bottom edge,
         // the replays panel — until it approaches the right edge. Listening on the root
@@ -72,8 +83,8 @@ public partial class PlayerView : UserControl
         if (!(_mainVm?.IsFullscreen ?? false))
         {
             // Windowed: the control bar reveals only while the cursor is over the video (YouTube-style);
-            // the replays column stays put.
-            SetControlsVisible(IsPointerOverVideo(e));
+            // the replays column stays put. A pinned bar (speed flyout open) stays visible.
+            SetControlsVisible(_controlsPinned || IsPointerOverVideo(e));
             SetReplaysVisible(true);
             return;
         }
@@ -83,7 +94,7 @@ public partial class PlayerView : UserControl
         var p = e.GetPosition(PlayerArea);
         bool inBottomZone = p.Y >= PlayerArea.Bounds.Height - RevealZoneHeight;
         bool inRightZone = p.X >= PlayerArea.Bounds.Width - ReplaysZoneWidth && !inBottomZone;
-        SetControlsVisible(inBottomZone);
+        SetControlsVisible(_controlsPinned || inBottomZone);
         SetReplaysVisible(inRightZone);
     }
 
@@ -98,9 +109,9 @@ public partial class PlayerView : UserControl
 
     private void OnAreaPointerExited(object? sender, PointerEventArgs e)
     {
-        // Leaving the player area hides the control bar in both modes; the replays column
-        // stays visible while windowed.
-        SetControlsVisible(false);
+        // Leaving the player area hides the control bar in both modes — unless it's pinned open
+        // by the speed flyout. The replays column stays visible while windowed.
+        if (!_controlsPinned) SetControlsVisible(false);
         if (_mainVm?.IsFullscreen ?? false) SetReplaysVisible(false);
     }
 
@@ -118,6 +129,17 @@ public partial class PlayerView : UserControl
             UpdateVideoSource();
 
             vm.StartPlayback();
+
+            _lastTimeSec = vm.PositionSeconds;
+            _lastTimeAt = DateTime.UtcNow;
+            _timeTimer.Start();
+        }
+
+        // Keep the control bar pinned while the playback-speed flyout is open.
+        if (SpeedButton.Flyout is { } speedFlyout)
+        {
+            speedFlyout.Opened += OnSpeedFlyoutOpened;
+            speedFlyout.Closed += OnSpeedFlyoutClosed;
         }
 
         // Observe global fullscreen (the Window's DataContext is MainViewModel).
@@ -135,6 +157,13 @@ public partial class PlayerView : UserControl
     private void OnDetached(object? sender, EventArgs e)
     {
         _cursorIdleTimer.Stop();
+        _timeTimer.Stop();
+
+        if (SpeedButton.Flyout is { } speedFlyout)
+        {
+            speedFlyout.Opened -= OnSpeedFlyoutOpened;
+            speedFlyout.Closed -= OnSpeedFlyoutClosed;
+        }
 
         if (_playerVm != null)
         {
@@ -159,9 +188,49 @@ public partial class PlayerView : UserControl
 
     private void OnPlayerVmPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName is nameof(PlayerViewModel.StillImage) or nameof(PlayerViewModel.IsViewingImage))
-            UpdateVideoSource();
+        switch (e.PropertyName)
+        {
+            case nameof(PlayerViewModel.StillImage):
+            case nameof(PlayerViewModel.IsViewingImage):
+                UpdateVideoSource();
+                break;
+            // Resync the smooth clock whenever VLC reports a fresh time or play-state flips.
+            case nameof(PlayerViewModel.PositionSeconds):
+            case nameof(PlayerViewModel.IsPlaying):
+                if (_playerVm != null)
+                {
+                    _lastTimeSec = _playerVm.PositionSeconds;
+                    _lastTimeAt = DateTime.UtcNow;
+                }
+                break;
+        }
     }
+
+    /// <summary>Display-rate interpolation of the playback clock → a smooth millisecond readout.</summary>
+    private void OnTimeTick(object? sender, EventArgs e)
+    {
+        if (_playerVm == null) return;
+        double total = _playerVm.DurationSeconds;
+        double t = _lastTimeSec;
+        if (_playerVm.IsPlaying)
+            t += (DateTime.UtcNow - _lastTimeAt).TotalSeconds * Math.Max(0.01, _playerVm.PlaybackSpeed);
+        if (total > 0) t = Math.Clamp(t, 0, total);
+        TimeText.Text = $"{FormatClock(t)} / {FormatClock(total)}";
+    }
+
+    private static string FormatClock(double seconds)
+    {
+        var ts = TimeSpan.FromSeconds(Math.Max(0, seconds));
+        return ts.TotalHours >= 1 ? ts.ToString(@"h\:mm\:ss\.fff") : ts.ToString(@"m\:ss\.fff");
+    }
+
+    private void OnSpeedFlyoutOpened(object? sender, EventArgs e)
+    {
+        _controlsPinned = true;
+        SetControlsVisible(true);
+    }
+
+    private void OnSpeedFlyoutClosed(object? sender, EventArgs e) => _controlsPinned = false;
 
     /// <summary>The video area shows either the live VLC frame bitmap or a screenshot.</summary>
     private void UpdateVideoSource()
