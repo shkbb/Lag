@@ -61,6 +61,9 @@
   <sys:String x:Key="Editor_Title">Editor</sys:String>
   <sys:String x:Key="Editor_Edit">Edit</sys:String>
   <sys:String x:Key="Editor_Back">Back</sys:String>
+  <sys:String x:Key="Editor_PickClip">Choose a clip to edit</sys:String>
+  <sys:String x:Key="Editor_NoClips">No clips to edit yet.</sys:String>
+  <sys:String x:Key="Editor_Clips">CLIPS</sys:String>
   <sys:String x:Key="Editor_Export">Export</sys:String>
   <sys:String x:Key="Editor_Exporting">Exporting… {0}%</sys:String>
   <sys:String x:Key="Editor_ExportDone">Saved: {0}</sys:String>
