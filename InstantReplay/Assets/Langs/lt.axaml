@@ -16,7 +16,12 @@
   <sys:String x:Key="Settings_Title">Nustatymai</sys:String>
   <sys:String x:Key="Settings_PendingChanges">Pakeitimai įsigalios iš naujo paleidus įrašymą.</sys:String>
   <sys:String x:Key="Settings_Group_Language">KALBA</sys:String>
-  <sys:String x:Key="Settings_Language">Kalba</sys:String>
+  <sys:String x:Key="Settings_Language">Kalba</sys:String>
+  <sys:String x:Key="Settings_Theme">Tema</sys:String>
+  <sys:String x:Key="Settings_Theme_Desc">Šviesi, tamsi arba pagal sistemą</sys:String>
+  <sys:String x:Key="Theme_Light">Šviesi</sys:String>
+  <sys:String x:Key="Theme_Dark">Tamsi</sys:String>
+  <sys:String x:Key="Theme_System">Sistemos</sys:String>
   <sys:String x:Key="Settings_Group_Recording">ĮRAŠYMAS</sys:String>
   <sys:String x:Key="Settings_BufferLength">Pakartojimo buferio trukmė</sys:String>
   <sys:String x:Key="Settings_Display">Ekranas</sys:String>

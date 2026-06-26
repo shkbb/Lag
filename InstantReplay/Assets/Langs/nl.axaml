@@ -16,7 +16,12 @@
   <sys:String x:Key="Settings_Title">Instellingen</sys:String>
   <sys:String x:Key="Settings_PendingChanges">Wijzigingen worden van kracht na het herstarten van de opname.</sys:String>
   <sys:String x:Key="Settings_Group_Language">TAAL</sys:String>
-  <sys:String x:Key="Settings_Language">Taal</sys:String>
+  <sys:String x:Key="Settings_Language">Taal</sys:String>
+  <sys:String x:Key="Settings_Theme">Thema</sys:String>
+  <sys:String x:Key="Settings_Theme_Desc">Licht, donker of volg het systeem</sys:String>
+  <sys:String x:Key="Theme_Light">Licht</sys:String>
+  <sys:String x:Key="Theme_Dark">Donker</sys:String>
+  <sys:String x:Key="Theme_System">Systeem</sys:String>
   <sys:String x:Key="Settings_Group_Recording">OPNAME</sys:String>
   <sys:String x:Key="Settings_BufferLength">Lengte van de replaybuffer</sys:String>
   <sys:String x:Key="Settings_Display">Scherm</sys:String>

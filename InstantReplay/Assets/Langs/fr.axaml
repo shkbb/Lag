@@ -16,7 +16,12 @@
   <sys:String x:Key="Settings_Title">Paramètres</sys:String>
   <sys:String x:Key="Settings_PendingChanges">Les modifications prendront effet après le redémarrage de l'enregistrement.</sys:String>
   <sys:String x:Key="Settings_Group_Language">LANGUE</sys:String>
-  <sys:String x:Key="Settings_Language">Langue</sys:String>
+  <sys:String x:Key="Settings_Language">Langue</sys:String>
+  <sys:String x:Key="Settings_Theme">Thème</sys:String>
+  <sys:String x:Key="Settings_Theme_Desc">Clair, sombre ou selon le système</sys:String>
+  <sys:String x:Key="Theme_Light">Clair</sys:String>
+  <sys:String x:Key="Theme_Dark">Sombre</sys:String>
+  <sys:String x:Key="Theme_System">Système</sys:String>
   <sys:String x:Key="Settings_Group_Recording">ENREGISTREMENT</sys:String>
   <sys:String x:Key="Settings_BufferLength">Durée du tampon de replay</sys:String>
   <sys:String x:Key="Settings_Display">Écran</sys:String>

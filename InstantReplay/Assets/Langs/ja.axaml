@@ -16,7 +16,12 @@
   <sys:String x:Key="Settings_Title">設定</sys:String>
   <sys:String x:Key="Settings_PendingChanges">変更は録画の再開後に有効になります。</sys:String>
   <sys:String x:Key="Settings_Group_Language">言語</sys:String>
-  <sys:String x:Key="Settings_Language">言語</sys:String>
+  <sys:String x:Key="Settings_Language">言語</sys:String>
+  <sys:String x:Key="Settings_Theme">テーマ</sys:String>
+  <sys:String x:Key="Settings_Theme_Desc">ライト、ダーク、またはシステムに従う</sys:String>
+  <sys:String x:Key="Theme_Light">ライト</sys:String>
+  <sys:String x:Key="Theme_Dark">ダーク</sys:String>
+  <sys:String x:Key="Theme_System">システム</sys:String>
   <sys:String x:Key="Settings_Group_Recording">録画</sys:String>
   <sys:String x:Key="Settings_BufferLength">リプレイバッファの長さ</sys:String>
   <sys:String x:Key="Settings_Display">ディスプレイ</sys:String>

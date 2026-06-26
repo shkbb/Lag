@@ -30,15 +30,15 @@
       </Setter>
     </Style>
     <Style Selector="Border.trow.selected">
-      <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}" />
-      <Setter Property="Background" Value="#0D22D3EE" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+      <Setter Property="Background" Value="{DynamicResource AccentDim}" />
     </Style>
 
     <!-- Crop-box resize handles (8 around the reframe rectangle) -->
     <Style Selector="Border.chandle">
       <Setter Property="Width" Value="12" />
       <Setter Property="Height" Value="12" />
-      <Setter Property="Background" Value="{StaticResource AccentBrush}" />
+      <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
       <Setter Property="BorderBrush" Value="White" />
       <Setter Property="BorderThickness" Value="1.5" />
       <Setter Property="CornerRadius" Value="3" />
@@ -74,13 +74,13 @@
       <Setter Property="Background" Value="#20262E" />
     </Style>
     <Style Selector="ListBox.filters ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="{StaticResource AccentBrush}" />
+      <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
     </Style>
     <Style Selector="ListBox.filters TextBlock">
-      <Setter Property="Foreground" Value="{StaticResource Fg2Brush}" />
+      <Setter Property="Foreground" Value="{DynamicResource Fg2Brush}" />
     </Style>
     <Style Selector="ListBox.filters ListBoxItem:selected TextBlock">
-      <Setter Property="Foreground" Value="{StaticResource OnAccentBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource OnAccentBrush}" />
       <Setter Property="FontWeight" Value="Medium" />
     </Style>
 
@@ -97,7 +97,7 @@
       <Setter Property="Transitions"><Transitions><BrushTransition Property="Background" Duration="0:0:0.12" /></Transitions></Setter>
     </Style>
     <Style Selector="Button.clipitem:pointerover /template/ ContentPresenter">
-      <Setter Property="Background" Value="{StaticResource SurfaceInput}" />
+      <Setter Property="Background" Value="{DynamicResource SurfaceInput}" />
     </Style>
   </UserControl.Styles>
 
@@ -107,14 +107,14 @@
     <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto" Margin="0,0,0,14">
       <StackPanel Grid.Column="0" Spacing="2">
         <TextBlock Text="{DynamicResource Editor_Title}" FontFamily="{StaticResource FontDisplay}"
-                   FontSize="22" FontWeight="SemiBold" Foreground="{StaticResource TextHi}" />
+                   FontSize="22" FontWeight="SemiBold" Foreground="{DynamicResource TextHi}" />
         <TextBlock Text="{Binding CurrentClip.DisplayName, FallbackValue=''}"
-                   FontFamily="{StaticResource FontMono}" FontSize="11" Foreground="{StaticResource TextFaint}"
+                   FontFamily="{StaticResource FontMono}" FontSize="11" Foreground="{DynamicResource TextFaint}"
                    TextTrimming="CharacterEllipsis" MaxWidth="420" />
       </StackPanel>
 
       <TextBlock Grid.Column="2" Text="{Binding ExportStatus}"
-                 FontSize="12" Foreground="{StaticResource TextMuted}"
+                 FontSize="12" Foreground="{DynamicResource TextMuted}"
                  VerticalAlignment="Center" Margin="0,0,12,0"
                  MaxWidth="340" TextTrimming="CharacterEllipsis"
                  ToolTip.Tip="{Binding ExportStatus}" />
@@ -138,7 +138,7 @@
                 <TextBlock Text="{DynamicResource Editor_ExportOptions}" FontWeight="Medium" FontSize="13" />
                 <StackPanel Spacing="6">
                   <TextBlock Text="{DynamicResource Editor_ExportResolution}" FontSize="12"
-                             Foreground="{StaticResource Fg2Brush}" />
+                             Foreground="{DynamicResource Fg2Brush}" />
                   <ComboBox HorizontalAlignment="Stretch"
                             ItemsSource="{Binding ExportResolutionOptions}"
                             SelectedItem="{Binding SelectedExportResolution}">
@@ -151,7 +151,7 @@
                 </StackPanel>
                 <StackPanel Spacing="6" IsVisible="{Binding !ExportAsGif}">
                   <TextBlock Text="{DynamicResource Editor_Format}" FontSize="12"
-                             Foreground="{StaticResource Fg2Brush}" />
+                             Foreground="{DynamicResource Fg2Brush}" />
                   <ComboBox HorizontalAlignment="Stretch"
                             ItemsSource="{Binding ExportFormatOptions}"
                             SelectedItem="{Binding SelectedExportFormat}" />
@@ -181,11 +181,11 @@
     <Grid Grid.Row="1" ColumnDefinitions="240,*,286">
 
       <!-- ── Clip-picker sidebar: choose which video to edit ── -->
-      <Border Grid.Column="0" Margin="0,0,14,0" Background="{StaticResource SurfaceCard}"
-              BorderBrush="{StaticResource BorderCard}" BorderThickness="1" CornerRadius="14" Padding="0,14">
+      <Border Grid.Column="0" Margin="0,0,14,0" Background="{DynamicResource SurfaceCard}"
+              BorderBrush="{DynamicResource BorderCard}" BorderThickness="1" CornerRadius="14" Padding="0,14">
         <Grid RowDefinitions="Auto,*">
           <TextBlock Grid.Row="0" Text="{DynamicResource Editor_Clips}" Margin="16,0,16,10"
-                     FontFamily="{StaticResource FontMono}" FontSize="11" Foreground="{StaticResource TextFaintest}" />
+                     FontFamily="{StaticResource FontMono}" FontSize="11" Foreground="{DynamicResource TextFaintest}" />
           <ScrollViewer Grid.Row="1" Padding="8,0" VerticalScrollBarVisibility="Auto">
             <ItemsControl ItemsSource="{Binding $parent[Window].DataContext.EditableClips}" x:CompileBindings="False">
               <ItemsControl.ItemTemplate>
@@ -199,9 +199,9 @@
                         <Image Source="{Binding Thumbnail}" Stretch="UniformToFill" />
                       </Border>
                       <TextBlock Text="{Binding DisplayName}" FontSize="11.5" FontWeight="SemiBold"
-                                 Foreground="{StaticResource TextHi}" TextTrimming="CharacterEllipsis" />
+                                 Foreground="{DynamicResource TextHi}" TextTrimming="CharacterEllipsis" />
                       <TextBlock Text="{Binding ShortMeta}" FontFamily="{StaticResource FontMono}"
-                                 FontSize="10" Foreground="{StaticResource TextFaint}" />
+                                 FontSize="10" Foreground="{DynamicResource TextFaint}" />
                     </StackPanel>
                   </Button>
                 </DataTemplate>
@@ -215,7 +215,7 @@
 
         <!-- Video preview (#07090C, r12) — Avalonia-rendered frames, live-preview effects -->
         <Border Grid.Row="0" x:Name="VideoFrame"
-                Background="#FF07090C" BorderBrush="{StaticResource BorderCard}" BorderThickness="1"
+                Background="#FF07090C" BorderBrush="{DynamicResource BorderCard}" BorderThickness="1"
                 CornerRadius="14" ClipToBounds="True" MinHeight="180">
           <Grid RowDefinitions="*,Auto">
             <Panel Grid.Row="0" x:Name="VideoSurface" Background="Transparent">
@@ -242,7 +242,7 @@
                   <Border x:Name="CropShadeRight"  Background="#99000000" IsHitTestVisible="False" />
                   <Border x:Name="FrameOutline" BorderBrush="White" BorderThickness="1"
                           Opacity="0.55" Background="Transparent" IsHitTestVisible="False" />
-                  <Border x:Name="CropRect" BorderBrush="{StaticResource AccentBrush}" BorderThickness="1.5"
+                  <Border x:Name="CropRect" BorderBrush="{DynamicResource AccentBrush}" BorderThickness="1.5"
                           Background="Transparent" IsHitTestVisible="False" />
                   <Border x:Name="HTL" Classes="chandle" /><Border x:Name="HTR" Classes="chandle" />
                   <Border x:Name="HBL" Classes="chandle" /><Border x:Name="HBR" Classes="chandle" />
@@ -259,7 +259,7 @@
               <TextBlock Text="{DynamicResource Editor_PickClip}" IsHitTestVisible="False"
                          IsVisible="{Binding CurrentClip, Converter={x:Static conv:ObjectConverters.IsNull}}"
                          HorizontalAlignment="Center" VerticalAlignment="Center"
-                         FontSize="14" Foreground="{StaticResource TextFaint}" />
+                         FontSize="14" Foreground="{DynamicResource TextFaint}" />
 
               <!-- Deselect button (top-right), shown only while the reframe box is selected. -->
               <Button x:Name="DeselectButton" Classes="chip" IsVisible="False"
@@ -282,16 +282,16 @@
                         ToolTip.Tip="{DynamicResource Tooltip_PlayPause}">
                   <Panel>
                     <mi:MaterialIcon Kind="Play" Width="15" Height="15"
-                                     Foreground="{StaticResource OnAccentBrush}"
+                                     Foreground="{DynamicResource OnAccentBrush}"
                                      IsVisible="{Binding !IsPlaying}" />
                     <mi:MaterialIcon Kind="Pause" Width="14" Height="14"
-                                     Foreground="{StaticResource OnAccentBrush}"
+                                     Foreground="{DynamicResource OnAccentBrush}"
                                      IsVisible="{Binding IsPlaying}" />
                   </Panel>
                 </Button>
 
                 <TextBlock Grid.Column="1" Text="{Binding TimeDisplay}" Margin="12,0,0,0"
-                           FontSize="11" Foreground="{StaticResource Fg2Brush}"
+                           FontSize="11" Foreground="{DynamicResource Fg2Brush}"
                            VerticalAlignment="Center" />
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8"
@@ -317,7 +317,7 @@
                       <TextBlock Text="{DynamicResource Editor_Cut}" FontSize="12" VerticalAlignment="Center"
                                  IsVisible="{Binding !IsMarkingCut}" />
                       <TextBlock Text="{DynamicResource Editor_CutEnd}" FontSize="12" VerticalAlignment="Center"
-                                 Foreground="{StaticResource AccentBrush}" IsVisible="{Binding IsMarkingCut}" />
+                                 Foreground="{DynamicResource AccentBrush}" IsVisible="{Binding IsMarkingCut}" />
                     </StackPanel>
                   </Button>
                   <Button Classes="transport" Command="{Binding ResetTrimCommand}"
@@ -331,18 +331,18 @@
         </Border>
 
         <!-- Timeline: video strip + audio tracks right under it -->
-        <Border Grid.Row="1" Background="{StaticResource SurfaceCard}" BorderBrush="{StaticResource BorderCard}"
+        <Border Grid.Row="1" Background="{DynamicResource SurfaceCard}" BorderBrush="{DynamicResource BorderCard}"
                 BorderThickness="1" CornerRadius="14"
                 Padding="10,8,10,10" Margin="0,14,0,0">
           <StackPanel Spacing="4">
             <Grid ColumnDefinitions="Auto,*,Auto" Margin="4,0,4,2">
               <TextBlock Grid.Column="0" Text="{Binding TrimStartDisplay}"
-                         FontSize="11" Foreground="{StaticResource Fg3Brush}" />
+                         FontSize="11" Foreground="{DynamicResource Fg3Brush}" />
               <TextBlock Grid.Column="1" Text="{Binding TrimDurationDisplay}"
-                         FontSize="11" FontWeight="Medium" Foreground="{StaticResource AccentBrush}"
+                         FontSize="11" FontWeight="Medium" Foreground="{DynamicResource AccentBrush}"
                          HorizontalAlignment="Center" />
               <TextBlock Grid.Column="2" Text="{Binding TrimEndDisplay}"
-                         FontSize="11" Foreground="{StaticResource Fg3Brush}" />
+                         FontSize="11" Foreground="{DynamicResource Fg3Brush}" />
             </Grid>
 
             <!-- Video row -->
@@ -369,17 +369,17 @@
                   <Border x:Name="Playhead" Canvas.Top="0" Width="2" Height="56"
                           Background="White" Opacity="0.9" IsHitTestVisible="False" />
                   <Border x:Name="StartHandle" Canvas.Top="0" Width="10" Height="56"
-                          Background="{StaticResource AccentBrush}" CornerRadius="3,0,0,3"
+                          Background="{DynamicResource AccentBrush}" CornerRadius="3,0,0,3"
                           Cursor="SizeWestEast" IsHitTestVisible="False">
                     <Border Width="2" Height="18" CornerRadius="1"
-                            Background="{StaticResource OnAccentBrush}" Opacity="0.65"
+                            Background="{DynamicResource OnAccentBrush}" Opacity="0.65"
                             HorizontalAlignment="Center" VerticalAlignment="Center" />
                   </Border>
                   <Border x:Name="EndHandle" Canvas.Top="0" Width="10" Height="56"
-                          Background="{StaticResource AccentBrush}" CornerRadius="0,3,3,0"
+                          Background="{DynamicResource AccentBrush}" CornerRadius="0,3,3,0"
                           Cursor="SizeWestEast" IsHitTestVisible="False">
                     <Border Width="2" Height="18" CornerRadius="1"
-                            Background="{StaticResource OnAccentBrush}" Opacity="0.65"
+                            Background="{DynamicResource OnAccentBrush}" Opacity="0.65"
                             HorizontalAlignment="Center" VerticalAlignment="Center" />
                   </Border>
                 </Canvas>
@@ -405,7 +405,7 @@
                                              IsEnabled="{Binding !IsMuted}" />
 
                       <!-- Name + mute chip (kept clear of the left handle) -->
-                      <Border Background="{StaticResource Overlay85Brush}" CornerRadius="6"
+                      <Border Background="{DynamicResource Overlay85Brush}" CornerRadius="6"
                               Padding="8,3" Margin="16,0,0,0"
                               HorizontalAlignment="Left" VerticalAlignment="Center">
                         <CheckBox Classes="app" VerticalAlignment="Center"
@@ -416,7 +416,7 @@
                       </Border>
 
                       <!-- Volume chip (kept clear of the right handle) -->
-                      <Border Background="{StaticResource Overlay85Brush}" CornerRadius="6"
+                      <Border Background="{DynamicResource Overlay85Brush}" CornerRadius="6"
                               Padding="8,2" Margin="0,0,16,0"
                               HorizontalAlignment="Right" VerticalAlignment="Center">
                         <StackPanel Orientation="Horizontal" Spacing="8">
@@ -426,7 +426,7 @@
                                   IsEnabled="{Binding !IsMuted}"
                                   VerticalAlignment="Center" />
                           <TextBlock Text="{Binding Volume, StringFormat='{}{0}%'}"
-                                     FontSize="10" Foreground="{StaticResource Fg2Brush}"
+                                     FontSize="10" Foreground="{DynamicResource Fg2Brush}"
                                      Width="30" VerticalAlignment="Center" />
                         </StackPanel>
                       </Border>
@@ -440,7 +440,7 @@
       </Grid>
 
       <!-- ── Tools panel: tabs Clip | Filters ── -->
-      <Border Grid.Column="2" Background="{StaticResource SurfaceCard}" BorderBrush="{StaticResource BorderCard}"
+      <Border Grid.Column="2" Background="{DynamicResource SurfaceCard}" BorderBrush="{DynamicResource BorderCard}"
               BorderThickness="1" CornerRadius="14" Padding="16,14">
         <Grid RowDefinitions="Auto,*">
           <Border Grid.Row="0" Classes="rsegtrack" Margin="0,0,0,16">
@@ -467,7 +467,7 @@
               <StackPanel Spacing="14">
                 <StackPanel Spacing="6">
                   <TextBlock Text="{DynamicResource Editor_Format}" FontSize="12"
-                             Foreground="{StaticResource Fg2Brush}" />
+                             Foreground="{DynamicResource Fg2Brush}" />
                   <ComboBox HorizontalAlignment="Stretch"
                             ItemsSource="{Binding AspectOptions}"
                             SelectedItem="{Binding SelectedAspect}">
@@ -508,7 +508,7 @@
 
                 <StackPanel Spacing="6">
                   <TextBlock Text="{DynamicResource Editor_Speed}" FontSize="12"
-                             Foreground="{StaticResource Fg2Brush}" />
+                             Foreground="{DynamicResource Fg2Brush}" />
                   <StackPanel Orientation="Horizontal" Spacing="8">
                     <ListBox Classes="segctl" VerticalAlignment="Center"
                              ItemsSource="{Binding SpeedOptions}"
@@ -551,13 +551,13 @@
                   </ListBox.ItemTemplate>
                 </ListBox>
 
-                <Border Height="1" Background="{StaticResource Divider6Brush}" />
+                <Border Height="1" Background="{DynamicResource Divider6Brush}" />
 
                 <!-- Manual colour sliders (combine with the selected preset) -->
                 <StackPanel Spacing="10">
                   <Grid ColumnDefinitions="*,Auto">
                     <TextBlock Text="{DynamicResource Editor_Color}" FontSize="12"
-                               Foreground="{StaticResource Fg2Brush}" VerticalAlignment="Center" />
+                               Foreground="{DynamicResource Fg2Brush}" VerticalAlignment="Center" />
                     <Button Grid.Column="1" Classes="transport" Command="{Binding ResetColorCommand}">
                       <mi:MaterialIcon Kind="Restore" Width="14" Height="14" />
                     </Button>
@@ -565,24 +565,24 @@
 
                   <StackPanel Spacing="2">
                     <Grid ColumnDefinitions="*,Auto">
-                      <TextBlock Text="{DynamicResource Editor_Brightness}" FontSize="11" Foreground="{StaticResource Fg3Brush}" />
-                      <TextBlock Grid.Column="1" Text="{Binding ColorBrightness, StringFormat='{}{0}%'}" FontSize="11" Foreground="{StaticResource Fg3Brush}" />
+                      <TextBlock Text="{DynamicResource Editor_Brightness}" FontSize="11" Foreground="{DynamicResource Fg3Brush}" />
+                      <TextBlock Grid.Column="1" Text="{Binding ColorBrightness, StringFormat='{}{0}%'}" FontSize="11" Foreground="{DynamicResource Fg3Brush}" />
                     </Grid>
                     <Slider Minimum="0" Maximum="200" Value="{Binding ColorBrightness}" PointerPressed="OnColorSliderPressed" />
                   </StackPanel>
 
                   <StackPanel Spacing="2">
                     <Grid ColumnDefinitions="*,Auto">
-                      <TextBlock Text="{DynamicResource Editor_Contrast}" FontSize="11" Foreground="{StaticResource Fg3Brush}" />
-                      <TextBlock Grid.Column="1" Text="{Binding ColorContrast, StringFormat='{}{0}%'}" FontSize="11" Foreground="{StaticResource Fg3Brush}" />
+                      <TextBlock Text="{DynamicResource Editor_Contrast}" FontSize="11" Foreground="{DynamicResource Fg3Brush}" />
+                      <TextBlock Grid.Column="1" Text="{Binding ColorContrast, StringFormat='{}{0}%'}" FontSize="11" Foreground="{DynamicResource Fg3Brush}" />
                     </Grid>
                     <Slider Minimum="0" Maximum="200" Value="{Binding ColorContrast}" PointerPressed="OnColorSliderPressed" />
                   </StackPanel>
 
                   <StackPanel Spacing="2">
                     <Grid ColumnDefinitions="*,Auto">
-                      <TextBlock Text="{DynamicResource Editor_Saturation}" FontSize="11" Foreground="{StaticResource Fg3Brush}" />
-                      <TextBlock Grid.Column="1" Text="{Binding ColorSaturation, StringFormat='{}{0}%'}" FontSize="11" Foreground="{StaticResource Fg3Brush}" />
+                      <TextBlock Text="{DynamicResource Editor_Saturation}" FontSize="11" Foreground="{DynamicResource Fg3Brush}" />
+                      <TextBlock Grid.Column="1" Text="{Binding ColorSaturation, StringFormat='{}{0}%'}" FontSize="11" Foreground="{DynamicResource Fg3Brush}" />
                     </Grid>
                     <Slider Minimum="0" Maximum="200" Value="{Binding ColorSaturation}" PointerPressed="OnColorSliderPressed" />
                   </StackPanel>
@@ -606,7 +606,7 @@
 
                   <StackPanel Spacing="2">
                     <TextBlock Text="{DynamicResource Editor_TextSize}" FontSize="11"
-                               Foreground="{StaticResource Fg3Brush}" />
+                               Foreground="{DynamicResource Fg3Brush}" />
                     <Slider Minimum="3" Maximum="25" Value="{Binding SelectedText.FontPercent}" />
                   </StackPanel>
 
@@ -634,7 +634,7 @@
                 </StackPanel>
 
                 <TextBlock Text="{DynamicResource Editor_TextHint}" FontSize="11" TextWrapping="Wrap"
-                           Foreground="{StaticResource Fg3Brush}" IsVisible="{Binding !HasTexts}" />
+                           Foreground="{DynamicResource Fg3Brush}" IsVisible="{Binding !HasTexts}" />
               </StackPanel>
             </ScrollViewer>
           </Carousel>

@@ -16,7 +16,12 @@
   <sys:String x:Key="Settings_Title">Impostazioni</sys:String>
   <sys:String x:Key="Settings_PendingChanges">Le modifiche avranno effetto dopo il riavvio della registrazione.</sys:String>
   <sys:String x:Key="Settings_Group_Language">LINGUA</sys:String>
-  <sys:String x:Key="Settings_Language">Lingua</sys:String>
+  <sys:String x:Key="Settings_Language">Lingua</sys:String>
+  <sys:String x:Key="Settings_Theme">Tema</sys:String>
+  <sys:String x:Key="Settings_Theme_Desc">Chiaro, scuro o come il sistema</sys:String>
+  <sys:String x:Key="Theme_Light">Chiaro</sys:String>
+  <sys:String x:Key="Theme_Dark">Scuro</sys:String>
+  <sys:String x:Key="Theme_System">Sistema</sys:String>
   <sys:String x:Key="Settings_Group_Recording">REGISTRAZIONE</sys:String>
   <sys:String x:Key="Settings_BufferLength">Durata del buffer di replay</sys:String>
   <sys:String x:Key="Settings_Display">Schermo</sys:String>

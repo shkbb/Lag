@@ -16,7 +16,12 @@
   <sys:String x:Key="Settings_Title">Inställningar</sys:String>
   <sys:String x:Key="Settings_PendingChanges">Ändringarna träder i kraft när inspelningen startas om.</sys:String>
   <sys:String x:Key="Settings_Group_Language">SPRÅK</sys:String>
-  <sys:String x:Key="Settings_Language">Språk</sys:String>
+  <sys:String x:Key="Settings_Language">Språk</sys:String>
+  <sys:String x:Key="Settings_Theme">Tema</sys:String>
+  <sys:String x:Key="Settings_Theme_Desc">Ljust, mörkt eller följ systemet</sys:String>
+  <sys:String x:Key="Theme_Light">Ljust</sys:String>
+  <sys:String x:Key="Theme_Dark">Mörkt</sys:String>
+  <sys:String x:Key="Theme_System">System</sys:String>
   <sys:String x:Key="Settings_Group_Recording">INSPELNING</sys:String>
   <sys:String x:Key="Settings_BufferLength">Reprisbuffertens längd</sys:String>
   <sys:String x:Key="Settings_Display">Skärm</sys:String>

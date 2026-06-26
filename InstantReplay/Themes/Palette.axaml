@@ -1,0 +1,285 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       Lag — themed colour palette. Two variants live side by side:
+
+         • Dark  — the original dark UI (cyan #22D3EE accent), unchanged.
+         • Light — a warm "cream" theme: paper-like off-white surfaces, warm
+                   graphite text, and the brand accent re-tuned to a softer teal
+                   (#A9722E) so it sits naturally on cream instead of glaring.
+
+       EVERY consumer must reference these via {DynamicResource} — keys that live
+       inside ThemeDictionaries are only reachable dynamically, and only that way
+       do they re-resolve live when the variant flips (App.SetTheme).
+       Theme-invariant tokens (radii, fonts, logo geometry) are in Tokens.axaml.
+       ═══════════════════════════════════════════════════════════════════════ -->
+
+  <ResourceDictionary.ThemeDictionaries>
+
+    <!-- ══════════════════════════════ DARK ══════════════════════════════ -->
+    <ResourceDictionary x:Key="Dark">
+
+      <!-- ── Accent (brand cyan #22D3EE) ── -->
+      <Color x:Key="AccentColor">#FF22D3EE</Color>
+      <SolidColorBrush x:Key="Accent" Color="#FF22D3EE" />
+      <SolidColorBrush x:Key="AccentDim" Color="#1F22D3EE" />
+      <SolidColorBrush x:Key="AccentRing" Color="#5222D3EE" />
+      <SolidColorBrush x:Key="AccentHover" Color="#8022D3EE" />
+      <SolidColorBrush x:Key="AccentText" Color="#FF7BE7F5" />
+      <SolidColorBrush x:Key="OnAccent" Color="#FF06222A" />
+
+      <!-- ── Surfaces ── -->
+      <SolidColorBrush x:Key="SurfaceApp" Color="#FF0C0D11" />
+      <SolidColorBrush x:Key="SurfaceCard" Color="#FF14161C" />
+      <SolidColorBrush x:Key="SurfaceInput" Color="#FF1A1D25" />
+      <SolidColorBrush x:Key="SurfaceHover" Color="#FF1E222B" />
+      <SolidColorBrush x:Key="SurfaceHover2" Color="#FF22262F" />
+
+      <!-- ── Borders (white at low alpha) ── -->
+      <SolidColorBrush x:Key="BorderFaint" Color="#0EFFFFFF" />
+      <SolidColorBrush x:Key="BorderCard" Color="#12FFFFFF" />
+      <SolidColorBrush x:Key="BorderInput" Color="#17FFFFFF" />
+      <SolidColorBrush x:Key="BorderStrong" Color="#1AFFFFFF" />
+
+      <!-- ── Text ── -->
+      <SolidColorBrush x:Key="TextHi" Color="#FFECEDEF" />
+      <SolidColorBrush x:Key="TextRow" Color="#FFDDE0E4" />
+      <SolidColorBrush x:Key="TextBtn" Color="#FFD7DADE" />
+      <SolidColorBrush x:Key="TextKbd" Color="#FFC4C8CE" />
+      <SolidColorBrush x:Key="TextMid" Color="#FF9AA0AA" />
+      <SolidColorBrush x:Key="TextMuted" Color="#FF8B919C" />
+      <SolidColorBrush x:Key="TextFaint" Color="#FF7C828D" />
+      <SolidColorBrush x:Key="TextFaintest" Color="#FF6A707B" />
+      <SolidColorBrush x:Key="DotDivider" Color="#FF4A505B" />
+
+      <!-- ── Danger / status ── -->
+      <SolidColorBrush x:Key="DangerClose" Color="#FFE5484D" />
+      <SolidColorBrush x:Key="DangerStop" Color="#FFEF4D62" />
+      <SolidColorBrush x:Key="RecDot" Color="#FFFF5C5C" />
+      <SolidColorBrush x:Key="StatusIdle" Color="#FF5D646C" />
+
+      <!-- ── Parallel brush set (used by DarkTheme.axaml styles + views) ── -->
+      <SolidColorBrush x:Key="SidebarBrush" Color="#FF0C0E11" />
+      <SolidColorBrush x:Key="MainBrush" Color="#FF12151A" />
+      <SolidColorBrush x:Key="SurfaceBrush" Color="#FF20252D" />
+      <SolidColorBrush x:Key="SurfaceHoverBrush" Color="#FF272D36" />
+      <SolidColorBrush x:Key="CardBrush" Color="#FF181C23" />
+      <SolidColorBrush x:Key="CardHoverBrush" Color="#FF1C2129" />
+      <SolidColorBrush x:Key="SegSelBrush" Color="#FF2A313B" />
+      <SolidColorBrush x:Key="VideoBrush" Color="#FF07090C" />
+      <SolidColorBrush x:Key="AccentBrush" Color="#FF22D3EE" />
+      <SolidColorBrush x:Key="AccentHoverBrush" Color="#FF4ADDF2" />
+      <SolidColorBrush x:Key="OnAccentBrush" Color="#FF0A0C0F" />
+      <SolidColorBrush x:Key="DangerBrush" Color="#FFF0464C" />
+      <SolidColorBrush x:Key="DangerHoverBrush" Color="#FFF35F64" />
+      <SolidColorBrush x:Key="FgBrush" Color="#FFE7EAEE" />
+      <SolidColorBrush x:Key="Fg2Brush" Color="#FF9AA3AD" />
+      <SolidColorBrush x:Key="Fg3Brush" Color="#FF6A7380" />
+      <SolidColorBrush x:Key="EmptyIconBrush" Color="#FF3E4754" />
+      <SolidColorBrush x:Key="Divider6Brush" Color="#0FFFFFFF" />
+      <SolidColorBrush x:Key="Divider5Brush" Color="#0DFFFFFF" />
+      <SolidColorBrush x:Key="Overlay85Brush" Color="#D90A0C0F" />
+      <SolidColorBrush x:Key="Overlay88Brush" Color="#E00A0C0F" />
+      <SolidColorBrush x:Key="HoverVeilBrush" Color="#0AFFFFFF" />
+      <SolidColorBrush x:Key="Track14Brush" Color="#24FFFFFF" />
+      <SolidColorBrush x:Key="VolumeFillBrush" Color="#FFAEB6C0" />
+      <!-- Legacy aliases still referenced by code-behind/status -->
+      <SolidColorBrush x:Key="StatusReadyBrush" Color="#FF22D3EE" />
+      <SolidColorBrush x:Key="StatusRecordingBrush" Color="#FFF0464C" />
+      <SolidColorBrush x:Key="TextPrimaryBrush" Color="#FFE7EAEE" />
+      <SolidColorBrush x:Key="TextSecondaryBrush" Color="#FF9AA3AD" />
+      <SolidColorBrush x:Key="TextDimBrush" Color="#FF6A7380" />
+      <SolidColorBrush x:Key="BgDarkBrush" Color="#FF12151A" />
+      <SolidColorBrush x:Key="AccentCyanBrush" Color="#FF22D3EE" />
+
+      <!-- ── Tokenised hovers/tracks formerly hard-coded inline in styles ── -->
+      <SolidColorBrush x:Key="NavHoverBrush" Color="#FF14181E" />
+      <SolidColorBrush x:Key="SegHoverBrush" Color="#FF20262E" />
+      <SolidColorBrush x:Key="PopupBorderBrush" Color="#1FFFFFFF" />
+      <SolidColorBrush x:Key="TextSelectionBrush" Color="#5922D3EE" />
+      <SolidColorBrush x:Key="TransportHoverBrush" Color="#1AFFFFFF" />
+      <SolidColorBrush x:Key="ScrollThumbBrush" Color="#59FFFFFF" />
+      <SolidColorBrush x:Key="ScrollThumbPressedBrush" Color="#8CFFFFFF" />
+
+      <!-- ── Fluent control overrides (templates read these keys via DynamicResource) ── -->
+      <SolidColorBrush x:Key="ToggleSwitchFillOn">#22D3EE</SolidColorBrush>
+      <SolidColorBrush x:Key="ToggleSwitchFillOnPointerOver">#4ADDF2</SolidColorBrush>
+      <SolidColorBrush x:Key="ToggleSwitchFillOnPressed">#22D3EE</SolidColorBrush>
+      <SolidColorBrush x:Key="ToggleSwitchStrokeOn">#22D3EE</SolidColorBrush>
+      <SolidColorBrush x:Key="ToggleSwitchStrokeOnPointerOver">#4ADDF2</SolidColorBrush>
+      <SolidColorBrush x:Key="ToggleSwitchStrokeOnPressed">#22D3EE</SolidColorBrush>
+      <SolidColorBrush x:Key="ToggleSwitchKnobFillOn">White</SolidColorBrush>
+      <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPointerOver">White</SolidColorBrush>
+      <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPressed">White</SolidColorBrush>
+      <SolidColorBrush x:Key="ToggleSwitchFillOff">#20252D</SolidColorBrush>
+      <SolidColorBrush x:Key="ToggleSwitchFillOffPointerOver">#272D36</SolidColorBrush>
+      <SolidColorBrush x:Key="ToggleSwitchFillOffPressed">#272D36</SolidColorBrush>
+      <SolidColorBrush x:Key="ToggleSwitchStrokeOff">#20252D</SolidColorBrush>
+      <SolidColorBrush x:Key="ToggleSwitchStrokeOffPointerOver">#272D36</SolidColorBrush>
+      <SolidColorBrush x:Key="ToggleSwitchStrokeOffPressed">#272D36</SolidColorBrush>
+      <SolidColorBrush x:Key="ToggleSwitchKnobFillOff">#9AA3AD</SolidColorBrush>
+      <SolidColorBrush x:Key="ToggleSwitchKnobFillOffPointerOver">#B6BEC7</SolidColorBrush>
+      <SolidColorBrush x:Key="ToggleSwitchKnobFillOffPressed">#B6BEC7</SolidColorBrush>
+
+      <SolidColorBrush x:Key="ComboBoxDropDownBackground">#181C23</SolidColorBrush>
+      <SolidColorBrush x:Key="ComboBoxDropDownBorderBrush">#1FFFFFFF</SolidColorBrush>
+      <SolidColorBrush x:Key="ComboBoxDropDownGlyphForeground">#9AA3AD</SolidColorBrush>
+
+      <SolidColorBrush x:Key="MenuFlyoutPresenterBackground">#181C23</SolidColorBrush>
+      <SolidColorBrush x:Key="MenuFlyoutPresenterBorderBrush">#1FFFFFFF</SolidColorBrush>
+      <SolidColorBrush x:Key="MenuFlyoutItemBackground">Transparent</SolidColorBrush>
+      <SolidColorBrush x:Key="MenuFlyoutItemBackgroundPointerOver">#272D36</SolidColorBrush>
+      <SolidColorBrush x:Key="MenuFlyoutItemBackgroundPressed">#2A313B</SolidColorBrush>
+      <SolidColorBrush x:Key="MenuFlyoutItemForeground">#E7EAEE</SolidColorBrush>
+      <SolidColorBrush x:Key="MenuFlyoutItemForegroundPointerOver">#E7EAEE</SolidColorBrush>
+      <SolidColorBrush x:Key="MenuFlyoutItemForegroundPressed">#E7EAEE</SolidColorBrush>
+      <SolidColorBrush x:Key="MenuFlyoutSeparatorBackground">#0FFFFFFF</SolidColorBrush>
+
+      <SolidColorBrush x:Key="ToolTipBackground">#20252D</SolidColorBrush>
+      <SolidColorBrush x:Key="ToolTipForeground">#E7EAEE</SolidColorBrush>
+      <SolidColorBrush x:Key="ToolTipBorderBrush">#1FFFFFFF</SolidColorBrush>
+
+      <!-- Built-in controls' accent (focus rings, selection) -->
+      <Color x:Key="SystemAccentColor">#FF22D3EE</Color>
+      <Color x:Key="SystemAccentColorLight1">#FF4DDDF2</Color>
+      <Color x:Key="SystemAccentColorLight2">#FF7BE7F5</Color>
+      <Color x:Key="SystemAccentColorLight3">#FFA7F0F9</Color>
+      <Color x:Key="SystemAccentColorDark1">#FF18B8D6</Color>
+      <Color x:Key="SystemAccentColorDark2">#FF129BB8</Color>
+      <Color x:Key="SystemAccentColorDark3">#FF0C7E96</Color>
+    </ResourceDictionary>
+
+    <!-- ══════════════════════════ LIGHT ("cream") ══════════════════════════ -->
+    <ResourceDictionary x:Key="Light">
+
+      <!-- ── Accent (warm caramel for the cream theme; user-picked) ── -->
+      <Color x:Key="AccentColor">#FFA9722E</Color>
+      <SolidColorBrush x:Key="Accent" Color="#FFA9722E" />
+      <SolidColorBrush x:Key="AccentDim" Color="#29A9722E" />        <!-- soft caramel wash on tinted segments -->
+      <SolidColorBrush x:Key="AccentRing" Color="#5CA9722E" />
+      <SolidColorBrush x:Key="AccentHover" Color="#FF946228" />
+      <SolidColorBrush x:Key="AccentText" Color="#FF7C5320" />       <!-- deep caramel, AA-readable on cream -->
+      <SolidColorBrush x:Key="OnAccent" Color="#FFFBF4E8" />         <!-- light glyph/text on the caramel fill -->
+
+      <!-- ── Surfaces (warm cream ramp; raised = brighter) ── -->
+      <SolidColorBrush x:Key="SurfaceApp" Color="#FFEAE3D1" />       <!-- app / rail / topbar paper base -->
+      <SolidColorBrush x:Key="SurfaceCard" Color="#FFF8F4EA" />      <!-- cards / pills / search (raised) -->
+      <SolidColorBrush x:Key="SurfaceInput" Color="#FFE2D6BA" />     <!-- dropdowns / segmented tracks / kbd — recessed well, clearly darker than cards -->
+      <SolidColorBrush x:Key="SurfaceHover" Color="#FFE2DAC4" />     <!-- button hover (gentle press) -->
+      <SolidColorBrush x:Key="SurfaceHover2" Color="#FFDCD3BB" />
+
+      <!-- ── Borders (warm graphite at low alpha) ── -->
+      <SolidColorBrush x:Key="BorderFaint" Color="#0F2A2415" />
+      <SolidColorBrush x:Key="BorderCard" Color="#182A2415" />
+      <SolidColorBrush x:Key="BorderInput" Color="#242A2415" />
+      <SolidColorBrush x:Key="BorderStrong" Color="#302A2415" />
+
+      <!-- ── Text (warm graphite) ── -->
+      <SolidColorBrush x:Key="TextHi" Color="#FF2A2820" />
+      <SolidColorBrush x:Key="TextRow" Color="#FF36332A" />
+      <SolidColorBrush x:Key="TextBtn" Color="#FF3D3A30" />
+      <SolidColorBrush x:Key="TextKbd" Color="#FF4A4638" />
+      <SolidColorBrush x:Key="TextMid" Color="#FF6E6A5A" />
+      <SolidColorBrush x:Key="TextMuted" Color="#FF807B69" />
+      <SolidColorBrush x:Key="TextFaint" Color="#FF928D78" />
+      <SolidColorBrush x:Key="TextFaintest" Color="#FFA39D86" />
+      <SolidColorBrush x:Key="DotDivider" Color="#FFB7AF98" />
+
+      <!-- ── Danger / status (deepened for contrast on cream) ── -->
+      <SolidColorBrush x:Key="DangerClose" Color="#FFD23A40" />
+      <SolidColorBrush x:Key="DangerStop" Color="#FFD93B50" />
+      <SolidColorBrush x:Key="RecDot" Color="#FFE5484D" />
+      <SolidColorBrush x:Key="StatusIdle" Color="#FFA99F88" />
+
+      <!-- ── Parallel brush set ── -->
+      <SolidColorBrush x:Key="SidebarBrush" Color="#FFEAE3D1" />
+      <SolidColorBrush x:Key="MainBrush" Color="#FFF1EBDC" />
+      <SolidColorBrush x:Key="SurfaceBrush" Color="#FFEBE4D2" />
+      <SolidColorBrush x:Key="SurfaceHoverBrush" Color="#FFE2DAC4" />
+      <SolidColorBrush x:Key="CardBrush" Color="#FFF8F4EA" />
+      <SolidColorBrush x:Key="CardHoverBrush" Color="#FFFCF8EF" />
+      <SolidColorBrush x:Key="SegSelBrush" Color="#FFF8F4EA" />
+      <SolidColorBrush x:Key="VideoBrush" Color="#FF16140E" />       <!-- video stage stays dark -->
+      <SolidColorBrush x:Key="AccentBrush" Color="#FFA9722E" />
+      <SolidColorBrush x:Key="AccentHoverBrush" Color="#FF946228" />
+      <SolidColorBrush x:Key="OnAccentBrush" Color="#FFFBF4E8" />
+      <SolidColorBrush x:Key="DangerBrush" Color="#FFD83E44" />
+      <SolidColorBrush x:Key="DangerHoverBrush" Color="#FFC5353B" />
+      <SolidColorBrush x:Key="FgBrush" Color="#FF2A2820" />
+      <SolidColorBrush x:Key="Fg2Brush" Color="#FF6E6A5A" />
+      <SolidColorBrush x:Key="Fg3Brush" Color="#FFA39D86" />
+      <SolidColorBrush x:Key="EmptyIconBrush" Color="#FFC9C2AC" />
+      <SolidColorBrush x:Key="Divider6Brush" Color="#142A2415" />
+      <SolidColorBrush x:Key="Divider5Brush" Color="#112A2415" />
+      <SolidColorBrush x:Key="Overlay85Brush" Color="#D90A0C0F" />   <!-- dark scrim over video thumbnails -->
+      <SolidColorBrush x:Key="Overlay88Brush" Color="#E00A0C0F" />
+      <SolidColorBrush x:Key="HoverVeilBrush" Color="#0C2A2415" />
+      <SolidColorBrush x:Key="Track14Brush" Color="#262A2415" />
+      <SolidColorBrush x:Key="VolumeFillBrush" Color="#FF8F8770" />
+      <SolidColorBrush x:Key="StatusReadyBrush" Color="#FFA9722E" />
+      <SolidColorBrush x:Key="StatusRecordingBrush" Color="#FFD83E44" />
+      <SolidColorBrush x:Key="TextPrimaryBrush" Color="#FF2A2820" />
+      <SolidColorBrush x:Key="TextSecondaryBrush" Color="#FF6E6A5A" />
+      <SolidColorBrush x:Key="TextDimBrush" Color="#FFA39D86" />
+      <SolidColorBrush x:Key="BgDarkBrush" Color="#FFF1EBDC" />
+      <SolidColorBrush x:Key="AccentCyanBrush" Color="#FFA9722E" />
+
+      <!-- ── Tokenised hovers/tracks ── -->
+      <SolidColorBrush x:Key="NavHoverBrush" Color="#FFE2DAC4" />
+      <SolidColorBrush x:Key="SegHoverBrush" Color="#FFE2DAC4" />
+      <SolidColorBrush x:Key="PopupBorderBrush" Color="#242A2415" />
+      <SolidColorBrush x:Key="TextSelectionBrush" Color="#5CA9722E" />
+      <SolidColorBrush x:Key="TransportHoverBrush" Color="#1A2A2415" />
+      <SolidColorBrush x:Key="ScrollThumbBrush" Color="#552A2415" />
+      <SolidColorBrush x:Key="ScrollThumbPressedBrush" Color="#882A2415" />
+
+      <!-- ── Fluent control overrides ── -->
+      <SolidColorBrush x:Key="ToggleSwitchFillOn">#A9722E</SolidColorBrush>
+      <SolidColorBrush x:Key="ToggleSwitchFillOnPointerOver">#B5803A</SolidColorBrush>
+      <SolidColorBrush x:Key="ToggleSwitchFillOnPressed">#A9722E</SolidColorBrush>
+      <SolidColorBrush x:Key="ToggleSwitchStrokeOn">#A9722E</SolidColorBrush>
+      <SolidColorBrush x:Key="ToggleSwitchStrokeOnPointerOver">#B5803A</SolidColorBrush>
+      <SolidColorBrush x:Key="ToggleSwitchStrokeOnPressed">#A9722E</SolidColorBrush>
+      <SolidColorBrush x:Key="ToggleSwitchKnobFillOn">White</SolidColorBrush>
+      <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPointerOver">White</SolidColorBrush>
+      <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPressed">White</SolidColorBrush>
+      <SolidColorBrush x:Key="ToggleSwitchFillOff">#DCD2B8</SolidColorBrush>
+      <SolidColorBrush x:Key="ToggleSwitchFillOffPointerOver">#D3C8AB</SolidColorBrush>
+      <SolidColorBrush x:Key="ToggleSwitchFillOffPressed">#D3C8AB</SolidColorBrush>
+      <SolidColorBrush x:Key="ToggleSwitchStrokeOff">#C9BFA2</SolidColorBrush>
+      <SolidColorBrush x:Key="ToggleSwitchStrokeOffPointerOver">#BFB495</SolidColorBrush>
+      <SolidColorBrush x:Key="ToggleSwitchStrokeOffPressed">#BFB495</SolidColorBrush>
+      <SolidColorBrush x:Key="ToggleSwitchKnobFillOff">#8A8068</SolidColorBrush>
+      <SolidColorBrush x:Key="ToggleSwitchKnobFillOffPointerOver">#756B54</SolidColorBrush>
+      <SolidColorBrush x:Key="ToggleSwitchKnobFillOffPressed">#756B54</SolidColorBrush>
+
+      <SolidColorBrush x:Key="ComboBoxDropDownBackground">#F8F4EA</SolidColorBrush>
+      <SolidColorBrush x:Key="ComboBoxDropDownBorderBrush">#242A2415</SolidColorBrush>
+      <SolidColorBrush x:Key="ComboBoxDropDownGlyphForeground">#6E6A5A</SolidColorBrush>
+
+      <SolidColorBrush x:Key="MenuFlyoutPresenterBackground">#F8F4EA</SolidColorBrush>
+      <SolidColorBrush x:Key="MenuFlyoutPresenterBorderBrush">#242A2415</SolidColorBrush>
+      <SolidColorBrush x:Key="MenuFlyoutItemBackground">Transparent</SolidColorBrush>
+      <SolidColorBrush x:Key="MenuFlyoutItemBackgroundPointerOver">#E2DAC4</SolidColorBrush>
+      <SolidColorBrush x:Key="MenuFlyoutItemBackgroundPressed">#DCD3BB</SolidColorBrush>
+      <SolidColorBrush x:Key="MenuFlyoutItemForeground">#2A2820</SolidColorBrush>
+      <SolidColorBrush x:Key="MenuFlyoutItemForegroundPointerOver">#2A2820</SolidColorBrush>
+      <SolidColorBrush x:Key="MenuFlyoutItemForegroundPressed">#2A2820</SolidColorBrush>
+      <SolidColorBrush x:Key="MenuFlyoutSeparatorBackground">#142A2415</SolidColorBrush>
+
+      <SolidColorBrush x:Key="ToolTipBackground">#EBE4D2</SolidColorBrush>
+      <SolidColorBrush x:Key="ToolTipForeground">#2A2820</SolidColorBrush>
+      <SolidColorBrush x:Key="ToolTipBorderBrush">#242A2415</SolidColorBrush>
+
+      <Color x:Key="SystemAccentColor">#FFA9722E</Color>
+      <Color x:Key="SystemAccentColorLight1">#FFBC8A45</Color>
+      <Color x:Key="SystemAccentColorLight2">#FFCDA268</Color>
+      <Color x:Key="SystemAccentColorLight3">#FFDDBC92</Color>
+      <Color x:Key="SystemAccentColorDark1">#FF946228</Color>
+      <Color x:Key="SystemAccentColorDark2">#FF7C5320</Color>
+      <Color x:Key="SystemAccentColorDark3">#FF614019</Color>
+    </ResourceDictionary>
+
+  </ResourceDictionary.ThemeDictionaries>
+</ResourceDictionary>

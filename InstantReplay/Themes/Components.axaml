@@ -10,8 +10,8 @@
 
   <!-- Settings card (rounded surface holding divider-separated rows) -->
   <Style Selector="Border.rcard">
-    <Setter Property="Background" Value="{StaticResource SurfaceCard}" />
-    <Setter Property="BorderBrush" Value="{StaticResource BorderCard}" />
+    <Setter Property="Background" Value="{DynamicResource SurfaceCard}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderCard}" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="CornerRadius" Value="{StaticResource RadCard}" />
     <Setter Property="ClipToBounds" Value="True" />
@@ -20,14 +20,14 @@
   <!-- Hairline divider between card rows -->
   <Style Selector="Border.rdivider">
     <Setter Property="Height" Value="1" />
-    <Setter Property="Background" Value="{StaticResource BorderFaint}" />
+    <Setter Property="Background" Value="{DynamicResource BorderFaint}" />
   </Style>
 
   <!-- Section group label (mono, uppercase text supplied in markup) -->
   <Style Selector="TextBlock.rgroup">
     <Setter Property="FontFamily" Value="{StaticResource FontMono}" />
     <Setter Property="FontSize" Value="11" />
-    <Setter Property="Foreground" Value="{StaticResource TextFaintest}" />
+    <Setter Property="Foreground" Value="{DynamicResource TextFaintest}" />
     <Setter Property="Margin" Value="2,0,0,11" />
   </Style>
 
@@ -35,26 +35,26 @@
   <Style Selector="TextBlock.rrow">
     <Setter Property="FontSize" Value="14" />
     <Setter Property="FontWeight" Value="Medium" />
-    <Setter Property="Foreground" Value="{StaticResource TextRow}" />
+    <Setter Property="Foreground" Value="{DynamicResource TextRow}" />
   </Style>
 
   <!-- Card row secondary/description -->
   <Style Selector="TextBlock.rsub">
     <Setter Property="FontSize" Value="12.5" />
-    <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
+    <Setter Property="Foreground" Value="{DynamicResource TextFaint}" />
     <Setter Property="TextWrapping" Value="Wrap" />
   </Style>
 
   <!-- Mono numeric/path/tag text -->
   <Style Selector="TextBlock.rmono">
     <Setter Property="FontFamily" Value="{StaticResource FontMono}" />
-    <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
+    <Setter Property="Foreground" Value="{DynamicResource TextFaint}" />
   </Style>
 
   <!-- kbd chip (Alt / F10 / V …) -->
   <Style Selector="Border.rkbd">
-    <Setter Property="Background" Value="{StaticResource SurfaceInput}" />
-    <Setter Property="BorderBrush" Value="{StaticResource BorderStrong}" />
+    <Setter Property="Background" Value="{DynamicResource SurfaceInput}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderStrong}" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="CornerRadius" Value="{StaticResource RadKbd}" />
     <Setter Property="Padding" Value="9,4" />
@@ -62,18 +62,18 @@
   <Style Selector="Border.rkbd > TextBlock">
     <Setter Property="FontFamily" Value="{StaticResource FontMono}" />
     <Setter Property="FontSize" Value="11.5" />
-    <Setter Property="Foreground" Value="{StaticResource TextKbd}" />
+    <Setter Property="Foreground" Value="{DynamicResource TextKbd}" />
   </Style>
 
   <!-- Segmented control: a track Border holding Button.rseg items -->
   <Style Selector="Border.rsegtrack">
-    <Setter Property="Background" Value="{StaticResource SurfaceInput}" />
+    <Setter Property="Background" Value="{DynamicResource SurfaceInput}" />
     <Setter Property="CornerRadius" Value="{StaticResource RadInput}" />
     <Setter Property="Padding" Value="3" />
   </Style>
   <Style Selector="Button.rseg">
     <Setter Property="Background" Value="Transparent" />
-    <Setter Property="Foreground" Value="{StaticResource TextMid}" />
+    <Setter Property="Foreground" Value="{DynamicResource TextMid}" />
     <Setter Property="CornerRadius" Value="{StaticResource RadSeg}" />
     <Setter Property="Padding" Value="12,6" />
     <Setter Property="FontSize" Value="12.5" />
@@ -86,20 +86,20 @@
     <Setter Property="Transitions"><Transitions><BrushTransition Property="Background" Duration="0:0:0.12" /></Transitions></Setter>
   </Style>
   <Style Selector="Button.rseg:pointerover">
-    <Setter Property="Foreground" Value="{StaticResource TextHi}" />
+    <Setter Property="Foreground" Value="{DynamicResource TextHi}" />
   </Style>
   <Style Selector="Button.rseg.sel">
-    <Setter Property="Foreground" Value="{StaticResource AccentText}" />
-    <Setter Property="BorderBrush" Value="{StaticResource AccentRing}" />
+    <Setter Property="Foreground" Value="{DynamicResource AccentText}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentRing}" />
   </Style>
   <Style Selector="Button.rseg.sel /template/ ContentPresenter">
-    <Setter Property="Background" Value="{StaticResource AccentDim}" />
+    <Setter Property="Background" Value="{DynamicResource AccentDim}" />
   </Style>
 
   <!-- Dropdown pill look (value + chevron); used as the trigger surface -->
   <Style Selector="Border.rpill">
-    <Setter Property="Background" Value="{StaticResource SurfaceInput}" />
-    <Setter Property="BorderBrush" Value="{StaticResource BorderInput}" />
+    <Setter Property="Background" Value="{DynamicResource SurfaceInput}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderInput}" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="CornerRadius" Value="{StaticResource RadInput}" />
     <Setter Property="Padding" Value="12,8" />
@@ -107,10 +107,10 @@
 
   <!-- Small dark action button (Change / Check for Updates / Open folder …) -->
   <Style Selector="Button.rchip">
-    <Setter Property="Background" Value="{StaticResource SurfaceInput}" />
-    <Setter Property="Foreground" Value="{StaticResource TextHi}" />
+    <Setter Property="Background" Value="{DynamicResource SurfaceInput}" />
+    <Setter Property="Foreground" Value="{DynamicResource TextHi}" />
     <Setter Property="BorderThickness" Value="1" />
-    <Setter Property="BorderBrush" Value="{StaticResource BorderStrong}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderStrong}" />
     <Setter Property="CornerRadius" Value="{StaticResource RadInput}" />
     <Setter Property="Padding" Value="15,8" />
     <Setter Property="FontSize" Value="12.5" />
@@ -121,14 +121,14 @@
     <Setter Property="Transitions"><Transitions><BrushTransition Property="Background" Duration="0:0:0.14" /></Transitions></Setter>
   </Style>
   <Style Selector="Button.rchip:pointerover /template/ ContentPresenter">
-    <Setter Property="Background" Value="{StaticResource SurfaceHover2}" />
+    <Setter Property="Background" Value="{DynamicResource SurfaceHover2}" />
   </Style>
 
   <!-- Button flyouts (export options, playback speed, clip picker …): match the dark theme
        instead of the default Fluent surface. -->
   <Style Selector="FlyoutPresenter">
-    <Setter Property="Background" Value="{StaticResource SurfaceCard}" />
-    <Setter Property="BorderBrush" Value="{StaticResource BorderStrong}" />
+    <Setter Property="Background" Value="{DynamicResource SurfaceCard}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderStrong}" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="CornerRadius" Value="{StaticResource RadGeneral}" />
     <Setter Property="Padding" Value="8" />

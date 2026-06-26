@@ -16,7 +16,12 @@
   <sys:String x:Key="Settings_Title">Налады</sys:String>
   <sys:String x:Key="Settings_PendingChanges">Змены ўступяць у сілу пасля перазапуску запісу.</sys:String>
   <sys:String x:Key="Settings_Group_Language">МОВА</sys:String>
-  <sys:String x:Key="Settings_Language">Мова</sys:String>
+  <sys:String x:Key="Settings_Language">Мова</sys:String>
+  <sys:String x:Key="Settings_Theme">Тэма</sys:String>
+  <sys:String x:Key="Settings_Theme_Desc">Светлая, цёмная або як у сістэме</sys:String>
+  <sys:String x:Key="Theme_Light">Светлая</sys:String>
+  <sys:String x:Key="Theme_Dark">Цёмная</sys:String>
+  <sys:String x:Key="Theme_System">Сістэмная</sys:String>
   <sys:String x:Key="Settings_Group_Recording">ЗАПІС</sys:String>
   <sys:String x:Key="Settings_BufferLength">Даўжыня буфера паўтору</sys:String>
   <sys:String x:Key="Settings_Display">Экран</sys:String>

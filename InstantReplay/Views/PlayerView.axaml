@@ -16,7 +16,7 @@
     <!-- Player control icon button (stop / rewind / forward / next / edit / fullscreen / speed) -->
     <Style Selector="Button.pbtn">
       <Setter Property="Background" Value="Transparent" />
-      <Setter Property="Foreground" Value="{StaticResource TextMid}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextMid}" />
       <Setter Property="Width" Value="38" />
       <Setter Property="Height" Value="38" />
       <Setter Property="CornerRadius" Value="10" />
@@ -30,15 +30,15 @@
       <Setter Property="Transitions"><Transitions><BrushTransition Property="Background" Duration="0:0:0.12" /></Transitions></Setter>
     </Style>
     <Style Selector="Button.pbtn:pointerover">
-      <Setter Property="Foreground" Value="{StaticResource TextHi}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextHi}" />
     </Style>
     <Style Selector="Button.pbtn:pointerover /template/ ContentPresenter">
-      <Setter Property="Background" Value="{StaticResource BorderFaint}" />
+      <Setter Property="Background" Value="{DynamicResource BorderFaint}" />
     </Style>
 
     <!-- Accent play/pause buttons (big centre overlay + the transport one) -->
     <Style Selector="Button.playbtn">
-      <Setter Property="Background" Value="{StaticResource Accent}" />
+      <Setter Property="Background" Value="{DynamicResource Accent}" />
       <Setter Property="BorderThickness" Value="0" />
       <Setter Property="Padding" Value="0" />
       <Setter Property="Cursor" Value="Hand" />
@@ -61,10 +61,10 @@
       <Setter Property="Transitions"><Transitions><BrushTransition Property="Background" Duration="0:0:0.12" /></Transitions></Setter>
     </Style>
     <Style Selector="ListBox.replays ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="{StaticResource SurfaceCard}" />
+      <Setter Property="Background" Value="{DynamicResource SurfaceCard}" />
     </Style>
     <Style Selector="ListBox.replays ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="{StaticResource AccentDim}" />
+      <Setter Property="Background" Value="{DynamicResource AccentDim}" />
     </Style>
 
     <!-- Playback-speed flyout list: on-theme rows, accent-dim selection (not a solid block) -->
@@ -77,20 +77,20 @@
       <Setter Property="Padding" Value="10,7" />
       <Setter Property="Margin" Value="0,1" />
       <Setter Property="CornerRadius" Value="7" />
-      <Setter Property="Foreground" Value="{StaticResource TextMid}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextMid}" />
       <Setter Property="HorizontalContentAlignment" Value="Stretch" />
     </Style>
     <Style Selector="ListBox.speedlist ListBoxItem /template/ ContentPresenter#PART_ContentPresenter">
       <Setter Property="Transitions"><Transitions><BrushTransition Property="Background" Duration="0:0:0.12" /></Transitions></Setter>
     </Style>
     <Style Selector="ListBox.speedlist ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="{StaticResource SurfaceInput}" />
+      <Setter Property="Background" Value="{DynamicResource SurfaceInput}" />
     </Style>
     <Style Selector="ListBox.speedlist ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="{StaticResource AccentDim}" />
+      <Setter Property="Background" Value="{DynamicResource AccentDim}" />
     </Style>
     <Style Selector="ListBox.speedlist ListBoxItem:selected">
-      <Setter Property="Foreground" Value="{StaticResource AccentText}" />
+      <Setter Property="Foreground" Value="{DynamicResource AccentText}" />
       <Setter Property="FontWeight" Value="SemiBold" />
     </Style>
 
@@ -132,7 +132,7 @@
     </Style>
   </UserControl.Styles>
 
-  <Grid x:Name="PlayerArea" RowDefinitions="*" Margin="24,20,24,24" Background="{StaticResource SurfaceApp}">
+  <Grid x:Name="PlayerArea" RowDefinitions="*" Margin="24,20,24,24" Background="{DynamicResource SurfaceApp}">
 
     <!-- ── Player row: video column | replay panel ── -->
     <Grid ColumnDefinitions="*,Auto">
@@ -147,21 +147,21 @@
                     IsVisible="{Binding !DataContext.IsFullscreen, RelativeSource={RelativeSource AncestorType=Window}}">
           <TextBlock Text="{Binding CurrentClip.DisplayName, FallbackValue=''}"
                      FontFamily="{StaticResource FontDisplay}" FontSize="22" FontWeight="SemiBold"
-                     Foreground="{StaticResource TextHi}" TextTrimming="CharacterEllipsis" />
+                     Foreground="{DynamicResource TextHi}" TextTrimming="CharacterEllipsis" />
           <StackPanel Orientation="Horizontal" Spacing="5">
             <TextBlock Text="{Binding CurrentClip.CreatedDate, StringFormat='{}{0:d MMM, HH:mm}', FallbackValue=''}"
-                       FontFamily="{StaticResource FontMono}" FontSize="11.5" Foreground="{StaticResource TextFaint}" />
-            <TextBlock Text="·" FontFamily="{StaticResource FontMono}" FontSize="11.5" Foreground="{StaticResource TextFaint}"
+                       FontFamily="{StaticResource FontMono}" FontSize="11.5" Foreground="{DynamicResource TextFaint}" />
+            <TextBlock Text="·" FontFamily="{StaticResource FontMono}" FontSize="11.5" Foreground="{DynamicResource TextFaint}"
                        IsVisible="{Binding CurrentClip, Converter={x:Static ObjectConverters.IsNotNull}}" />
             <TextBlock Text="{Binding CurrentClip.DurationDisplay, FallbackValue=''}"
-                       FontFamily="{StaticResource FontMono}" FontSize="11.5" Foreground="{StaticResource TextFaint}" />
+                       FontFamily="{StaticResource FontMono}" FontSize="11.5" Foreground="{DynamicResource TextFaint}" />
           </StackPanel>
         </StackPanel>
 
         <!-- Video frame (#07090C, r16). The control bar OVERLAYS the video bottom; the big
              play sits centred over the picture (shown while paused). -->
         <Border x:Name="VideoFrame" Grid.Row="1"
-                Background="#FF07090C" BorderBrush="{StaticResource BorderCard}" BorderThickness="1"
+                Background="#FF07090C" BorderBrush="{DynamicResource BorderCard}" BorderThickness="1"
                 CornerRadius="12" ClipToBounds="True">
           <Panel>
 
@@ -180,16 +180,16 @@
                         IsVisible="{Binding CurrentClip, Converter={x:Static ObjectConverters.IsNull}}">
               <Viewbox Width="44" Height="44" HorizontalAlignment="Center">
                 <Canvas Width="22" Height="22">
-                  <Path Data="{StaticResource LogoArcGeometry}" Stroke="{StaticResource EmptyIconBrush}"
+                  <Path Data="{StaticResource LogoArcGeometry}" Stroke="{DynamicResource EmptyIconBrush}"
                         StrokeThickness="0.8" StrokeLineCap="Round" StrokeJoin="Round" />
-                  <Path Data="{StaticResource LogoCornerGeometry}" Stroke="{StaticResource EmptyIconBrush}"
+                  <Path Data="{StaticResource LogoCornerGeometry}" Stroke="{DynamicResource EmptyIconBrush}"
                         StrokeThickness="0.8" StrokeLineCap="Round" StrokeJoin="Round" />
-                  <Path Data="{StaticResource LogoHandsGeometry}" Stroke="{StaticResource EmptyIconBrush}"
+                  <Path Data="{StaticResource LogoHandsGeometry}" Stroke="{DynamicResource EmptyIconBrush}"
                         StrokeThickness="0.8" StrokeLineCap="Round" StrokeJoin="Round" />
                 </Canvas>
               </Viewbox>
               <TextBlock Text="{DynamicResource Player_Placeholder}"
-                         FontSize="13" Foreground="{StaticResource TextFaint}"
+                         FontSize="13" Foreground="{DynamicResource TextFaint}"
                          HorizontalAlignment="Center" />
             </StackPanel>
 
@@ -198,7 +198,7 @@
                     HorizontalAlignment="Center" VerticalAlignment="Center"
                     Focusable="False" Command="{Binding PlayPauseCommand}"
                     IsVisible="{Binding !IsPlaying}">
-              <mi:MaterialIcon Kind="Play" Width="26" Height="26" Foreground="{StaticResource OnAccent}"
+              <mi:MaterialIcon Kind="Play" Width="26" Height="26" Foreground="{DynamicResource OnAccent}"
                                Margin="3,0,0,0" HorizontalAlignment="Center" VerticalAlignment="Center" />
             </Button>
 
@@ -211,7 +211,7 @@
                 <!-- Progress: time + timeline -->
                 <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding !IsViewingImage}">
                   <TextBlock x:Name="TimeText" Grid.Column="0" Text="0:00.000 / 0:00.000"
-                             FontFamily="{StaticResource FontMono}" FontSize="11.5" Foreground="{StaticResource TextMid}"
+                             FontFamily="{StaticResource FontMono}" FontSize="11.5" Foreground="{DynamicResource TextMid}"
                              VerticalAlignment="Center" Margin="0,0,12,0" MinWidth="120" />
                   <Slider Grid.Column="1" Minimum="0" Maximum="1"
                           Value="{Binding Position, Mode=TwoWay}" VerticalAlignment="Center" />
@@ -236,9 +236,9 @@
                             Focusable="False" Command="{Binding PlayPauseCommand}"
                             ToolTip.Tip="{DynamicResource Tooltip_PlayPause}">
                       <Panel>
-                        <mi:MaterialIcon Kind="Play" Width="19" Height="19" Foreground="{StaticResource OnAccent}"
+                        <mi:MaterialIcon Kind="Play" Width="19" Height="19" Foreground="{DynamicResource OnAccent}"
                                          Margin="2,0,0,0" IsVisible="{Binding !IsPlaying}" />
-                        <mi:MaterialIcon Kind="Pause" Width="18" Height="18" Foreground="{StaticResource OnAccent}"
+                        <mi:MaterialIcon Kind="Pause" Width="18" Height="18" Foreground="{DynamicResource OnAccent}"
                                          IsVisible="{Binding IsPlaying}" />
                       </Panel>
                     </Button>
@@ -282,7 +282,7 @@
                     </Button>
                     <mi:MaterialIcon Kind="VolumeHigh" Width="16" Height="16"
                                      IsVisible="{Binding !IsViewingImage}"
-                                     Foreground="{StaticResource TextMid}" VerticalAlignment="Center" />
+                                     Foreground="{DynamicResource TextMid}" VerticalAlignment="Center" />
                     <Slider Classes="volume" Width="56" Minimum="0" Maximum="100"
                             Value="{Binding Volume, Mode=TwoWay}"
                             IsVisible="{Binding !IsViewingImage}"
@@ -306,15 +306,15 @@
            overlay revealed by cursor proximity. ── -->
       <Border Grid.Column="1" Width="300" Margin="16,0,0,0"
               x:Name="ReplayPanel"
-              Background="{StaticResource SurfaceApp}" BorderBrush="{StaticResource BorderCard}"
+              Background="{DynamicResource SurfaceApp}" BorderBrush="{DynamicResource BorderCard}"
               BorderThickness="1" CornerRadius="14">
         <Grid RowDefinitions="Auto,*,Auto">
 
           <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="18,18,18,12">
             <TextBlock Grid.Column="0" Text="{DynamicResource Player_Replays}"
-                       FontFamily="{StaticResource FontMono}" FontSize="11" Foreground="{StaticResource TextFaintest}" />
+                       FontFamily="{StaticResource FontMono}" FontSize="11" Foreground="{DynamicResource TextFaintest}" />
             <TextBlock Grid.Column="1" Text="{Binding TotalClips}"
-                       FontFamily="{StaticResource FontMono}" FontSize="11" Foreground="{StaticResource TextFaintest}" />
+                       FontFamily="{StaticResource FontMono}" FontSize="11" Foreground="{DynamicResource TextFaintest}" />
           </Grid>
 
           <ListBox Grid.Row="1" Classes="replays" Margin="10,0"
@@ -335,9 +335,9 @@
                   </Border>
                   <StackPanel Grid.Column="1" Margin="11,0,0,0" Spacing="2" VerticalAlignment="Center">
                     <TextBlock Text="{Binding DisplayName}" FontSize="12" FontWeight="SemiBold"
-                               Foreground="{StaticResource TextHi}" TextTrimming="CharacterEllipsis" />
+                               Foreground="{DynamicResource TextHi}" TextTrimming="CharacterEllipsis" />
                     <TextBlock Text="{Binding ShortMeta}" FontFamily="{StaticResource FontMono}"
-                               FontSize="10" Foreground="{StaticResource TextFaint}" />
+                               FontSize="10" Foreground="{DynamicResource TextFaint}" />
                   </StackPanel>
                 </Grid>
               </DataTemplate>
@@ -346,24 +346,24 @@
 
           <!-- Stats footer -->
           <StackPanel Grid.Row="2" Spacing="8" Margin="18,14">
-            <Border Height="1" Background="{StaticResource BorderCard}" Margin="0,0,0,2" />
+            <Border Height="1" Background="{DynamicResource BorderCard}" Margin="0,0,0,2" />
             <Grid ColumnDefinitions="*,Auto">
               <TextBlock Grid.Column="0" Text="{DynamicResource Player_Clips}"
-                         FontSize="12.5" Foreground="{StaticResource TextMuted}" />
+                         FontSize="12.5" Foreground="{DynamicResource TextMuted}" />
               <TextBlock Grid.Column="1" Text="{Binding TotalClips}"
-                         FontFamily="{StaticResource FontMono}" FontSize="12.5" Foreground="{StaticResource TextHi}" />
+                         FontFamily="{StaticResource FontMono}" FontSize="12.5" Foreground="{DynamicResource TextHi}" />
             </Grid>
             <Grid ColumnDefinitions="*,Auto">
               <TextBlock Grid.Column="0" Text="{DynamicResource Player_Duration}"
-                         FontSize="12.5" Foreground="{StaticResource TextMuted}" />
+                         FontSize="12.5" Foreground="{DynamicResource TextMuted}" />
               <TextBlock Grid.Column="1" Text="{Binding TotalDurationDisplay}"
-                         FontFamily="{StaticResource FontMono}" FontSize="12.5" Foreground="{StaticResource TextHi}" />
+                         FontFamily="{StaticResource FontMono}" FontSize="12.5" Foreground="{DynamicResource TextHi}" />
             </Grid>
             <Grid ColumnDefinitions="*,Auto">
               <TextBlock Grid.Column="0" Text="{DynamicResource Player_Used}"
-                         FontSize="12.5" Foreground="{StaticResource TextMuted}" />
+                         FontSize="12.5" Foreground="{DynamicResource TextMuted}" />
               <TextBlock Grid.Column="1" Text="{Binding TotalSizeDisplay}"
-                         FontFamily="{StaticResource FontMono}" FontSize="12.5" Foreground="{StaticResource TextHi}" />
+                         FontFamily="{StaticResource FontMono}" FontSize="12.5" Foreground="{DynamicResource TextHi}" />
             </Grid>
           </StackPanel>
         </Grid>

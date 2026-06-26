@@ -8,8 +8,10 @@
   <Application.Resources>
     <ResourceDictionary>
     <ResourceDictionary.MergedDictionaries>
-      <!-- Lime redesign design tokens (additive; old cyan brushes stay until each view migrates) -->
+      <!-- Theme-invariant tokens (radii, fonts, logo geometry) -->
       <ResourceInclude Source="avares://Lag/Themes/Tokens.axaml" />
+      <!-- Per-variant colour palette (Dark + warm "cream" Light) — consumed via {DynamicResource} -->
+      <ResourceInclude Source="avares://Lag/Themes/Palette.axaml" />
     </ResourceDictionary.MergedDictionaries>
     <core:BoolToStringConverter x:Key="BoolToString" />
     <core:LanguageToFlagConverter x:Key="LangFlag" />
@@ -216,51 +218,12 @@
     <core:StringToUpperConverter x:Key="Upper" />
     <core:IntensityToBrushConverter x:Key="Intensity" />
 
-    <!-- Fluent ToggleSwitch recolored to the design (cyan pill, white knob) -->
-    <SolidColorBrush x:Key="ToggleSwitchFillOn">#22D3EE</SolidColorBrush>
-    <SolidColorBrush x:Key="ToggleSwitchFillOnPointerOver">#4ADDF2</SolidColorBrush>
-    <SolidColorBrush x:Key="ToggleSwitchFillOnPressed">#22D3EE</SolidColorBrush>
-    <SolidColorBrush x:Key="ToggleSwitchStrokeOn">#22D3EE</SolidColorBrush>
-    <SolidColorBrush x:Key="ToggleSwitchStrokeOnPointerOver">#4ADDF2</SolidColorBrush>
-    <SolidColorBrush x:Key="ToggleSwitchStrokeOnPressed">#22D3EE</SolidColorBrush>
-    <SolidColorBrush x:Key="ToggleSwitchKnobFillOn">White</SolidColorBrush>
-    <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPointerOver">White</SolidColorBrush>
-    <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPressed">White</SolidColorBrush>
-    <SolidColorBrush x:Key="ToggleSwitchFillOff">#20252D</SolidColorBrush>
-    <SolidColorBrush x:Key="ToggleSwitchFillOffPointerOver">#272D36</SolidColorBrush>
-    <SolidColorBrush x:Key="ToggleSwitchFillOffPressed">#272D36</SolidColorBrush>
-    <SolidColorBrush x:Key="ToggleSwitchStrokeOff">#20252D</SolidColorBrush>
-    <SolidColorBrush x:Key="ToggleSwitchStrokeOffPointerOver">#272D36</SolidColorBrush>
-    <SolidColorBrush x:Key="ToggleSwitchStrokeOffPressed">#272D36</SolidColorBrush>
-    <SolidColorBrush x:Key="ToggleSwitchKnobFillOff">#9AA3AD</SolidColorBrush>
-    <SolidColorBrush x:Key="ToggleSwitchKnobFillOffPointerOver">#B6BEC7</SolidColorBrush>
-    <SolidColorBrush x:Key="ToggleSwitchKnobFillOffPressed">#B6BEC7</SolidColorBrush>
-
-    <!-- Popup overlays (ComboBox dropdown / menus / tooltips) recolored to the design.
-         The Fluent templates reference these DynamicResource keys directly, so styles
-         can't override them — resources can. -->
+    <!-- Popup overlay + slider SIZING (theme-invariant). The matching COLOURS — ToggleSwitch,
+         ComboBox dropdown, menu, tooltip and SystemAccentColor — are themed per-variant in
+         Themes/Palette.axaml (Fluent templates read those keys via DynamicResource). -->
     <CornerRadius x:Key="OverlayCornerRadius">10</CornerRadius>
-    <SolidColorBrush x:Key="ComboBoxDropDownBackground">#181C23</SolidColorBrush>
-    <SolidColorBrush x:Key="ComboBoxDropDownBorderBrush">#1FFFFFFF</SolidColorBrush>
     <Thickness x:Key="ComboBoxDropdownBorderPadding">4</Thickness>
-    <SolidColorBrush x:Key="ComboBoxDropDownGlyphForeground">#9AA3AD</SolidColorBrush>
-
-    <!-- Menu items (library context menu + Avalonia-rendered tray menu) -->
-    <SolidColorBrush x:Key="MenuFlyoutPresenterBackground">#181C23</SolidColorBrush>
-    <SolidColorBrush x:Key="MenuFlyoutPresenterBorderBrush">#1FFFFFFF</SolidColorBrush>
     <Thickness x:Key="MenuFlyoutPresenterThemePadding">4</Thickness>
-    <SolidColorBrush x:Key="MenuFlyoutItemBackground">Transparent</SolidColorBrush>
-    <SolidColorBrush x:Key="MenuFlyoutItemBackgroundPointerOver">#272D36</SolidColorBrush>
-    <SolidColorBrush x:Key="MenuFlyoutItemBackgroundPressed">#2A313B</SolidColorBrush>
-    <SolidColorBrush x:Key="MenuFlyoutItemForeground">#E7EAEE</SolidColorBrush>
-    <SolidColorBrush x:Key="MenuFlyoutItemForegroundPointerOver">#E7EAEE</SolidColorBrush>
-    <SolidColorBrush x:Key="MenuFlyoutItemForegroundPressed">#E7EAEE</SolidColorBrush>
-    <SolidColorBrush x:Key="MenuFlyoutSeparatorBackground">#0FFFFFFF</SolidColorBrush>
-
-    <!-- ToolTip -->
-    <SolidColorBrush x:Key="ToolTipBackground">#20252D</SolidColorBrush>
-    <SolidColorBrush x:Key="ToolTipForeground">#E7EAEE</SolidColorBrush>
-    <SolidColorBrush x:Key="ToolTipBorderBrush">#1FFFFFFF</SolidColorBrush>
 
     <!-- Slider: reskin of the Fluent template (see DarkTheme.axaml, Slider section).
          Compact 20px control: 4px(top) + 12px thumb + 4px(bottom); white round thumb. -->
@@ -281,16 +244,6 @@
     <SolidColorBrush x:Key="SliderContainerBackgroundDisabled">Transparent</SolidColorBrush>
     <SolidColorBrush x:Key="SliderTrackValueFillDisabled">#22D3EE</SolidColorBrush>
     <SolidColorBrush x:Key="SliderTrackFillDisabled">#24FFFFFF</SolidColorBrush>
-
-    <!-- Override Fluent's system accent so built-in controls (focus rings, selection)
-         match the design accent. -->
-    <Color x:Key="SystemAccentColor">#FF22D3EE</Color>
-    <Color x:Key="SystemAccentColorLight1">#FF4DDDF2</Color>
-    <Color x:Key="SystemAccentColorLight2">#FF7BE7F5</Color>
-    <Color x:Key="SystemAccentColorLight3">#FFA7F0F9</Color>
-    <Color x:Key="SystemAccentColorDark1">#FF18B8D6</Color>
-    <Color x:Key="SystemAccentColorDark2">#FF129BB8</Color>
-    <Color x:Key="SystemAccentColorDark3">#FF0C7E96</Color>
     </ResourceDictionary>
   </Application.Resources>
 

@@ -9,9 +9,9 @@
   <UserControl.Styles>
     <!-- ── Filter chip: game chips AND the Favorites toggle share this look ── -->
     <Style Selector="Button.gamechip">
-      <Setter Property="Background" Value="{StaticResource SurfaceCard}" />
-      <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
-      <Setter Property="BorderBrush" Value="{StaticResource BorderCard}" />
+      <Setter Property="Background" Value="{DynamicResource SurfaceCard}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextMuted}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderCard}" />
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="CornerRadius" Value="{StaticResource RadInput}" />
       <Setter Property="Padding" Value="12,7" />
@@ -23,26 +23,26 @@
       <Setter Property="Transitions"><Transitions><BrushTransition Property="Background" Duration="0:0:0.12" /></Transitions></Setter>
     </Style>
     <Style Selector="Button.gamechip:pointerover">
-      <Setter Property="Foreground" Value="{StaticResource TextHi}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextHi}" />
     </Style>
     <Style Selector="Button.gamechip.sel">
-      <Setter Property="Foreground" Value="{StaticResource AccentText}" />
-      <Setter Property="BorderBrush" Value="{StaticResource AccentRing}" />
+      <Setter Property="Foreground" Value="{DynamicResource AccentText}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentRing}" />
     </Style>
     <Style Selector="Button.gamechip.sel /template/ ContentPresenter">
-      <Setter Property="Background" Value="{StaticResource AccentDim}" />
+      <Setter Property="Background" Value="{DynamicResource AccentDim}" />
     </Style>
 
     <!-- ── Search field surface ── -->
     <Style Selector="Border.searchbox">
-      <Setter Property="Background" Value="{StaticResource SurfaceCard}" />
-      <Setter Property="BorderBrush" Value="{StaticResource BorderCard}" />
+      <Setter Property="Background" Value="{DynamicResource SurfaceCard}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderCard}" />
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="CornerRadius" Value="{StaticResource RadPill}" />
       <Setter Property="Transitions"><Transitions><BrushTransition Property="BorderBrush" Duration="0:0:0.12" /></Transitions></Setter>
     </Style>
     <Style Selector="Border.searchbox:pointerover">
-      <Setter Property="BorderBrush" Value="{StaticResource BorderInput}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderInput}" />
     </Style>
     <!-- Strip the themed TextBox chrome so it reads as plain text inside the pill -->
     <Style Selector="Border.searchbox TextBox">
@@ -121,7 +121,7 @@
 
     <!-- ── Overlay action buttons (play / fav / edit) ── -->
     <Style Selector="Button.ovplay">
-      <Setter Property="Background" Value="{StaticResource Accent}" />
+      <Setter Property="Background" Value="{DynamicResource Accent}" />
       <Setter Property="Width" Value="48" />
       <Setter Property="Height" Value="48" />
       <Setter Property="CornerRadius" Value="24" />
@@ -131,7 +131,7 @@
     </Style>
     <Style Selector="Button.ov">
       <Setter Property="Background" Value="#EB1A1D25" />
-      <Setter Property="Foreground" Value="{StaticResource TextBtn}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextBtn}" />
       <Setter Property="BorderThickness" Value="0" />
       <Setter Property="CornerRadius" Value="8" />
       <Setter Property="Padding" Value="0" />
@@ -141,7 +141,7 @@
       <Setter Property="Transitions"><Transitions><BrushTransition Property="Background" Duration="0:0:0.12" /></Transitions></Setter>
     </Style>
     <Style Selector="Button.ov:pointerover /template/ ContentPresenter">
-      <Setter Property="Background" Value="{StaticResource SurfaceHover2}" />
+      <Setter Property="Background" Value="{DynamicResource SurfaceHover2}" />
     </Style>
   </UserControl.Styles>
 
@@ -150,7 +150,7 @@
     <KeyBinding Gesture="Escape" Command="{Binding ClearSelectionCommand}" />
   </UserControl.KeyBindings>
 
-  <Grid Background="{StaticResource SurfaceApp}" RowDefinitions="Auto,*">
+  <Grid Background="{DynamicResource SurfaceApp}" RowDefinitions="Auto,*">
 
     <!-- ════════════════ Header ════════════════ -->
     <StackPanel Grid.Row="0" Margin="38,30,38,0">
@@ -159,16 +159,16 @@
       <Grid ColumnDefinitions="*,Auto">
         <StackPanel Grid.Column="0">
           <TextBlock Text="{DynamicResource Library_Title}" FontFamily="{StaticResource FontDisplay}"
-                     FontSize="32" FontWeight="Bold" Foreground="{StaticResource TextHi}" />
+                     FontSize="32" FontWeight="Bold" Foreground="{DynamicResource TextHi}" />
           <StackPanel Orientation="Horizontal" Spacing="16" VerticalAlignment="Center" Margin="0,8,0,0">
             <TextBlock Text="{Binding ClipCountLabel}" FontFamily="{StaticResource FontMono}"
-                       FontSize="12" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" />
+                       FontSize="12" Foreground="{DynamicResource TextMuted}" VerticalAlignment="Center" />
             <TextBlock Text="{Binding UsedSpaceDisplay}" FontFamily="{StaticResource FontMono}"
-                       FontSize="12" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" />
-            <Border Width="120" Height="5" CornerRadius="3" Background="{StaticResource BorderStrong}"
+                       FontSize="12" Foreground="{DynamicResource TextMuted}" VerticalAlignment="Center" />
+            <Border Width="120" Height="5" CornerRadius="3" Background="{DynamicResource BorderStrong}"
                     ClipToBounds="True" VerticalAlignment="Center">
               <Border HorizontalAlignment="Left" Height="5" CornerRadius="3"
-                      Background="{StaticResource Accent}" Width="{Binding UsedSpaceBarWidth}" />
+                      Background="{DynamicResource Accent}" Width="{Binding UsedSpaceBarWidth}" />
             </Border>
           </StackPanel>
         </StackPanel>
@@ -176,12 +176,12 @@
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Bottom">
           <!-- Bulk delete — appears once any card is selected -->
           <Button Classes="rchip" IsVisible="{Binding HasSelection}"
-                  Foreground="{StaticResource DangerStop}" Command="{Binding DeleteSelectedCommand}">
+                  Foreground="{DynamicResource DangerStop}" Command="{Binding DeleteSelectedCommand}">
             <StackPanel Orientation="Horizontal" Spacing="8">
               <mi:MaterialIcon Kind="TrashCanOutline" Width="15" Height="15" VerticalAlignment="Center"
-                               Foreground="{StaticResource DangerStop}" />
+                               Foreground="{DynamicResource DangerStop}" />
               <TextBlock Text="{Binding DeleteSelectedLabel}" VerticalAlignment="Center"
-                         Foreground="{StaticResource DangerStop}" />
+                         Foreground="{DynamicResource DangerStop}" />
             </StackPanel>
           </Button>
           <!-- Clear the whole selection in one click -->
@@ -205,10 +205,10 @@
         <Border Grid.Column="0" Classes="searchbox" Width="320" Height="38" Padding="14,0" VerticalAlignment="Center">
           <Grid ColumnDefinitions="Auto,*">
             <mi:MaterialIcon Grid.Column="0" Kind="Magnify" Width="15" Height="15"
-                             Foreground="{StaticResource TextFaint}" VerticalAlignment="Center" Margin="0,0,9,0" />
+                             Foreground="{DynamicResource TextFaint}" VerticalAlignment="Center" Margin="0,0,9,0" />
             <TextBox Grid.Column="1" Text="{Binding SearchText, Mode=TwoWay}"
                      Watermark="{DynamicResource Library_Search}" VerticalAlignment="Center"
-                     VerticalContentAlignment="Center" FontSize="13.5" Foreground="{StaticResource TextHi}" />
+                     VerticalContentAlignment="Center" FontSize="13.5" Foreground="{DynamicResource TextHi}" />
           </Grid>
         </Border>
 
@@ -229,9 +229,9 @@
                 Command="{Binding ToggleFavoritesOnlyCommand}" VerticalAlignment="Center">
           <StackPanel Orientation="Horizontal" Spacing="7">
             <Panel Width="14" Height="14" VerticalAlignment="Center">
-              <mi:MaterialIcon Kind="Star" Width="14" Height="14" Foreground="{StaticResource AccentText}"
+              <mi:MaterialIcon Kind="Star" Width="14" Height="14" Foreground="{DynamicResource AccentText}"
                                IsVisible="{Binding FavoritesOnly}" />
-              <mi:MaterialIcon Kind="StarOutline" Width="14" Height="14" Foreground="{StaticResource TextMuted}"
+              <mi:MaterialIcon Kind="StarOutline" Width="14" Height="14" Foreground="{DynamicResource TextMuted}"
                                IsVisible="{Binding !FavoritesOnly}" />
             </Panel>
             <TextBlock Text="{DynamicResource Library_Favorites}" VerticalAlignment="Center" />
@@ -253,13 +253,13 @@
                 <!-- group header -->
                 <Grid ColumnDefinitions="Auto,Auto,*,Auto" Margin="0,0,0,16">
                   <TextBlock Grid.Column="0" Text="{Binding Label}" FontFamily="{StaticResource FontDisplay}"
-                             FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource TextHi}" VerticalAlignment="Center" />
+                             FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource TextHi}" VerticalAlignment="Center" />
                   <TextBlock Grid.Column="1" Text="{Binding Sub}" FontFamily="{StaticResource FontMono}"
-                             FontSize="11" Foreground="{StaticResource TextFaintest}" VerticalAlignment="Center" Margin="13,0,0,0" />
-                  <Border Grid.Column="2" Height="1" Background="{StaticResource BorderFaint}"
+                             FontSize="11" Foreground="{DynamicResource TextFaintest}" VerticalAlignment="Center" Margin="13,0,0,0" />
+                  <Border Grid.Column="2" Height="1" Background="{DynamicResource BorderFaint}"
                           VerticalAlignment="Center" Margin="13,0,13,0" />
                   <TextBlock Grid.Column="3" Text="{Binding CountLabel}" FontFamily="{StaticResource FontMono}"
-                             FontSize="11" Foreground="{StaticResource TextFaintest}" VerticalAlignment="Center" />
+                             FontSize="11" Foreground="{DynamicResource TextFaintest}" VerticalAlignment="Center" />
                 </Grid>
 
                 <!-- cards -->
@@ -298,22 +298,22 @@
 
                             <!-- accent hover ring -->
                             <Border Classes="cardring" CornerRadius="{StaticResource RadGeneral}"
-                                    BorderBrush="{StaticResource Accent}" BorderThickness="2" IsHitTestVisible="False" />
+                                    BorderBrush="{DynamicResource Accent}" BorderThickness="2" IsHitTestVisible="False" />
 
                             <!-- favourite badge -->
                             <Border IsVisible="{Binding IsFavorite}" Width="26" Height="26" CornerRadius="8"
                                     Background="#B30C0D11" HorizontalAlignment="Right" VerticalAlignment="Top"
                                     Margin="0,9,9,0" IsHitTestVisible="False">
-                              <mi:MaterialIcon Kind="Star" Width="14" Height="14" Foreground="{StaticResource Accent}"
+                              <mi:MaterialIcon Kind="Star" Width="14" Height="14" Foreground="{DynamicResource Accent}"
                                                HorizontalAlignment="Center" VerticalAlignment="Center" />
                             </Border>
 
                             <!-- EDITED badge (top-left; fades out on hover / while selecting — the circle owns that corner) -->
-                            <Border Classes="editedbadge" IsVisible="{Binding IsEdited}" Background="{StaticResource Accent}"
+                            <Border Classes="editedbadge" IsVisible="{Binding IsEdited}" Background="{DynamicResource Accent}"
                                     CornerRadius="5" Padding="6,3" HorizontalAlignment="Left" VerticalAlignment="Top"
                                     Margin="9,9,0,0" IsHitTestVisible="False">
                               <TextBlock Text="EDITED" FontFamily="{StaticResource FontMono}" FontSize="9"
-                                         FontWeight="Medium" Foreground="{StaticResource OnAccent}" />
+                                         FontWeight="Medium" Foreground="{DynamicResource OnAccent}" />
                             </Border>
 
                             <!-- duration -->
@@ -341,7 +341,7 @@
                                 <Button Classes="ovplay" HorizontalAlignment="Center" VerticalAlignment="Center"
                                         Command="{Binding $parent[UserControl].((vm:LibraryViewModel)DataContext).PlayClipCommand}"
                                         CommandParameter="{Binding}">
-                                  <mi:MaterialIcon Kind="Play" Width="24" Height="24" Foreground="{StaticResource OnAccent}"
+                                  <mi:MaterialIcon Kind="Play" Width="24" Height="24" Foreground="{DynamicResource OnAccent}"
                                                    HorizontalAlignment="Center" VerticalAlignment="Center" Margin="2,0,0,0" />
                                 </Button>
 
@@ -351,9 +351,9 @@
                                         Command="{Binding $parent[UserControl].((vm:LibraryViewModel)DataContext).ToggleFavoriteCommand}"
                                         CommandParameter="{Binding}">
                                   <Panel>
-                                    <mi:MaterialIcon Kind="Star" Width="15" Height="15" Foreground="{StaticResource AccentText}"
+                                    <mi:MaterialIcon Kind="Star" Width="15" Height="15" Foreground="{DynamicResource AccentText}"
                                                      IsVisible="{Binding IsFavorite}" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                    <mi:MaterialIcon Kind="StarOutline" Width="15" Height="15" Foreground="{StaticResource TextBtn}"
+                                    <mi:MaterialIcon Kind="StarOutline" Width="15" Height="15" Foreground="{DynamicResource TextBtn}"
                                                      IsVisible="{Binding !IsFavorite}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                   </Panel>
                                 </Button>
@@ -378,7 +378,7 @@
                               <Panel>
                                 <mi:MaterialIcon Kind="CheckboxBlankCircleOutline" Width="20" Height="20" Foreground="White"
                                                  IsVisible="{Binding !IsSelected}" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                <mi:MaterialIcon Kind="CheckCircle" Width="20" Height="20" Foreground="{StaticResource Accent}"
+                                <mi:MaterialIcon Kind="CheckCircle" Width="20" Height="20" Foreground="{DynamicResource Accent}"
                                                  IsVisible="{Binding IsSelected}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                               </Panel>
                             </Button>
@@ -387,14 +387,14 @@
                           <!-- meta -->
                           <StackPanel Margin="2,10,2,0" Spacing="3">
                             <TextBlock Text="{Binding DisplayName}" FontSize="13" FontWeight="SemiBold"
-                                       Foreground="{StaticResource TextHi}" TextTrimming="CharacterEllipsis" />
+                                       Foreground="{DynamicResource TextHi}" TextTrimming="CharacterEllipsis" />
                             <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                               <TextBlock Text="{Binding CreatedDate, StringFormat='{}{0:HH:mm}'}"
                                          FontFamily="{StaticResource FontMono}" FontSize="10.5"
-                                         Foreground="{StaticResource TextFaint}" VerticalAlignment="Center" />
-                              <Ellipse Width="3" Height="3" Fill="{StaticResource DotDivider}"
+                                         Foreground="{DynamicResource TextFaint}" VerticalAlignment="Center" />
+                              <Ellipse Width="3" Height="3" Fill="{DynamicResource DotDivider}"
                                        VerticalAlignment="Center" IsVisible="{Binding HasGame}" />
-                              <TextBlock Text="{Binding Game}" FontSize="11.5" Foreground="{StaticResource TextMuted}"
+                              <TextBlock Text="{Binding Game}" FontSize="11.5" Foreground="{DynamicResource TextMuted}"
                                          VerticalAlignment="Center" IsVisible="{Binding HasGame}" />
                             </StackPanel>
                           </StackPanel>
@@ -411,7 +411,7 @@
         <!-- No-results (clips exist but the filter/search hides them all) -->
         <TextBlock Text="{DynamicResource Library_NoResults}" IsVisible="{Binding HasNoResults}"
                    HorizontalAlignment="Center" Margin="0,60,0,0"
-                   Foreground="{StaticResource TextFaintest}" FontSize="13.5" />
+                   Foreground="{DynamicResource TextFaintest}" FontSize="13.5" />
 
         <!-- Empty library (no clips at all) -->
         <StackPanel IsVisible="{Binding !Clips.Count}"
@@ -419,18 +419,18 @@
                     Margin="0,140,0,0" Spacing="14">
           <Viewbox Width="44" Height="44" HorizontalAlignment="Center">
             <Canvas Width="22" Height="22">
-              <Path Data="{StaticResource LogoArcGeometry}" Stroke="{StaticResource EmptyIconBrush}"
+              <Path Data="{StaticResource LogoArcGeometry}" Stroke="{DynamicResource EmptyIconBrush}"
                     StrokeThickness="0.8" StrokeLineCap="Round" StrokeJoin="Round" />
-              <Path Data="{StaticResource LogoCornerGeometry}" Stroke="{StaticResource EmptyIconBrush}"
+              <Path Data="{StaticResource LogoCornerGeometry}" Stroke="{DynamicResource EmptyIconBrush}"
                     StrokeThickness="0.8" StrokeLineCap="Round" StrokeJoin="Round" />
-              <Path Data="{StaticResource LogoHandsGeometry}" Stroke="{StaticResource EmptyIconBrush}"
+              <Path Data="{StaticResource LogoHandsGeometry}" Stroke="{DynamicResource EmptyIconBrush}"
                     StrokeThickness="0.8" StrokeLineCap="Round" StrokeJoin="Round" />
             </Canvas>
           </Viewbox>
           <TextBlock Text="{DynamicResource Library_EmptyTitle}" FontSize="16" FontWeight="Medium"
-                     Foreground="{StaticResource TextHi}" HorizontalAlignment="Center" />
+                     Foreground="{DynamicResource TextHi}" HorizontalAlignment="Center" />
           <TextBlock Text="{DynamicResource Library_Empty}" FontSize="13" LineHeight="20"
-                     Foreground="{StaticResource TextMuted}"
+                     Foreground="{DynamicResource TextMuted}"
                      TextWrapping="Wrap" TextAlignment="Center" MaxWidth="430"
                      HorizontalAlignment="Center" />
           <ItemsControl ItemsSource="{Binding $parent[Window].DataContext.Settings.HotkeyParts}"
@@ -454,7 +454,7 @@
     <!-- Indeterminate refresh bar -->
     <ProgressBar Grid.Row="1" IsIndeterminate="True" IsVisible="{Binding IsLoading}"
                  Height="2" VerticalAlignment="Top" Margin="38,0"
-                 Foreground="{StaticResource Accent}" Background="Transparent" />
+                 Foreground="{DynamicResource Accent}" Background="Transparent" />
 
   </Grid>
 

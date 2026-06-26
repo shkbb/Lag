@@ -16,7 +16,12 @@
   <sys:String x:Key="Settings_Title">Einstellungen</sys:String>
   <sys:String x:Key="Settings_PendingChanges">Änderungen werden nach dem Neustart der Aufnahme wirksam.</sys:String>
   <sys:String x:Key="Settings_Group_Language">SPRACHE</sys:String>
-  <sys:String x:Key="Settings_Language">Sprache</sys:String>
+  <sys:String x:Key="Settings_Language">Sprache</sys:String>
+  <sys:String x:Key="Settings_Theme">Design</sys:String>
+  <sys:String x:Key="Settings_Theme_Desc">Hell, dunkel oder wie das System</sys:String>
+  <sys:String x:Key="Theme_Light">Hell</sys:String>
+  <sys:String x:Key="Theme_Dark">Dunkel</sys:String>
+  <sys:String x:Key="Theme_System">System</sys:String>
   <sys:String x:Key="Settings_Group_Recording">AUFNAHME</sys:String>
   <sys:String x:Key="Settings_BufferLength">Länge des Replay-Puffers</sys:String>
   <sys:String x:Key="Settings_Display">Bildschirm</sys:String>

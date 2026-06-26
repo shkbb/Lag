@@ -16,7 +16,12 @@
   <sys:String x:Key="Settings_Title">Innstillinger</sys:String>
   <sys:String x:Key="Settings_PendingChanges">Endringene trer i kraft etter at opptaket startes på nytt.</sys:String>
   <sys:String x:Key="Settings_Group_Language">SPRÅK</sys:String>
-  <sys:String x:Key="Settings_Language">Språk</sys:String>
+  <sys:String x:Key="Settings_Language">Språk</sys:String>
+  <sys:String x:Key="Settings_Theme">Tema</sys:String>
+  <sys:String x:Key="Settings_Theme_Desc">Lyst, mørkt eller følg systemet</sys:String>
+  <sys:String x:Key="Theme_Light">Lyst</sys:String>
+  <sys:String x:Key="Theme_Dark">Mørkt</sys:String>
+  <sys:String x:Key="Theme_System">System</sys:String>
   <sys:String x:Key="Settings_Group_Recording">OPPTAK</sys:String>
   <sys:String x:Key="Settings_BufferLength">Reprisebufferens lengde</sys:String>
   <sys:String x:Key="Settings_Display">Skjerm</sys:String>

@@ -36,8 +36,8 @@
 
     <!-- Top-bar accent button (Record). Code-behind toggles .rec → red. -->
     <Style Selector="Button.tbar-accent">
-      <Setter Property="Background" Value="{StaticResource Accent}" />
-      <Setter Property="Foreground" Value="{StaticResource OnAccent}" />
+      <Setter Property="Background" Value="{DynamicResource Accent}" />
+      <Setter Property="Foreground" Value="{DynamicResource OnAccent}" />
       <Setter Property="Height" Value="38" />
       <Setter Property="CornerRadius" Value="10" />
       <Setter Property="Padding" Value="16,0" />
@@ -51,27 +51,27 @@
       <Setter Property="Transitions"><Transitions><BrushTransition Property="Background" Duration="0:0:0.15" /></Transitions></Setter>
     </Style>
     <Style Selector="Button.tbar-accent:pointerover /template/ ContentPresenter">
-      <Setter Property="Background" Value="{StaticResource AccentHoverBrush}" />
+      <Setter Property="Background" Value="{DynamicResource AccentHoverBrush}" />
     </Style>
     <Style Selector="Button.tbar-accent.rec">
-      <Setter Property="Background" Value="{StaticResource DangerBrush}" />
+      <Setter Property="Background" Value="{DynamicResource DangerBrush}" />
       <Setter Property="Foreground" Value="White" />
     </Style>
     <Style Selector="Button.tbar-accent.rec:pointerover /template/ ContentPresenter">
-      <Setter Property="Background" Value="{StaticResource DangerHoverBrush}" />
+      <Setter Property="Background" Value="{DynamicResource DangerHoverBrush}" />
     </Style>
 
     <!-- Top-bar dark button (Save Replay / Pause) -->
     <Style Selector="Button.tbar">
-      <Setter Property="Background" Value="{StaticResource SurfaceInput}" />
-      <Setter Property="Foreground" Value="{StaticResource TextBtn}" />
+      <Setter Property="Background" Value="{DynamicResource SurfaceInput}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextBtn}" />
       <Setter Property="Height" Value="38" />
       <Setter Property="CornerRadius" Value="10" />
       <Setter Property="Padding" Value="15,0" />
       <Setter Property="FontSize" Value="13" />
       <Setter Property="FontWeight" Value="SemiBold" />
       <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="BorderBrush" Value="{StaticResource BorderStrong}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderStrong}" />
       <Setter Property="VerticalContentAlignment" Value="Center" />
       <Setter Property="Cursor" Value="Hand" />
     </Style>
@@ -79,7 +79,7 @@
       <Setter Property="Transitions"><Transitions><BrushTransition Property="Background" Duration="0:0:0.15" /></Transitions></Setter>
     </Style>
     <Style Selector="Button.tbar:pointerover /template/ ContentPresenter">
-      <Setter Property="Background" Value="{StaticResource SurfaceHover}" />
+      <Setter Property="Background" Value="{DynamicResource SurfaceHover}" />
     </Style>
     <Style Selector="Button.tbar:disabled">
       <Setter Property="Opacity" Value="0.45" />
@@ -88,7 +88,7 @@
     <!-- Window controls (42px wide, full 58px bar) -->
     <Style Selector="Button.wctl">
       <Setter Property="Background" Value="Transparent" />
-      <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextFaint}" />
       <Setter Property="Width" Value="42" />
       <Setter Property="Height" Value="58" />
       <Setter Property="CornerRadius" Value="0" />
@@ -100,10 +100,10 @@
       <Setter Property="Transitions"><Transitions><BrushTransition Property="Background" Duration="0:0:0.12" /></Transitions></Setter>
     </Style>
     <Style Selector="Button.wctl:pointerover /template/ ContentPresenter">
-      <Setter Property="Background" Value="{StaticResource BorderFaint}" />
+      <Setter Property="Background" Value="{DynamicResource BorderFaint}" />
     </Style>
     <Style Selector="Button.wctl.close:pointerover /template/ ContentPresenter">
-      <Setter Property="Background" Value="{StaticResource DangerClose}" />
+      <Setter Property="Background" Value="{DynamicResource DangerClose}" />
     </Style>
     <Style Selector="Button.wctl.close:pointerover mi|MaterialIcon">
       <Setter Property="Foreground" Value="White" />
@@ -112,7 +112,7 @@
     <!-- Icon-rail item (vertical icon + tiny label). Code-behind sets .active. -->
     <Style Selector="Button.railitem">
       <Setter Property="Background" Value="Transparent" />
-      <Setter Property="Foreground" Value="{StaticResource TextMid}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextMid}" />
       <Setter Property="Width" Value="62" />
       <Setter Property="Height" Value="56" />
       <Setter Property="CornerRadius" Value="11" />
@@ -127,17 +127,17 @@
       <Setter Property="Transitions"><Transitions><BrushTransition Property="Background" Duration="0:0:0.14" /></Transitions></Setter>
     </Style>
     <Style Selector="Button.railitem:pointerover /template/ ContentPresenter">
-      <Setter Property="Background" Value="{StaticResource BorderFaint}" />
+      <Setter Property="Background" Value="{DynamicResource BorderFaint}" />
     </Style>
     <Style Selector="Button.railitem mi|MaterialIcon">
-      <Setter Property="Foreground" Value="{StaticResource TextMid}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextMid}" />
     </Style>
     <Style Selector="Button.railitem.active">
-      <Setter Property="Background" Value="{StaticResource AccentDim}" />
-      <Setter Property="Foreground" Value="{StaticResource TextHi}" />
+      <Setter Property="Background" Value="{DynamicResource AccentDim}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextHi}" />
     </Style>
     <Style Selector="Button.railitem.active mi|MaterialIcon">
-      <Setter Property="Foreground" Value="{StaticResource Accent}" />
+      <Setter Property="Foreground" Value="{DynamicResource Accent}" />
     </Style>
     <!-- Rail label: wrap to max 2 centred lines (then ellipsis) so long-language captions
          like "Бібліотека" / "Налаштування" are never hard-clipped on the narrow rail. -->
@@ -191,40 +191,40 @@
     </Style>
   </Window.Styles>
 
-  <Grid RowDefinitions="Auto,*" Background="{StaticResource SurfaceApp}">
+  <Grid RowDefinitions="Auto,*" Background="{DynamicResource SurfaceApp}">
 
     <!-- ═══════════════ TOP COMMAND BAR (58px) ═══════════════ -->
-    <Border Grid.Row="0" Height="58" Background="{StaticResource SurfaceApp}"
-            BorderBrush="{StaticResource BorderCard}" BorderThickness="0,0,0,1"
+    <Border Grid.Row="0" Height="58" Background="{DynamicResource SurfaceApp}"
+            BorderBrush="{DynamicResource BorderCard}" BorderThickness="0,0,0,1"
             IsVisible="{Binding !IsFullscreen}">
       <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,*,Auto,Auto" Margin="18,0,0,0">
 
         <!-- Logo (drag zone) -->
         <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center"
                     Background="Transparent" PointerPressed="OnTitleBarPointerPressed">
-          <Border Width="28" Height="28" Background="{StaticResource Accent}" CornerRadius="8">
+          <Border Width="28" Height="28" Background="{DynamicResource Accent}" CornerRadius="8">
             <Canvas Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center">
-              <Path Data="{StaticResource LogoArcGeometry}" Stroke="{StaticResource OnAccent}"
+              <Path Data="{StaticResource LogoArcGeometry}" Stroke="{DynamicResource OnAccent}"
                     StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round" />
-              <Path Data="{StaticResource LogoCornerGeometry}" Stroke="{StaticResource OnAccent}"
+              <Path Data="{StaticResource LogoCornerGeometry}" Stroke="{DynamicResource OnAccent}"
                     StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round" />
-              <Path Data="{StaticResource LogoHandsGeometry}" Stroke="{StaticResource OnAccent}"
+              <Path Data="{StaticResource LogoHandsGeometry}" Stroke="{DynamicResource OnAccent}"
                     StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round" />
             </Canvas>
           </Border>
           <TextBlock Text="Lag" FontFamily="{StaticResource FontDisplay}" FontSize="18" FontWeight="Bold"
-                     Foreground="{StaticResource TextHi}" VerticalAlignment="Center" />
+                     Foreground="{DynamicResource TextHi}" VerticalAlignment="Center" />
         </StackPanel>
 
         <!-- Divider -->
         <Border Grid.Column="1" Width="1" Height="26" Margin="16,0"
-                Background="{StaticResource BorderStrong}" VerticalAlignment="Center" />
+                Background="{DynamicResource BorderStrong}" VerticalAlignment="Center" />
 
         <!-- Record (cyan / red) -->
         <Button Grid.Column="2" x:Name="RecordCta" Classes="tbar-accent"
                 Command="{Binding ToggleRecordingCommand}">
           <StackPanel Orientation="Horizontal" Spacing="9" VerticalAlignment="Center">
-            <Ellipse Width="9" Height="9" Fill="{StaticResource OnAccent}"
+            <Ellipse Width="9" Height="9" Fill="{DynamicResource OnAccent}"
                      IsVisible="{Binding !IsRecording}" VerticalAlignment="Center" />
             <Rectangle Width="10" Height="10" RadiusX="2" RadiusY="2" Fill="White"
                        IsVisible="{Binding IsRecording}" VerticalAlignment="Center" />
@@ -264,21 +264,21 @@
         <Panel Grid.Column="5" Background="Transparent" PointerPressed="OnTitleBarPointerPressed" />
 
         <!-- Status pill -->
-        <Border Grid.Column="6" Background="{StaticResource SurfaceCard}"
-                BorderBrush="{StaticResource BorderCard}" BorderThickness="1"
+        <Border Grid.Column="6" Background="{DynamicResource SurfaceCard}"
+                BorderBrush="{DynamicResource BorderCard}" BorderThickness="1"
                 CornerRadius="11" Padding="14,7" VerticalAlignment="Center">
           <StackPanel Orientation="Horizontal" Spacing="11" VerticalAlignment="Center">
-            <Ellipse Width="8" Height="8" Fill="{StaticResource StatusIdle}"
+            <Ellipse Width="8" Height="8" Fill="{DynamicResource StatusIdle}"
                      IsVisible="{Binding !IsRecording}" VerticalAlignment="Center" />
-            <Ellipse Width="8" Height="8" Classes="recpulse" Fill="{StaticResource RecDot}"
+            <Ellipse Width="8" Height="8" Classes="recpulse" Fill="{DynamicResource RecDot}"
                      IsVisible="{Binding IsRecording}" VerticalAlignment="Center" />
             <TextBlock Text="{Binding StatusText}" FontSize="12.5" FontWeight="SemiBold"
-                       Foreground="{StaticResource TextKbd}" VerticalAlignment="Center"
+                       Foreground="{DynamicResource TextKbd}" VerticalAlignment="Center"
                        MinWidth="62" TextTrimming="CharacterEllipsis" MaxWidth="160" />
             <ProgressBar Classes="buffer" Width="74" Height="5" VerticalAlignment="Center"
                          Minimum="0" Maximum="100" Value="{Binding BufferFillPercent}" />
             <TextBlock Text="{Binding BufferStatus}" FontFamily="{StaticResource FontMono}"
-                       FontSize="11" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" />
+                       FontSize="11" Foreground="{DynamicResource TextMuted}" VerticalAlignment="Center" />
           </StackPanel>
         </Border>
 
@@ -301,8 +301,8 @@
     <Grid Grid.Row="1" ColumnDefinitions="Auto,*">
 
       <!-- ICON RAIL (78px) -->
-      <Border Grid.Column="0" Width="78" Background="{StaticResource SurfaceApp}"
-              BorderBrush="{StaticResource BorderCard}" BorderThickness="0,0,1,0"
+      <Border Grid.Column="0" Width="78" Background="{DynamicResource SurfaceApp}"
+              BorderBrush="{DynamicResource BorderCard}" BorderThickness="0,0,1,0"
               IsVisible="{Binding !IsFullscreen}">
         <DockPanel Margin="0,14">
           <!-- Settings pinned to the bottom -->
@@ -322,11 +322,11 @@
                   PointerEntered="OnCaptureEntered" PointerExited="OnCaptureExited">
             <Panel>
               <mi:MaterialIcon Kind="Controller" Width="22" Height="22" Classes="capturepulse"
-                               Foreground="{StaticResource Accent}"
+                               Foreground="{DynamicResource Accent}"
                                HorizontalAlignment="Center" VerticalAlignment="Center"
                                IsVisible="{Binding CaptureTargetIsGame}" />
               <mi:MaterialIcon Kind="Monitor" Width="22" Height="22" Classes="capturepulse"
-                               Foreground="{StaticResource Accent}"
+                               Foreground="{DynamicResource Accent}"
                                HorizontalAlignment="Center" VerticalAlignment="Center"
                                IsVisible="{Binding !CaptureTargetIsGame}" />
             </Panel>
@@ -358,7 +358,7 @@
       <!-- Animated view host -->
       <TransitioningContentControl Grid.Column="1"
                                    x:Name="ContentHost"
-                                   Background="{StaticResource SurfaceApp}"
+                                   Background="{DynamicResource SurfaceApp}"
                                    Content="{Binding CurrentView}">
         <TransitioningContentControl.PageTransition>
           <CrossFade Duration="0:0:0.18" />
@@ -369,16 +369,16 @@
       <Border Grid.Column="1" x:Name="CaptureFlyout" Classes="captureflyout"
               HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="10,0,0,82" ZIndex="60"
               IsHitTestVisible="False" IsVisible="{Binding HasCaptureTarget}"
-              Background="{StaticResource SurfaceCard}" BorderBrush="{StaticResource BorderCard}"
+              Background="{DynamicResource SurfaceCard}" BorderBrush="{DynamicResource BorderCard}"
               BorderThickness="1" CornerRadius="12" Padding="14,11"
               BoxShadow="0 8 24 0 #66000000">
         <StackPanel Orientation="Horizontal" Spacing="11" VerticalAlignment="Center">
-          <mi:MaterialIcon Kind="Controller" Width="20" Height="20" Foreground="{StaticResource Accent}"
+          <mi:MaterialIcon Kind="Controller" Width="20" Height="20" Foreground="{DynamicResource Accent}"
                            VerticalAlignment="Center" IsVisible="{Binding CaptureTargetIsGame}" />
-          <mi:MaterialIcon Kind="Monitor" Width="20" Height="20" Foreground="{StaticResource Accent}"
+          <mi:MaterialIcon Kind="Monitor" Width="20" Height="20" Foreground="{DynamicResource Accent}"
                            VerticalAlignment="Center" IsVisible="{Binding !CaptureTargetIsGame}" />
           <TextBlock Text="{Binding CaptureTargetName}" FontSize="13.5" FontWeight="SemiBold"
-                     Foreground="{StaticResource TextHi}" VerticalAlignment="Center"
+                     Foreground="{DynamicResource TextHi}" VerticalAlignment="Center"
                      TextTrimming="CharacterEllipsis" MaxWidth="220" />
         </StackPanel>
       </Border>

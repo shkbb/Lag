@@ -16,7 +16,12 @@
   <sys:String x:Key="Settings_Title">Seaded</sys:String>
   <sys:String x:Key="Settings_PendingChanges">Muudatused jõustuvad pärast salvestamise taaskäivitamist.</sys:String>
   <sys:String x:Key="Settings_Group_Language">KEEL</sys:String>
-  <sys:String x:Key="Settings_Language">Keel</sys:String>
+  <sys:String x:Key="Settings_Language">Keel</sys:String>
+  <sys:String x:Key="Settings_Theme">Teema</sys:String>
+  <sys:String x:Key="Settings_Theme_Desc">Hele, tume või süsteemi järgi</sys:String>
+  <sys:String x:Key="Theme_Light">Hele</sys:String>
+  <sys:String x:Key="Theme_Dark">Tume</sys:String>
+  <sys:String x:Key="Theme_System">Süsteemne</sys:String>
   <sys:String x:Key="Settings_Group_Recording">SALVESTAMINE</sys:String>
   <sys:String x:Key="Settings_BufferLength">Korduspuhvri pikkus</sys:String>
   <sys:String x:Key="Settings_Display">Ekraan</sys:String>

@@ -16,7 +16,12 @@
   <sys:String x:Key="Settings_Title">Definições</sys:String>
   <sys:String x:Key="Settings_PendingChanges">As alterações terão efeito após reiniciar a gravação.</sys:String>
   <sys:String x:Key="Settings_Group_Language">IDIOMA</sys:String>
-  <sys:String x:Key="Settings_Language">Idioma</sys:String>
+  <sys:String x:Key="Settings_Language">Idioma</sys:String>
+  <sys:String x:Key="Settings_Theme">Tema</sys:String>
+  <sys:String x:Key="Settings_Theme_Desc">Claro, escuro ou seguir o sistema</sys:String>
+  <sys:String x:Key="Theme_Light">Claro</sys:String>
+  <sys:String x:Key="Theme_Dark">Escuro</sys:String>
+  <sys:String x:Key="Theme_System">Sistema</sys:String>
   <sys:String x:Key="Settings_Group_Recording">GRAVAÇÃO</sys:String>
   <sys:String x:Key="Settings_BufferLength">Duração do buffer de replay</sys:String>
   <sys:String x:Key="Settings_Display">Ecrã</sys:String>

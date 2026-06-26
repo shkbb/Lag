@@ -16,7 +16,12 @@
   <sys:String x:Key="Settings_Title">Iestatījumi</sys:String>
   <sys:String x:Key="Settings_PendingChanges">Izmaiņas stāsies spēkā pēc ierakstīšanas restartēšanas.</sys:String>
   <sys:String x:Key="Settings_Group_Language">VALODA</sys:String>
-  <sys:String x:Key="Settings_Language">Valoda</sys:String>
+  <sys:String x:Key="Settings_Language">Valoda</sys:String>
+  <sys:String x:Key="Settings_Theme">Tēma</sys:String>
+  <sys:String x:Key="Settings_Theme_Desc">Gaiša, tumša vai kā sistēmā</sys:String>
+  <sys:String x:Key="Theme_Light">Gaiša</sys:String>
+  <sys:String x:Key="Theme_Dark">Tumša</sys:String>
+  <sys:String x:Key="Theme_System">Sistēmas</sys:String>
   <sys:String x:Key="Settings_Group_Recording">IERAKSTĪŠANA</sys:String>
   <sys:String x:Key="Settings_BufferLength">Atkārtojuma bufera ilgums</sys:String>
   <sys:String x:Key="Settings_Display">Ekrāns</sys:String>

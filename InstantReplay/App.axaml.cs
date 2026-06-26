@@ -4,6 +4,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Markup.Xaml.Styling;
+using Avalonia.Styling;
 using System.IO;
 using FFMpegCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -86,6 +87,26 @@ public class App : Application
 
         Current.Resources.MergedDictionaries.Add(include);
         _currentLanguage = include;
+    }
+
+    // ───────────── Theme ─────────────
+
+    /// <summary>
+    /// Switches the active colour theme. "light" / "dark" force the cream Light or the
+    /// original Dark palette; anything else ("system") follows the OS theme live via
+    /// ThemeVariant.Default. All {DynamicResource} bindings re-resolve from Palette.axaml's
+    /// per-variant ThemeDictionaries the instant the variant changes.
+    /// </summary>
+    public static void SetTheme(string? mode)
+    {
+        if (Current is null) return;
+
+        Current.RequestedThemeVariant = mode switch
+        {
+            "light" => ThemeVariant.Light,
+            "dark" => ThemeVariant.Dark,
+            _ => ThemeVariant.Default,   // "system" → inherit the OS light/dark setting (updates live)
+        };
     }
 
     /// <summary>

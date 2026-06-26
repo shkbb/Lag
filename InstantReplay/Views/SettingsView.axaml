@@ -12,7 +12,7 @@
     </Style>
   </UserControl.Styles>
 
-  <Grid Background="{StaticResource SurfaceApp}">
+  <Grid Background="{DynamicResource SurfaceApp}">
     <ScrollViewer VerticalScrollBarVisibility="Auto">
       <!-- Fixed-width centered column (min window is 900, so 800 always fits). A MaxWidth + Center
            StackPanel shrinks to content, so tabs of different content width made the whole column
@@ -23,9 +23,9 @@
         <Grid ColumnDefinitions="*,Auto">
           <StackPanel Grid.Column="0" Spacing="4">
             <TextBlock Text="{DynamicResource Settings_Title}" FontFamily="{StaticResource FontDisplay}"
-                       FontSize="32" FontWeight="Bold" Foreground="{StaticResource TextHi}" />
+                       FontSize="32" FontWeight="Bold" Foreground="{DynamicResource TextHi}" />
             <TextBlock Text="{DynamicResource Settings_Subtitle}" FontSize="13.5"
-                       Foreground="{StaticResource TextMuted}" />
+                       Foreground="{DynamicResource TextMuted}" />
           </StackPanel>
           <TextBlock Grid.Column="1" Text="{DynamicResource Settings_PendingChanges}"
                      FontSize="11" Foreground="#F0B45A" VerticalAlignment="Bottom"
@@ -118,8 +118,8 @@
                     <Slider Width="120" Minimum="3" Maximum="100" TickFrequency="1" IsSnapToTickEnabled="True"
                             VerticalAlignment="Center" Value="{Binding BitrateSliderValue}" IsVisible="{Binding IsCustomBitrate}" />
                     <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center" IsVisible="{Binding IsCustomBitrate}">
-                      <TextBlock Text="{Binding BitrateDisplayMbps}" FontSize="13" Foreground="{StaticResource TextHi}" />
-                      <TextBlock Text="{DynamicResource Settings_Bitrate_CustomSuffix}" FontSize="13" Foreground="{StaticResource TextHi}" />
+                      <TextBlock Text="{Binding BitrateDisplayMbps}" FontSize="13" Foreground="{DynamicResource TextHi}" />
+                      <TextBlock Text="{DynamicResource Settings_Bitrate_CustomSuffix}" FontSize="13" Foreground="{DynamicResource TextHi}" />
                     </StackPanel>
                   </StackPanel>
                 </Grid>
@@ -177,30 +177,30 @@
                 <!-- source list -->
                 <Grid ColumnDefinitions="Auto,Auto,*,120,42" Margin="18,11" IsVisible="{Binding ShowSystemAudioRow}">
                   <CheckBox Grid.Column="0" IsChecked="{Binding SystemAudioEnabled}" VerticalAlignment="Center" />
-                  <mi:MaterialIcon Grid.Column="1" Kind="VolumeHigh" Width="20" Height="20" Margin="6,0,10,0" VerticalAlignment="Center" Foreground="{StaticResource TextFaint}" />
-                  <TextBlock Grid.Column="2" Text="Звук системи" FontSize="14" Foreground="{StaticResource TextRow}" VerticalAlignment="Center" />
+                  <mi:MaterialIcon Grid.Column="1" Kind="VolumeHigh" Width="20" Height="20" Margin="6,0,10,0" VerticalAlignment="Center" Foreground="{DynamicResource TextFaint}" />
+                  <TextBlock Grid.Column="2" Text="Звук системи" FontSize="14" Foreground="{DynamicResource TextRow}" VerticalAlignment="Center" />
                   <Slider Grid.Column="3" Minimum="0" Maximum="100" TickFrequency="1" IsSnapToTickEnabled="True"
                           Value="{Binding SystemAudioVolume}" IsEnabled="{Binding SystemAudioEnabled}" VerticalAlignment="Center" />
                   <TextBlock Grid.Column="4" Text="{Binding SystemAudioVolume, StringFormat='{}{0}%'}" FontFamily="{StaticResource FontMono}"
-                             FontSize="11" Foreground="{StaticResource TextFaint}" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                             FontSize="11" Foreground="{DynamicResource TextFaint}" HorizontalAlignment="Right" VerticalAlignment="Center" />
                 </Grid>
                 <Grid ColumnDefinitions="Auto,Auto,*,120,42" Margin="18,11">
                   <CheckBox Grid.Column="0" IsChecked="{Binding MicEnabled}" VerticalAlignment="Center" />
-                  <mi:MaterialIcon Grid.Column="1" Kind="Microphone" Width="20" Height="20" Margin="6,0,10,0" VerticalAlignment="Center" Foreground="{StaticResource TextFaint}" />
-                  <TextBlock Grid.Column="2" Text="{DynamicResource Settings_Microphone}" FontSize="14" Foreground="{StaticResource TextRow}" VerticalAlignment="Center" />
+                  <mi:MaterialIcon Grid.Column="1" Kind="Microphone" Width="20" Height="20" Margin="6,0,10,0" VerticalAlignment="Center" Foreground="{DynamicResource TextFaint}" />
+                  <TextBlock Grid.Column="2" Text="{DynamicResource Settings_Microphone}" FontSize="14" Foreground="{DynamicResource TextRow}" VerticalAlignment="Center" />
                   <Slider Grid.Column="3" Minimum="0" Maximum="100" TickFrequency="1" IsSnapToTickEnabled="True"
                           Value="{Binding MicVolume}" IsEnabled="{Binding MicEnabled}" VerticalAlignment="Center" />
                   <TextBlock Grid.Column="4" Text="{Binding MicVolume, StringFormat='{}{0}%'}" FontFamily="{StaticResource FontMono}"
-                             FontSize="11" Foreground="{StaticResource TextFaint}" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                             FontSize="11" Foreground="{DynamicResource TextFaint}" HorizontalAlignment="Right" VerticalAlignment="Center" />
                 </Grid>
                 <Grid ColumnDefinitions="Auto,Auto,*,120,42" Margin="18,11" IsVisible="{Binding ShowAppsList}">
                   <CheckBox Grid.Column="0" IsChecked="{Binding GameAudioEnabled}" VerticalAlignment="Center" />
-                  <mi:MaterialIcon Grid.Column="1" Kind="Gamepad" Width="20" Height="20" Margin="6,0,10,0" VerticalAlignment="Center" Foreground="{StaticResource TextFaint}" />
-                  <TextBlock Grid.Column="2" Text="Звук гри" FontSize="14" Foreground="{StaticResource TextRow}" VerticalAlignment="Center" />
+                  <mi:MaterialIcon Grid.Column="1" Kind="Gamepad" Width="20" Height="20" Margin="6,0,10,0" VerticalAlignment="Center" Foreground="{DynamicResource TextFaint}" />
+                  <TextBlock Grid.Column="2" Text="Звук гри" FontSize="14" Foreground="{DynamicResource TextRow}" VerticalAlignment="Center" />
                   <Slider Grid.Column="3" Minimum="0" Maximum="100" TickFrequency="1" IsSnapToTickEnabled="True"
                           Value="{Binding GameAudioVolume}" IsEnabled="{Binding GameAudioEnabled}" VerticalAlignment="Center" />
                   <TextBlock Grid.Column="4" Text="{Binding GameAudioVolume, StringFormat='{}{0}%'}" FontFamily="{StaticResource FontMono}"
-                             FontSize="11" Foreground="{StaticResource TextFaint}" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                             FontSize="11" Foreground="{DynamicResource TextFaint}" HorizontalAlignment="Right" VerticalAlignment="Center" />
                 </Grid>
                 <ItemsControl ItemsSource="{Binding AudioApps}" IsVisible="{Binding ShowAppsList}">
                   <ItemsControl.ItemTemplate>
@@ -208,17 +208,17 @@
                       <Grid ColumnDefinitions="Auto,Auto,*,120,42" Margin="18,11">
                         <CheckBox Grid.Column="0" IsChecked="{Binding IsEnabled}" VerticalAlignment="Center" />
                         <Image Grid.Column="1" Source="{Binding Icon}" Width="20" Height="20" Margin="6,0,10,0" VerticalAlignment="Center" />
-                        <TextBlock Grid.Column="2" Text="{Binding DisplayName}" FontSize="14" Foreground="{StaticResource TextRow}"
+                        <TextBlock Grid.Column="2" Text="{Binding DisplayName}" FontSize="14" Foreground="{DynamicResource TextRow}"
                                    VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
                         <Slider Grid.Column="3" Minimum="0" Maximum="100" TickFrequency="1" IsSnapToTickEnabled="True"
                                 Value="{Binding Volume}" IsEnabled="{Binding IsEnabled}" VerticalAlignment="Center" />
                         <TextBlock Grid.Column="4" Text="{Binding Volume, StringFormat='{}{0}%'}" FontFamily="{StaticResource FontMono}"
-                                   FontSize="11" Foreground="{StaticResource TextFaint}" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                   FontSize="11" Foreground="{DynamicResource TextFaint}" HorizontalAlignment="Right" VerticalAlignment="Center" />
                       </Grid>
                     </DataTemplate>
                   </ItemsControl.ItemTemplate>
                 </ItemsControl>
-                <TextBlock Text="{DynamicResource Settings_AppsHint}" FontSize="11.5" Foreground="{StaticResource TextFaintest}"
+                <TextBlock Text="{DynamicResource Settings_AppsHint}" FontSize="11.5" Foreground="{DynamicResource TextFaintest}"
                            Margin="18,2,18,12" TextWrapping="Wrap" IsVisible="{Binding ShowAppsList}" />
               </StackPanel>
             </Border>
@@ -299,22 +299,34 @@
                     IsVisible="{Binding SelectedSettingsTab, Converter={StaticResource Eq}, ConverterParameter=2}">
 
           <Border Classes="rcard">
-            <Grid Classes="row" ColumnDefinitions="*,Auto">
-              <TextBlock Grid.Column="0" Classes="rrow" Text="{DynamicResource Settings_Language}" VerticalAlignment="Center" />
-              <ComboBox Grid.Column="1" VerticalAlignment="Center"
-                        ItemsSource="{Binding LanguageOptions}" SelectedItem="{Binding SelectedLanguage}">
-                <ComboBox.ItemTemplate>
-                  <DataTemplate x:DataType="vm:LanguageOption">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                      <Border CornerRadius="3" ClipToBounds="True" VerticalAlignment="Center">
-                        <Image Source="{Binding Code, Converter={StaticResource LangFlag}}" Width="17" Height="12" Stretch="Fill" />
-                      </Border>
-                      <TextBlock Text="{Binding Display}" VerticalAlignment="Center" />
-                    </StackPanel>
-                  </DataTemplate>
-                </ComboBox.ItemTemplate>
-              </ComboBox>
-            </Grid>
+            <StackPanel>
+              <!-- Colour theme: warm cream Light / original Dark / follow the OS -->
+              <Grid Classes="row" ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                  <TextBlock Classes="rrow" Text="{DynamicResource Settings_Theme}" />
+                  <TextBlock Classes="rsub" Text="{DynamicResource Settings_Theme_Desc}" Margin="0,2,0,0" />
+                </StackPanel>
+                <ListBox Grid.Column="1" Classes="segctl" VerticalAlignment="Center"
+                         ItemsSource="{Binding ThemeOptions}" SelectedItem="{Binding SelectedTheme}" />
+              </Grid>
+              <Border Classes="rdivider" />
+              <Grid Classes="row" ColumnDefinitions="*,Auto">
+                <TextBlock Grid.Column="0" Classes="rrow" Text="{DynamicResource Settings_Language}" VerticalAlignment="Center" />
+                <ComboBox Grid.Column="1" VerticalAlignment="Center"
+                          ItemsSource="{Binding LanguageOptions}" SelectedItem="{Binding SelectedLanguage}">
+                  <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="vm:LanguageOption">
+                      <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Border CornerRadius="3" ClipToBounds="True" VerticalAlignment="Center">
+                          <Image Source="{Binding Code, Converter={StaticResource LangFlag}}" Width="17" Height="12" Stretch="Fill" />
+                        </Border>
+                        <TextBlock Text="{Binding Display}" VerticalAlignment="Center" />
+                      </StackPanel>
+                    </DataTemplate>
+                  </ComboBox.ItemTemplate>
+                </ComboBox>
+              </Grid>
+            </StackPanel>
           </Border>
 
           <StackPanel>
@@ -458,13 +470,13 @@
     <!-- Intensive-quality disclaimer overlay -->
     <Border ZIndex="100" Background="#B0000000" IsVisible="{Binding ShowIntensiveWarning}">
       <Border Width="560" MaxWidth="560" Padding="28" CornerRadius="14"
-              Background="{StaticResource SurfaceCard}" BorderBrush="{StaticResource BorderStrong}" BorderThickness="1"
+              Background="{DynamicResource SurfaceCard}" BorderBrush="{DynamicResource BorderStrong}" BorderThickness="1"
               HorizontalAlignment="Center" VerticalAlignment="Center" BoxShadow="0 12 40 0 #80000000">
         <StackPanel Spacing="14">
           <TextBlock Text="{Binding IntensiveWarnTitle}" FontFamily="{StaticResource FontDisplay}" FontSize="18" FontWeight="Bold"
-                     Foreground="{StaticResource TextHi}" TextWrapping="Wrap" />
+                     Foreground="{DynamicResource TextHi}" TextWrapping="Wrap" />
           <TextBlock Text="{Binding IntensiveWarnSummary}" FontSize="13" FontWeight="Medium" Foreground="#E5B84C" TextWrapping="Wrap" />
-          <TextBlock Text="{Binding IntensiveWarnBody}" FontSize="13" Foreground="{StaticResource TextMid}" TextWrapping="Wrap" LineHeight="20" />
+          <TextBlock Text="{Binding IntensiveWarnBody}" FontSize="13" Foreground="{DynamicResource TextMid}" TextWrapping="Wrap" LineHeight="20" />
           <Button Content="{Binding IntensiveWarnOk}" Classes="rchip" HorizontalAlignment="Right" Click="OnIntensiveUnderstood" />
         </StackPanel>
       </Border>

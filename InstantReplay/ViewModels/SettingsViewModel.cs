@@ -990,6 +990,22 @@ public partial class SettingsViewModel : ViewModelBase
         OnPropertyChanged(nameof(IntensiveWarnOk));
     }
 
+    // ───────────── Theme (Light / Dark / System) ─────────────
+
+    /// <summary>Colour-theme choices. Labels are localized, so the list is rebuilt on a
+    /// language switch in RebuildLocalizedOptions (selection preserved by Mode).</summary>
+    public System.Collections.ObjectModel.ObservableCollection<ThemeOption> ThemeOptions { get; } = new();
+
+    [ObservableProperty]
+    private ThemeOption? _selectedTheme;
+
+    partial void OnSelectedThemeChanged(ThemeOption? value)
+    {
+        if (value is null) return;            // transient null while the options list is rebuilt
+        Lag.App.SetTheme(value.Mode);         // re-resolves every {DynamicResource} brush live
+        SaveSettings();                       // no-op while _isInitializing (guarded inside)
+    }
+
     /// <summary>
     /// (Re)builds all option lists whose item LABELS are localized ("5 хв" / "5 min", "Auto",
     /// "Native", "Custom"). XAML {DynamicResource} can't reach inside data items, so on a language
@@ -1050,6 +1066,14 @@ public partial class SettingsViewModel : ViewModelBase
             foreach (var (label, value) in AvailableCodecFormats())
                 CodecOptions.Add(new CodecOption(label, value));
             SelectedCodec = CodecOptions.FirstOrDefault(c => c.EncoderId == selCodec) ?? CodecOptions[0];
+
+            // ── Theme (default: Dark; Light = warm cream, System = follow the OS) ──
+            string selThemeMode = SelectedTheme?.Mode ?? "dark";
+            ThemeOptions.Clear();
+            ThemeOptions.Add(new ThemeOption("light", Localizer.Get("Theme_Light")));
+            ThemeOptions.Add(new ThemeOption("dark", Localizer.Get("Theme_Dark")));
+            ThemeOptions.Add(new ThemeOption("system", Localizer.Get("Theme_System")));
+            SelectedTheme = ThemeOptions.FirstOrDefault(t => t.Mode == selThemeMode) ?? ThemeOptions[1];
 
             // ── Bitrate (default: 20 Mbps; range with high values coloured by tier) ──
             int selKbps = SelectedBitrate?.Kbps ?? 20000;
@@ -1476,6 +1500,7 @@ public partial class SettingsViewModel : ViewModelBase
                 StartMinimized = StartMinimized,
                 DisableGameMode = DisableGameMode,
                 Language = SelectedLanguage.Code,
+                Theme = SelectedTheme?.Mode ?? "dark",
                 MicVolume = MicVolume,
                 OutputResolutionHeight = SelectedResolution.TargetHeight,
                 CodecName = SelectedCodec.EncoderId,
@@ -1655,6 +1680,10 @@ public partial class SettingsViewModel : ViewModelBase
 
             // Language (applies the persisted UI language via OnSelectedLanguageChanged).
             SelectedLanguage = LanguageOptions.FirstOrDefault(l => l.Code == settings.Language) ?? LanguageOptions[0];
+
+            // Theme (applies the persisted colour theme via OnSelectedThemeChanged).
+            SelectedTheme = ThemeOptions.FirstOrDefault(t => t.Mode == settings.Theme)
+                            ?? ThemeOptions.FirstOrDefault(t => t.Mode == "dark");
         }
         catch (Exception ex)
         {
@@ -1699,6 +1728,9 @@ public partial class SettingsViewModel : ViewModelBase
 
         /// <summary>UI language code: "en" (default) or "uk".</summary>
         public string Language { get; set; } = "en";
+
+        /// <summary>Colour theme: "dark" (default), "light" (warm cream), or "system" (follow the OS).</summary>
+        public string Theme { get; set; } = "dark";
 
         /// <summary>Microphone volume in percent (0–100).</summary>
         public int MicVolume { get; set; } = 100;
@@ -1776,6 +1808,12 @@ public record BufferOption(string Display, TimeSpan Duration)
 
 /// <summary>UI language option for the Settings dropdown.</summary>
 public record LanguageOption(string Code, string Display)
+{
+    public override string ToString() => Display;
+}
+
+/// <summary>Colour-theme option: Mode = "light" / "dark" / "system"; Display is localized.</summary>
+public record ThemeOption(string Mode, string Display)
 {
     public override string ToString() => Display;
 }

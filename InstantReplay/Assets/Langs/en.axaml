@@ -16,7 +16,12 @@
   <sys:String x:Key="Settings_Title">Settings</sys:String>
   <sys:String x:Key="Settings_PendingChanges">Changes will take effect after restarting the recording.</sys:String>
   <sys:String x:Key="Settings_Group_Language">LANGUAGE</sys:String>
-  <sys:String x:Key="Settings_Language">Language</sys:String>
+  <sys:String x:Key="Settings_Language">Language</sys:String>
+  <sys:String x:Key="Settings_Theme">Theme</sys:String>
+  <sys:String x:Key="Settings_Theme_Desc">Light, dark, or follow your system</sys:String>
+  <sys:String x:Key="Theme_Light">Light</sys:String>
+  <sys:String x:Key="Theme_Dark">Dark</sys:String>
+  <sys:String x:Key="Theme_System">System</sys:String>
   <sys:String x:Key="Settings_Group_Recording">RECORDING</sys:String>
   <sys:String x:Key="Settings_BufferLength">Replay buffer length</sys:String>
   <sys:String x:Key="Settings_Display">Display</sys:String>

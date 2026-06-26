@@ -16,7 +16,12 @@
   <sys:String x:Key="Settings_Title">Asetukset</sys:String>
   <sys:String x:Key="Settings_PendingChanges">Muutokset tulevat voimaan, kun tallennus käynnistetään uudelleen.</sys:String>
   <sys:String x:Key="Settings_Group_Language">KIELI</sys:String>
-  <sys:String x:Key="Settings_Language">Kieli</sys:String>
+  <sys:String x:Key="Settings_Language">Kieli</sys:String>
+  <sys:String x:Key="Settings_Theme">Teema</sys:String>
+  <sys:String x:Key="Settings_Theme_Desc">Vaalea, tumma tai järjestelmän mukaan</sys:String>
+  <sys:String x:Key="Theme_Light">Vaalea</sys:String>
+  <sys:String x:Key="Theme_Dark">Tumma</sys:String>
+  <sys:String x:Key="Theme_System">Järjestelmä</sys:String>
   <sys:String x:Key="Settings_Group_Recording">TALLENNUS</sys:String>
   <sys:String x:Key="Settings_BufferLength">Uusintapuskurin pituus</sys:String>
   <sys:String x:Key="Settings_Display">Näyttö</sys:String>
