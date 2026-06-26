@@ -151,6 +151,7 @@
       <Setter Property="LineHeight" Value="11" />
     </Style>
 
+
     <!-- Recording status dot: gentle pulse -->
     <Style Selector="Ellipse.recpulse">
       <Style.Animations>
@@ -344,10 +345,10 @@
                 <TextBlock Text="{DynamicResource Nav_Player}" HorizontalAlignment="Center" />
               </StackPanel>
             </Button>
-            <Button x:Name="RailEditor" Classes="railitem" Command="{Binding OpenEditorFromPlayerCommand}">
+            <Button x:Name="RailEditor" Classes="railitem" Command="{Binding NavigateToEditorCommand}">
               <StackPanel Spacing="4" HorizontalAlignment="Center">
                 <mi:MaterialIcon Kind="PencilOutline" Width="20" Height="20" HorizontalAlignment="Center" />
-                <TextBlock Text="Editor" HorizontalAlignment="Center" />
+                <TextBlock Text="{DynamicResource Editor_Title}" HorizontalAlignment="Center" />
               </StackPanel>
             </Button>
           </StackPanel>

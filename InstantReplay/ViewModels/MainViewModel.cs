@@ -1,6 +1,8 @@
+using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Lag.Core;
+using Lag.Models;
 using Lag.Services;
 using Lag.Services.ObsIntegration;
 
@@ -24,6 +26,9 @@ public partial class MainViewModel : ViewModelBase
     public LibraryViewModel Library { get; }
     public PlayerViewModel Player { get; }
     public EditorViewModel Editor { get; }
+
+    /// <summary>Video clips available to edit (screenshots excluded) — feeds the rail Editor button's clip picker.</summary>
+    public ObservableCollection<ReplayClip> EditableClips { get; } = new();
 
     /// <summary>The currently displayed view (bound to ContentControl).</summary>
     [ObservableProperty]
@@ -256,6 +261,10 @@ public partial class MainViewModel : ViewModelBase
         // Library clip edit navigation (context menu → Edit)
         Library.EditClipRequested += (_, clip) => OpenEditor(clip);
 
+        // The rail "Editor" button opens a clip picker; keep its list (videos only) in sync with the library.
+        Library.Clips.CollectionChanged += (_, __) => RebuildEditableClips();
+        RebuildEditableClips();
+
         // Auto-start recording on launch if the user enabled it. Deferred to the UI loop (Background
         // priority) so it runs after the window and framework finish initializing, not mid-construction.
         if (Settings.AutoStartRecording)
@@ -320,6 +329,17 @@ public partial class MainViewModel : ViewModelBase
         _ = Library.RefreshCommand.ExecuteAsync(null);
     }
 
+    /// <summary>Rail "Editor" button: opens the editor (keeping the last-opened clip, if any).
+    /// Its own clip-picker sidebar lets the user switch to another clip.</summary>
+    [RelayCommand]
+    private void NavigateToEditor()
+    {
+        if (CurrentView == Player) Player.StopPlayback();
+        CurrentView = Editor;
+        // Background refresh keeps the editor's clip-picker list current (see NavigateToLibrary).
+        _ = Library.RefreshCommand.ExecuteAsync(null);
+    }
+
     /// <summary>
     /// Toggles fullscreen playback. Bound from the Player's fullscreen button and the ESC key.
     /// The actual WindowState change is applied in MainWindow code-behind, which observes this flag.
@@ -341,6 +361,21 @@ public partial class MainViewModel : ViewModelBase
     {
         if (Player.CurrentClip is { } clip)
             OpenEditor(clip);
+    }
+
+    /// <summary>Rebuilds the editable-clips list (videos only — screenshots can't be trimmed).</summary>
+    private void RebuildEditableClips()
+    {
+        EditableClips.Clear();
+        foreach (var c in Library.Clips)
+            if (!c.IsImage) EditableClips.Add(c);
+    }
+
+    /// <summary>Rail "Editor" clip picker → open the chosen clip in the editor.</summary>
+    [RelayCommand]
+    private void OpenEditorForClip(ReplayClip? clip)
+    {
+        if (clip != null) OpenEditor(clip);
     }
 
     /// <summary>

@@ -83,27 +83,44 @@
       <Setter Property="Foreground" Value="{StaticResource OnAccentBrush}" />
       <Setter Property="FontWeight" Value="Medium" />
     </Style>
+
+    <!-- Clip-picker card in the left sidebar -->
+    <Style Selector="Button.clipitem">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="6" />
+      <Setter Property="Margin" Value="0,0,0,4" />
+      <Setter Property="CornerRadius" Value="9" />
+      <Setter Property="Cursor" Value="Hand" />
+    </Style>
+    <Style Selector="Button.clipitem /template/ ContentPresenter">
+      <Setter Property="Transitions"><Transitions><BrushTransition Property="Background" Duration="0:0:0.12" /></Transitions></Setter>
+    </Style>
+    <Style Selector="Button.clipitem:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="{StaticResource SurfaceInput}" />
+    </Style>
   </UserControl.Styles>
 
   <Grid RowDefinitions="Auto,*" Margin="24,20,24,24">
 
     <!-- ── Header: title/clip + export ── -->
     <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto" Margin="0,0,0,14">
-      <StackPanel Grid.Column="0" Spacing="3">
-        <TextBlock Text="{DynamicResource Editor_Title}" FontSize="16" FontWeight="Medium" />
+      <StackPanel Grid.Column="0" Spacing="2">
+        <TextBlock Text="{DynamicResource Editor_Title}" FontFamily="{StaticResource FontDisplay}"
+                   FontSize="22" FontWeight="SemiBold" Foreground="{StaticResource TextHi}" />
         <TextBlock Text="{Binding CurrentClip.DisplayName, FallbackValue=''}"
-                   FontSize="12" Foreground="{StaticResource Fg2Brush}"
+                   FontFamily="{StaticResource FontMono}" FontSize="11" Foreground="{StaticResource TextFaint}"
                    TextTrimming="CharacterEllipsis" MaxWidth="420" />
       </StackPanel>
 
       <TextBlock Grid.Column="2" Text="{Binding ExportStatus}"
-                 FontSize="12" Foreground="{StaticResource Fg2Brush}"
+                 FontSize="12" Foreground="{StaticResource TextMuted}"
                  VerticalAlignment="Center" Margin="0,0,12,0"
                  MaxWidth="340" TextTrimming="CharacterEllipsis"
                  ToolTip.Tip="{Binding ExportStatus}" />
 
       <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-        <Button Classes="chip"
+        <Button Classes="rchip"
                 x:CompileBindings="False"
                 Command="{Binding $parent[Window].DataContext.NavigateToPlayerCommand}"
                 Content="{DynamicResource Editor_Back}" />
@@ -161,14 +178,45 @@
     </Grid>
 
     <!-- ── Workspace: preview + timeline | tools panel ── -->
-    <Grid Grid.Row="1" ColumnDefinitions="*,300">
+    <Grid Grid.Row="1" ColumnDefinitions="240,*,286">
 
-      <Grid Grid.Column="0" RowDefinitions="*,Auto" Margin="0,0,14,0">
+      <!-- ── Clip-picker sidebar: choose which video to edit ── -->
+      <Border Grid.Column="0" Margin="0,0,14,0" Background="{StaticResource SurfaceCard}"
+              BorderBrush="{StaticResource BorderCard}" BorderThickness="1" CornerRadius="14" Padding="0,14">
+        <Grid RowDefinitions="Auto,*">
+          <TextBlock Grid.Row="0" Text="{DynamicResource Editor_Clips}" Margin="16,0,16,10"
+                     FontFamily="{StaticResource FontMono}" FontSize="11" Foreground="{StaticResource TextFaintest}" />
+          <ScrollViewer Grid.Row="1" Padding="8,0" VerticalScrollBarVisibility="Auto">
+            <ItemsControl ItemsSource="{Binding $parent[Window].DataContext.EditableClips}" x:CompileBindings="False">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Button Classes="clipitem" x:CompileBindings="False"
+                          HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                          Command="{Binding $parent[Window].DataContext.OpenEditorForClipCommand}"
+                          CommandParameter="{Binding}">
+                    <StackPanel Spacing="6">
+                      <Border Height="118" CornerRadius="8" ClipToBounds="True" Background="#16181E">
+                        <Image Source="{Binding Thumbnail}" Stretch="UniformToFill" />
+                      </Border>
+                      <TextBlock Text="{Binding DisplayName}" FontSize="11.5" FontWeight="SemiBold"
+                                 Foreground="{StaticResource TextHi}" TextTrimming="CharacterEllipsis" />
+                      <TextBlock Text="{Binding ShortMeta}" FontFamily="{StaticResource FontMono}"
+                                 FontSize="10" Foreground="{StaticResource TextFaint}" />
+                    </StackPanel>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+        </Grid>
+      </Border>
+
+      <Grid Grid.Column="1" RowDefinitions="*,Auto" Margin="0,0,14,0">
 
         <!-- Video preview (#07090C, r12) — Avalonia-rendered frames, live-preview effects -->
         <Border Grid.Row="0" x:Name="VideoFrame"
-                Background="{StaticResource VideoBrush}"
-                CornerRadius="12" ClipToBounds="True" MinHeight="180">
+                Background="#FF07090C" BorderBrush="{StaticResource BorderCard}" BorderThickness="1"
+                CornerRadius="14" ClipToBounds="True" MinHeight="180">
           <Grid RowDefinitions="*,Auto">
             <Panel Grid.Row="0" x:Name="VideoSurface" Background="Transparent">
               <!-- Video + reframe overlay share ONE container so rotate/flip transforms them together
@@ -206,6 +254,12 @@
               <!-- Caption overlay: draggable text on the output frame (Background=null so empty
                    clicks fall through to the reframe overlay below; only captions are hit-testable). -->
               <Canvas x:Name="TextOverlay" Background="{x:Null}" />
+
+              <!-- Empty state: no clip loaded — prompt to pick one from the sidebar -->
+              <TextBlock Text="{DynamicResource Editor_PickClip}" IsHitTestVisible="False"
+                         IsVisible="{Binding CurrentClip, Converter={x:Static conv:ObjectConverters.IsNull}}"
+                         HorizontalAlignment="Center" VerticalAlignment="Center"
+                         FontSize="14" Foreground="{StaticResource TextFaint}" />
 
               <!-- Deselect button (top-right), shown only while the reframe box is selected. -->
               <Button x:Name="DeselectButton" Classes="chip" IsVisible="False"
@@ -277,7 +331,8 @@
         </Border>
 
         <!-- Timeline: video strip + audio tracks right under it -->
-        <Border Grid.Row="1" Background="{StaticResource CardBrush}" CornerRadius="12"
+        <Border Grid.Row="1" Background="{StaticResource SurfaceCard}" BorderBrush="{StaticResource BorderCard}"
+                BorderThickness="1" CornerRadius="14"
                 Padding="10,8,10,10" Margin="0,14,0,0">
           <StackPanel Spacing="4">
             <Grid ColumnDefinitions="Auto,*,Auto" Margin="4,0,4,2">
@@ -385,36 +440,24 @@
       </Grid>
 
       <!-- ── Tools panel: tabs Clip | Filters ── -->
-      <Border Grid.Column="1" Background="{StaticResource CardBrush}" CornerRadius="12"
-              Padding="16,12">
-        <Grid RowDefinitions="Auto,Auto,*">
-          <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="20">
-            <Button Classes="tab" Classes.sel="{Binding SelectedToolsTab, Converter={StaticResource Eq}, ConverterParameter=0}"
-                    Click="OnToolsTabClick" Tag="0">
-              <StackPanel>
-                <TextBlock Classes="tabtxt" Text="{DynamicResource Editor_TabClip}" />
-                <Border Classes="tabline" />
-              </StackPanel>
-            </Button>
-            <Button Classes="tab" Classes.sel="{Binding SelectedToolsTab, Converter={StaticResource Eq}, ConverterParameter=1}"
-                    Click="OnToolsTabClick" Tag="1">
-              <StackPanel>
-                <TextBlock Classes="tabtxt" Text="{DynamicResource Editor_TabFilters}" />
-                <Border Classes="tabline" />
-              </StackPanel>
-            </Button>
-            <Button Classes="tab" Classes.sel="{Binding SelectedToolsTab, Converter={StaticResource Eq}, ConverterParameter=2}"
-                    Click="OnToolsTabClick" Tag="2">
-              <StackPanel>
-                <TextBlock Classes="tabtxt" Text="{DynamicResource Editor_TabText}" />
-                <Border Classes="tabline" />
-              </StackPanel>
-            </Button>
-          </StackPanel>
+      <Border Grid.Column="2" Background="{StaticResource SurfaceCard}" BorderBrush="{StaticResource BorderCard}"
+              BorderThickness="1" CornerRadius="14" Padding="16,14">
+        <Grid RowDefinitions="Auto,*">
+          <Border Grid.Row="0" Classes="rsegtrack" Margin="0,0,0,16">
+            <UniformGrid Columns="3">
+              <Button Classes="rseg" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                      Classes.sel="{Binding SelectedToolsTab, Converter={StaticResource Eq}, ConverterParameter=0}"
+                      Click="OnToolsTabClick" Tag="0" Content="{DynamicResource Editor_TabClip}" />
+              <Button Classes="rseg" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                      Classes.sel="{Binding SelectedToolsTab, Converter={StaticResource Eq}, ConverterParameter=1}"
+                      Click="OnToolsTabClick" Tag="1" Content="{DynamicResource Editor_TabFilters}" />
+              <Button Classes="rseg" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                      Classes.sel="{Binding SelectedToolsTab, Converter={StaticResource Eq}, ConverterParameter=2}"
+                      Click="OnToolsTabClick" Tag="2" Content="{DynamicResource Editor_TabText}" />
+            </UniformGrid>
+          </Border>
 
-          <Border Grid.Row="1" Height="1" Background="{StaticResource Divider6Brush}" Margin="0,10,0,12" />
-
-          <Carousel Grid.Row="2" SelectedIndex="{Binding SelectedToolsTab}">
+          <Carousel Grid.Row="1" SelectedIndex="{Binding SelectedToolsTab}">
             <Carousel.PageTransition>
               <CrossFade Duration="0:0:0.15" />
             </Carousel.PageTransition>

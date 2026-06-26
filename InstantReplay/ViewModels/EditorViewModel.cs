@@ -784,6 +784,10 @@ public partial class EditorViewModel : ViewModelBase, IDisposable
             _mediaPlayer.Media = media;
             media.Dispose();
             oldMedia?.Dispose();
+
+            // Start the preview immediately so the picture shows on screen as soon as the clip is
+            // chosen (switching clips from the sidebar shouldn't require pressing Play first).
+            _mediaPlayer.Play();
         }
 
         _ = ProbeAsync(clip);
