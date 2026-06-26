@@ -124,4 +124,14 @@
     <Setter Property="Background" Value="{StaticResource SurfaceHover2}" />
   </Style>
 
+  <!-- Button flyouts (export options, playback speed, clip picker …): match the dark theme
+       instead of the default Fluent surface. -->
+  <Style Selector="FlyoutPresenter">
+    <Setter Property="Background" Value="{StaticResource SurfaceCard}" />
+    <Setter Property="BorderBrush" Value="{StaticResource BorderStrong}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="{StaticResource RadGeneral}" />
+    <Setter Property="Padding" Value="8" />
+  </Style>
+
 </Styles>
