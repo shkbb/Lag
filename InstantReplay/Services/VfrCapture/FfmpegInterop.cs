@@ -63,17 +63,22 @@ internal static class FfmpegInterop
                     return false;
                 }
 
-                bool hasAv1Nvenc;
-                unsafe { hasAv1Nvenc = ffmpeg.avcodec_find_encoder_by_name("av1_nvenc") != null; }
-                if (!hasAv1Nvenc)
+                // Sentinel: verify a UNIVERSAL encoder is present rather than a vendor-specific one.
+                // libx264 ships in every GPL FFmpeg build and is our guaranteed CPU fallback — if it's
+                // here, the libs are wired and we always have at least one encoder. The hardware
+                // encoders (nvenc/amf/qsv/mf) are probed separately by EncoderSelector. (The old check
+                // gated on av1_nvenc, which some builds — e.g. our own FFmpeg 7.1 — don't include.)
+                bool hasBaseline;
+                unsafe { hasBaseline = ffmpeg.avcodec_find_encoder_by_name("libx264") != null; }
+                if (!hasBaseline)
                 {
-                    InitError = "av1_nvenc encoder not present in the bundled avcodec.";
+                    InitError = "libx264 encoder not present in the bundled avcodec.";
                     Console.WriteLine($"[Ffmpeg] {InitError}");
                     return false;
                 }
 
                 Available = true;
-                Console.WriteLine("[Ffmpeg] av1_nvenc available — native VFR engine can start.");
+                Console.WriteLine("[Ffmpeg] Native VFR engine can start (libx264 baseline present).");
                 return true;
             }
             catch (Exception ex)

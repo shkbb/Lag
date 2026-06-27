@@ -39,6 +39,15 @@
     </Content>
   </ItemGroup>
 
+  <!-- Windows: bundle our own FFmpeg 7.1 (shared, GPL) — the native VFR engine binds these libs
+       (avcodec-61/avformat-61/avutil-59/swresample-5) and the editor export calls ffmpeg.exe.
+       This replaces OBS's FFmpeg so the engine no longer depends on obs-core. -->
+  <ItemGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
+    <Content Include="ffmpeg\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
   <!-- Branding assets -->
   <ItemGroup>
     <!-- Embed assets (icon) as Avalonia resources so avares:// URIs resolve. -->

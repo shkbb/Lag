@@ -32,28 +32,17 @@ public class App : Application
 
     public override void Initialize()
     {
-        // Crucial: Set Working Directory explicitly so libobs internal shaders resolve properly
-        string obsCoreDir = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "obs-core"));
-        Environment.CurrentDirectory = obsCoreDir;
-        
-        // Crucial: Allow DllImports to find obs.dll inside the obs-core folder
-        SetDllDirectory(obsCoreDir);
-
-        // Crucial: libobs os_dlopen() uses LoadLibraryEx(LOAD_LIBRARY_SEARCH_DEFAULT_DIRS),
-        // which ignores SetDllDirectory, PATH and the current directory — it only searches the
-        // exe dir, System32 and AddDllDirectory entries. Without this, win-capture cannot load
-        // libobs-winrt.dll at module init and Windows Graphics Capture support is silently lost
-        // (fullscreen games then starve DXGI duplication down to ~2 FPS in replays).
-        AddDllDirectory(obsCoreDir);
-
-        // Crucial: Inject obs-core into the process PATH so that deeply nested plugin dependencies
-        // (like avcodec-61.dll for obs-ffmpeg or graphics-hook64.dll for win-capture) 
-        // can be natively resolved by the Windows module loader (Fixes LoadLibrary Error 126)
+        // Point the process at our bundled FFmpeg (shared 7.1 build that replaces OBS's libs):
+        // set it as the working dir + DLL search dir so avcodec-61 and its siblings resolve their
+        // inter-dependencies, prepend it to PATH, and tell FFMpegCore (editor export) where
+        // ffmpeg.exe / ffprobe.exe live.
+        string ffmpegDir = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "ffmpeg"));
+        Environment.CurrentDirectory = ffmpegDir;
+        SetDllDirectory(ffmpegDir);
+        AddDllDirectory(ffmpegDir);
         string currentPath = Environment.GetEnvironmentVariable("PATH") ?? string.Empty;
-        Environment.SetEnvironmentVariable("PATH", obsCoreDir + ";" + currentPath);
-
-        // Configure FFMpegCore to use ffmpeg.exe/ffprobe.exe from our bundled obs-core directory
-        GlobalFFOptions.Configure(new FFOptions { BinaryFolder = obsCoreDir });
+        Environment.SetEnvironmentVariable("PATH", ffmpegDir + ";" + currentPath);
+        GlobalFFOptions.Configure(new FFOptions { BinaryFolder = ffmpegDir });
 
         AvaloniaXamlLoader.Load(this);
 

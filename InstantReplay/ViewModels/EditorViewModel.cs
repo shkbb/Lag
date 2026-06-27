@@ -1621,7 +1621,7 @@ public partial class EditorViewModel : ViewModelBase, IDisposable
     private static async Task<int> RunFfmpegAsync(string arguments, CancellationToken ct,
                                                   IProgress<double>? progress, double expectedDurationSec)
     {
-        string ffmpegPath = Path.Combine(AppContext.BaseDirectory, "obs-core", "ffmpeg.exe");
+        string ffmpegPath = Path.Combine(AppContext.BaseDirectory, "ffmpeg", "ffmpeg.exe");
         if (!File.Exists(ffmpegPath)) ffmpegPath = "ffmpeg"; // dev fallback: PATH
 
         var psi = new ProcessStartInfo

@@ -607,9 +607,12 @@ public partial class SettingsViewModel : ViewModelBase
     private const int MinBitrateMbps = 3;
     private const int MaxBitrateMbps = 100;
 
-    /// <summary>The bitrate that actually goes to the encoder, in kbps.</summary>
+    /// <summary>The bitrate that actually goes to the encoder, in kbps. -1 = "Auto"
+    /// (constant-quality mode — the encoder picks the bitrate to hold a steady quality).</summary>
     public int EffectiveBitrateKbps =>
-        SelectedBitrate.Kbps > 0 ? SelectedBitrate.Kbps : Math.Clamp(CustomBitrateMbps, MinBitrateMbps, MaxBitrateMbps) * 1000;
+        SelectedBitrate.Kbps < 0 ? -1
+        : SelectedBitrate.Kbps > 0 ? SelectedBitrate.Kbps
+        : Math.Clamp(CustomBitrateMbps, MinBitrateMbps, MaxBitrateMbps) * 1000;
 
     /// <summary>
     /// Figma-style bitrate slider (Mbps). Reads the effective bitrate; writing snaps the
@@ -1076,13 +1079,15 @@ public partial class SettingsViewModel : ViewModelBase
             SelectedTheme = ThemeOptions.FirstOrDefault(t => t.Mode == selThemeMode) ?? ThemeOptions[1];
 
             // ── Bitrate (default: 20 Mbps; range with high values coloured by tier) ──
-            int selKbps = SelectedBitrate?.Kbps ?? 20000;
+            int selKbps = SelectedBitrate?.Kbps ?? -1;     // default for a fresh install = Auto
             BitrateOptions.Clear();
+            // Auto (constant-quality) first — the recommended default; Kbps = -1 is its sentinel.
+            BitrateOptions.Add(new BitrateOption(Localizer.Get("Option_Auto"), -1));
             foreach (int kbps in new[] { 3000, 5000, 7000, 10000, 15000, 20000, 25000, 30000, 50000, 70000, 100000 })
                 BitrateOptions.Add(new BitrateOption($"{kbps / 1000} Mbps", kbps, BitrateTier(kbps / 1000)));
             BitrateOptions.Add(new BitrateOption(Localizer.Get("Option_Custom"), 0));
             SelectedBitrate = BitrateOptions.FirstOrDefault(b => b.Kbps == selKbps)
-                              ?? BitrateOptions.FirstOrDefault(b => b.Kbps == 20000) ?? BitrateOptions[0];
+                              ?? BitrateOptions.FirstOrDefault(b => b.Kbps == -1) ?? BitrateOptions[0];
 
             // ── FPS (default: 30; rungs capped to the selected monitor's refresh rate) ──
             RebuildFpsOptions();
@@ -1602,7 +1607,7 @@ public partial class SettingsViewModel : ViewModelBase
             SelectedStorageLimit = StorageLimitOptions.FirstOrDefault(l =>
                 l.Gb == settings.MaxLibrarySizeGb) ?? StorageLimitOptions[2];
 
-            // Bitrate: match a preset, otherwise restore as "Custom".
+            // Bitrate: Auto (≤0) → the Auto option; a preset → match it; else restore as "Custom".
             if (settings.BitrateKbps > 0)
             {
                 var preset = BitrateOptions.FirstOrDefault(b => b.Kbps == settings.BitrateKbps);
@@ -1615,6 +1620,10 @@ public partial class SettingsViewModel : ViewModelBase
                     CustomBitrateMbps = Math.Clamp(settings.BitrateKbps / 1000, MinBitrateMbps, MaxBitrateMbps);
                     SelectedBitrate = BitrateOptions.First(b => b.Kbps == 0); // Custom
                 }
+            }
+            else
+            {
+                SelectedBitrate = BitrateOptions.FirstOrDefault(b => b.Kbps == -1) ?? SelectedBitrate; // Auto
             }
 
             // GPU adapter (falls back to Auto when the saved adapter no longer exists).
@@ -1748,7 +1757,7 @@ public partial class SettingsViewModel : ViewModelBase
         public int MaxLibrarySizeGb { get; set; } = 50;
 
         /// <summary>Video encoder bitrate in kbps.</summary>
-        public int BitrateKbps { get; set; } = 20000;
+        public int BitrateKbps { get; set; } = -1;   // -1 = Auto (constant-quality), the default
 
         /// <summary>DXGI adapter index for capture/render (-1 = Auto/primary).</summary>
         public int GpuIndex { get; set; } = -1;

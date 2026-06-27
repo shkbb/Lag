@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using FFmpeg.AutoGen;
 
 namespace Lag.Services.VfrCapture;
@@ -42,8 +43,24 @@ public static class EncoderSelector
     /// cached after the first probe (opening encoders is not free and the hardware doesn't
     /// change mid-session). Never throws.
     /// </summary>
-    public static IReadOnlyList<EncoderChoice> Available => _available ??= Probe();
+    public static IReadOnlyList<EncoderChoice> Available => _available ??= ProbeMta();
     private static IReadOnlyList<EncoderChoice>? _available;
+
+    /// <summary>
+    /// Runs the probe on a dedicated MTA thread. Intel QSV / MFX session init fails with ENOMEM when
+    /// called from an STA thread (the app's UI thread, where this is first triggered), but succeeds
+    /// in a multithreaded apartment — the same constraint the per-app audio capture hit. NVENC/AMF/
+    /// x264 are apartment-agnostic, so probing them here too is harmless. Result is plain data.
+    /// </summary>
+    private static IReadOnlyList<EncoderChoice> ProbeMta()
+    {
+        IReadOnlyList<EncoderChoice> result = Array.Empty<EncoderChoice>();
+        var t = new Thread(() => result = Probe()) { IsBackground = true, Name = "EncoderProbe" };
+        try { t.SetApartmentState(ApartmentState.MTA); } catch { /* already set / unsupported */ }
+        t.Start();
+        t.Join();
+        return result;
+    }
 
     /// <summary>
     /// Picks the encoder to use. <paramref name="preference"/> is the user's Settings choice:
@@ -133,8 +150,9 @@ public static class EncoderSelector
     /// <summary>
     /// Truly tests an encoder by allocating a context with a minimal valid config and calling
     /// avcodec_open2. For hardware encoders this succeeds only when the GPU + driver support the
-    /// codec, which is exactly the "does it work HERE" answer we need. Uses small 1280x720 NV12
-    /// system input — enough to validate; the real session reconfigures with D3D11 frames.
+    /// codec — exactly the "does it work HERE" answer we need. QSV self-initialises its MFX session
+    /// straight from the NV12 system input (no explicit hw_device_ctx — creating one ourselves
+    /// actually FAILED on Intel iGPUs).
     /// </summary>
     private static unsafe bool CanOpen(string name)
     {

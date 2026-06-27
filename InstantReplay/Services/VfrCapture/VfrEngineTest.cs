@@ -23,16 +23,16 @@ public static class VfrEngineTest
 
     public static void Run()
     {
-        string obsCore = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "obs-core"));
+        string ffmpegDir = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "ffmpeg"));
         SetDefaultDllDirectories(0x00001000 /* LOAD_LIBRARY_SEARCH_DEFAULT_DIRS */);
-        AddDllDirectory(obsCore);
-        SetDllDirectory(obsCore);
-        Environment.CurrentDirectory = obsCore;
-        string path = obsCore + ";" + (Environment.GetEnvironmentVariable("PATH") ?? "");
+        AddDllDirectory(ffmpegDir);
+        SetDllDirectory(ffmpegDir);
+        Environment.CurrentDirectory = ffmpegDir;
+        string path = ffmpegDir + ";" + (Environment.GetEnvironmentVariable("PATH") ?? "");
         Environment.SetEnvironmentVariable("PATH", path);
 
         Console.WriteLine($"[VfrTest] WGC supported: {WgcCaptureSource.IsSupported}");
-        Console.WriteLine($"[VfrTest] Engine available: {VfrReplayEngine.IsAvailable(obsCore)}");
+        Console.WriteLine($"[VfrTest] Engine available: {VfrReplayEngine.IsAvailable(ffmpegDir)}");
 
         string outDir = Environment.GetEnvironmentVariable("LAG_VFR_OUT") ?? Path.Combine(Path.GetTempPath(), "lag_vfr_test");
         Directory.CreateDirectory(outDir);

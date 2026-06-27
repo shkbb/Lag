@@ -47,7 +47,12 @@ public sealed unsafe class NvencVfrEncoder : IDisposable
     public const int TimeBaseDen = 1_000_000;
 
     private readonly int _fpsHint;
-    private readonly bool _hwMode;   // true = D3D11 hwframe (vendor-matched GPU); false = system NV12
+    private readonly bool _hwMode;   // true = D3D11 hwframe zero-copy (NVENC/AMF on the capture GPU)
+    private readonly bool _qsvMode;  // true = Intel QSV (own MFX device, fed NV12 from system memory)
+    private readonly bool _autoQuality;  // true = constant-quality RC (the "Auto" bitrate option, bitrateKbps<=0)
+
+    // Default quality level for "Auto" mode, per encoder family (lower = higher quality).
+    private const int QualityX264 = 21, QualityQsv = 23, QualityNvenc = 23, QualityAmf = 23;
 
     public NvencVfrEncoder(D3D11Context d3d, EncoderChoice choice, int width, int height,
                            int bitrateKbps, int preset /*1=fastest..7=slowest*/, int fpsHint = 120)
@@ -56,12 +61,18 @@ public sealed unsafe class NvencVfrEncoder : IDisposable
         Width = width & ~1;
         Height = height & ~1;
         _fpsHint = fpsHint > 0 ? fpsHint : 120;
-        // A hardware encoder can only read our D3D11 textures if it's the SAME GPU vendor as the
-        // capture device. Otherwise (x264, or AMF/QSV on a different GPU than capture) fall back to
-        // the system-memory path: download NV12 to RAM and let FFmpeg feed the encoder. Universal,
-        // a bit slower, never produces garbage.
-        _hwMode = IsVendorMatched(choice.FfmpegName, d3d.VendorId);
-        Console.WriteLine($"[NvencVfrEncoder] {choice.FriendlyName}: {(_hwMode ? "D3D11 hardware" : "system-memory")} path (capture GPU vendor 0x{d3d.VendorId:X4}).");
+        // bitrateKbps <= 0 is the "Auto" sentinel → constant-quality RC instead of fixed CBR.
+        _autoQuality = bitrateKbps <= 0;
+        // Path selection:
+        //  • NVENC/AMF on the capture GPU → D3D11 hwframe pool, zero-copy (textures stay on the GPU).
+        //  • Intel QSV → feeds NV12 from system memory; the qsv encoder self-initialises its own MFX
+        //    HARDWARE session and uploads internally. It does NOT use the D3D11 hwframe path (it wants
+        //    QSV surfaces, not raw D3D11) and needs NO explicit device — creating one failed on Intel.
+        //  • Media Foundation, CPU x264, or a hw encoder on a different GPU than capture → system NV12.
+        _qsvMode = choice.FfmpegName.Contains("qsv");
+        _hwMode = IsVendorMatched(choice.FfmpegName, d3d.VendorId) && !_qsvMode;
+        string pathName = _hwMode ? "D3D11 zero-copy" : "system-memory feed";
+        Console.WriteLine($"[NvencVfrEncoder] {choice.FriendlyName}: {pathName} path (capture GPU vendor 0x{d3d.VendorId:X4}).");
         _converter = new Bgra2Nv12Converter(d3d, Width, Height);
         try
         {
@@ -129,10 +140,22 @@ public sealed unsafe class NvencVfrEncoder : IDisposable
         // real timing stays VFR via per-frame microsecond PTS. Leaving it 0 made NVENC's CBR think
         // there were 0 fps and starve the bitrate to a fraction of the target.
         _ctx->framerate = new AVRational { num = _fpsHint, den = 1 };
-        long bps = Math.Max(1, bitrateKbps) * 1000L;
-        _ctx->bit_rate = bps;
-        _ctx->rc_max_rate = bps;            // hard ceiling so the in-RAM buffer stays bounded
-        _ctx->rc_buffer_size = (int)(bps * 2);
+        if (_autoQuality)
+        {
+            // "Auto" = constant-QUALITY rate control: the encoder spends whatever bits it needs to
+            // hold a steady visual quality, so size scales with scene complexity AND fps (no fixed
+            // bits/sec). Per-encoder quality knob is in ApplyCodecOptions; QSV's ICQ reads
+            // ctx->global_quality, so set it here.
+            _ctx->bit_rate = 0;
+            if (_qsvMode) _ctx->global_quality = QualityQsv;
+        }
+        else
+        {
+            long bps = Math.Max(1, bitrateKbps) * 1000L;
+            _ctx->bit_rate = bps;
+            _ctx->rc_max_rate = bps;            // hard ceiling so the in-RAM buffer stays bounded
+            _ctx->rc_buffer_size = (int)(bps * 2);
+        }
         _ctx->gop_size = 240;
         _ctx->max_b_frames = 0;
         // Emit the codec config (SPS/PPS for H.264, VPS/SPS/PPS for HEVC, the AV1 sequence header)
@@ -147,7 +170,8 @@ public sealed unsafe class NvencVfrEncoder : IDisposable
 
         int r = ffmpeg.avcodec_open2(_ctx, codec, null);
         if (r < 0) throw new InvalidOperationException($"open {_choice.FfmpegName}: {FfmpegInterop.Err(r)}");
-        Console.WriteLine($"[NvencVfrEncoder] {_choice.FriendlyName} open @ {Width}x{Height}, target {bitrateKbps}kbps, ctx.bit_rate={_ctx->bit_rate}, rc_max={_ctx->rc_max_rate}, VFR.");
+        string rc = _autoQuality ? "Auto (constant-quality)" : $"CBR {bitrateKbps}kbps";
+        Console.WriteLine($"[NvencVfrEncoder] {_choice.FriendlyName} open @ {Width}x{Height}, {rc}, fpsHint={_fpsHint}, VFR.");
     }
 
     /// <summary>Per-vendor knobs, tuned for SPEED under game load (the encoder shares the GPU with
@@ -165,22 +189,39 @@ public sealed unsafe class NvencVfrEncoder : IDisposable
         {
             Opt("preset", $"p{Math.Clamp(preset, 1, 7)}");
             Opt("tune", "hq");          // high-quality tune (recording) — NOT "ll", which starves bits
-            // CBR: always FILLS the target bitrate. VBR+cq starved AV1 to ~1.5 Mbps
-            // (cq is a quality target and AV1 is so efficient it sat far below the ceiling). CBR puts
-            // AV1's efficiency into quality at a stable, predictable size.
-            Opt("rc", "cbr");
-            Opt("multipass", "qres");   // 2-pass (quarter-res): clearly better at a fixed bitrate, cheap
+            if (_autoQuality)
+            {
+                // Constant quality: VBR targeting a CQ level, no fixed bitrate.
+                Opt("rc", "vbr");
+                Opt("cq", QualityNvenc.ToString());
+            }
+            else
+            {
+                // CBR always FILLS the target bitrate (VBR+cq starved AV1 to ~1.5 Mbps).
+                Opt("rc", "cbr");
+                Opt("multipass", "qres");   // 2-pass (quarter-res): clearly better at a fixed bitrate, cheap
+            }
             Opt("rc-lookahead", "0");
             Opt("spatial-aq", "1");     // adaptive quantisation — sharpens detail and motion
         }
         else if (name.Contains("amf"))
         {
             Opt("quality", "speed");
-            Opt("rc", "vbr_peak");
+            if (_autoQuality) { Opt("rc", "cqp"); Opt("qp_i", QualityAmf.ToString()); Opt("qp_p", QualityAmf.ToString()); }
+            else Opt("rc", "vbr_peak");
             Opt("preanalysis", "false");
         }
-        else if (name.Contains("qsv")) Opt("preset", "veryfast");
-        else if (name == "libx264") { Opt("preset", "veryfast"); Opt("tune", "zerolatency"); }
+        else if (name.Contains("qsv"))
+        {
+            Opt("preset", "veryfast");
+            // Auto: QSV ICQ — quality is carried on ctx->global_quality (set in OpenEncoder), nothing here.
+        }
+        else if (name == "libx264")
+        {
+            Opt("preset", "veryfast");
+            Opt("tune", "zerolatency");
+            if (_autoQuality) Opt("crf", QualityX264.ToString());   // constant quality
+        }
     }
 
     /// <summary>

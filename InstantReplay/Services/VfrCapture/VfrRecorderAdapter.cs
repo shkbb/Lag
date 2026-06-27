@@ -33,11 +33,11 @@ public sealed class VfrRecorderAdapter : IReplayRecorder
     /// The factory falls back to OBS when false.</summary>
     public static bool IsAvailable()
     {
-        try { return VfrReplayEngine.IsAvailable(ObsCoreDir()); }
+        try { return VfrReplayEngine.IsAvailable(FfmpegDir()); }
         catch { return false; }
     }
 
-    private static string ObsCoreDir() => Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "obs-core"));
+    private static string FfmpegDir() => Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "ffmpeg"));
 
     public void Initialize(RecorderOptions options) => _opts = Map(options);
 
