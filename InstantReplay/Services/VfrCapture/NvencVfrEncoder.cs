@@ -40,6 +40,11 @@ public sealed unsafe class NvencVfrEncoder : IDisposable
     public int Height { get; }
     public EncoderChoice Choice => _choice;
 
+    /// <summary>The framerate hint this encoder was opened with — the rate controller uses it to
+    /// split the CBR bit_rate across frames. The engine reopens with a measured value so a fixed
+    /// bitrate holds regardless of the content's actual fps.</summary>
+    public int FpsHint => _fpsHint;
+
     /// <summary>Diagnostics: cumulative microseconds in colour-convert vs encode submit + frame count.</summary>
     public long ConvertUs, EncodeUs, TimedFrames;
 

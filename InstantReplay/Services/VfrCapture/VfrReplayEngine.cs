@@ -72,6 +72,7 @@ public sealed class VfrReplayEngine : IDisposable
     private WgcCaptureSource? _capture;
     private NvencVfrEncoder? _encoder;
     private PacketRingBuffer? _ring;
+    private bool _fpsAdaptDone;   // fixed-bitrate fps-hint retune: done once per capture session
     private WasapiAudioSource? _audio;
     private readonly List<AudioTrackState> _audioTracks = new();   // guarded by _gate
 
@@ -305,6 +306,7 @@ public sealed class VfrReplayEngine : IDisposable
                 _lockedHwnd = hwnd;
                 _lockedPid = pid;
                 _lastEncodedUs = long.MinValue;
+                _fpsAdaptDone = false;                  // re-measure the fps-hint for this new session
                 _startQpc = System.Diagnostics.Stopwatch.GetTimestamp();
                 _pause = new PauseState(0, 0, false);   // a fresh session/clock is never paused
                 TargetActive = true;
@@ -386,6 +388,61 @@ public sealed class VfrReplayEngine : IDisposable
 
         encoder.Encode(bgra, ptsUs);
         System.Threading.Interlocked.Increment(ref FramesEncoded);
+
+        // Fixed-bitrate mode only: once, after a short warm-up, retune the encoder's fps-hint to the
+        // MEASURED capture rate so a CBR target actually holds. A hint above the real fps underfills
+        // (bits/frame = bit_rate/hint); a hint at-or-below it is capped by rc_max, so it holds.
+        if (_options.BitrateKbps > 0 && !_fpsAdaptDone) MaybeAdaptFpsHint();
+    }
+
+    /// <summary>One-time (per session) fps-hint retune for the fixed-bitrate path. Runs on the
+    /// capture thread right after Encode, so disposing/recreating the encoder is D3D-context-safe.</summary>
+    private void MaybeAdaptFpsHint()
+    {
+        long elapsedUs = EngineNowUs();
+        if (elapsedUs < 3_000_000) return;                 // need ~3s of frames to measure
+        _fpsAdaptDone = true;                               // one-shot, whatever the outcome
+
+        var enc = _encoder;
+        if (enc == null) return;
+        // Floor-rounded measured fps (the startup ramp biases it slightly LOW — the safe side, since
+        // hint ≤ real fps holds via rc_max). Never raise the hint above the MaxFps cap it opened with.
+        int measured = (int)(FramesEncoded * 1_000_000L / Math.Max(1, elapsedUs));
+        measured = Math.Clamp(measured, 5, enc.FpsHint);
+        // Only worth a reopen if the current hint is meaningfully too high (the underfill case).
+        if (enc.FpsHint - measured < enc.FpsHint * 0.15) return;
+        SwapEncoderFpsHint(measured);
+    }
+
+    /// <summary>Reopens the video encoder with a new fps-hint (fixed-bitrate adaptation). The packet
+    /// ring is reset because the new encoder starts a fresh stream — the same reset a game↔desktop
+    /// switch already does, and it only happens a few seconds into a session so no useful buffer is
+    /// lost. Holds <see cref="_gate"/> so it can't race a save / lock-switch.</summary>
+    private void SwapEncoderFpsHint(int hint)
+    {
+        lock (_gate)
+        {
+            var old = _encoder;
+            if (old == null) return;
+            NvencVfrEncoder fresh;
+            try
+            {
+                fresh = new NvencVfrEncoder(_d3d!, _encoderChoice!, old.Width, old.Height,
+                                            _options.BitrateKbps, _options.Preset, fpsHint: hint);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[VfrReplayEngine] fps-hint reopen failed, keeping current encoder: {ex.Message}");
+                return;
+            }
+            var freshRing = new PacketRingBuffer(_options.BufferSeconds);
+            fresh.PacketReady += p => freshRing.Add(p);
+            _encoder = fresh;
+            _ring = freshRing;
+            _lastEncodedUs = long.MinValue;
+            old.Dispose();
+            Console.WriteLine($"[VfrReplayEngine] Fixed-bitrate fps-hint adapted {old.FpsHint}→{hint} (measured); encoder reopened, buffer reset.");
+        }
     }
 
     /// <summary>Microseconds since this capture session's clock origin — the shared A/V timeline —
