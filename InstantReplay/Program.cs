@@ -1,5 +1,6 @@
 using Avalonia;
 using System;
+using System.Runtime.InteropServices;
 using System.Threading;
 using Velopack;
 
@@ -13,8 +14,46 @@ public static class Program
     /// <summary>
     /// Main entry point for the application.
     /// </summary>
-    [System.Runtime.InteropServices.DllImport("winmm.dll")]
+    [DllImport("winmm.dll")]
     private static extern uint timeBeginPeriod(uint uMilliseconds);
+
+    // ── Native crash forensics (SEH top-level filter) ──
+    private delegate int TopLevelFilter(IntPtr exceptionInfo);
+    [DllImport("kernel32.dll")] private static extern IntPtr SetUnhandledExceptionFilter(TopLevelFilter filter);
+    private static TopLevelFilter? _nativeCrashFilter;   // kept alive so the GC can't collect the delegate
+
+    private static void InstallNativeCrashHandler()
+    {
+        _nativeCrashFilter = info =>
+        {
+            try
+            {
+                IntPtr record = Marshal.ReadIntPtr(info, 0);     // EXCEPTION_POINTERS.ExceptionRecord
+                uint code = (uint)Marshal.ReadInt32(record, 0);  // EXCEPTION_RECORD.ExceptionCode
+                IntPtr addr = Marshal.ReadIntPtr(record, 16);    // EXCEPTION_RECORD.ExceptionAddress (x64)
+                Lag.Services.FileLog.LogNativeCrash(code, addr, ResolveModule(addr));
+            }
+            catch { /* a crash handler must never throw */ }
+            return 0;   // EXCEPTION_CONTINUE_SEARCH — let the OS finish the crash (WER, dump, exit)
+        };
+        SetUnhandledExceptionFilter(_nativeCrashFilter);
+    }
+
+    /// <summary>Which loaded module an address falls in — names the DLL that faulted.</summary>
+    private static string ResolveModule(IntPtr addr)
+    {
+        try
+        {
+            long a = addr.ToInt64();
+            foreach (System.Diagnostics.ProcessModule m in System.Diagnostics.Process.GetCurrentProcess().Modules)
+            {
+                long b = m.BaseAddress.ToInt64();
+                if (a >= b && a < b + m.ModuleMemorySize) return $"{m.ModuleName}+0x{(a - b):X}";
+            }
+        }
+        catch { }
+        return $"0x{addr.ToInt64():X16} (unknown module)";
+    }
 
     [STAThread]
     public static void Main(string[] args)
@@ -49,6 +88,9 @@ public static class Program
             Lag.Services.FileLog.LogCrash("AppDomain", e.ExceptionObject as Exception);
         System.Threading.Tasks.TaskScheduler.UnobservedTaskException += (_, e) =>
             Lag.Services.FileLog.LogCrash("UnobservedTask", e.Exception);
+        // Native (SEH) crashes — access violations inside FFmpeg / D3D / VLC — never reach the managed
+        // handler above; this top-level filter logs the faulting DLL to crash.log just before death.
+        InstallNativeCrashHandler();
 
         // MUST run first: handles Velopack's install/update/uninstall hooks and exits early
         // for those special invocations before any UI is created. (Velopack maintenance must not

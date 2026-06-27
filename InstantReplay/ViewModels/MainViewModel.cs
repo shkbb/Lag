@@ -408,7 +408,11 @@ public partial class MainViewModel : ViewModelBase
     private async Task StartRecordingAsync()
     {
         if (IsRecording) return;
-        
+
+        // Wait out any in-flight stop teardown (now off the UI thread) so two capture sessions never
+        // overlap — restarting while the old encoder/GPU session is still being freed could clash.
+        if (_teardownTask is { IsCompleted: false }) { try { await _teardownTask; } catch { } }
+
         try
         {
             StatusText = Localizer.Get("Status_Starting");
@@ -493,34 +497,27 @@ public partial class MainViewModel : ViewModelBase
     private void StopRecording()
     {
         if (!IsRecording) return;
-        try
+        // Flip the UI to "stopped" right away, THEN tear the pipeline down on a BACKGROUND thread.
+        // The native teardown (avcodec_free_context closes the GPU encoder session and can block on
+        // in-flight GPU work under heavy load) used to run synchronously here on the UI thread, which
+        // froze the whole app — and a frozen UI thread also stalls the global hotkey hook, lagging the
+        // cursor system-wide, so it looked like a crash. Off-thread keeps the app responsive; the next
+        // StartRecordingAsync() awaits this task so two capture sessions never overlap.
+        IsRecording = false;
+        IsPaused = false;
+        StatusText = Localizer.Get("Status_Stopping");
+        StopBufferTicker();
+        Settings.HasPendingChanges = false;
+        _teardownTask = Task.Run(() =>
         {
-            StatusText = Localizer.Get("Status_Stopping");
-            // COLD RESTART: fully tear down the capture pipeline (output → encoders → sources → scene),
-            // not just the buffer. The libobs core stays resident, but the next StartRecordingAsync()
-            // runs a clean Initialize() that re-reads ALL current settings (monitor, mic, FPS,
-            // codec, buffer length). The core is only shut down on app exit (DI → Dispose()).
-            _engine.Teardown();
-            IsRecording = false;
-            IsPaused = false;
-            StatusText = Localizer.Get("Status_Stopped");
-            StopBufferTicker();
-            Settings.HasPendingChanges = false;
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[DEBUG] StopRecording FAILED: {ex.Message}");
-            // Force UI state to stopped regardless of native error —
-            // leaving IsRecording=true after a failed stop would lock out the user.
-            IsRecording = false;
-            IsPaused = false;
-            StatusText = Localizer.Format("Status_StopError", ex.Message);
-            StopBufferTicker();
-            Settings.HasPendingChanges = false;
-        }
+            try { _engine.Teardown(); }
+            catch (Exception ex) { Console.WriteLine($"[DEBUG] Teardown failed: {ex.Message}"); }
+            Avalonia.Threading.Dispatcher.UIThread.Post(() => StatusText = Localizer.Get("Status_Stopped"));
+        });
     }
 
     private DateTime _lastToggleUtc = DateTime.MinValue;
+    private Task? _teardownTask;   // in-flight background stop teardown — don't restart until it finishes
 
     /// <summary>Toggles recording state. Debounced: rapid on/off clicks created and tore down NVENC
     /// encoders faster than the driver released the sessions, which exhausted them (open → error −2)

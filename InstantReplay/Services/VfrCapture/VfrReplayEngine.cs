@@ -392,7 +392,11 @@ public sealed class VfrReplayEngine : IDisposable
         // Fixed-bitrate mode only: once, after a short warm-up, retune the encoder's fps-hint to the
         // MEASURED capture rate so a CBR target actually holds. A hint above the real fps underfills
         // (bits/frame = bit_rate/hint); a hint at-or-below it is capped by rc_max, so it holds.
-        if (_options.BitrateKbps > 0 && !_fpsAdaptDone) MaybeAdaptFpsHint();
+        if (_options.BitrateKbps > 0 && !_fpsAdaptDone)
+        {
+            try { MaybeAdaptFpsHint(); }
+            catch (Exception ex) { _fpsAdaptDone = true; Console.WriteLine($"[fps-adapt] error, keeping encoder: {ex.Message}"); }
+        }
     }
 
     /// <summary>One-time (per session) fps-hint retune for the fixed-bitrate path. Runs on the
@@ -424,6 +428,8 @@ public sealed class VfrReplayEngine : IDisposable
         {
             var old = _encoder;
             if (old == null) return;
+            int oldHint = old.FpsHint;
+            Console.WriteLine($"[fps-adapt] reopening encoder {oldHint}→{hint} ...");
             NvencVfrEncoder fresh;
             try
             {
@@ -432,7 +438,7 @@ public sealed class VfrReplayEngine : IDisposable
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[VfrReplayEngine] fps-hint reopen failed, keeping current encoder: {ex.Message}");
+                Console.WriteLine($"[fps-adapt] reopen failed, keeping current encoder: {ex.Message}");
                 return;
             }
             var freshRing = new PacketRingBuffer(_options.BufferSeconds);
@@ -440,8 +446,9 @@ public sealed class VfrReplayEngine : IDisposable
             _encoder = fresh;
             _ring = freshRing;
             _lastEncodedUs = long.MinValue;
+            Console.WriteLine("[fps-adapt] new encoder live, disposing old ...");
             old.Dispose();
-            Console.WriteLine($"[VfrReplayEngine] Fixed-bitrate fps-hint adapted {old.FpsHint}→{hint} (measured); encoder reopened, buffer reset.");
+            Console.WriteLine($"[fps-adapt] done — fixed-bitrate fps-hint {oldHint}→{hint}, buffer reset.");
         }
     }
 
@@ -686,12 +693,17 @@ public sealed class VfrReplayEngine : IDisposable
             TargetActive = false; TargetIsGame = false; TargetName = ""; TargetExe = null;
         }
         if (wasActive) TargetChanged?.Invoke();
+        // Step-by-step timing: a crash/hang on stop pins the blame on the exact native Dispose that
+        // didn't return (capture / encoder / audio). Pairs with the native crash filter in Program.cs.
+        var swTd = System.Diagnostics.Stopwatch.StartNew();
+        Console.WriteLine("[Teardown] begin");
         try { if (cap != null) cap.FrameReady -= OnFrame; } catch { }
-        cap?.Dispose();
-        enc?.Flush();
-        enc?.Dispose();
-        aud?.Dispose();        // stop WASAPI first so no more PCM arrives
+        cap?.Dispose();   Console.WriteLine($"[Teardown] capture disposed @ {swTd.ElapsedMilliseconds}ms");
+        enc?.Flush();     Console.WriteLine($"[Teardown] encoder flushed @ {swTd.ElapsedMilliseconds}ms");
+        enc?.Dispose();   Console.WriteLine($"[Teardown] encoder disposed @ {swTd.ElapsedMilliseconds}ms");
+        aud?.Dispose();   Console.WriteLine($"[Teardown] audio disposed @ {swTd.ElapsedMilliseconds}ms");   // stop WASAPI first so no more PCM arrives
         foreach (var t in tracks) { t.Encoder?.Flush(); t.Encoder?.Dispose(); }
+        Console.WriteLine($"[Teardown] complete @ {swTd.ElapsedMilliseconds}ms");
         SetProcessPriority(System.Diagnostics.ProcessPriorityClass.Normal);
         try { System.Runtime.GCSettings.LatencyMode = System.Runtime.GCLatencyMode.Interactive; } catch { }
     }

@@ -115,6 +115,27 @@ public sealed class FileLog : TextWriter
         try { Console.Error.WriteLine($"[CRASH:{source}] {ex}"); } catch { }
     }
 
+    /// <summary>Logs a NATIVE crash (an SEH exception — access violation, stack overflow, …) caught by
+    /// the top-level unhandled-exception filter, with the faulting MODULE so we can tell which DLL
+    /// died (FFmpeg / D3D / VLC / our own). The managed AppDomain handler never sees these. Never throws.</summary>
+    public static void LogNativeCrash(uint code, IntPtr addr, string module)
+    {
+        string name = code switch
+        {
+            0xC0000005 => "ACCESS_VIOLATION",
+            0xC00000FD => "STACK_OVERFLOW",
+            0xC0000409 => "STACK_BUFFER_OVERRUN",
+            0xC0000094 => "INT_DIVIDE_BY_ZERO",
+            0xC000001D => "ILLEGAL_INSTRUCTION",
+            0x80000003 => "BREAKPOINT",
+            _ => "EXCEPTION",
+        };
+        string block = $"───── {DateTime.Now:yyyy-MM-dd HH:mm:ss} [NATIVE] Lag {AssemblyVersion()} ─────" + Environment.NewLine +
+                       $"NATIVE CRASH {name} (0x{code:X8}) at 0x{addr.ToInt64():X16} in {module}" + Environment.NewLine;
+        try { Directory.CreateDirectory(LogDir); File.AppendAllText(CrashLogPath, block + Environment.NewLine); } catch { }
+        try { Console.Error.WriteLine($"[CRASH:NATIVE] {name} in {module}"); } catch { }
+    }
+
     /// <summary>Keeps only the newest <paramref name="keep"/> log files.</summary>
     private static void PruneOldLogs(int keep)
     {
