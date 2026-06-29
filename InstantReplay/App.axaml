@@ -217,6 +217,7 @@
     <core:EqualsConverter x:Key="Eq" />
     <core:StringToUpperConverter x:Key="Upper" />
     <core:IntensityToBrushConverter x:Key="Intensity" />
+    <core:LevelToWidthConverter x:Key="LevelWidth" />
 
     <!-- Popup overlay + slider SIZING (theme-invariant). The matching COLOURS — ToggleSwitch,
          ComboBox dropdown, menu, tooltip and SystemAccentColor — are themed per-variant in
@@ -244,6 +245,78 @@
     <SolidColorBrush x:Key="SliderContainerBackgroundDisabled">Transparent</SolidColorBrush>
     <SolidColorBrush x:Key="SliderTrackValueFillDisabled">#22D3EE</SolidColorBrush>
     <SolidColorBrush x:Key="SliderTrackFillDisabled">#24FFFFFF</SolidColorBrush>
+
+    <!-- ToggleSwitch — custom animated template. Fluent 11.2.3's built-in knob slide does NOT fire in
+         this app (every other transition animates — only the toggle knob snapped), so we own the
+         template: a pill track + a round knob that SLIDES via translateX (TransformOperationsTransition,
+         the same kind that animates fine on the chevron/segments) + a colour fade on the track. Colours
+         come from the per-variant ToggleSwitch* keys, so Light/Dark theme automatically. A ControlTheme
+         (not a Style Template setter) so it WINS over Fluent's. All app toggles are bare (no On/Off content). -->
+    <ControlTheme x:Key="{x:Type ToggleSwitch}" TargetType="ToggleSwitch">
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="Template">
+        <ControlTemplate>
+          <Border x:Name="Track" Width="40" Height="22" CornerRadius="11" BorderThickness="1"
+                  HorizontalAlignment="Left" VerticalAlignment="Center"
+                  Background="{DynamicResource ToggleSwitchFillOff}"
+                  BorderBrush="{DynamicResource ToggleSwitchStrokeOff}">
+            <Border.Transitions>
+              <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.16" />
+                <BrushTransition Property="BorderBrush" Duration="0:0:0.16" />
+              </Transitions>
+            </Border.Transitions>
+            <Panel>
+              <!-- Required ToggleSwitch parts, kept 0-size/hidden: the control sets Canvas.Left on
+                   PART_MovingKnobs (Fluent's slide that doesn't fire here). Our Knob below does the
+                   visible animated slide via translateX. -->
+              <Canvas x:Name="PART_SwitchKnob" Width="0" Height="0">
+                <Panel x:Name="PART_MovingKnobs" />
+              </Canvas>
+              <Ellipse x:Name="Knob" Width="16" Height="16" Margin="2,0,0,0"
+                       HorizontalAlignment="Left" VerticalAlignment="Center"
+                       Fill="{DynamicResource ToggleSwitchKnobFillOff}" RenderTransform="translateX(0px)">
+                <Ellipse.Transitions>
+                  <Transitions>
+                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.16" Easing="CubicEaseOut" />
+                    <BrushTransition Property="Fill" Duration="0:0:0.16" />
+                  </Transitions>
+                </Ellipse.Transitions>
+              </Ellipse>
+            </Panel>
+          </Border>
+        </ControlTemplate>
+      </Setter>
+
+      <Style Selector="^:pointerover /template/ Border#Track">
+        <Setter Property="Background" Value="{DynamicResource ToggleSwitchFillOffPointerOver}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource ToggleSwitchStrokeOffPointerOver}" />
+      </Style>
+      <Style Selector="^:pointerover /template/ Ellipse#Knob">
+        <Setter Property="Fill" Value="{DynamicResource ToggleSwitchKnobFillOffPointerOver}" />
+      </Style>
+
+      <Style Selector="^:checked /template/ Border#Track">
+        <Setter Property="Background" Value="{DynamicResource ToggleSwitchFillOn}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource ToggleSwitchStrokeOn}" />
+      </Style>
+      <Style Selector="^:checked /template/ Ellipse#Knob">
+        <Setter Property="RenderTransform" Value="translateX(18px)" />
+        <Setter Property="Fill" Value="{DynamicResource ToggleSwitchKnobFillOn}" />
+      </Style>
+      <Style Selector="^:checked:pointerover /template/ Border#Track">
+        <Setter Property="Background" Value="{DynamicResource ToggleSwitchFillOnPointerOver}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource ToggleSwitchStrokeOnPointerOver}" />
+      </Style>
+      <Style Selector="^:checked:pointerover /template/ Ellipse#Knob">
+        <Setter Property="Fill" Value="{DynamicResource ToggleSwitchKnobFillOnPointerOver}" />
+      </Style>
+
+      <Style Selector="^:disabled">
+        <Setter Property="Opacity" Value="0.45" />
+      </Style>
+    </ControlTheme>
     </ResourceDictionary>
   </Application.Resources>
 

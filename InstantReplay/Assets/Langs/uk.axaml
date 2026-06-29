@@ -104,7 +104,10 @@
   <sys:String x:Key="Editor_ResetTrim">Скинути обрізку</sys:String>
   <sys:String x:Key="Settings_Hotkey_Screenshot">Скріншот</sys:String>
   <sys:String x:Key="Toast_ReplaySaved">Повтор збережено</sys:String>
-  <sys:String x:Key="Toast_ScreenshotSaved">Скріншот збережено</sys:String>
+  <sys:String x:Key="Toast_ScreenshotSaved">Скріншот збережено</sys:String>
+  <sys:String x:Key="Toast_RecordingStarted">Запис почато</sys:String>
+  <sys:String x:Key="Toast_RecordingStopped">Запис зупинено</sys:String>
+  <sys:String x:Key="Toast_NowRecording">Зараз записується</sys:String>
   <sys:String x:Key="Settings_AutoStart">Автоматично починати запис</sys:String>
   <sys:String x:Key="Settings_AutoStart_Desc">Запис у буфер повтору стартує одразу після запуску</sys:String>
   <sys:String x:Key="Settings_Group_Hotkey">ГАРЯЧІ КЛАВІШІ</sys:String>
@@ -133,7 +136,8 @@
   <sys:String x:Key="Library_ShowInFolder">Показати в папці</sys:String>
   <sys:String x:Key="Library_FreeSpace">Вільно</sys:String>
   <sys:String x:Key="Library_Search">Пошук кліпів</sys:String>
-  <sys:String x:Key="Library_Favorites">Улюблені</sys:String>
+  <sys:String x:Key="Library_Favorites">Улюблені</sys:String>
+  <sys:String x:Key="Library_Desktop">Робочий стіл</sys:String>
   <sys:String x:Key="Library_Today">Сьогодні</sys:String>
   <sys:String x:Key="Library_Yesterday">Вчора</sys:String>
   <sys:String x:Key="Library_NoResults">Немає кліпів за вашим запитом.</sys:String>
@@ -158,10 +162,10 @@
 
   <!-- ════════ Runtime status (ViewModels) ════════ -->
   <sys:String x:Key="Status_Ready">Готовий</sys:String>
-  <sys:String x:Key="Status_Starting">Початок запису (OBS)...</sys:String>
+  <sys:String x:Key="Status_Starting">Початок запису...</sys:String>
   <sys:String x:Key="Status_Recording">Запис...</sys:String>
   <sys:String x:Key="Status_NoMonitor">Монітор для запису не вибрано.</sys:String>
-  <sys:String x:Key="Status_ObsError">Помилка OBS: {0}</sys:String>
+  <sys:String x:Key="Status_RecordError">Помилка запису: {0}</sys:String>
   <sys:String x:Key="Status_Stopping">Зупинка...</sys:String>
   <sys:String x:Key="Status_Stopped">Зупинено</sys:String>
   <sys:String x:Key="Status_StopError">Помилка зупинки: {0}</sys:String>
@@ -192,7 +196,8 @@
 
   <sys:String x:Key="Library_EmptyTitle">Поки що немає повторів</sys:String>
   <!-- ════════ Pause recording ════════ -->
-  <sys:String x:Key="Settings_Hotkey_Pause">Пауза запису</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Pause">Пауза запису</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Record">Старт/стоп запису</sys:String>
   <sys:String x:Key="Btn_PauseRecording">Пауза</sys:String>
   <sys:String x:Key="Btn_ResumeRecording">Відновити</sys:String>
   <sys:String x:Key="Status_Paused">Призупинено</sys:String>
@@ -213,4 +218,30 @@
   <sys:String x:Key="Settings_Logs">Логи</sys:String>
   <sys:String x:Key="Settings_OpenLogs">Відкрити папку</sys:String>
   <sys:String x:Key="Settings_SaveDiagnostics">Експорт .zip</sys:String>
+
+  <!-- ════════ Hardware presets ════════ -->
+  <sys:String x:Key="Preset_SectionTitle">ПРЕСЕТИ</sys:String>
+  <sys:String x:Key="Preset_Subtitle">Підібрано під твоє залізо — обери ціль</sys:String>
+  <sys:String x:Key="Preset_Performance">Продуктивність</sys:String>
+  <sys:String x:Key="Preset_Balanced">Баланс</sys:String>
+  <sys:String x:Key="Preset_Quality">Якість</sys:String>
+  <sys:String x:Key="Preset_PerformanceDesc">Найплавніший геймплей</sys:String>
+  <sys:String x:Key="Preset_BalancedDesc">Стабільні fps і якість</sys:String>
+  <sys:String x:Key="Preset_QualityDesc">Найчіткіші кліпи</sys:String>
+  <sys:String x:Key="Preset_RecommendedBadge">Рекомендовано</sys:String>
+  <sys:String x:Key="Preset_Rescan">Пересканувати залізо</sys:String>
+  <sys:String x:Key="Preset_Advanced">РОЗШИРЕНІ</sys:String>
+  <sys:String x:Key="Preset_CleanupHint">Вільно лише {0} ГБ — варто увімкнути автоочищення (~{1} ГБ).</sys:String>
+  <sys:String x:Key="Settings_OutputLevel">Рівень виходу</sys:String>
+  <sys:String x:Key="Settings_MicLevel">Рівень мікрофона</sys:String>
+  <sys:String x:Key="Settings_HearYourself">Чути себе</sys:String>
+  <sys:String x:Key="Settings_HearYourselfHint">Відтворює мікрофон у вибраний вихід — слухай у навушниках, щоб уникнути відлуння.</sys:String>
+  <sys:String x:Key="Settings_InputSensitivity">Поріг чутливості</sys:String>
+  <sys:String x:Key="Settings_InputSensitivityHint">Глушить мікрофон нижче порога — авто підлаштовується під твою кімнату.</sys:String>
+  <sys:String x:Key="Settings_NoiseSuppression">Шумозаглушення</sys:String>
+  <sys:String x:Key="Settings_NoiseSuppressionHint">Прибирає постійний фоновий шум — кулери, гул, клавіатуру — з мікрофона.</sys:String>
+  <sys:String x:Key="Settings_Auto">Авто</sys:String>
+  <sys:String x:Key="Settings_Threshold">Поріг</sys:String>
+  <sys:String x:Key="Settings_Listen">Слухати</sys:String>
+  <sys:String x:Key="Settings_Stop">Зупинити</sys:String>
 </ResourceDictionary>

@@ -23,7 +23,12 @@ public sealed record VfrEngineOptions
     public string FileFormat { get; init; } = "mp4";     // output container: mp4 / mkv / mov
     public int TargetHeight { get; init; }                // 0 = native window height
     public int MaxFps { get; init; } = 120;               // cap to bound load on very fast games
-    public int Preset { get; init; } = 7;                 // 1 fastest … 7 best; p7 holds fps here (encode ~0.5ms)
+    // NVENC preset (1=p1 fastest … 7=p7 slowest/best). p7 was too slow on a real high-fps NVIDIA game:
+    // the capture→convert→encode runs SYNCHRONOUSLY on the WGC callback thread, so when the GPU is
+    // saturated by the game, a slow p7 encode stalls the callback and WGC delivers fewer frames →
+    // captured fps collapsed to ~half the game's (p7≈181 fps idle vs p4≈327). p4 keeps quality (constqp
+    // is QP-bound, the preset mostly trades size for speed) while letting capture keep up.
+    public int Preset { get; init; } = 4;
     public bool CaptureCursor { get; init; } = true;
     public string? MonitorDeviceId { get; init; }         // recorded monitor (null = primary)
     public CaptureMode Mode { get; init; } = CaptureMode.AutoGame;   // game-auto (fallback desktop) vs always-display
@@ -39,6 +44,9 @@ public sealed record VfrEngineOptions
     public string? SystemAudioDeviceId { get; init; }     // chosen render endpoint to loop back (null/"" = default)
     public float SystemVolume { get; init; } = 1.0f;      // linear gain for the full-system loopback (1.0 = 100%)
     public bool MicMono { get; init; }                    // downmix the microphone to a single channel
+    public bool InputGateAuto { get; init; } = true;      // noise gate: auto-track the floor vs fixed threshold
+    public float InputGateThreshold { get; init; } = 0.08f; // manual gate threshold (0..1 perceptual)
+    public bool NoiseSuppression { get; init; }           // RNNoise (arnndn) mic denoise
     public bool GameAudioEnabled { get; init; } = true;   // apps mode: also capture the locked game's own audio
     public float GameVolume { get; init; } = 1.0f;        // linear gain for the game-audio source
     public bool AudioEnabled { get; init; } = true;       // false = video-only (diagnostics / A-B)
@@ -73,6 +81,12 @@ public sealed class VfrReplayEngine : IDisposable
     private NvencVfrEncoder? _encoder;
     private PacketRingBuffer? _ring;
     private bool _fpsAdaptDone;   // fixed-bitrate fps-hint retune: done once per capture session
+
+    // Periodic capture/encode diagnostics — every ~2s log the WINDOWED captured fps + per-frame convert
+    // vs encode ms, so a low captured fps under game load can be traced to the encoder (raise speed /
+    // lower preset) vs the colour convert (GPU contention). Cheap; runs on the capture thread.
+    private long _diagWindowStartUs;
+    private long _diagFrames0, _diagConvert0, _diagEncode0, _diagCaptured0;
     private WasapiAudioSource? _audio;
     private readonly List<AudioTrackState> _audioTracks = new();   // guarded by _gate
 
@@ -149,11 +163,11 @@ public sealed class VfrReplayEngine : IDisposable
 
     /// <summary>
     /// Whether this machine can run the native engine: WGC supported (Win10 1903+), FFmpeg bound,
-    /// and at least one usable encoder. Callers fall back to the OBS recorder when false.
+    /// and at least one usable encoder.
     /// </summary>
-    public static bool IsAvailable(string obsCoreDir)
+    public static bool IsAvailable(string ffmpegDir)
         => WgcCaptureSource.IsSupported
-           && FfmpegInterop.Initialize(obsCoreDir)
+           && FfmpegInterop.Initialize(ffmpegDir)
            && EncoderSelector.Available.Count > 0;
 
     /// <summary>Arms the engine. It begins capturing automatically when a game is detected, and
@@ -389,6 +403,8 @@ public sealed class VfrReplayEngine : IDisposable
         encoder.Encode(bgra, ptsUs);
         System.Threading.Interlocked.Increment(ref FramesEncoded);
 
+        LogStageStats(encoder, ptsUs);
+
         // Fixed-bitrate mode only: once, after a short warm-up, retune the encoder's fps-hint to the
         // MEASURED capture rate so a CBR target actually holds. A hint above the real fps underfills
         // (bits/frame = bit_rate/hint); a hint at-or-below it is capped by rc_max, so it holds.
@@ -397,6 +413,33 @@ public sealed class VfrReplayEngine : IDisposable
             try { MaybeAdaptFpsHint(); }
             catch (Exception ex) { _fpsAdaptDone = true; Console.WriteLine($"[fps-adapt] error, keeping encoder: {ex.Message}"); }
         }
+    }
+
+    /// <summary>Every ~2s, logs the windowed captured fps + per-frame convert/encode ms so a low capture
+    /// rate under game load can be attributed (encoder too slow vs colour-convert GPU contention).</summary>
+    private void LogStageStats(NvencVfrEncoder enc, long nowUs)
+    {
+        if (_diagWindowStartUs == 0)   // seed the first window
+        {
+            _diagWindowStartUs = nowUs;
+            _diagFrames0 = enc.TimedFrames; _diagConvert0 = enc.ConvertUs; _diagEncode0 = enc.EncodeUs;
+            _diagCaptured0 = System.Threading.Interlocked.Read(ref FramesCaptured);
+            return;
+        }
+        double secs = (nowUs - _diagWindowStartUs) / 1_000_000.0;
+        if (secs < 2.0) return;
+
+        long df = enc.TimedFrames - _diagFrames0;            // frames actually encoded this window
+        long dcap = System.Threading.Interlocked.Read(ref FramesCaptured) - _diagCaptured0;   // WGC frames pulled
+        if (df > 0)
+        {
+            double convMs = (enc.ConvertUs - _diagConvert0) / 1000.0 / df;
+            double encMs = (enc.EncodeUs - _diagEncode0) / 1000.0 / df;
+            Console.WriteLine($"[capture] encoded {df / secs:F0} fps (wgc {dcap / secs:F0}) | convert {convMs:F1}ms + encode {encMs:F1}ms/frame | preset p{_options.Preset}");
+        }
+        _diagWindowStartUs = nowUs;
+        _diagFrames0 = enc.TimedFrames; _diagConvert0 = enc.ConvertUs; _diagEncode0 = enc.EncodeUs;
+        _diagCaptured0 = System.Threading.Interlocked.Read(ref FramesCaptured);
     }
 
     /// <summary>One-time (per session) fps-hint retune for the fixed-bitrate path. Runs on the
@@ -485,6 +528,8 @@ public sealed class VfrReplayEngine : IDisposable
                         _options.SystemAudioDeviceId);
             audio.SetMicVolume(_options.MicVolume);
             audio.SetMicMuted(_options.MicStartMuted);
+            audio.SetInputGate(_options.InputGateAuto, _options.InputGateThreshold);
+            audio.SetNoiseSuppression(_options.NoiseSuppression);
             var gf = audio.GameFormat!;
             var tracks = new List<AudioTrackState>();
 
@@ -698,9 +743,13 @@ public sealed class VfrReplayEngine : IDisposable
         var swTd = System.Diagnostics.Stopwatch.StartNew();
         Console.WriteLine("[Teardown] begin");
         try { if (cap != null) cap.FrameReady -= OnFrame; } catch { }
-        cap?.Dispose();   Console.WriteLine($"[Teardown] capture disposed @ {swTd.ElapsedMilliseconds}ms");
+        // Dispose the ENCODER before the capture source. The encoder's _opLock makes Dispose wait for
+        // any in-flight Encode to finish; after it returns, no Encode will touch the capture's frame
+        // texture or the colour converter — so freeing the WGC frame pool next can't race a frame
+        // that's mid-convert (a use-after-free that crashed under load during a lock-switch re-arm).
         enc?.Flush();     Console.WriteLine($"[Teardown] encoder flushed @ {swTd.ElapsedMilliseconds}ms");
         enc?.Dispose();   Console.WriteLine($"[Teardown] encoder disposed @ {swTd.ElapsedMilliseconds}ms");
+        cap?.Dispose();   Console.WriteLine($"[Teardown] capture disposed @ {swTd.ElapsedMilliseconds}ms");
         aud?.Dispose();   Console.WriteLine($"[Teardown] audio disposed @ {swTd.ElapsedMilliseconds}ms");   // stop WASAPI first so no more PCM arrives
         foreach (var t in tracks) { t.Encoder?.Flush(); t.Encoder?.Dispose(); }
         Console.WriteLine($"[Teardown] complete @ {swTd.ElapsedMilliseconds}ms");

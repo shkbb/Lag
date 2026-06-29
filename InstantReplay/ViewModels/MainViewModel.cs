@@ -4,7 +4,6 @@ using CommunityToolkit.Mvvm.Input;
 using Lag.Core;
 using Lag.Models;
 using Lag.Services;
-using Lag.Services.ObsIntegration;
 
 namespace Lag.ViewModels;
 
@@ -111,7 +110,23 @@ public partial class MainViewModel : ViewModelBase
             ? t.Value.Name
             : DesktopLabel();
         HasCaptureTarget = true;
+
+        // "Now recording: X" toast on a real category switch (game↔desktop / new game) — but NOT on the
+        // first lock after Start (that's covered by "Recording started"); _lastCaptureToast is nulled on
+        // start/stop so the initial lock only seeds it.
+        var toastKey = (t.Value.IsGame, CaptureTargetName);
+        if (IsRecording && _lastCaptureToast != null && _lastCaptureToast != toastKey)
+        {
+            Lag.Services.ToastService.Show(Localizer.Get("Toast_NowRecording"), CaptureTargetName,
+                t.Value.IsGame ? Material.Icons.MaterialIconKind.Controller : Material.Icons.MaterialIconKind.Monitor,
+                "Accent");
+        }
+        _lastCaptureToast = toastKey;
     }
+
+    // Last capture target shown in a "now recording" toast — gates the category-switch toast so it
+    // fires only on a genuine change (not every CaptureTargetChanged tick or the first lock).
+    private (bool IsGame, string Name)? _lastCaptureToast;
 
     private string DesktopLabel()
     {
@@ -295,6 +310,11 @@ public partial class MainViewModel : ViewModelBase
                 $"bitrate={Settings.EffectiveBitrateKbps}kbps buffer={Settings.BufferSeconds}s audio={audio} " +
                 $"gpu={Settings.SelectedGpu?.Display}");
             Console.WriteLine("=======================");
+            // Full static hardware snapshot + what each preset would recommend for this machine.
+            // Read-only; logged so we can calibrate the resolver against real hardware before the UI.
+            var profile = Lag.Services.HardwareProfiler.Capture(Settings.LibraryPath);
+            Console.WriteLine(profile.Describe());
+            Lag.Services.PresetResolver.LogRecommendations(profile);
         }
         catch (Exception ex) { Console.WriteLine($"[Diagnostics] dump failed: {ex.Message}"); }
     }
@@ -463,10 +483,12 @@ public partial class MainViewModel : ViewModelBase
                 GameAudioVolume = Settings.GameAudioVolume,
                 MicForceMono = Settings.MicMono,
                 MicStartMuted = Settings.PushToTalkEnabled,
+                InputGateAuto = Settings.InputSensitivityAuto,
+                InputGateThreshold = Settings.InputSensitivityThreshold / 100f,
+                NoiseSuppression = Settings.NoiseSuppression,
                 AudioCaptureMode = Settings.IsAppsMode ? "apps" : "all",
                 AudioModeByTarget = Settings.AudioModeByTarget,
                 SystemAudioDeviceId = Settings.SelectedOutputDevice?.Id ?? "",
-                GameCaptureEnabled = false,   // removed from UI (dead CS2-hook setting); OBS-only, off
                 AudioApps = Settings.AudioApps
                     .Where(a => a.IsEnabled)
                     .Select(a => new AppAudioCapture(a.Exe, a.Volume / 100f))
@@ -484,11 +506,14 @@ public partial class MainViewModel : ViewModelBase
             Console.WriteLine($"[DEBUG] Recording started! IsRecording={IsRecording}");
             StatusText = Localizer.Get("Status_Recording");
             StartBufferTicker(bufferSeconds);
+            _lastCaptureToast = null;   // arm the category toast for the NEXT switch, not the first lock
+            Lag.Services.ToastService.Show(Localizer.Get("Toast_RecordingStarted"), null,
+                Material.Icons.MaterialIconKind.RecordCircle, "RecDot");
         }
         catch (Exception ex)
         {
             Console.WriteLine($"[DEBUG] StartRecording FAILED: {ex.Message}");
-            StatusText = Localizer.Format("Status_ObsError", ex.Message);
+            StatusText = Localizer.Format("Status_RecordError", ex.Message);
         }
     }
 
@@ -506,6 +531,9 @@ public partial class MainViewModel : ViewModelBase
         IsRecording = false;
         IsPaused = false;
         StatusText = Localizer.Get("Status_Stopping");
+        _lastCaptureToast = null;
+        Lag.Services.ToastService.Show(Localizer.Get("Toast_RecordingStopped"), null,
+            Material.Icons.MaterialIconKind.StopCircle, "Fg2Brush");
         StopBufferTicker();
         Settings.HasPendingChanges = false;
         _teardownTask = Task.Run(() =>
@@ -587,7 +615,7 @@ public partial class MainViewModel : ViewModelBase
             try
             {
                 _engine.SaveReplay();
-                Console.WriteLine("[DEBUG] Save command sent to OBS. Wait 3-5 seconds for muxing to complete...");
+                Console.WriteLine("[DEBUG] Save command sent to the recorder. Wait a few seconds for muxing to complete...");
             }
             catch (Exception ex)
             {
@@ -602,7 +630,7 @@ public partial class MainViewModel : ViewModelBase
     }
 
     /// <summary>
-    /// Safety net: if OBS never raises ReplaySaved (mux stalled, native error swallowed),
+    /// Safety net: if the engine never raises ReplaySaved (mux stalled, native error swallowed),
     /// IsSaving would stay true forever and block every further save. Reset it after 20s.
     /// Must be called on the UI thread.
     /// </summary>

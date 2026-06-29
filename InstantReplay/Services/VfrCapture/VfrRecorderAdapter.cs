@@ -2,14 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Lag.Services.ObsIntegration;
+using Lag.Services;
 
 namespace Lag.Services.VfrCapture;
 
 /// <summary>
 /// Adapts the native <see cref="VfrReplayEngine"/> to the app's <see cref="IReplayRecorder"/>
-/// contract, so the UI can drive it exactly like the OBS recorder. Translates the UI's
-/// <see cref="RecorderOptions"/> snapshot into <see cref="VfrEngineOptions"/> on each start.
+/// contract, so the UI can drive it. Translates the UI's <see cref="RecorderOptions"/> snapshot
+/// into <see cref="VfrEngineOptions"/> on each start.
 /// </summary>
 public sealed class VfrRecorderAdapter : IReplayRecorder
 {
@@ -29,8 +29,7 @@ public sealed class VfrRecorderAdapter : IReplayRecorder
         _engine.TargetChanged += () => CaptureTargetChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    /// <summary>Whether the native engine can run on this machine (WGC + FFmpeg + an encoder).
-    /// The factory falls back to OBS when false.</summary>
+    /// <summary>Whether the native engine can run on this machine (WGC + FFmpeg + an encoder).</summary>
     public static bool IsAvailable()
     {
         try { return VfrReplayEngine.IsAvailable(FfmpegDir()); }
@@ -80,6 +79,9 @@ public sealed class VfrRecorderAdapter : IReplayRecorder
         GameAudioEnabled = o.GameAudioEnabled,
         GameVolume = o.GameAudioVolume / 100f,
         MicMono = o.MicForceMono,
+        InputGateAuto = o.InputGateAuto,
+        InputGateThreshold = o.InputGateThreshold,
+        NoiseSuppression = o.NoiseSuppression,
         CaptureCursor = true,
     };
 

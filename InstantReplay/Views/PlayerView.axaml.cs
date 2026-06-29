@@ -3,7 +3,10 @@ using System.ComponentModel;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Interactivity;
+using Avalonia.Media.Transformation;
 using Avalonia.Threading;
+using Lag.Models;
 using Lag.ViewModels;
 
 namespace Lag.Views;
@@ -27,6 +30,11 @@ public partial class PlayerView : UserControl
     // when the cursor moves onto the popup).
     private bool _controlsPinned;
 
+    // Mute flash: shows the speaker badge over the video on each toggle, then hides it after a beat.
+    private readonly DispatcherTimer _muteFlashTimer = new() { Interval = TimeSpan.FromMilliseconds(850) };
+    // Volume-icon click pop: returns the small control-bar icon to its rest scale after the bounce.
+    private readonly DispatcherTimer _volPopTimer = new() { Interval = TimeSpan.FromMilliseconds(130) };
+
     public PlayerView()
     {
         InitializeComponent();
@@ -36,6 +44,8 @@ public partial class PlayerView : UserControl
 
         _cursorIdleTimer.Tick += OnCursorIdle;
         _timeTimer.Tick += OnTimeTick;
+        _muteFlashTimer.Tick += (_, _) => { _muteFlashTimer.Stop(); MuteOverlay.Opacity = 0; };
+        _volPopTimer.Tick += (_, _) => { _volPopTimer.Stop(); VolumeIcon.RenderTransform = TransformOperations.Parse("scale(1)"); };
 
         // Fullscreen: the control bar hides until the cursor approaches the bottom edge,
         // the replays panel — until it approaches the right edge. Listening on the root
@@ -158,6 +168,8 @@ public partial class PlayerView : UserControl
     {
         _cursorIdleTimer.Stop();
         _timeTimer.Stop();
+        _muteFlashTimer.Stop();
+        _volPopTimer.Stop();
 
         if (SpeedButton.Flyout is { } speedFlyout)
         {
@@ -193,6 +205,9 @@ public partial class PlayerView : UserControl
             case nameof(PlayerViewModel.StillImage):
             case nameof(PlayerViewModel.IsViewingImage):
                 UpdateVideoSource();
+                break;
+            case nameof(PlayerViewModel.IsMuted):
+                FlashMuteOverlay();
                 break;
             // Resync the smooth clock whenever VLC reports a fresh time or play-state flips.
             case nameof(PlayerViewModel.PositionSeconds):
@@ -253,6 +268,44 @@ public partial class PlayerView : UserControl
         Focus(); // keep the Space shortcut working
         e.Handled = true;
     }
+
+    /// <summary>Click the volume icon → mute/unmute (mirrors the M shortcut), with a little pop.</summary>
+    private void OnVolumeIconPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (_playerVm?.ToggleMuteCommand.CanExecute(null) == true)
+            _playerVm.ToggleMuteCommand.Execute(null);
+
+        // Pop the icon (scale up, then the timer eases it back) — feedback on the click.
+        VolumeIcon.RenderTransform = TransformOperations.Parse("scale(1.35)");
+        _volPopTimer.Stop();
+        _volPopTimer.Start();
+
+        Focus();   // keep keyboard shortcuts working after the click
+        e.Handled = true;
+    }
+
+    /// <summary>Pops the mute badge over the video, then auto-hides it (so it doesn't sit there forever).</summary>
+    private void FlashMuteOverlay()
+    {
+        MuteOverlay.Opacity = 1;
+        _muteFlashTimer.Stop();
+        _muteFlashTimer.Start();
+    }
+
+    // ── Replay right-click menu (sidebar items + the playing video) → same actions as the Library ──
+    private void OnReplayEditClick(object? sender, RoutedEventArgs e)
+    { if (ClipFromMenu(sender) is { } c) _playerVm?.RequestEditClip(c); }
+
+    private void OnReplayShowInFolderClick(object? sender, RoutedEventArgs e)
+    { if (ClipFromMenu(sender) is { } c) _playerVm?.ShowClipInFolder(c); }
+
+    private void OnReplayDeleteClick(object? sender, RoutedEventArgs e)
+    { if (ClipFromMenu(sender) is { } c) _playerVm?.DeleteReplay(c); }
+
+    /// <summary>The clip a context-menu action targets: the right-clicked SIDEBAR item (its DataContext is
+    /// the ReplayClip) or, when the menu was opened over the video, the currently playing clip.</summary>
+    private ReplayClip? ClipFromMenu(object? sender) =>
+        sender is Control { DataContext: ReplayClip clip } ? clip : _playerVm?.CurrentClip;
 
     private void OnMainVmPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {

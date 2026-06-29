@@ -27,6 +27,10 @@ public sealed unsafe class AacAudioEncoder : IDisposable
     private long _writtenSamples;   // total samples pushed into the FIFO (incl. silence padding)
     private long _readSamples;      // total samples drained → the next frame's pts (in samples)
     private bool _disposed;
+    // Outer guard: serializes every encode entry point against Dispose so the teardown thread can't
+    // free the native codec/FIFO/frame while a WASAPI callback or the pump timer is mid-encode (the
+    // same cross-thread use-after-free the video encoder had). Always taken before the finer locks.
+    private readonly object _opLock = new();
     private readonly object _writeLock = new();   // guards the master FIFO/timeline: loopback thread + pump timer
 
     // Microphone mix: a second resampler + its own FIFO, filled on the mic's WASAPI thread and
@@ -80,7 +84,15 @@ public sealed unsafe class AacAudioEncoder : IDisposable
     /// drains whole AAC frames.</summary>
     public void Encode(byte[] interleaved, int byteCount, int inSampleRate, int inChannels, int inBytesPerSample, long chunkEngineUs)
     {
-        if (_disposed || byteCount <= 0) return;
+        lock (_opLock)
+        {
+            if (_disposed || byteCount <= 0) return;
+            EncodeLocked(interleaved, byteCount, inSampleRate, inChannels, inBytesPerSample, chunkEngineUs);
+        }
+    }
+
+    private void EncodeLocked(byte[] interleaved, int byteCount, int inSampleRate, int inChannels, int inBytesPerSample, long chunkEngineUs)
+    {
         int inSamples = byteCount / (inBytesPerSample * inChannels);
         if (inSamples <= 0) return;
 
@@ -125,11 +137,14 @@ public sealed unsafe class AacAudioEncoder : IDisposable
     /// </summary>
     public void PumpSilenceTo(long engineUs)
     {
-        if (_disposed) return;
-        lock (_writeLock)
+        lock (_opLock)
         {
-            PadTo(engineUs);
-            DrainFrames();
+            if (_disposed) return;
+            lock (_writeLock)
+            {
+                PadTo(engineUs);
+                DrainFrames();
+            }
         }
     }
 
@@ -172,7 +187,15 @@ public sealed unsafe class AacAudioEncoder : IDisposable
     /// on the mic's WASAPI thread; the backlog is capped so the mic can't drift far ahead.</summary>
     public void EncodeMic(byte[] interleaved, int byteCount, int inSampleRate, int inChannels, int inBytesPerSample, AVSampleFormat inFmt)
     {
-        if (_disposed || byteCount <= 0) return;
+        lock (_opLock)
+        {
+            if (_disposed || byteCount <= 0) return;
+            EncodeMicLocked(interleaved, byteCount, inSampleRate, inChannels, inBytesPerSample, inFmt);
+        }
+    }
+
+    private void EncodeMicLocked(byte[] interleaved, int byteCount, int inSampleRate, int inChannels, int inBytesPerSample, AVSampleFormat inFmt)
+    {
         int inSamples = byteCount / (inBytesPerSample * inChannels);
         if (inSamples <= 0) return;
         if (!_micReady) InitMicSwr(inSampleRate, inChannels, inFmt);
@@ -299,31 +322,40 @@ public sealed unsafe class AacAudioEncoder : IDisposable
     /// <summary>Stream parameters (codec id, sample rate, channels, ASC extradata) for the muxer.</summary>
     public StreamSpec GetStreamSpec()
     {
-        byte[] extra = Array.Empty<byte>();
-        if (_ctx != null && _ctx->extradata != null && _ctx->extradata_size > 0)
+        lock (_opLock)
         {
-            extra = new byte[_ctx->extradata_size];
-            Marshal.Copy((IntPtr)_ctx->extradata, extra, 0, _ctx->extradata_size);
+            byte[] extra = Array.Empty<byte>();
+            if (_ctx != null && _ctx->extradata != null && _ctx->extradata_size > 0)
+            {
+                extra = new byte[_ctx->extradata_size];
+                Marshal.Copy((IntPtr)_ctx->extradata, extra, 0, _ctx->extradata_size);
+            }
+            return new StreamSpec(AVCodecID.AV_CODEC_ID_AAC, IsVideo: false, 0, 0, OutSampleRate, OutChannels, extra);
         }
-        return new StreamSpec(AVCodecID.AV_CODEC_ID_AAC, IsVideo: false, 0, 0, OutSampleRate, OutChannels, extra);
     }
 
     public void Flush()
     {
-        if (_disposed || _ctx == null) return;
-        try { Submit(null); } catch { }
+        lock (_opLock)
+        {
+            if (_disposed || _ctx == null) return;
+            try { Submit(null); } catch { }
+        }
     }
 
     public void Dispose()
     {
-        if (_disposed) return;
-        _disposed = true;
-        fixed (AVPacket** p = &_pkt) if (_pkt != null) ffmpeg.av_packet_free(p);
-        fixed (AVFrame** f = &_frame) if (_frame != null) ffmpeg.av_frame_free(f);
-        if (_fifo != null) { ffmpeg.av_audio_fifo_free(_fifo); _fifo = null; }
-        if (_micFifo != null) { ffmpeg.av_audio_fifo_free(_micFifo); _micFifo = null; }
-        fixed (SwrContext** s = &_swr) if (_swr != null) ffmpeg.swr_free(s);
-        fixed (SwrContext** sm = &_swrMic) if (_swrMic != null) ffmpeg.swr_free(sm);
-        fixed (AVCodecContext** c = &_ctx) if (_ctx != null) ffmpeg.avcodec_free_context(c);
+        lock (_opLock)
+        {
+            if (_disposed) return;
+            _disposed = true;
+            fixed (AVPacket** p = &_pkt) if (_pkt != null) ffmpeg.av_packet_free(p);
+            fixed (AVFrame** f = &_frame) if (_frame != null) ffmpeg.av_frame_free(f);
+            if (_fifo != null) { ffmpeg.av_audio_fifo_free(_fifo); _fifo = null; }
+            if (_micFifo != null) { ffmpeg.av_audio_fifo_free(_micFifo); _micFifo = null; }
+            fixed (SwrContext** s = &_swr) if (_swr != null) ffmpeg.swr_free(s);
+            fixed (SwrContext** sm = &_swrMic) if (_swrMic != null) ffmpeg.swr_free(sm);
+            fixed (AVCodecContext** c = &_ctx) if (_ctx != null) ffmpeg.avcodec_free_context(c);
+        }
     }
 }

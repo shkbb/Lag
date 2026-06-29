@@ -5,24 +5,60 @@ using Avalonia.Animation;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Styling;
 using Avalonia.Threading;
+using Material.Icons;
 
 namespace Lag.Services;
 
 /// <summary>
-/// On-screen save toast: a small topmost card in the top-right corner of the primary display
-/// ("Replay saved", "Screenshot saved"). Shown even while the main window is hidden in the tray;
-/// never steals focus from the foreground game.
+/// On-screen toast: a small topmost card in the top-right corner of the primary display — used for
+/// "Replay saved" / "Screenshot saved", recording start/stop, and capture-target (game↔desktop)
+/// changes. Shown even while the main window is hidden in the tray; never steals focus from the
+/// foreground game. Colours follow the active Light/Dark theme. ⚠️ Over a TRUE exclusive-fullscreen
+/// game it is suppressed (sound-only) — a topmost window would yank the game out of fullscreen;
+/// borderless / windowed games and the desktop still get the visual toast.
 /// </summary>
 public static class ToastService
 {
-    public static void Show(string title, string? subtitle = null)
+    private readonly record struct ToastReq(string Title, string? Subtitle, MaterialIconKind Icon, string AccentKey);
+
+    // One-at-a-time queue: toasts play sequentially (one fully shown + faded out before the next),
+    // never stacked on top of each other. All access is on the UI thread, so no lock is needed.
+    private static readonly System.Collections.Generic.Queue<ToastReq> _queue = new();
+    private static bool _active;
+
+    /// <summary>Queues a toast. <paramref name="icon"/> + <paramref name="accentKey"/> (a Palette
+    /// brush resource key) colour the leading glyph so each event reads at a glance.</summary>
+    public static void Show(string title, string? subtitle = null,
+                            MaterialIconKind icon = MaterialIconKind.CheckCircle, string accentKey = "Accent")
     {
-        Dispatcher.UIThread.Post(() => ShowCore(title, subtitle));
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (_queue.Count >= 6) _queue.Dequeue();   // bound a burst; drop the oldest pending
+            _queue.Enqueue(new ToastReq(title, subtitle, icon, accentKey));
+            Pump();
+        });
     }
 
-    private static void ShowCore(string title, string? subtitle)
+    /// <summary>Shows the next queued toast if none is currently on screen.</summary>
+    private static void Pump()
     {
+        if (_active || _queue.Count == 0) return;
+        _active = true;
+        ShowCore(_queue.Dequeue());
+    }
+
+    /// <summary>Marks the current toast finished and starts the next (next UI tick, to avoid reentrancy).</summary>
+    private static void Done()
+    {
+        _active = false;
+        Dispatcher.UIThread.Post(Pump);
+    }
+
+    private static void ShowCore(ToastReq req)
+    {
+        var (title, subtitle, icon, accentKey) = req;
         try
         {
             // Don't pop a visual overlay over an EXCLUSIVE-fullscreen game: a topmost window yanks it
@@ -34,6 +70,7 @@ public static class ToastService
             if (IsExclusiveFullscreen())
             {
                 Console.WriteLine("[Toast] exclusive-fullscreen app running — sound-only (skipped visual toast).");
+                Done();   // don't stall the queue — move straight to the next
                 return;
             }
 
@@ -43,7 +80,7 @@ public static class ToastService
                 Text = title,
                 FontSize = 13,
                 FontWeight = FontWeight.Medium,
-                Foreground = new SolidColorBrush(Color.Parse("#E7EAEE")),
+                Foreground = Res("FgBrush", "#E7EAEE"),
             });
             if (!string.IsNullOrWhiteSpace(subtitle))
             {
@@ -51,7 +88,7 @@ public static class ToastService
                 {
                     Text = subtitle,
                     FontSize = 11,
-                    Foreground = new SolidColorBrush(Color.Parse("#9AA3AD")),
+                    Foreground = Res("Fg2Brush", "#9AA3AD"),
                     MaxWidth = 260,
                     TextTrimming = TextTrimming.CharacterEllipsis,
                 });
@@ -65,18 +102,18 @@ public static class ToastService
             };
             row.Children.Add(new Material.Icons.Avalonia.MaterialIcon
             {
-                Kind = Material.Icons.MaterialIconKind.CheckCircle,
+                Kind = icon,
                 Width = 20,
                 Height = 20,
-                Foreground = new SolidColorBrush(Color.Parse("#22D3EE")),
+                Foreground = Res(accentKey, "#22D3EE"),
                 VerticalAlignment = VerticalAlignment.Center,
             });
             row.Children.Add(text);
 
             var card = new Border
             {
-                Background = new SolidColorBrush(Color.Parse("#F0181C23")),
-                BorderBrush = new SolidColorBrush(Color.Parse("#1FFFFFFF")),
+                Background = CardBg(),
+                BorderBrush = Res("PopupBorderBrush", "#1FFFFFFF"),
                 BorderThickness = new Thickness(1),
                 CornerRadius = new CornerRadius(12),
                 Padding = new Thickness(16, 11),
@@ -125,11 +162,11 @@ public static class ToastService
 
                 toast.Opacity = 1;
 
-                // Visible ~2.4s, then fade out and close.
+                // Visible ~2.4s, then fade out, close, and release the queue for the next toast.
                 DispatcherTimer.RunOnce(() =>
                 {
                     toast.Opacity = 0;
-                    DispatcherTimer.RunOnce(toast.Close, TimeSpan.FromMilliseconds(260));
+                    DispatcherTimer.RunOnce(() => { try { toast.Close(); } catch { } Done(); }, TimeSpan.FromMilliseconds(260));
                 }, TimeSpan.FromMilliseconds(2400));
             };
 
@@ -138,7 +175,27 @@ public static class ToastService
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"[Toast] failed: {ex.Message}");
+            Done();   // never let a failed toast jam the queue
         }
+    }
+
+    /// <summary>Resolves a Palette brush by key for the ACTIVE theme variant (Light/Dark), so the toast
+    /// matches the app. Falls back to a hex literal if the resource is missing.</summary>
+    private static IBrush Res(string key, string fallbackHex)
+    {
+        var app = Application.Current;
+        if (app != null && app.TryGetResource(key, app.ActualThemeVariant, out var v) && v is IBrush b) return b;
+        return new SolidColorBrush(Color.Parse(fallbackHex));
+    }
+
+    /// <summary>The card background for the active theme, kept at the toast's slight translucency.</summary>
+    private static IBrush CardBg()
+    {
+        var app = Application.Current;
+        Color c = Color.Parse("#181C23");
+        if (app != null && app.TryGetResource("CardBrush", app.ActualThemeVariant, out var v) && v is ISolidColorBrush b)
+            c = b.Color;
+        return new SolidColorBrush(Color.FromArgb(0xF0, c.R, c.G, c.B));
     }
 
     /// <summary>True when an exclusive-fullscreen Direct3D app is running — Windows' OWN notification

@@ -7,9 +7,13 @@
              x:DataType="vm:PlayerViewModel"
              Focusable="True">
 
-  <!-- Spacebar toggles play/pause while the player view is focused. -->
+  <!-- Keyboard shortcuts while the player view is focused: Space = play/pause, ←/→ = seek ∓10 s
+       (same as the rewind/forward buttons), M = mute/unmute. -->
   <UserControl.KeyBindings>
     <KeyBinding Gesture="Space" Command="{Binding PlayPauseCommand}" />
+    <KeyBinding Gesture="Left" Command="{Binding SeekBackwardCommand}" />
+    <KeyBinding Gesture="Right" Command="{Binding SeekForwardCommand}" />
+    <KeyBinding Gesture="M" Command="{Binding ToggleMuteCommand}" />
   </UserControl.KeyBindings>
 
   <UserControl.Styles>
@@ -169,6 +173,20 @@
                  Image — clipping/overlays work, and click-to-pause is a normal pointer event. -->
             <Panel x:Name="VideoSurface" Background="Transparent"
                    PointerPressed="OnVideoSurfacePressed">
+              <Panel.ContextMenu>
+                <!-- Right-click the playing video → same actions as the Library, on the current clip. -->
+                <ContextMenu IsVisible="{Binding CurrentClip, Converter={x:Static ObjectConverters.IsNotNull}}">
+                  <MenuItem Header="{DynamicResource Editor_Edit}" Click="OnReplayEditClick">
+                    <MenuItem.Icon><mi:MaterialIcon Kind="MovieEditOutline" Width="16" Height="16" /></MenuItem.Icon>
+                  </MenuItem>
+                  <MenuItem Header="{DynamicResource Library_ShowInFolder}" Click="OnReplayShowInFolderClick">
+                    <MenuItem.Icon><mi:MaterialIcon Kind="FolderSearchOutline" Width="16" Height="16" /></MenuItem.Icon>
+                  </MenuItem>
+                  <MenuItem Header="{DynamicResource Library_Delete}" Click="OnReplayDeleteClick">
+                    <MenuItem.Icon><mi:MaterialIcon Kind="TrashCanOutline" Width="16" Height="16" /></MenuItem.Icon>
+                  </MenuItem>
+                </ContextMenu>
+              </Panel.ContextMenu>
               <Image x:Name="VideoImage" Stretch="Uniform"
                      RenderOptions.BitmapInterpolationMode="HighQuality"
                      HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
@@ -192,6 +210,24 @@
                          FontSize="13" Foreground="{DynamicResource TextFaint}"
                          HorizontalAlignment="Center" />
             </StackPanel>
+
+            <!-- Mute flash: a speaker badge that POPS up briefly on each mute/unmute toggle, then fades
+                 out (not persistent). Opacity is driven from code-behind (FlashMuteOverlay). -->
+            <Border x:Name="MuteOverlay" IsHitTestVisible="False" IsVisible="{Binding !IsViewingImage}"
+                    Opacity="0" HorizontalAlignment="Center" VerticalAlignment="Center"
+                    Width="96" Height="96" CornerRadius="48" Background="#8C000000">
+              <Border.Transitions>
+                <Transitions><DoubleTransition Property="Opacity" Duration="0:0:0.3" /></Transitions>
+              </Border.Transitions>
+              <Panel>
+                <mi:MaterialIcon Kind="VolumeOff" Width="46" Height="46" Foreground="White"
+                                 IsVisible="{Binding IsMuted}"
+                                 HorizontalAlignment="Center" VerticalAlignment="Center" />
+                <mi:MaterialIcon Kind="VolumeHigh" Width="46" Height="46" Foreground="White"
+                                 IsVisible="{Binding !IsMuted}"
+                                 HorizontalAlignment="Center" VerticalAlignment="Center" />
+              </Panel>
+            </Border>
 
             <!-- Big centre play (mockup): shown while paused, over the picture -->
             <Button Classes="playbtn" Width="66" Height="66" CornerRadius="33"
@@ -280,9 +316,19 @@
                             ToolTip.Tip="{DynamicResource Editor_Edit}">
                       <mi:MaterialIcon Kind="MovieEditOutline" Width="16" Height="16" />
                     </Button>
-                    <mi:MaterialIcon Kind="VolumeHigh" Width="16" Height="16"
-                                     IsVisible="{Binding !IsViewingImage}"
-                                     Foreground="{DynamicResource TextMid}" VerticalAlignment="Center" />
+                    <!-- Click the icon (or press M) to mute/unmute — pops on click (OnVolumeIconPressed). -->
+                    <Panel x:Name="VolumeIcon" IsVisible="{Binding !IsViewingImage}" VerticalAlignment="Center"
+                           Cursor="Hand" Background="Transparent" PointerPressed="OnVolumeIconPressed"
+                           RenderTransformOrigin="50%,50%" RenderTransform="scale(1)"
+                           ToolTip.Tip="{DynamicResource Tooltip_Volume}">
+                      <Panel.Transitions>
+                        <Transitions><TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.13" Easing="CubicEaseOut" /></Transitions>
+                      </Panel.Transitions>
+                      <mi:MaterialIcon Kind="VolumeHigh" Width="16" Height="16" IsVisible="{Binding !IsMuted}"
+                                       Foreground="{DynamicResource TextMid}" VerticalAlignment="Center" />
+                      <mi:MaterialIcon Kind="VolumeOff" Width="16" Height="16" IsVisible="{Binding IsMuted}"
+                                       Foreground="{DynamicResource DangerStop}" VerticalAlignment="Center" />
+                    </Panel>
                     <Slider Classes="volume" Width="56" Minimum="0" Maximum="100"
                             Value="{Binding Volume, Mode=TwoWay}"
                             IsVisible="{Binding !IsViewingImage}"
@@ -323,7 +369,22 @@
                    ScrollViewer.HorizontalScrollBarVisibility="Disabled">
             <ListBox.ItemTemplate>
               <DataTemplate x:DataType="models:ReplayClip">
-                <Grid ColumnDefinitions="Auto,*">
+                <!-- Background=Transparent so the WHOLE row is hit-testable for the right-click menu
+                     (not just the thumbnail, which was the only part with a brush). -->
+                <Grid ColumnDefinitions="Auto,*" Background="Transparent">
+                  <Grid.ContextMenu>
+                    <ContextMenu>
+                      <MenuItem Header="{DynamicResource Editor_Edit}" Click="OnReplayEditClick">
+                        <MenuItem.Icon><mi:MaterialIcon Kind="MovieEditOutline" Width="16" Height="16" /></MenuItem.Icon>
+                      </MenuItem>
+                      <MenuItem Header="{DynamicResource Library_ShowInFolder}" Click="OnReplayShowInFolderClick">
+                        <MenuItem.Icon><mi:MaterialIcon Kind="FolderSearchOutline" Width="16" Height="16" /></MenuItem.Icon>
+                      </MenuItem>
+                      <MenuItem Header="{DynamicResource Library_Delete}" Click="OnReplayDeleteClick">
+                        <MenuItem.Icon><mi:MaterialIcon Kind="TrashCanOutline" Width="16" Height="16" /></MenuItem.Icon>
+                      </MenuItem>
+                    </ContextMenu>
+                  </Grid.ContextMenu>
                   <Border Grid.Column="0" Width="64" Height="36" CornerRadius="7"
                           ClipToBounds="True" Background="#16181E">
                     <Panel>

@@ -83,7 +83,10 @@
   <sys:String x:Key="Editor_ResetTrim">Lähtesta kärpimine</sys:String>
   <sys:String x:Key="Settings_Hotkey_Screenshot">Ekraanipilt</sys:String>
   <sys:String x:Key="Toast_ReplaySaved">Kordus salvestatud</sys:String>
-  <sys:String x:Key="Toast_ScreenshotSaved">Ekraanipilt salvestatud</sys:String>
+  <sys:String x:Key="Toast_ScreenshotSaved">Ekraanipilt salvestatud</sys:String>
+  <sys:String x:Key="Toast_RecordingStarted">Salvestamine alustatud</sys:String>
+  <sys:String x:Key="Toast_RecordingStopped">Salvestamine peatatud</sys:String>
+  <sys:String x:Key="Toast_NowRecording">Salvestab nüüd</sys:String>
   <sys:String x:Key="Settings_AutoStart">Alusta salvestamist automaatselt</sys:String>
   <sys:String x:Key="Settings_AutoStart_Desc">Korduspuhver käivitub kohe pärast programmi avamist</sys:String>
   <sys:String x:Key="Settings_Group_Hotkey">KIIRKLAHV</sys:String>
@@ -129,10 +132,10 @@
 
   <!-- ════════ Runtime status (ViewModels) ════════ -->
   <sys:String x:Key="Status_Ready">Valmis</sys:String>
-  <sys:String x:Key="Status_Starting">Salvestamise alustamine (OBS)...</sys:String>
+  <sys:String x:Key="Status_Starting">Salvestamise alustamine...</sys:String>
   <sys:String x:Key="Status_Recording">Salvestamine...</sys:String>
   <sys:String x:Key="Status_NoMonitor">Salvestamiseks pole ekraani valitud.</sys:String>
-  <sys:String x:Key="Status_ObsError">OBS-i viga: {0}</sys:String>
+  <sys:String x:Key="Status_RecordError">Salvestusviga: {0}</sys:String>
   <sys:String x:Key="Status_Stopping">Peatamine...</sys:String>
   <sys:String x:Key="Status_Stopped">Peatatud</sys:String>
   <sys:String x:Key="Status_StopError">Peatamise viga: {0}</sys:String>
@@ -163,7 +166,8 @@
 
   <sys:String x:Key="Library_EmptyTitle">Kordusi pole veel</sys:String>
   <!-- ════════ Pause recording ════════ -->
-  <sys:String x:Key="Settings_Hotkey_Pause">Peata salvestus</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Pause">Peata salvestus</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Record">Alusta/peata salvestamine</sys:String>
   <sys:String x:Key="Btn_PauseRecording">Peata</sys:String>
   <sys:String x:Key="Btn_ResumeRecording">Jätka</sys:String>
   <sys:String x:Key="Status_Paused">Peatatud</sys:String>
@@ -199,7 +203,8 @@
   <sys:String x:Key="Editor_TextSize">Suurus</sys:String>
   <sys:String x:Key="Library_ClearSelection">Tühjenda valik</sys:String>
   <sys:String x:Key="Library_ClipCount">{0} KLIPPI</sys:String>
-  <sys:String x:Key="Library_Favorites">Lemmikud</sys:String>
+  <sys:String x:Key="Library_Favorites">Lemmikud</sys:String>
+  <sys:String x:Key="Library_Desktop">Töölaud</sys:String>
   <sys:String x:Key="Library_GroupCount">{0} klippi</sys:String>
   <sys:String x:Key="Library_NoResults">Otsingule ei vasta ühtegi klippi.</sys:String>
   <sys:String x:Key="Library_Search">Otsi klippe</sys:String>
@@ -211,4 +216,30 @@
   <sys:String x:Key="Settings_Group_Startup">KÄIVITUS &amp; JÕUDLUS</sys:String>
   <sys:String x:Key="Settings_Group_Storage">SALVESTUSRUUM &amp; TEAVE</sys:String>
   <sys:String x:Key="Settings_Subtitle">Seadista jäädvustamine, heli ja rakenduse käitumine.</sys:String>
+
+  <!-- ════════ Hardware presets ════════ -->
+  <sys:String x:Key="Preset_SectionTitle">PRESETS</sys:String>
+  <sys:String x:Key="Preset_Subtitle">Tuned to your hardware — pick a goal</sys:String>
+  <sys:String x:Key="Preset_Performance">Performance</sys:String>
+  <sys:String x:Key="Preset_Balanced">Balanced</sys:String>
+  <sys:String x:Key="Preset_Quality">Quality</sys:String>
+  <sys:String x:Key="Preset_PerformanceDesc">Smoothest gameplay</sys:String>
+  <sys:String x:Key="Preset_BalancedDesc">Solid fps and quality</sys:String>
+  <sys:String x:Key="Preset_QualityDesc">Sharpest clips</sys:String>
+  <sys:String x:Key="Preset_RecommendedBadge">Recommended</sys:String>
+  <sys:String x:Key="Preset_Rescan">Re-scan hardware</sys:String>
+  <sys:String x:Key="Preset_Advanced">ADVANCED</sys:String>
+  <sys:String x:Key="Preset_CleanupHint">Only {0} GB free — consider enabling auto-cleanup (~{1} GB).</sys:String>
+  <sys:String x:Key="Settings_OutputLevel">Output level</sys:String>
+  <sys:String x:Key="Settings_MicLevel">Mic level</sys:String>
+  <sys:String x:Key="Settings_HearYourself">Hear yourself</sys:String>
+  <sys:String x:Key="Settings_HearYourselfHint">Plays your mic to the selected output — use headphones to avoid echo.</sys:String>
+  <sys:String x:Key="Settings_InputSensitivity">Input sensitivity</sys:String>
+  <sys:String x:Key="Settings_InputSensitivityHint">Mutes the mic below the threshold — auto adapts to your room.</sys:String>
+  <sys:String x:Key="Settings_NoiseSuppression">Noise suppression</sys:String>
+  <sys:String x:Key="Settings_NoiseSuppressionHint">Removes steady background noise — fans, hum, keyboard — from your mic.</sys:String>
+  <sys:String x:Key="Settings_Auto">Auto</sys:String>
+  <sys:String x:Key="Settings_Threshold">Threshold</sys:String>
+  <sys:String x:Key="Settings_Listen">Listen</sys:String>
+  <sys:String x:Key="Settings_Stop">Stop</sys:String>
 </ResourceDictionary>

@@ -104,7 +104,10 @@
   <sys:String x:Key="Editor_ResetTrim">Reset trim</sys:String>
   <sys:String x:Key="Settings_Hotkey_Screenshot">Screenshot</sys:String>
   <sys:String x:Key="Toast_ReplaySaved">Replay saved</sys:String>
-  <sys:String x:Key="Toast_ScreenshotSaved">Screenshot saved</sys:String>
+  <sys:String x:Key="Toast_ScreenshotSaved">Screenshot saved</sys:String>
+  <sys:String x:Key="Toast_RecordingStarted">Recording started</sys:String>
+  <sys:String x:Key="Toast_RecordingStopped">Recording stopped</sys:String>
+  <sys:String x:Key="Toast_NowRecording">Now recording</sys:String>
   <sys:String x:Key="Settings_AutoStart">Start recording automatically</sys:String>
   <sys:String x:Key="Settings_AutoStart_Desc">The replay buffer starts right after launch</sys:String>
   <sys:String x:Key="Settings_Group_Hotkey">HOTKEY</sys:String>
@@ -133,7 +136,8 @@
   <sys:String x:Key="Library_ShowInFolder">Show in folder</sys:String>
   <sys:String x:Key="Library_FreeSpace">Free space</sys:String>
   <sys:String x:Key="Library_Search">Search clips</sys:String>
-  <sys:String x:Key="Library_Favorites">Favorites</sys:String>
+  <sys:String x:Key="Library_Favorites">Favorites</sys:String>
+  <sys:String x:Key="Library_Desktop">Desktop</sys:String>
   <sys:String x:Key="Library_Today">Today</sys:String>
   <sys:String x:Key="Library_Yesterday">Yesterday</sys:String>
   <sys:String x:Key="Library_NoResults">No clips match your search.</sys:String>
@@ -158,10 +162,10 @@
 
   <!-- ════════ Runtime status (ViewModels) ════════ -->
   <sys:String x:Key="Status_Ready">Ready</sys:String>
-  <sys:String x:Key="Status_Starting">Starting recording (OBS)...</sys:String>
+  <sys:String x:Key="Status_Starting">Starting recording...</sys:String>
   <sys:String x:Key="Status_Recording">Recording...</sys:String>
   <sys:String x:Key="Status_NoMonitor">No display selected for recording.</sys:String>
-  <sys:String x:Key="Status_ObsError">OBS error: {0}</sys:String>
+  <sys:String x:Key="Status_RecordError">Recording error: {0}</sys:String>
   <sys:String x:Key="Status_Stopping">Stopping...</sys:String>
   <sys:String x:Key="Status_Stopped">Stopped</sys:String>
   <sys:String x:Key="Status_StopError">Stop error: {0}</sys:String>
@@ -192,7 +196,8 @@
 
   <sys:String x:Key="Library_EmptyTitle">No replays yet</sys:String>
   <!-- ════════ Pause recording ════════ -->
-  <sys:String x:Key="Settings_Hotkey_Pause">Pause recording</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Pause">Pause recording</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Record">Start/stop recording</sys:String>
   <sys:String x:Key="Btn_PauseRecording">Pause</sys:String>
   <sys:String x:Key="Btn_ResumeRecording">Resume</sys:String>
   <sys:String x:Key="Status_Paused">Paused</sys:String>
@@ -213,4 +218,30 @@
   <sys:String x:Key="Settings_Logs">Logs</sys:String>
   <sys:String x:Key="Settings_OpenLogs">Open folder</sys:String>
   <sys:String x:Key="Settings_SaveDiagnostics">Export .zip</sys:String>
+
+  <!-- ════════ Hardware presets ════════ -->
+  <sys:String x:Key="Preset_SectionTitle">PRESETS</sys:String>
+  <sys:String x:Key="Preset_Subtitle">Tuned to your hardware — pick a goal</sys:String>
+  <sys:String x:Key="Preset_Performance">Performance</sys:String>
+  <sys:String x:Key="Preset_Balanced">Balanced</sys:String>
+  <sys:String x:Key="Preset_Quality">Quality</sys:String>
+  <sys:String x:Key="Preset_PerformanceDesc">Smoothest gameplay</sys:String>
+  <sys:String x:Key="Preset_BalancedDesc">Solid fps and quality</sys:String>
+  <sys:String x:Key="Preset_QualityDesc">Sharpest clips</sys:String>
+  <sys:String x:Key="Preset_RecommendedBadge">Recommended</sys:String>
+  <sys:String x:Key="Preset_Rescan">Re-scan hardware</sys:String>
+  <sys:String x:Key="Preset_Advanced">ADVANCED</sys:String>
+  <sys:String x:Key="Preset_CleanupHint">Only {0} GB free — consider enabling auto-cleanup (~{1} GB).</sys:String>
+  <sys:String x:Key="Settings_OutputLevel">Output level</sys:String>
+  <sys:String x:Key="Settings_MicLevel">Mic level</sys:String>
+  <sys:String x:Key="Settings_HearYourself">Hear yourself</sys:String>
+  <sys:String x:Key="Settings_HearYourselfHint">Plays your mic to the selected output — use headphones to avoid echo.</sys:String>
+  <sys:String x:Key="Settings_InputSensitivity">Input sensitivity</sys:String>
+  <sys:String x:Key="Settings_InputSensitivityHint">Mutes the mic below the threshold — auto adapts to your room.</sys:String>
+  <sys:String x:Key="Settings_NoiseSuppression">Noise suppression</sys:String>
+  <sys:String x:Key="Settings_NoiseSuppressionHint">Removes steady background noise — fans, hum, keyboard — from your mic.</sys:String>
+  <sys:String x:Key="Settings_Auto">Auto</sys:String>
+  <sys:String x:Key="Settings_Threshold">Threshold</sys:String>
+  <sys:String x:Key="Settings_Listen">Listen</sys:String>
+  <sys:String x:Key="Settings_Stop">Stop</sys:String>
 </ResourceDictionary>

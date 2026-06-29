@@ -110,8 +110,10 @@ public sealed class GlobalHotkeyManager : IDisposable
             //   • single key   — e.g. F10 with NO modifiers (modifiers == None is perfectly valid);
             //   • 2-key combo  — e.g. Alt + F10;
             //   • 3-key combo  — e.g. Ctrl + Shift + R.
+            // ⎋ Escape = UNBIND: clear the field / disable this hotkey instead of binding Escape.
             IsCapturing = false;
-            HotkeyCaptured?.Invoke(this, new HotkeyCapturedEventArgs(key, modifiers));
+            bool cleared = key == KeyCode.VcEscape;
+            HotkeyCaptured?.Invoke(this, new HotkeyCapturedEventArgs(key, modifiers, cleared));
             return;
         }
 
@@ -181,9 +183,14 @@ public class HotkeyCapturedEventArgs : EventArgs
     public KeyCode Key { get; }
     public ModifierMask Modifiers { get; }
 
-    public HotkeyCapturedEventArgs(KeyCode key, ModifierMask modifiers)
+    /// <summary>True when the user pressed Escape to UNBIND — the receiver should disable / empty the
+    /// hotkey instead of binding <see cref="Key"/>.</summary>
+    public bool Cleared { get; }
+
+    public HotkeyCapturedEventArgs(KeyCode key, ModifierMask modifiers, bool cleared = false)
     {
         Key = key;
         Modifiers = modifiers;
+        Cleared = cleared;
     }
 }

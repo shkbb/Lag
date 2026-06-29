@@ -2,10 +2,9 @@ using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
-using System.Text.RegularExpressions;
 using NAudio.CoreAudioApi;
 
-namespace Lag.Services.ObsIntegration;
+namespace Lag.Services;
 
 public record MicrophoneInfo(string Id, string Name);
 
@@ -13,107 +12,23 @@ public record MicrophoneInfo(string Id, string Name);
 public record OutputDeviceInfo(string Id, string Name);
 
 /// <summary>
-/// Hardware capability service that queries the system (via libobs) to detect the best
-/// available video encoder. Enforces a strict hardware-first priority queue to maximize
-/// performance on gaming rigs while seamlessly falling back to software encoding on low-end PCs.
-/// 
-/// Cross-platform: Uses OS-specific encoder priority lists and monitor enumeration strategies.
-///   Windows: NVENC → AMF → QuickSync → x264, Win32 EnumDisplayMonitors, WASAPI mics
-///   Linux:   NVENC(ffmpeg) → VAAPI → x264, xrandr monitors, pactl mics
+/// Hardware enumeration service: lists the GPU adapters, displays, microphones and playback
+/// endpoints the capture/encode pipeline can target. Video encoder probing lives in the native
+/// engine's EncoderSelector (it actually opens each encoder); this type only enumerates devices.
 /// </summary>
 public sealed partial class HardwareDetector
 {
-    /// <summary>
-    /// Windows encoder IDs in order of preference.
-    /// Hardware encoders are prioritized to minimize CPU impact during gameplay.
-    /// </summary>
-    private static readonly string[] WindowsEncoderPriority =
-    [
-        "jim_nvenc",      // NVIDIA NVENC (Modern OBS 28+)
-        "amd_amf_h264",   // AMD Advanced Media Framework
-        "obs_qsv11",      // Intel Quick Sync Video
-        "obs_x264"        // Software Fallback (x264)
-    ];
-
-    public string DetectOptimalEncoder()
-    {
-        var encoderList = WindowsEncoderPriority;
-
-        foreach (var encoderId in encoderList)
-        {
-            if (TryCreateEncoder(encoderId))
-            {
-                Debug.WriteLine($"[HardwareDetector] Optimal encoder selected: {encoderId}");
-                return encoderId;
-            }
-            Debug.WriteLine($"[HardwareDetector] Encoder {encoderId} is not supported on this hardware.");
-        }
-
-        throw new NotSupportedException(
-            "No supported video encoders found on this system, including the software fallback.");
-    }
-
-    /// <summary>
-    /// Attempts to silently create the encoder via libobs. If it succeeds, the hardware 
-    /// supports it. It is immediately released.
-    /// </summary>
-    private bool TryCreateEncoder(string encoderId)
-    {
-        try
-        {
-            using var settings = ObsInterop.obs_data_create();
-            
-            if (encoderId == "obs_x264")
-            {
-                ObsInterop.obs_data_set_string(settings, "preset", "veryfast");
-                ObsInterop.obs_data_set_int(settings, "crf", 23);
-            }
-            else
-            {
-                ObsInterop.obs_data_set_string(settings, "rate_control", "CQP");
-                ObsInterop.obs_data_set_int(settings, "cqp", 20);
-            }
-
-            using var encoder = ObsInterop.obs_video_encoder_create(encoderId, "test_encoder", settings, IntPtr.Zero);
-            
-            if (encoder.IsInvalid)
-                return false;
-                
-            // Dummy encoder detection: a dummy yields null properties and cannot produce frames
-            IntPtr props = ObsInterop.obs_encoder_properties(encoder);
-            if (props == IntPtr.Zero)
-            {
-                Debug.WriteLine($"[HardwareDetector] Encoder {encoderId} is a dummy object. Rejecting.");
-                return false;
-            }
-            
-            ObsInterop.obs_properties_destroy(props);
-            return true;
-        }
-        catch (DllNotFoundException)
-        {
-            string libName = "obs.dll";
-            throw new InvalidOperationException(
-                $"{libName} is missing or not resolvable. Ensure libobs is installed and on the library path.");
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"[HardwareDetector] Probe exception for {encoderId}: {ex.Message}");
-            return false;
-        }
-    }
-
     // ────────────────────── GPU Adapter Detection ────────────────────── //
 
-    /// <summary>A physical GPU adapter as seen by DXGI (Index matches obs_video_info.adapter).</summary>
+    /// <summary>A physical GPU adapter as seen by DXGI (Index matches the engine's adapter index).</summary>
     public record GpuInfo(int Index, string Name)
     {
         public override string ToString() => Name;
     }
 
     /// <summary>
-    /// Enumerates hardware GPU adapters via DXGI (same ordering libobs uses for the `adapter`
-    /// field). Software adapters (Microsoft Basic Render Driver) are skipped.
+    /// Enumerates hardware GPU adapters via DXGI (the same ordering the engine uses for the
+    /// adapter index). Software adapters (Microsoft Basic Render Driver) are skipped.
     /// </summary>
     public IReadOnlyList<GpuInfo> GetGpuAdapters()
     {
@@ -160,7 +75,7 @@ public sealed partial class HardwareDetector
         var monitors = new List<MonitorInfo>();
         EnumerateWindowsMonitors(monitors);
 
-        // Last-resort fallback: prevents obs_reset_video crash from 0×0 resolution
+        // Last-resort fallback: prevents a 0×0 resolution from reaching the capture pipeline.
         if (monitors.Count == 0)
         {
             Debug.WriteLine("[HardwareDetector] No monitors detected via native APIs. Using 1920x1080 default.");
@@ -179,7 +94,7 @@ public sealed partial class HardwareDetector
             {
                 var info = new MONITORINFOEX();
                 info.cbSize = Marshal.SizeOf(typeof(MONITORINFOEX));
-                    
+
                 if (GetMonitorInfo(hMonitor, ref info))
                 {
                     uint width = (uint)(info.rcMonitor.Right - info.rcMonitor.Left);

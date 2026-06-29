@@ -54,3 +54,27 @@ public class StringToUpperConverter : IValueConverter
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         => throw new NotSupportedException();
 }
+
+/// <summary>Maps a 0..1 level to a pixel width for a manual level meter: <c>level × parameter</c>,
+/// where the parameter is the meter's track width. Lets the fill bar respond instantly (no
+/// ProgressBar value-transition lag).</summary>
+public class LevelToWidthConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        // value can be a 0..1 level (MicLevel) or a 0..100 threshold — the parameter is the per-unit
+        // pixel scale (e.g. 480 for a level, 4.8 for a 0..100 threshold across a 480px bar).
+        double level = value switch { double d => d, float f => f, int i => i, _ => 0 };
+        double scale = parameter switch
+        {
+            string s when double.TryParse(s, NumberStyles.Any, CultureInfo.InvariantCulture, out var m) => m,
+            double pd => pd,
+            _ => 0,
+        };
+        double w = level * scale;
+        return w < 0 ? 0 : w;
+    }
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}

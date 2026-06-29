@@ -58,7 +58,7 @@ public partial class LibraryViewModel : ViewModelBase
     {
         _gameFilter = string.Equals(_gameFilter, label, StringComparison.OrdinalIgnoreCase) ? null : label;
         foreach (var ch in GameChips)
-            ch.IsActive = string.Equals(ch.Label, _gameFilter, StringComparison.OrdinalIgnoreCase);
+            ch.IsActive = string.Equals(ch.FilterKey, _gameFilter, StringComparison.OrdinalIgnoreCase);
         ClearSelection();
         RebuildGroups();
     }
@@ -67,21 +67,30 @@ public partial class LibraryViewModel : ViewModelBase
     [RelayCommand]
     private void ToggleFavoritesOnly() => FavoritesOnly = !FavoritesOnly;
 
-    /// <summary>Rebuilds the game-chip list from the games actually present, preserving the active filter.</summary>
+    /// <summary>Sentinel filter key for the "Desktop" chip (clips with no detected game). Deliberately not
+    /// a valid game name so it can't collide with one.</summary>
+    private const string DesktopFilterKey = "desktop";
+
+    /// <summary>Rebuilds the game-chip list from the games actually present, preserving the active filter.
+    /// Adds a "Desktop" chip for clips captured off the desktop (no game).</summary>
     private void RebuildGameChips()
     {
         var games = Clips.Where(c => c.HasGame).Select(c => c.Game!)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .OrderBy(g => g, StringComparer.CurrentCultureIgnoreCase)
             .ToList();
+        bool desktopPresent = Clips.Any(c => !c.HasGame);
 
-        // Drop a stale filter whose game no longer exists.
-        if (_gameFilter != null && !games.Contains(_gameFilter, StringComparer.OrdinalIgnoreCase))
+        // Drop a stale filter whose game (or the Desktop category) no longer exists.
+        if (_gameFilter == DesktopFilterKey) { if (!desktopPresent) _gameFilter = null; }
+        else if (_gameFilter != null && !games.Contains(_gameFilter, StringComparer.OrdinalIgnoreCase))
             _gameFilter = null;
 
         GameChips.Clear();
         foreach (var g in games)
             GameChips.Add(new GameChip(g, string.Equals(g, _gameFilter, StringComparison.OrdinalIgnoreCase)));
+        if (desktopPresent)
+            GameChips.Add(new GameChip(Localizer.Get("Library_Desktop"), _gameFilter == DesktopFilterKey, DesktopFilterKey));
     }
 
     /// <summary>Applies search + game + favourites filters, then buckets the result by day into <see cref="Groups"/>.</summary>
@@ -92,7 +101,9 @@ public partial class LibraryViewModel : ViewModelBase
         IEnumerable<ReplayClip> filtered = Clips;
         if (FavoritesOnly)
             filtered = filtered.Where(c => c.IsFavorite);
-        if (_gameFilter != null)
+        if (_gameFilter == DesktopFilterKey)
+            filtered = filtered.Where(c => !c.HasGame);
+        else if (_gameFilter != null)
             filtered = filtered.Where(c => string.Equals(c.Game, _gameFilter, StringComparison.OrdinalIgnoreCase));
         if (q.Length > 0)
             filtered = filtered.Where(c =>
@@ -663,12 +674,17 @@ public partial class GameChip : ObservableObject
 {
     public string Label { get; }
 
+    /// <summary>The value passed to the filter command. Equals <see cref="Label"/> for a game chip; a fixed
+    /// sentinel for the "Desktop" chip (so a real game literally named "Desktop" can't collide with it).</summary>
+    public string FilterKey { get; }
+
     [ObservableProperty]
     private bool _isActive;
 
-    public GameChip(string label, bool active)
+    public GameChip(string label, bool active, string? filterKey = null)
     {
         Label = label;
+        FilterKey = filterKey ?? label;
         _isActive = active;
     }
 }

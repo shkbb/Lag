@@ -150,9 +150,10 @@ public static class Program
         try
         {
             var baseAsm = typeof(Avalonia.Rendering.IRenderTimer).Assembly;
-            // DefaultRenderTimer, not UiThreadRenderTimer: the UI-thread variant waits the
-            // full interval AFTER each composition pass finishes (work + 8.3 ms ≈ 13 ms ≈
-            // 76 Hz ceiling, measured). The background periodic timer keeps a true cadence.
+            // DefaultRenderTimer, not UiThreadRenderTimer: the UI-thread variant waits the full interval
+            // AFTER each composition pass finishes (≈76 Hz ceiling). The background periodic timer keeps a
+            // true 120 Hz cadence for the player. (Confirmed 2026-06-29 it does NOT break UI animations —
+            // dropdowns/segments/hovers all animate fine on it; the toggle-knob issue was unrelated.)
             var timerType = baseAsm.GetType("Avalonia.Rendering.DefaultRenderTimer")
                 ?? throw new MissingMemberException("DefaultRenderTimer");
             var timer = (Avalonia.Rendering.IRenderTimer)Activator.CreateInstance(timerType, 120)!;
@@ -171,7 +172,7 @@ public static class Program
             // Verification: if the compositor really adopted our timer it will Start() it on
             // the first subscription and ticks arrive at ~120/s. Counted over the first 2s.
             // (IRenderTimer.Tick is also hidden from the reference assemblies.)
-            // Window starts at t=8s: during startup the UI thread is busy with OBS init and
+            // Window starts at t=8s: during startup the UI thread is busy with engine init and
             // dispatcher-driven ticks are starved, which would skew the measurement.
             int ticks = 0;
             var sw = System.Diagnostics.Stopwatch.StartNew();

@@ -201,7 +201,7 @@
       </Grid>
 
       <!-- Search + game chips ........ Favorites -->
-      <Grid ColumnDefinitions="Auto,Auto,*,Auto" Margin="0,24,0,4" IsVisible="{Binding Clips.Count}">
+      <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,24,0,4" IsVisible="{Binding Clips.Count}">
         <Border Grid.Column="0" Classes="searchbox" Width="320" Height="38" Padding="14,0" VerticalAlignment="Center">
           <Grid ColumnDefinitions="Auto,*">
             <mi:MaterialIcon Grid.Column="0" Kind="Magnify" Width="15" Height="15"
@@ -212,20 +212,24 @@
           </Grid>
         </Border>
 
-        <ItemsControl Grid.Column="1" ItemsSource="{Binding GameChips}" Margin="10,0,0,0" VerticalAlignment="Center">
-          <ItemsControl.ItemsPanel>
-            <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="7" /></ItemsPanelTemplate>
-          </ItemsControl.ItemsPanel>
-          <ItemsControl.ItemTemplate>
-            <DataTemplate x:DataType="vm:GameChip">
-              <Button Classes="gamechip" Classes.sel="{Binding IsActive}" Content="{Binding Label}"
-                      Command="{Binding $parent[ItemsControl].((vm:LibraryViewModel)DataContext).SetGameFilterCommand}"
-                      CommandParameter="{Binding Label}" />
-            </DataTemplate>
-          </ItemsControl.ItemTemplate>
-        </ItemsControl>
+        <!-- Game/Desktop category chips — horizontally scrollable when there are many. -->
+        <ScrollViewer Grid.Column="1" Margin="10,0,12,0" VerticalAlignment="Center"
+                      HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+          <ItemsControl ItemsSource="{Binding GameChips}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="7" /></ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:GameChip">
+                <Button Classes="gamechip" Classes.sel="{Binding IsActive}" Content="{Binding Label}"
+                        Command="{Binding $parent[ItemsControl].((vm:LibraryViewModel)DataContext).SetGameFilterCommand}"
+                        CommandParameter="{Binding FilterKey}" />
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
 
-        <Button Grid.Column="3" Classes="gamechip" Classes.sel="{Binding FavoritesOnly}"
+        <Button Grid.Column="2" Classes="gamechip" Classes.sel="{Binding FavoritesOnly}"
                 Command="{Binding ToggleFavoritesOnlyCommand}" VerticalAlignment="Center">
           <StackPanel Orientation="Horizontal" Spacing="7">
             <Panel Width="14" Height="14" VerticalAlignment="Center">
@@ -241,12 +245,15 @@
     </StackPanel>
 
     <!-- ════════════════ Body ════════════════ -->
-    <ScrollViewer Grid.Row="1" Padding="38,16,38,48" VerticalScrollBarVisibility="Auto"
+    <!-- NO bottom padding on the ScrollViewer — it ate into the viewport and hid the last card's title.
+         All trailing space is a content-flow bottom margin on the grid instead, which correctly extends
+         the scrollable extent so the last full card (incl. its title) can be scrolled into view. -->
+    <ScrollViewer Grid.Row="1" Padding="38,16,38,0" VerticalScrollBarVisibility="Auto"
                   Background="Transparent" PointerPressed="OnBodyPressed">
       <Panel>
 
         <!-- Day-grouped clip grid -->
-        <ItemsControl ItemsSource="{Binding Groups}">
+        <ItemsControl ItemsSource="{Binding Groups}" Margin="0,0,0,56">
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="vm:ClipGroup">
               <StackPanel Margin="0,0,0,34">

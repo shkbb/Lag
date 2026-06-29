@@ -32,6 +32,11 @@ public sealed unsafe class NvencVfrEncoder : IDisposable
     private AVPacket* _pkt;
     private AVFrame* _frame;
     private bool _disposed;
+    // Serializes the per-frame Encode (capture thread) against Flush/Dispose (teardown / lock-switch
+    // thread). Without it, Dispose can free the native AVFrame/AVCodecContext WHILE a frame is mid-copy
+    // (the Buffer.MemoryCopy into _frame->data) — an access violation. Uncontended in steady state
+    // (capture+encode is single-threaded); it only ever blocks for the duration of one in-flight frame.
+    private readonly object _opLock = new();
 
     /// <summary>Raised for every compressed packet the encoder emits (on the capture thread).</summary>
     public event Action<EncodedPacket>? PacketReady;
@@ -57,7 +62,13 @@ public sealed unsafe class NvencVfrEncoder : IDisposable
     private readonly bool _autoQuality;  // true = constant-quality RC (the "Auto" bitrate option, bitrateKbps<=0)
 
     // Default quality level for "Auto" mode, per encoder family (lower = higher quality).
-    private const int QualityX264 = 21, QualityQsv = 23, QualityNvenc = 23, QualityAmf = 23;
+    private const int QualityX264 = 21, QualityQsv = 23, QualityAmf = 23;
+    // NVENC "Auto" uses constant-QP (constqp), NOT cq / target-quality VBR. cq proved unreliable under
+    // real game load — with the GPU saturated by the game at high fps it starved the bitrate to a few
+    // Mbps and the picture broke into macroblocks (a static desktop stayed clean, a busy game did not).
+    // Fixed QP can't starve: every frame holds the target quantiser, size scales with scene + fps. H.264
+    // needs a lower QP than the more-efficient HEVC for the same visual quality.
+    private const int QpNvencH264 = 20, QpNvencHevc = 22;
 
     public NvencVfrEncoder(D3D11Context d3d, EncoderChoice choice, int width, int height,
                            int bitrateKbps, int preset /*1=fastest..7=slowest*/, int fpsHint = 120)
@@ -196,9 +207,10 @@ public sealed unsafe class NvencVfrEncoder : IDisposable
             Opt("tune", "hq");          // high-quality tune (recording) — NOT "ll", which starves bits
             if (_autoQuality)
             {
-                // Constant quality: VBR targeting a CQ level, no fixed bitrate.
-                Opt("rc", "vbr");
-                Opt("cq", QualityNvenc.ToString());
+                // Constant QP: a fixed quantiser per frame — the encoder ALWAYS holds this quality and
+                // can't starve to macroblocks the way cq/target-quality VBR did under game GPU load.
+                Opt("rc", "constqp");
+                Opt("qp", (name.Contains("hevc") ? QpNvencHevc : QpNvencH264).ToString());
             }
             else
             {
@@ -236,7 +248,15 @@ public sealed unsafe class NvencVfrEncoder : IDisposable
     /// </summary>
     public bool Encode(Texture2D bgraFrame, long ptsUs)
     {
-        if (_disposed) return false;
+        lock (_opLock)
+        {
+            if (_disposed) return false;
+            return EncodeLocked(bgraFrame, ptsUs);
+        }
+    }
+
+    private bool EncodeLocked(Texture2D bgraFrame, long ptsUs)
+    {
         try
         {
             long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
@@ -367,30 +387,39 @@ public sealed unsafe class NvencVfrEncoder : IDisposable
     /// <summary>Stream parameters (codec id, dimensions, extradata) for the muxer.</summary>
     public StreamSpec GetStreamSpec()
     {
-        byte[] extra = Array.Empty<byte>();
-        if (_ctx != null && _ctx->extradata != null && _ctx->extradata_size > 0)
+        lock (_opLock)
         {
-            extra = new byte[_ctx->extradata_size];
-            Marshal.Copy((IntPtr)_ctx->extradata, extra, 0, _ctx->extradata_size);
+            byte[] extra = Array.Empty<byte>();
+            if (_ctx != null && _ctx->extradata != null && _ctx->extradata_size > 0)
+            {
+                extra = new byte[_ctx->extradata_size];
+                Marshal.Copy((IntPtr)_ctx->extradata, extra, 0, _ctx->extradata_size);
+            }
+            return new StreamSpec(_choice.CodecId, IsVideo: true, Width, Height, 0, 0, extra);
         }
-        return new StreamSpec(_choice.CodecId, IsVideo: true, Width, Height, 0, 0, extra);
     }
 
     public void Flush()
     {
-        if (_disposed || _ctx == null) return;
-        try { ffmpeg.avcodec_send_frame(_ctx, null); DrainReady(); } catch { }
+        lock (_opLock)
+        {
+            if (_disposed || _ctx == null) return;
+            try { ffmpeg.avcodec_send_frame(_ctx, null); DrainReady(); } catch { }
+        }
     }
 
     public void Dispose()
     {
-        if (_disposed) return;
-        _disposed = true;
-        fixed (AVPacket** p = &_pkt) if (_pkt != null) ffmpeg.av_packet_free(p);
-        fixed (AVFrame** f = &_frame) if (_frame != null) ffmpeg.av_frame_free(f);
-        fixed (AVCodecContext** c = &_ctx) if (_ctx != null) ffmpeg.avcodec_free_context(c);
-        fixed (AVBufferRef** hf = &_hwFrames) if (_hwFrames != null) ffmpeg.av_buffer_unref(hf);
-        fixed (AVBufferRef** hd = &_hwDevice) if (_hwDevice != null) ffmpeg.av_buffer_unref(hd);
-        _converter.Dispose();
+        lock (_opLock)
+        {
+            if (_disposed) return;
+            _disposed = true;
+            fixed (AVPacket** p = &_pkt) if (_pkt != null) ffmpeg.av_packet_free(p);
+            fixed (AVFrame** f = &_frame) if (_frame != null) ffmpeg.av_frame_free(f);
+            fixed (AVCodecContext** c = &_ctx) if (_ctx != null) ffmpeg.avcodec_free_context(c);
+            fixed (AVBufferRef** hf = &_hwFrames) if (_hwFrames != null) ffmpeg.av_buffer_unref(hf);
+            fixed (AVBufferRef** hd = &_hwDevice) if (_hwDevice != null) ffmpeg.av_buffer_unref(hd);
+            _converter.Dispose();
+        }
     }
 }

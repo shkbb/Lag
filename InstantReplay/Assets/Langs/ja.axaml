@@ -83,7 +83,10 @@
   <sys:String x:Key="Editor_ResetTrim">トリミングをリセット</sys:String>
   <sys:String x:Key="Settings_Hotkey_Screenshot">スクリーンショット</sys:String>
   <sys:String x:Key="Toast_ReplaySaved">リプレイを保存しました</sys:String>
-  <sys:String x:Key="Toast_ScreenshotSaved">スクリーンショットを保存しました</sys:String>
+  <sys:String x:Key="Toast_ScreenshotSaved">スクリーンショットを保存しました</sys:String>
+  <sys:String x:Key="Toast_RecordingStarted">録画を開始しました</sys:String>
+  <sys:String x:Key="Toast_RecordingStopped">録画を停止しました</sys:String>
+  <sys:String x:Key="Toast_NowRecording">録画中</sys:String>
   <sys:String x:Key="Settings_AutoStart">録画を自動的に開始</sys:String>
   <sys:String x:Key="Settings_AutoStart_Desc">起動直後にリプレイバッファが開始されます</sys:String>
   <sys:String x:Key="Settings_Group_Hotkey">ホットキー</sys:String>
@@ -129,10 +132,10 @@
 
   <!-- ════════ Runtime status (ViewModels) ════════ -->
   <sys:String x:Key="Status_Ready">準備完了</sys:String>
-  <sys:String x:Key="Status_Starting">録画を開始しています（OBS）...</sys:String>
+  <sys:String x:Key="Status_Starting">録画を開始しています...</sys:String>
   <sys:String x:Key="Status_Recording">録画中...</sys:String>
   <sys:String x:Key="Status_NoMonitor">録画するディスプレイが選択されていません。</sys:String>
-  <sys:String x:Key="Status_ObsError">OBSエラー: {0}</sys:String>
+  <sys:String x:Key="Status_RecordError">録画エラー: {0}</sys:String>
   <sys:String x:Key="Status_Stopping">停止しています...</sys:String>
   <sys:String x:Key="Status_Stopped">停止しました</sys:String>
   <sys:String x:Key="Status_StopError">停止エラー: {0}</sys:String>
@@ -163,7 +166,8 @@
 
   <sys:String x:Key="Library_EmptyTitle">まだリプレイがありません</sys:String>
   <!-- ════════ Pause recording ════════ -->
-  <sys:String x:Key="Settings_Hotkey_Pause">録画を一時停止</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Pause">録画を一時停止</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Record">録画の開始/停止</sys:String>
   <sys:String x:Key="Btn_PauseRecording">一時停止</sys:String>
   <sys:String x:Key="Btn_ResumeRecording">再開</sys:String>
   <sys:String x:Key="Status_Paused">一時停止中</sys:String>
@@ -199,7 +203,8 @@
   <sys:String x:Key="Editor_TextSize">サイズ</sys:String>
   <sys:String x:Key="Library_ClearSelection">選択を解除</sys:String>
   <sys:String x:Key="Library_ClipCount">{0} クリップ</sys:String>
-  <sys:String x:Key="Library_Favorites">お気に入り</sys:String>
+  <sys:String x:Key="Library_Favorites">お気に入り</sys:String>
+  <sys:String x:Key="Library_Desktop">デスクトップ</sys:String>
   <sys:String x:Key="Library_GroupCount">{0} クリップ</sys:String>
   <sys:String x:Key="Library_NoResults">検索に一致するクリップがありません。</sys:String>
   <sys:String x:Key="Library_Search">クリップを検索</sys:String>
@@ -211,4 +216,30 @@
   <sys:String x:Key="Settings_Group_Startup">起動とパフォーマンス</sys:String>
   <sys:String x:Key="Settings_Group_Storage">ストレージと情報</sys:String>
   <sys:String x:Key="Settings_Subtitle">キャプチャ、音声、アプリの動作を設定します。</sys:String>
+
+  <!-- ════════ Hardware presets ════════ -->
+  <sys:String x:Key="Preset_SectionTitle">PRESETS</sys:String>
+  <sys:String x:Key="Preset_Subtitle">Tuned to your hardware — pick a goal</sys:String>
+  <sys:String x:Key="Preset_Performance">Performance</sys:String>
+  <sys:String x:Key="Preset_Balanced">Balanced</sys:String>
+  <sys:String x:Key="Preset_Quality">Quality</sys:String>
+  <sys:String x:Key="Preset_PerformanceDesc">Smoothest gameplay</sys:String>
+  <sys:String x:Key="Preset_BalancedDesc">Solid fps and quality</sys:String>
+  <sys:String x:Key="Preset_QualityDesc">Sharpest clips</sys:String>
+  <sys:String x:Key="Preset_RecommendedBadge">Recommended</sys:String>
+  <sys:String x:Key="Preset_Rescan">Re-scan hardware</sys:String>
+  <sys:String x:Key="Preset_Advanced">ADVANCED</sys:String>
+  <sys:String x:Key="Preset_CleanupHint">Only {0} GB free — consider enabling auto-cleanup (~{1} GB).</sys:String>
+  <sys:String x:Key="Settings_OutputLevel">Output level</sys:String>
+  <sys:String x:Key="Settings_MicLevel">Mic level</sys:String>
+  <sys:String x:Key="Settings_HearYourself">Hear yourself</sys:String>
+  <sys:String x:Key="Settings_HearYourselfHint">Plays your mic to the selected output — use headphones to avoid echo.</sys:String>
+  <sys:String x:Key="Settings_InputSensitivity">Input sensitivity</sys:String>
+  <sys:String x:Key="Settings_InputSensitivityHint">Mutes the mic below the threshold — auto adapts to your room.</sys:String>
+  <sys:String x:Key="Settings_NoiseSuppression">Noise suppression</sys:String>
+  <sys:String x:Key="Settings_NoiseSuppressionHint">Removes steady background noise — fans, hum, keyboard — from your mic.</sys:String>
+  <sys:String x:Key="Settings_Auto">Auto</sys:String>
+  <sys:String x:Key="Settings_Threshold">Threshold</sys:String>
+  <sys:String x:Key="Settings_Listen">Listen</sys:String>
+  <sys:String x:Key="Settings_Stop">Stop</sys:String>
 </ResourceDictionary>

@@ -5,13 +5,13 @@ using FFmpeg.AutoGen;
 namespace Lag.Services.VfrCapture;
 
 /// <summary>
-/// One-time process setup for the bundled FFmpeg 7.0 libraries (avcodec-61, avformat-61,
-/// avutil-59, swresample-5) that ship inside <c>obs-core/</c>. FFmpeg.AutoGen resolves the
-/// native DLLs from <see cref="ffmpeg.RootPath"/>, so we point it at obs-core and never rely on
-/// a system-wide FFmpeg.
+/// One-time process setup for our own bundled FFmpeg 7.1 libraries (avcodec-61, avformat-61,
+/// avutil-59, swresample-5) that ship inside <c>ffmpeg/</c>. FFmpeg.AutoGen resolves the native
+/// DLLs from <see cref="ffmpeg.RootPath"/>, so we point it at that folder and never rely on a
+/// system-wide FFmpeg.
 ///
-/// The VFR capture engine uses these libs for two things the OBS canvas can't do:
-///   • <c>av1_nvenc</c> encoding fed one frame at a time with its REAL presentation timestamp
+/// The VFR capture engine uses these libs for two things a fixed-rate canvas can't do:
+///   • hardware/software encoding fed one frame at a time with its REAL presentation timestamp
 ///     (variable frame rate — no CFR duplicate-frame padding, the root cause of the stutter),
 ///   • a libavformat MP4 muxer that writes those variable timestamps out faithfully.
 /// </summary>
@@ -27,11 +27,11 @@ internal static class FfmpegInterop
     public static string? InitError { get; private set; }
 
     /// <summary>
-    /// Resolves and binds the obs-core FFmpeg DLLs and verifies the encoders we depend on exist.
+    /// Resolves and binds the bundled FFmpeg DLLs and verifies the encoders we depend on exist.
     /// Idempotent and thread-safe; safe to call from app start. Never throws — failure leaves
-    /// <see cref="Available"/> false and the caller falls back to the legacy OBS recorder.
+    /// <see cref="Available"/> false and the caller reports that the engine is unavailable.
     /// </summary>
-    public static bool Initialize(string obsCoreDir)
+    public static bool Initialize(string ffmpegDir)
     {
         lock (Gate)
         {
@@ -41,9 +41,9 @@ internal static class FfmpegInterop
             try
             {
                 // RootPath tells the loader where the avcodec-61/avutil-59/... DLLs live; their
-                // inter-dependencies are resolved by the OS loader, which already searches
-                // obs-core because App.axaml.cs called AddDllDirectory/SetDllDirectory on it.
-                ffmpeg.RootPath = obsCoreDir;
+                // inter-dependencies are resolved by the OS loader, which already searches the
+                // ffmpeg/ folder because App.axaml.cs called AddDllDirectory/SetDllDirectory on it.
+                ffmpeg.RootPath = ffmpegDir;
                 // 7.x uses lazily-bound function pointers — this wires them up. Without it every
                 // ffmpeg.* call throws NotSupportedException.
                 DynamicallyLoadedBindings.Initialize();
@@ -52,13 +52,13 @@ internal static class FfmpegInterop
                 // try) rather than at some later call site where the failure is opaque.
                 uint version = ffmpeg.avcodec_version();
                 int major = (int)(version >> 16);
-                Console.WriteLine($"[Ffmpeg] Bound libavcodec {major}.{(version >> 8) & 0xFF}.{version & 0xFF} from {obsCoreDir}");
+                Console.WriteLine($"[Ffmpeg] Bound libavcodec {major}.{(version >> 8) & 0xFF}.{version & 0xFF} from {ffmpegDir}");
 
                 if (major != 61)
                 {
-                    // We compiled against the 7.0 ABI (avcodec 61). A different major would be a
+                    // We compiled against the FFmpeg 7.x ABI (avcodec 61). A different major would be a
                     // silent ABI mismatch → memory corruption. Refuse rather than risk it.
-                    InitError = $"libavcodec major {major} != expected 61 (FFmpeg 7.0 ABI).";
+                    InitError = $"libavcodec major {major} != expected 61 (FFmpeg 7.x ABI).";
                     Console.WriteLine($"[Ffmpeg] {InitError}");
                     return false;
                 }

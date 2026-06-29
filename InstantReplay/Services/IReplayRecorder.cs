@@ -1,17 +1,14 @@
 using System;
-using Lag.Services.ObsIntegration;
 
 namespace Lag.Services;
 
 /// <summary>
-/// The recorder contract the UI talks to, so the app can swap capture back-ends without the
-/// ViewModels caring which one runs. Two implementations:
-///   • <see cref="ObsIntegration.ObsRecorderService"/> — the mature OBS replay-buffer path (default).
-///   • <see cref="VfrCapture.VfrRecorderAdapter"/> — the native WGC/NVENC VFR engine.
+/// The recorder contract the UI talks to, so the ViewModels don't care how capture is implemented.
+/// Implemented by <see cref="VfrCapture.VfrRecorderAdapter"/> (the native WGC VFR engine).
 ///
-/// Lifecycle mirrors the OBS cold-restart model the UI already drives: Initialize() with a fresh
-/// options snapshot, StartBuffer() to arm the rolling buffer, SaveReplay() on the hotkey, Teardown()
-/// to stop. <see cref="ReplaySaved"/> fires (path) once a clip is written.
+/// Lifecycle is a cold-restart model: Initialize() with a fresh options snapshot, StartBuffer() to
+/// arm the rolling buffer, SaveReplay() on the hotkey, Teardown() to stop. <see cref="ReplaySaved"/>
+/// fires (path) once a clip is written.
 /// </summary>
 public interface IReplayRecorder : IDisposable
 {
@@ -45,8 +42,8 @@ public interface IReplayRecorder : IDisposable
     /// back-ends that don't support pausing.</summary>
     void SetPaused(bool paused) { }
 
-    /// <summary>What's being captured right now (game/desktop), or null when idle. Default null so
-    /// back-ends that don't report it (OBS) need no changes; the native engine overrides it.</summary>
+    /// <summary>What's being captured right now (game/desktop), or null when idle. Default null for
+    /// back-ends that don't report a target; the native engine overrides it.</summary>
     CaptureTarget? CurrentTarget => null;
 
     /// <summary>Raised when <see cref="CurrentTarget"/> changes. Default no-op for back-ends that

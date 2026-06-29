@@ -93,7 +93,7 @@ public sealed class GameDetector
     };
 
     /// <summary>Non-games that DO load the GPU 3D engine (browsers composite + WebGL, Electron apps,
-    /// OBS, media players, launchers) and so would otherwise fool the 3D heuristic when fullscreen.
+    /// recording/streaming software, media players, launchers) and so would otherwise fool the 3D heuristic when fullscreen.
     /// This is NOT a game blocklist — it's the short, stable set of apps that look GPU-busy but aren't
     /// games. Anything not here is judged purely on its signals (name / fullscreen+3D / Steam).</summary>
     private static readonly HashSet<string> NonGameGpuExclude = new(StringComparer.OrdinalIgnoreCase)
@@ -168,8 +168,8 @@ public sealed class GameDetector
         string exe;
         try { exe = System.Diagnostics.Process.GetProcessById((int)pid).ProcessName + ".exe"; }
         catch { return null; }
-        // Hard excludes: OS shell + the short list of GPU-busy non-games (browsers, Electron, OBS,
-        // players, launchers). These never count as a game, so a fullscreen YouTube or the Steam
+        // Hard excludes: OS shell + the short list of GPU-busy non-games (browsers, Electron,
+        // recorders, players, launchers). These never count as a game, so a fullscreen YouTube or the Steam
         // client can't fool the heuristics below.
         if (ShellExclude.Contains(exe) || NonGameGpuExclude.Contains(exe)) return null;
 

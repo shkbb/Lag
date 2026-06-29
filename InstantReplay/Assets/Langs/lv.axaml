@@ -83,7 +83,10 @@
   <sys:String x:Key="Editor_ResetTrim">Atiestatīt apgriešanu</sys:String>
   <sys:String x:Key="Settings_Hotkey_Screenshot">Ekrānuzņēmums</sys:String>
   <sys:String x:Key="Toast_ReplaySaved">Atkārtojums saglabāts</sys:String>
-  <sys:String x:Key="Toast_ScreenshotSaved">Ekrānuzņēmums saglabāts</sys:String>
+  <sys:String x:Key="Toast_ScreenshotSaved">Ekrānuzņēmums saglabāts</sys:String>
+  <sys:String x:Key="Toast_RecordingStarted">Ierakstīšana sākta</sys:String>
+  <sys:String x:Key="Toast_RecordingStopped">Ierakstīšana apturēta</sys:String>
+  <sys:String x:Key="Toast_NowRecording">Tagad ieraksta</sys:String>
   <sys:String x:Key="Settings_AutoStart">Automātiski sākt ierakstīšanu</sys:String>
   <sys:String x:Key="Settings_AutoStart_Desc">Atkārtojuma buferis startē uzreiz pēc palaišanas</sys:String>
   <sys:String x:Key="Settings_Group_Hotkey">KARSTAIS TAUSTIŅŠ</sys:String>
@@ -129,10 +132,10 @@
 
   <!-- ════════ Runtime status (ViewModels) ════════ -->
   <sys:String x:Key="Status_Ready">Gatavs</sys:String>
-  <sys:String x:Key="Status_Starting">Ierakstīšanas sākšana (OBS)...</sys:String>
+  <sys:String x:Key="Status_Starting">Ierakstīšanas sākšana...</sys:String>
   <sys:String x:Key="Status_Recording">Ierakstīšana...</sys:String>
   <sys:String x:Key="Status_NoMonitor">Ierakstīšanai nav izvēlēts ekrāns.</sys:String>
-  <sys:String x:Key="Status_ObsError">OBS kļūda: {0}</sys:String>
+  <sys:String x:Key="Status_RecordError">Ierakstīšanas kļūda: {0}</sys:String>
   <sys:String x:Key="Status_Stopping">Apturēšana...</sys:String>
   <sys:String x:Key="Status_Stopped">Apturēts</sys:String>
   <sys:String x:Key="Status_StopError">Apturēšanas kļūda: {0}</sys:String>
@@ -163,7 +166,8 @@
 
   <sys:String x:Key="Library_EmptyTitle">Vēl nav atkārtojumu</sys:String>
   <!-- ════════ Pause recording ════════ -->
-  <sys:String x:Key="Settings_Hotkey_Pause">Pauzēt ierakstu</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Pause">Pauzēt ierakstu</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Record">Sākt/apturēt ierakstu</sys:String>
   <sys:String x:Key="Btn_PauseRecording">Pauzēt</sys:String>
   <sys:String x:Key="Btn_ResumeRecording">Atsākt</sys:String>
   <sys:String x:Key="Status_Paused">Pauzēts</sys:String>
@@ -199,7 +203,8 @@
   <sys:String x:Key="Editor_TextSize">Izmērs</sys:String>
   <sys:String x:Key="Library_ClearSelection">Notīrīt atlasi</sys:String>
   <sys:String x:Key="Library_ClipCount">{0} KLIPI</sys:String>
-  <sys:String x:Key="Library_Favorites">Izlase</sys:String>
+  <sys:String x:Key="Library_Favorites">Izlase</sys:String>
+  <sys:String x:Key="Library_Desktop">Darbvirsma</sys:String>
   <sys:String x:Key="Library_GroupCount">{0} klipi</sys:String>
   <sys:String x:Key="Library_NoResults">Neviens klips neatbilst meklējumam.</sys:String>
   <sys:String x:Key="Library_Search">Meklēt klipus</sys:String>
@@ -211,4 +216,30 @@
   <sys:String x:Key="Settings_Group_Startup">PALAIŠANA &amp; VEIKTSPĒJA</sys:String>
   <sys:String x:Key="Settings_Group_Storage">KRĀTUVE &amp; PAR</sys:String>
   <sys:String x:Key="Settings_Subtitle">Konfigurējiet tveršanu, audio un lietotnes darbību.</sys:String>
+
+  <!-- ════════ Hardware presets ════════ -->
+  <sys:String x:Key="Preset_SectionTitle">PRESETS</sys:String>
+  <sys:String x:Key="Preset_Subtitle">Tuned to your hardware — pick a goal</sys:String>
+  <sys:String x:Key="Preset_Performance">Performance</sys:String>
+  <sys:String x:Key="Preset_Balanced">Balanced</sys:String>
+  <sys:String x:Key="Preset_Quality">Quality</sys:String>
+  <sys:String x:Key="Preset_PerformanceDesc">Smoothest gameplay</sys:String>
+  <sys:String x:Key="Preset_BalancedDesc">Solid fps and quality</sys:String>
+  <sys:String x:Key="Preset_QualityDesc">Sharpest clips</sys:String>
+  <sys:String x:Key="Preset_RecommendedBadge">Recommended</sys:String>
+  <sys:String x:Key="Preset_Rescan">Re-scan hardware</sys:String>
+  <sys:String x:Key="Preset_Advanced">ADVANCED</sys:String>
+  <sys:String x:Key="Preset_CleanupHint">Only {0} GB free — consider enabling auto-cleanup (~{1} GB).</sys:String>
+  <sys:String x:Key="Settings_OutputLevel">Output level</sys:String>
+  <sys:String x:Key="Settings_MicLevel">Mic level</sys:String>
+  <sys:String x:Key="Settings_HearYourself">Hear yourself</sys:String>
+  <sys:String x:Key="Settings_HearYourselfHint">Plays your mic to the selected output — use headphones to avoid echo.</sys:String>
+  <sys:String x:Key="Settings_InputSensitivity">Input sensitivity</sys:String>
+  <sys:String x:Key="Settings_InputSensitivityHint">Mutes the mic below the threshold — auto adapts to your room.</sys:String>
+  <sys:String x:Key="Settings_NoiseSuppression">Noise suppression</sys:String>
+  <sys:String x:Key="Settings_NoiseSuppressionHint">Removes steady background noise — fans, hum, keyboard — from your mic.</sys:String>
+  <sys:String x:Key="Settings_Auto">Auto</sys:String>
+  <sys:String x:Key="Settings_Threshold">Threshold</sys:String>
+  <sys:String x:Key="Settings_Listen">Listen</sys:String>
+  <sys:String x:Key="Settings_Stop">Stop</sys:String>
 </ResourceDictionary>

@@ -20,7 +20,7 @@ namespace Lag.Services.VfrCapture;
 ///
 /// One instance captures one window for its whole lifetime. Switching games means disposing this
 /// and creating a new one; we never retarget a live session (retargeting restarts the WGC frame
-/// pool, a ~0.5s stall — the exact cause of the freezes in the old OBS overlay approach). The
+/// pool, a ~0.5s stall — the exact cause of the freezes in the old overlay-hook approach). The
 /// orchestrator decides when a new game warrants a new source.
 ///
 /// <see cref="FrameReady"/> fires on a WGC worker thread (MTA). The supplied texture is owned by

@@ -9,7 +9,7 @@ namespace Lag.Services.VfrCapture;
 /// Owns the single Direct3D11 device the whole VFR pipeline shares: Windows Graphics Capture
 /// delivers frames as textures on it, the colour converter runs on it, and FFmpeg's NVENC
 /// hwframes wrap textures from it — keeping every frame on ONE GPU end to end (zero copies to
-/// system RAM, the thing that wrecked the old OBS path under game load).
+/// system RAM, the thing that wrecked the old capture path under game load).
 ///
 /// The device is created with BGRA support (WGC requires it) and the video device interfaces
 /// (for the hardware colour-space conversion). We use the default hardware adapter, which is the

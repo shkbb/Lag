@@ -12,12 +12,6 @@ release-publish/
 [Rr]eleases/
 **/[Rr]eleases/
 
-# ───────── Heavy native runtime (libobs/FFmpeg) — NOT committed ─────────
-# Keep this folder locally; it is bundled into the Velopack release package,
-# not stored in git. ~408 MB of native binaries (ffmpeg.exe, obs64.dll, etc.).
-obs-core/
-**/obs-core/
-
 # ───────── Tooling / generated ─────────
 graphify-out/
 **/graphify-out/
@@ -40,7 +34,6 @@ desktop.ini
 
 # ───────── Logs ─────────
 *.log
-obs_native.log
 
 # ───────── Local Claude Code settings (user-specific) ─────────
 .claude/settings.local.json

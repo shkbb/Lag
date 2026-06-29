@@ -66,7 +66,7 @@ public static class EncoderSelector
     /// Picks the encoder to use. <paramref name="preference"/> is the user's Settings choice:
     /// "" / "auto" → best available; "av1"/"hevc"/"h264" → best of that family, falling back to
     /// the next-best family if the requested one isn't supported here. Returns null only if not
-    /// even libx264 opened (extremely unlikely) — caller then falls back to the OBS engine.
+    /// even libx264 opened (extremely unlikely) — the engine then reports itself unavailable.
     /// </summary>
     public static EncoderChoice? Select(string? preference)
     {

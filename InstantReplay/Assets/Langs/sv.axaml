@@ -83,7 +83,10 @@
   <sys:String x:Key="Editor_ResetTrim">Återställ trimning</sys:String>
   <sys:String x:Key="Settings_Hotkey_Screenshot">Skärmbild</sys:String>
   <sys:String x:Key="Toast_ReplaySaved">Repris sparad</sys:String>
-  <sys:String x:Key="Toast_ScreenshotSaved">Skärmbild sparad</sys:String>
+  <sys:String x:Key="Toast_ScreenshotSaved">Skärmbild sparad</sys:String>
+  <sys:String x:Key="Toast_RecordingStarted">Inspelning startad</sys:String>
+  <sys:String x:Key="Toast_RecordingStopped">Inspelning stoppad</sys:String>
+  <sys:String x:Key="Toast_NowRecording">Spelar in nu</sys:String>
   <sys:String x:Key="Settings_AutoStart">Starta inspelning automatiskt</sys:String>
   <sys:String x:Key="Settings_AutoStart_Desc">Reprisbufferten startar direkt efter programstart</sys:String>
   <sys:String x:Key="Settings_Group_Hotkey">SNABBTANGENT</sys:String>
@@ -129,10 +132,10 @@
 
   <!-- ════════ Runtime status (ViewModels) ════════ -->
   <sys:String x:Key="Status_Ready">Redo</sys:String>
-  <sys:String x:Key="Status_Starting">Startar inspelning (OBS)...</sys:String>
+  <sys:String x:Key="Status_Starting">Startar inspelning...</sys:String>
   <sys:String x:Key="Status_Recording">Spelar in...</sys:String>
   <sys:String x:Key="Status_NoMonitor">Ingen skärm vald för inspelning.</sys:String>
-  <sys:String x:Key="Status_ObsError">OBS-fel: {0}</sys:String>
+  <sys:String x:Key="Status_RecordError">Inspelningsfel: {0}</sys:String>
   <sys:String x:Key="Status_Stopping">Stoppar...</sys:String>
   <sys:String x:Key="Status_Stopped">Stoppad</sys:String>
   <sys:String x:Key="Status_StopError">Stoppfel: {0}</sys:String>
@@ -163,7 +166,8 @@
 
   <sys:String x:Key="Library_EmptyTitle">Inga repriser ännu</sys:String>
   <!-- ════════ Pause recording ════════ -->
-  <sys:String x:Key="Settings_Hotkey_Pause">Pausa inspelning</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Pause">Pausa inspelning</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Record">Starta/stoppa inspelning</sys:String>
   <sys:String x:Key="Btn_PauseRecording">Pausa</sys:String>
   <sys:String x:Key="Btn_ResumeRecording">Återuppta</sys:String>
   <sys:String x:Key="Status_Paused">Pausad</sys:String>
@@ -199,7 +203,8 @@
   <sys:String x:Key="Editor_TextSize">Storlek</sys:String>
   <sys:String x:Key="Library_ClearSelection">Rensa markering</sys:String>
   <sys:String x:Key="Library_ClipCount">{0} KLIPP</sys:String>
-  <sys:String x:Key="Library_Favorites">Favoriter</sys:String>
+  <sys:String x:Key="Library_Favorites">Favoriter</sys:String>
+  <sys:String x:Key="Library_Desktop">Skrivbord</sys:String>
   <sys:String x:Key="Library_GroupCount">{0} klipp</sys:String>
   <sys:String x:Key="Library_NoResults">Inga klipp matchar din sökning.</sys:String>
   <sys:String x:Key="Library_Search">Sök klipp</sys:String>
@@ -211,4 +216,30 @@
   <sys:String x:Key="Settings_Group_Startup">START &amp; PRESTANDA</sys:String>
   <sys:String x:Key="Settings_Group_Storage">LAGRING &amp; OM</sys:String>
   <sys:String x:Key="Settings_Subtitle">Konfigurera inspelning, ljud och appbeteende.</sys:String>
+
+  <!-- ════════ Hardware presets ════════ -->
+  <sys:String x:Key="Preset_SectionTitle">PRESETS</sys:String>
+  <sys:String x:Key="Preset_Subtitle">Tuned to your hardware — pick a goal</sys:String>
+  <sys:String x:Key="Preset_Performance">Performance</sys:String>
+  <sys:String x:Key="Preset_Balanced">Balanced</sys:String>
+  <sys:String x:Key="Preset_Quality">Quality</sys:String>
+  <sys:String x:Key="Preset_PerformanceDesc">Smoothest gameplay</sys:String>
+  <sys:String x:Key="Preset_BalancedDesc">Solid fps and quality</sys:String>
+  <sys:String x:Key="Preset_QualityDesc">Sharpest clips</sys:String>
+  <sys:String x:Key="Preset_RecommendedBadge">Recommended</sys:String>
+  <sys:String x:Key="Preset_Rescan">Re-scan hardware</sys:String>
+  <sys:String x:Key="Preset_Advanced">ADVANCED</sys:String>
+  <sys:String x:Key="Preset_CleanupHint">Only {0} GB free — consider enabling auto-cleanup (~{1} GB).</sys:String>
+  <sys:String x:Key="Settings_OutputLevel">Output level</sys:String>
+  <sys:String x:Key="Settings_MicLevel">Mic level</sys:String>
+  <sys:String x:Key="Settings_HearYourself">Hear yourself</sys:String>
+  <sys:String x:Key="Settings_HearYourselfHint">Plays your mic to the selected output — use headphones to avoid echo.</sys:String>
+  <sys:String x:Key="Settings_InputSensitivity">Input sensitivity</sys:String>
+  <sys:String x:Key="Settings_InputSensitivityHint">Mutes the mic below the threshold — auto adapts to your room.</sys:String>
+  <sys:String x:Key="Settings_NoiseSuppression">Noise suppression</sys:String>
+  <sys:String x:Key="Settings_NoiseSuppressionHint">Removes steady background noise — fans, hum, keyboard — from your mic.</sys:String>
+  <sys:String x:Key="Settings_Auto">Auto</sys:String>
+  <sys:String x:Key="Settings_Threshold">Threshold</sys:String>
+  <sys:String x:Key="Settings_Listen">Listen</sys:String>
+  <sys:String x:Key="Settings_Stop">Stop</sys:String>
 </ResourceDictionary>

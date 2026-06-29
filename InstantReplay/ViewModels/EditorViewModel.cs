@@ -675,7 +675,7 @@ public partial class EditorViewModel : ViewModelBase, IDisposable
     ///   • only System enabled → play the system track,
     ///   • only Mic enabled    → play the mic track,
     ///   • both enabled        → play the pre-mixed "All" track (stream 0) when the clip has one
-    ///                            (native VFR layout), else the first enabled row (OBS files have no mix).
+    ///                            (native VFR layout), else the first enabled row (legacy files have no mix).
     /// Volume follows the loudest enabled row. Export still does the true per-track mix + gain; this is
     /// the closest a single-track player can preview. (Previously this only set Volume, so the default
     /// "All" mix kept playing and you heard system+mic no matter which row you toggled.)
@@ -698,7 +698,7 @@ public partial class EditorViewModel : ViewModelBase, IDisposable
             {
                 // Several rows enabled. The native VFR file carries a pre-mixed "All" track at
                 // stream 0 (the editor only exposes streams ≥ 1), so play that for a real blend.
-                // OBS/single files have no mix track → fall back to the first enabled row.
+                // Legacy/single-track files have no mix track → fall back to the first enabled row.
                 bool hasMixTrack = AudioTracks.All(t => t.StreamIndex >= 1);
                 playStream = hasMixTrack ? 0 : unmuted[0].StreamIndex;
             }
@@ -830,7 +830,7 @@ public partial class EditorViewModel : ViewModelBase, IDisposable
                 }
                 else if (audioStreams == 2)
                 {
-                    // OBS "separate audio tracks": 0 = system sound, 1 = microphone.
+                    // Two-track "separate audio tracks" layout: 0 = system sound, 1 = microphone.
                     AudioTracks.Add(new EditorAudioTrack(0, Localizer.Get("Editor_TrackSystem"), DurationSec));
                     AudioTracks.Add(new EditorAudioTrack(1, Localizer.Get("Editor_TrackMic"), DurationSec));
                 }

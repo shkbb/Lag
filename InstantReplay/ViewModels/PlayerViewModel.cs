@@ -137,6 +137,21 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
         RequestFlush();
     }
 
+    /// <summary>Whether audio output is muted (independent of the volume slider value). Toggled by
+    /// clicking the volume icon or pressing M in the player.</summary>
+    [ObservableProperty]
+    private bool _isMuted;
+
+    partial void OnIsMutedChanged(bool value)
+    {
+        lock (_pendingLock) _pendingMute = value;
+        RequestFlush();
+    }
+
+    /// <summary>Mute/unmute toggle (volume icon click / M key).</summary>
+    [RelayCommand]
+    private void ToggleMute() => IsMuted = !IsMuted;
+
     // ── Playback speed (incl. deep slow-mo: down to 0.05x = 20× slower) ──
     /// <summary>Speed presets shown in the player's speed menu (fast → slow).</summary>
     public IReadOnlyList<double> SpeedOptions { get; } = new[] { 2.0, 1.5, 1.0, 0.5, 0.25, 0.1 };
@@ -161,6 +176,7 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
     // so at most one seek is ever in flight (no backlog, always the newest target).
     private readonly object _pendingLock = new();
     private int? _pendingVolume;
+    private bool? _pendingMute;
     private float? _pendingSeekPosition;
     private bool _flushQueued;
 
@@ -175,15 +191,17 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
     {
         while (true)
         {
-            int? vol; float? pos;
+            int? vol; bool? mute; float? pos;
             lock (_pendingLock)
             {
                 vol = _pendingVolume; _pendingVolume = null;
+                mute = _pendingMute; _pendingMute = null;
                 pos = _pendingSeekPosition; _pendingSeekPosition = null;
-                if ((vol == null && pos == null) || _mediaPlayer == null) { _flushQueued = false; return; }
+                if ((vol == null && mute == null && pos == null) || _mediaPlayer == null) { _flushQueued = false; return; }
             }
             var mp = _mediaPlayer;
             try { if (vol is int v) mp.Volume = v; } catch { }
+            try { if (mute is bool m) mp.Mute = m; } catch { }
             // Seeks always run at normal speed (OnPositionChanged snaps slow-mo back to 1.0 first),
             // so Position= returns promptly and never blocks the worker.
             try { if (pos is float p && mp.IsSeekable) mp.Position = p; } catch { }
@@ -415,6 +433,12 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
         LoadAndPlay(clip);
         StartPlayback();
     }
+
+    // ── Replay right-click menu (sidebar item / the playing video), delegated to the shared Library VM
+    //    (same singleton the Library view uses, so Edit/Show/Delete behave identically). ──
+    public void RequestEditClip(ReplayClip? clip) { if (clip != null) _library.RequestEdit(clip); }
+    public void ShowClipInFolder(ReplayClip? clip) { if (clip != null) _library.ShowInFolderCommand.Execute(clip); }
+    public void DeleteReplay(ReplayClip? clip) { if (clip != null) _library.DeleteClipCommand.Execute(clip); }
 
     /// <summary>Skips to and plays the next VIDEO clip in the library list (screenshots are skipped).</summary>
     [RelayCommand]

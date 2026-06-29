@@ -9,9 +9,9 @@ namespace Lag.Services;
 /// full speed while a game holds the foreground.
 ///
 /// Without this, Windows 11's EcoQoS ("efficiency mode") and the foreground-boost
-/// scheduler starve background apps whenever a fullscreen game is focused: the OBS
-/// graphics thread drops to a few FPS and even our hotkey message loop can wake up
-/// seconds late (replays "not saving until alt-tab").
+/// scheduler starve background apps whenever a fullscreen game is focused: the
+/// capture/encode thread drops to a few FPS and even our hotkey message loop can wake
+/// up seconds late (replays "not saving until alt-tab").
 /// </summary>
 public static class PerformanceGuard
 {
@@ -36,8 +36,8 @@ public static class PerformanceGuard
     [DllImport("kernel32.dll")]
     private static extern IntPtr GetCurrentProcess();
 
-    // GPU scheduler priority (D3DKMT). This is the documented reason "run OBS as
-    // administrator" fixes encoding lag when a game pegs the GPU: the recorder's
+    // GPU scheduler priority (D3DKMT). This is the documented reason running a capture
+    // app as administrator fixes encoding lag when a game pegs the GPU: the recorder's
     // D3D11 work stops being starved by the foreground game.
     // Classes: 0=Idle, 1=BelowNormal, 2=Normal, 3=AboveNormal, 4=High, 5=Realtime(admin).
     [DllImport("gdi32.dll")]

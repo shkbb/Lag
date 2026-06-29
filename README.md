@@ -52,7 +52,7 @@
 
 Lag records into a rolling in-memory **replay buffer**, so when something epic happens you hit the hotkey and the last X seconds are saved instantly — nothing is written to disk until you ask for it.
 
-The default recorder is a **custom native VFR engine** (`Services/VfrCapture/`): it captures the game window (or a monitor) through **Windows Graphics Capture**, converts on the GPU, and encodes with hardware **NVENC / AMF / QSV** (or **x264** on the CPU) via the bundled **FFmpeg 7.0** libraries — writing true variable-frame-rate timestamps for buttery-smooth playback. An **OBS Studio core (`libobs`)** recorder is kept as an automatic fallback for machines without WGC support.
+The recorder is a **custom native VFR engine** (`Services/VfrCapture/`): it captures the game window (or a monitor) through **Windows Graphics Capture**, converts on the GPU, and encodes with hardware **NVENC / AMF / QSV** (or **x264** on the CPU) via the bundled **FFmpeg 7.1** libraries — writing true variable-frame-rate timestamps for buttery-smooth playback.
 
 ---
 
@@ -75,7 +75,7 @@ The default recorder is a **custom native VFR engine** (`Services/VfrCapture/`):
 - [.NET 8 SDK](https://dotnet.microsoft.com/download)
 - **Windows SDK 10.0.26100** (the project targets `net8.0-windows10.0.26100.0` to reach the newer WGC knobs; it still *runs* on Windows 10 1903 / 19041+)
 
-> **Important:** This project requires native `obs-core` binaries — the **FFmpeg 7.0** libraries (`avcodec-61`, `avformat-61`, `avutil-59`, plus `ffmpeg`/`ffprobe`) used by the VFR engine, and `libobs` for the fallback recorder. These are **not included** in this repository due to their size (~400 MB). You can obtain them from an existing OBS Studio installation or a pre-compiled `libobs` package.
+> **Note:** The native **FFmpeg 7.1** runtime (`avcodec-61`, `avformat-61`, `avutil-59`, `swresample-5`, plus `ffmpeg`/`ffprobe`) used by the capture engine ships in the repository under `InstantReplay/ffmpeg/` and is bundled into the build automatically. No external binaries or extra downloads are required.
 
 **Step 1 — Clone the repository:**
 
@@ -84,22 +84,14 @@ git clone https://github.com/shkbb/Lag.git
 cd Lag
 ```
 
-**Step 2 — Place the `obs-core` binaries in the project folder:**
-
-```
-InstantReplay/obs-core/
-```
-
-The build automatically bundles everything under `obs-core/` into the output directory.
-
-**Step 3 — Build & run:**
+**Step 2 — Build & run:**
 
 ```bash
 dotnet build InstantReplay/InstantReplay.csproj -c Release
 dotnet run --project InstantReplay/InstantReplay.csproj -c Release
 ```
 
-The build output (with `obs-core` bundled) lands in:
+The build output (with the `ffmpeg/` runtime bundled) lands in:
 
 ```
 InstantReplay/bin/Release/net8.0-windows10.0.26100.0/Lag.exe
@@ -149,7 +141,7 @@ See [`LICENSE`](LICENSE) for full details.
 
 Lag записує у кільцевий **буфер повтору** в пам'яті, тож коли стається щось епічне — ви натискаєте гарячу клавішу, і останні X секунд зберігаються миттєво. На диск нічого не пишеться, доки ви самі не попросите.
 
-Основний рекордер — це власний **нативний VFR-рушій** (`Services/VfrCapture/`): він захоплює вікно гри (або монітор) через **Windows Graphics Capture**, конвертує кадри на GPU й кодує апаратно через **NVENC / AMF / QSV** (або **x264** на процесорі) за допомогою вбудованих бібліотек **FFmpeg 7.0**, записуючи справжні часові мітки зі змінною частотою кадрів для ідеально плавного відтворення. Рекордер на ядрі **OBS Studio (`libobs`)** лишається автоматичним запасним варіантом для машин без підтримки WGC.
+Рекордер — це власний **нативний VFR-рушій** (`Services/VfrCapture/`): він захоплює вікно гри (або монітор) через **Windows Graphics Capture**, конвертує кадри на GPU й кодує апаратно через **NVENC / AMF / QSV** (або **x264** на процесорі) за допомогою вбудованих бібліотек **FFmpeg 7.1**, записуючи справжні часові мітки зі змінною частотою кадрів для ідеально плавного відтворення.
 
 ---
 
@@ -172,7 +164,7 @@ Lag записує у кільцевий **буфер повтору** в пам
 - [.NET 8 SDK](https://dotnet.microsoft.com/download)
 - **Windows SDK 10.0.26100** (проєкт націлений на `net8.0-windows10.0.26100.0` заради новіших можливостей WGC; але *працює* на Windows 10 1903 / 19041+)
 
-> **Увага:** Для роботи програми потрібні нативні бінарники `obs-core` — бібліотеки **FFmpeg 7.0** (`avcodec-61`, `avformat-61`, `avutil-59` та `ffmpeg`/`ffprobe`), які використовує VFR-рушій, і `libobs` для запасного рекордера. Вони **не включені** в репозиторій через великий розмір (~400 МБ). Їх можна взяти з папки встановленої OBS Studio або завантажити зібраний пакет libobs.
+> **Примітка:** Нативний рантайм **FFmpeg 7.1** (`avcodec-61`, `avformat-61`, `avutil-59`, `swresample-5` та `ffmpeg`/`ffprobe`), який використовує рушій захоплення, лежить у репозиторії в папці `InstantReplay/ffmpeg/` і автоматично копіюється у вихідну директорію під час збірки. Жодних зовнішніх бінарників чи додаткових завантажень не потрібно.
 
 **Крок 1 — Клонуйте репозиторій:**
 
@@ -181,22 +173,14 @@ git clone https://github.com/shkbb/Lag.git
 cd Lag
 ```
 
-**Крок 2 — Помістіть бінарники `obs-core` у папку проєкту:**
-
-```
-InstantReplay/obs-core/
-```
-
-Усе, що лежить у `obs-core/`, автоматично копіюється у вихідну директорію під час збірки.
-
-**Крок 3 — Зберіть і запустіть:**
+**Крок 2 — Зберіть і запустіть:**
 
 ```bash
 dotnet build InstantReplay/InstantReplay.csproj -c Release
 dotnet run --project InstantReplay/InstantReplay.csproj -c Release
 ```
 
-Зібраний застосунок (разом із `obs-core`) опиниться тут:
+Зібраний застосунок (разом із рантаймом `ffmpeg/`) опиниться тут:
 
 ```
 InstantReplay/bin/Release/net8.0-windows10.0.26100.0/Lag.exe

@@ -32,18 +32,14 @@
     <DefineConstants>$(DefineConstants);LINUX</DefineConstants>
   </PropertyGroup>
 
-  <!-- Windows: Bundle local obs-core directory with the build output -->
-  <ItemGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
-    <Content Include="obs-core\**\*">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-
   <!-- Windows: bundle our own FFmpeg 7.1 (shared, GPL) — the native VFR engine binds these libs
-       (avcodec-61/avformat-61/avutil-59/swresample-5) and the editor export calls ffmpeg.exe.
-       This replaces OBS's FFmpeg so the engine no longer depends on obs-core. -->
+       (avcodec-61/avformat-61/avutil-59/swresample-5) and the editor export calls ffmpeg.exe. -->
   <ItemGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
     <Content Include="ffmpeg\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <!-- RNNoise model (BSD-3, Xiph) for the arnndn mic noise-suppression filter — see rnnoise/LICENSE-rnnoise.txt. -->
+    <Content Include="rnnoise\**\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
@@ -94,9 +90,9 @@
     <PackageReference Include="SharpDX.DXGI" Version="4.2.0" />
     <PackageReference Include="SharpDX.Direct3D11" Version="4.2.0" />
     <PackageReference Include="VideoLAN.LibVLC.Windows" Version="3.0.21" />
-    <!-- Native VFR capture engine: binds to the FFmpeg 7.0 libs already in obs-core
-         (avcodec-61/avformat-61/avutil-59) for av1_nvenc encode + mp4 mux with real
-         per-frame timestamps. Version must match libavcodec major 61 (FFmpeg 7.0). -->
+    <!-- Native VFR capture engine: binds to the bundled FFmpeg 7.1 libs in ffmpeg/
+         (avcodec-61/avformat-61/avutil-59) for hardware/CPU encode + mp4 mux with real
+         per-frame timestamps. Version must match libavcodec major 61 (FFmpeg 7.x). -->
     <PackageReference Include="FFmpeg.AutoGen" Version="7.0.0" />
     <!-- Provides System.Media.SoundPlayer (not in the base net8.0-windows SDK) -->
     <PackageReference Include="System.Windows.Extensions" Version="8.0.0" />

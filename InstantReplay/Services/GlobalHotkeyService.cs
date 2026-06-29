@@ -23,6 +23,7 @@ public sealed class GlobalHotkeyService : IDisposable
     private const int HOTKEY_ID = 9000;        // save replay
     private const int SCREENSHOT_ID = 9001;    // take screenshot
     private const int PAUSE_ID = 9002;         // pause/resume recording
+    private const int RECORD_ID = 9003;        // start/stop recording (toggle)
 
     [DllImport("user32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
@@ -77,6 +78,7 @@ public sealed class GlobalHotkeyService : IDisposable
     private uint _saveModifiers, _saveVk;
     private uint _shotModifiers, _shotVk; // vk 0 = screenshot hotkey not registered
     private uint _pauseModifiers, _pauseVk; // vk 0 = pause hotkey not registered
+    private uint _recordModifiers, _recordVk; // vk 0 = record-toggle hotkey not registered
 
     /// <summary>Save-replay hotkey pressed.</summary>
     public event EventHandler? HotkeyPressed;
@@ -86,6 +88,9 @@ public sealed class GlobalHotkeyService : IDisposable
 
     /// <summary>Pause/resume-recording hotkey pressed.</summary>
     public event EventHandler? PausePressed;
+
+    /// <summary>Start/stop-recording (toggle) hotkey pressed.</summary>
+    public event EventHandler? RecordPressed;
 
     public void Start(uint modifiers, uint virtualKey)
     {
@@ -177,6 +182,45 @@ public sealed class GlobalHotkeyService : IDisposable
         return true;
     }
 
+    /// <summary>Sets/re-registers the start/stop-recording (toggle) hotkey. Returns false if unmappable.</summary>
+    public bool UpdateRecordHotkey(ModifierMask modifiers, KeyCode key)
+    {
+        if (_isDisposed) return false;
+        uint vk = VirtualKeyFromKeyCode(key);
+        if (vk == 0) return false;
+
+        bool wasRunning = _messageLoopThread != null;
+        if (wasRunning) StopMessageLoop();
+
+        _recordModifiers = ModifiersToWin32(modifiers);
+        _recordVk = vk;
+
+        if (wasRunning) StartLoop();
+        return true;
+    }
+
+    /// <summary>Unbinds the start/stop-recording hotkey.</summary>
+    public void ClearRecordHotkey() => SetThenRestart(() => { _recordModifiers = 0; _recordVk = 0; });
+
+    /// <summary>Unbinds the save-replay hotkey (vk 0 = nothing registered for that action).</summary>
+    public void ClearSaveHotkey() => SetThenRestart(() => { _saveModifiers = 0; _saveVk = 0; });
+
+    /// <summary>Unbinds the screenshot hotkey.</summary>
+    public void ClearScreenshotHotkey() => SetThenRestart(() => { _shotModifiers = 0; _shotVk = 0; });
+
+    /// <summary>Unbinds the pause/resume hotkey.</summary>
+    public void ClearPauseHotkey() => SetThenRestart(() => { _pauseModifiers = 0; _pauseVk = 0; });
+
+    /// <summary>Applies a combo change (restarting the message loop if it's running).</summary>
+    private void SetThenRestart(Action set)
+    {
+        if (_isDisposed) return;
+        bool wasRunning = _messageLoopThread != null;
+        if (wasRunning) StopMessageLoop();
+        set();
+        if (wasRunning) StartLoop();
+    }
+
     /// <summary>Maps a SharpHook <see cref="ModifierMask"/> to Win32 MOD_* flags (e.g. MOD_CONTROL | MOD_SHIFT).</summary>
     public static uint ModifiersToWin32(ModifierMask modifiers)
     {
@@ -252,8 +296,9 @@ public sealed class GlobalHotkeyService : IDisposable
         _threadId = GetCurrentThreadId();
 
         // hWnd = IntPtr.Zero means the hotkeys are associated with the current thread
-        bool saveRegistered = RegisterHotKey(IntPtr.Zero, HOTKEY_ID, _saveModifiers | MOD_NOREPEAT, _saveVk);
-        if (!saveRegistered)
+        bool saveRegistered = _saveVk != 0 &&
+            RegisterHotKey(IntPtr.Zero, HOTKEY_ID, _saveModifiers | MOD_NOREPEAT, _saveVk);
+        if (_saveVk != 0 && !saveRegistered)
             Console.WriteLine($"[GlobalHotkeyService] Failed to register save hotkey. Error: {Marshal.GetLastWin32Error()}");
 
         bool shotRegistered = _shotVk != 0 &&
@@ -266,10 +311,15 @@ public sealed class GlobalHotkeyService : IDisposable
         if (_pauseVk != 0 && !pauseRegistered)
             Console.WriteLine($"[GlobalHotkeyService] Failed to register pause hotkey. Error: {Marshal.GetLastWin32Error()}");
 
-        if (!saveRegistered && !shotRegistered && !pauseRegistered)
+        bool recordRegistered = _recordVk != 0 &&
+            RegisterHotKey(IntPtr.Zero, RECORD_ID, _recordModifiers | MOD_NOREPEAT, _recordVk);
+        if (_recordVk != 0 && !recordRegistered)
+            Console.WriteLine($"[GlobalHotkeyService] Failed to register record hotkey. Error: {Marshal.GetLastWin32Error()}");
+
+        if (!saveRegistered && !shotRegistered && !pauseRegistered && !recordRegistered)
             return;
 
-        Console.WriteLine($"[GlobalHotkeyService] Registered Win32 hotkeys: save(Mod={_saveModifiers}, Key={_saveVk}), shot(Mod={_shotModifiers}, Key={_shotVk}), pause(Mod={_pauseModifiers}, Key={_pauseVk})");
+        Console.WriteLine($"[GlobalHotkeyService] Registered Win32 hotkeys: save(Mod={_saveModifiers}, Key={_saveVk}), shot(Mod={_shotModifiers}, Key={_shotVk}), pause(Mod={_pauseModifiers}, Key={_pauseVk}), record(Mod={_recordModifiers}, Key={_recordVk})");
 
         MSG msg;
         int retVal;
@@ -295,6 +345,9 @@ public sealed class GlobalHotkeyService : IDisposable
                     case PAUSE_ID:
                         PausePressed?.Invoke(this, EventArgs.Empty);
                         break;
+                    case RECORD_ID:
+                        RecordPressed?.Invoke(this, EventArgs.Empty);
+                        break;
                 }
             }
 
@@ -305,6 +358,7 @@ public sealed class GlobalHotkeyService : IDisposable
         if (saveRegistered) UnregisterHotKey(IntPtr.Zero, HOTKEY_ID);
         if (shotRegistered) UnregisterHotKey(IntPtr.Zero, SCREENSHOT_ID);
         if (pauseRegistered) UnregisterHotKey(IntPtr.Zero, PAUSE_ID);
+        if (recordRegistered) UnregisterHotKey(IntPtr.Zero, RECORD_ID);
         Console.WriteLine("[GlobalHotkeyService] Message loop exited and hotkeys unregistered.");
     }
 

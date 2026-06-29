@@ -191,11 +191,13 @@
               <ItemsControl.ItemTemplate>
                 <DataTemplate>
                   <Button Classes="clipitem" x:CompileBindings="False"
-                          HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                          HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
                           Command="{Binding $parent[Window].DataContext.OpenEditorForClipCommand}"
                           CommandParameter="{Binding}">
-                    <StackPanel Spacing="6">
-                      <Border Height="118" CornerRadius="8" ClipToBounds="True" Background="#16181E">
+                    <!-- Fixed, slightly-narrower card centred in the 240px sidebar so the thumbnail never
+                         reaches the right edge (and the overlay scrollbar can't clip it). -->
+                    <StackPanel Spacing="6" Width="190" HorizontalAlignment="Center">
+                      <Border Height="107" CornerRadius="8" ClipToBounds="True" Background="#16181E">
                         <Image Source="{Binding Thumbnail}" Stretch="UniformToFill" />
                       </Border>
                       <TextBlock Text="{Binding DisplayName}" FontSize="11.5" FontWeight="SemiBold"

@@ -630,6 +630,9 @@
   <Style Selector="Slider:pressed /template/ RepeatButton#PART_IncreaseButton">
     <Setter Property="Background" Value="{DynamicResource Track14Brush}" />
   </Style>
+  <!-- ToggleSwitch is fully re-templated in App.axaml (Application.Resources) with an animated knob —
+       Fluent 11.2.3's built-in knob slide does NOT fire here, so we own the template + the slide. -->
+
   <!-- Thumb grows slightly on hover -->
   <Style Selector="Slider /template/ Thumb">
     <Setter Property="RenderTransform" Value="scale(1)" />

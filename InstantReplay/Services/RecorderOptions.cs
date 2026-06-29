@@ -1,10 +1,10 @@
 using System.Collections.Generic;
 
-namespace Lag.Services.ObsIntegration;
+namespace Lag.Services;
 
 /// <summary>
 /// Full configuration snapshot for one recording session. Built by the UI layer from the current
-/// settings and consumed by <see cref="ObsRecorderService.Initialize(RecorderOptions)"/> on every
+/// settings and consumed by <see cref="IReplayRecorder.Initialize(RecorderOptions)"/> on every
 /// (cold-restart) Start, so all options reliably apply.
 /// </summary>
 public sealed class RecorderOptions
@@ -33,13 +33,6 @@ public sealed class RecorderOptions
     public string? MonitorId { get; init; }
     public string? LibraryPath { get; init; }
 
-    /// <summary>
-    /// Add a game_capture hook overlay above the monitor capture. Required for games in
-    /// EXCLUSIVE fullscreen (desktop duplication can't see them), but costs CPU when an
-    /// anti-tamper game (e.g. CS2 Trusted Mode) keeps rejecting the hook. Default off.
-    /// </summary>
-    public bool GameCaptureEnabled { get; init; }
-
     /// <summary>Output container format: "mp4" (default), "mkv", "mov" or "avi".</summary>
     public string FileFormat { get; init; } = "mp4";
 
@@ -51,6 +44,15 @@ public sealed class RecorderOptions
 
     /// <summary>Downmix the microphone to mono.</summary>
     public bool MicForceMono { get; init; }
+
+    /// <summary>Noise gate ("input sensitivity"): auto = track the noise floor; false = use the threshold.</summary>
+    public bool InputGateAuto { get; init; } = true;
+
+    /// <summary>Manual gate threshold, 0..1 on the meter's perceptual scale (used when not auto).</summary>
+    public float InputGateThreshold { get; init; } = 0.08f;
+
+    /// <summary>RNNoise mic noise suppression (FFmpeg arnndn). Applies to recording AND "hear yourself".</summary>
+    public bool NoiseSuppression { get; init; }
 
     /// <summary>Start with the mic muted (push-to-talk holds it muted until the key is pressed).</summary>
     public bool MicStartMuted { get; init; }

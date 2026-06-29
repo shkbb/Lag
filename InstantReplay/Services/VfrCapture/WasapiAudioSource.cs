@@ -28,6 +28,15 @@ public sealed class WasapiAudioSource : IDisposable
     private volatile bool _micMono;           // downmix the mic to a single channel
     private string? _systemDeviceId;          // chosen render endpoint to loop back; null/"" = default
 
+    // Noise gate ("input sensitivity"): mutes the mic below a threshold. Used on the mic capture
+    // thread only. _lastGateGain carries the previous buffer's gain so transitions are ramped (no clicks).
+    private readonly NoiseGate _micGate = new();
+    private float _lastGateGain = 1f;
+
+    // Noise suppression (RNNoise via FFmpeg arnndn): runs AFTER the gate, on the mic capture thread.
+    // Disabled = pure pass-through. Output size varies (RNNoise buffers a 10 ms frame).
+    private readonly MicDenoiser _micDenoiser = new();
+
     // Per-app capture ("Обрані програми"): one process-loopback per selected app, mixed by a steady
     // timer into a single 48k/2ch/float "system" stream raised via GameDataReady — so the engine and
     // encoder see it exactly like a normal full-system loopback.
@@ -51,6 +60,16 @@ public sealed class WasapiAudioSource : IDisposable
 
     /// <summary>Linear mic gain (1.0 = 100%). Applied to every mic buffer.</summary>
     public void SetMicVolume(float linear) => _micGain = linear < 0 ? 0 : linear;
+
+    /// <summary>Noise-gate config: auto (track the noise floor) or a fixed threshold (0..1 perceptual).</summary>
+    public void SetInputGate(bool auto, float manualThreshold)
+    {
+        _micGate.Auto = auto;
+        _micGate.ManualThreshold = manualThreshold;
+    }
+
+    /// <summary>Noise suppression (RNNoise): on = run the mic through the arnndn denoiser after the gate.</summary>
+    public void SetNoiseSuppression(bool on) => _micDenoiser.Enabled = on;
 
     /// <summary>Push-to-talk: when true, mic buffers are dropped (silence-padded downstream).</summary>
     public void SetMicMuted(bool muted) => _micMuted = muted;
@@ -241,19 +260,52 @@ public sealed class WasapiAudioSource : IDisposable
     {
         if (_disposed || e.BytesRecorded <= 0 || _micMuted) return;   // PTT mute = drop the buffer
         var fmt = _mic!.WaveFormat;
+        bool isFloat = fmt.Encoding == NAudio.Wave.WaveFormatEncoding.IeeeFloat;
         byte[] buf = e.Buffer;
         // Apply mic volume in place on a copy (float PCM only — the WASAPI capture format).
-        if (_micGain != 1f && fmt.Encoding == NAudio.Wave.WaveFormatEncoding.IeeeFloat)
+        if (_micGain != 1f && isFloat)
             buf = ApplyGainFloat(e.Buffer, e.BytesRecorded, _micGain);
+
+        // Noise gate: decide from the RAW input level (so the threshold matches the meter), then ramp
+        // the gate gain across the buffer. Skipped entirely while fully open (the common case).
+        if (isFloat)
+        {
+            float level = Curve(PeakFloat(e.Buffer, e.BytesRecorded));
+            double dt = fmt.AverageBytesPerSecond > 0 ? (double)e.BytesRecorded / fmt.AverageBytesPerSecond : 0.01;
+            float gateGain = _micGate.Process(level, dt);
+            if (gateGain < 0.999f || _lastGateGain < 0.999f)
+            {
+                if (ReferenceEquals(buf, e.Buffer))   // don't mutate NAudio's reused buffer — copy first
+                {
+                    buf = new byte[e.BytesRecorded];
+                    Buffer.BlockCopy(e.Buffer, 0, buf, 0, e.BytesRecorded);
+                }
+                ApplyGateRamp(buf, e.BytesRecorded, _lastGateGain, gateGain);
+            }
+            _lastGateGain = gateGain;
+        }
+
+        int valid = e.BytesRecorded;
+
+        // Noise suppression (RNNoise/arnndn): after the gate, before emit. Output size varies (RNNoise
+        // buffers a 10 ms frame) and is 0 while the first frame fills — drop those buffers (a few ms of
+        // start-up latency; no cumulative drift).
+        if (isFloat && _micDenoiser.Enabled
+            && _micDenoiser.Process(buf, valid, fmt.SampleRate, fmt.Channels, out var dbuf, out int dbytes))
+        {
+            if (dbytes <= 0) return;
+            buf = dbuf;
+            valid = dbytes;
+        }
 
         // Mono channel: downmix a stereo mic to one channel (a 1-ch device is already mono → no-op).
         if (_micMono && fmt.Channels == 2 && fmt.Encoding == WaveFormatEncoding.IeeeFloat)
         {
-            var (mbuf, mbytes, mfmt) = DownmixToMonoFloat(buf, e.BytesRecorded, fmt);
+            var (mbuf, mbytes, mfmt) = DownmixToMonoFloat(buf, valid, fmt);
             MicDataReady?.Invoke(mbuf, mbytes, mfmt);
             return;
         }
-        MicDataReady?.Invoke(buf, e.BytesRecorded, fmt);
+        MicDataReady?.Invoke(buf, valid, fmt);
     }
 
     /// <summary>Averages a stereo float buffer to a single channel; returns a fresh buffer + mono format.</summary>
@@ -265,6 +317,33 @@ public sealed class WasapiAudioSource : IDisposable
         var d = MemoryMarshal.Cast<byte, float>(dst.AsSpan());
         for (int i = 0; i < frames; i++) d[i] = (s[i * 2] + s[i * 2 + 1]) * 0.5f;
         return (dst, dst.Length, WaveFormat.CreateIeeeFloatWaveFormat(stereo.SampleRate, 1));
+    }
+
+    /// <summary>Loudest absolute float sample in the buffer, 0..1.</summary>
+    private static float PeakFloat(byte[] buf, int count)
+    {
+        float peak = 0;
+        for (int i = 0; i + 4 <= count; i += 4)
+        {
+            float s = Math.Abs(BitConverter.ToSingle(buf, i));
+            if (s > peak) peak = s;
+        }
+        return peak > 1f ? 1f : peak;
+    }
+
+    /// <summary>Perceptual level curve — same as the meter, so the gate threshold lines up with what
+    /// the user sees on the bar.</summary>
+    private static float Curve(float level) => (float)Math.Pow(level, 0.6);
+
+    /// <summary>Multiplies the float buffer by a gain that ramps linearly from <paramref name="fromGain"/>
+    /// to <paramref name="toGain"/> across the buffer — a click-free gate transition.</summary>
+    private static void ApplyGateRamp(byte[] buf, int count, float fromGain, float toGain)
+    {
+        int n = count / sizeof(float);
+        if (n == 0) return;
+        var span = MemoryMarshal.Cast<byte, float>(buf.AsSpan(0, n * sizeof(float)));
+        for (int i = 0; i < span.Length; i++)
+            span[i] *= fromGain + (toGain - fromGain) * (i / (float)span.Length);
     }
 
     private static byte[] ApplyGainFloat(byte[] src, int count, float gain)
@@ -288,8 +367,9 @@ public sealed class WasapiAudioSource : IDisposable
         _mixTimer?.Dispose(); _mixTimer = null;
         foreach (var m in _appMixes) { try { m.Capture.Dispose(); } catch { } }
         _appMixes.Clear();
-        StopOne(_mic, OnMicData); _mic = null;
+        StopOne(_mic, OnMicData); _mic = null;        // stops the mic callback before the denoiser dies
         StopOne(_loopback, OnGameData); _loopback = null;
+        _micDenoiser.Dispose();
     }
 
     private static void StopOne(IWaveIn? cap, EventHandler<WaveInEventArgs> handler)

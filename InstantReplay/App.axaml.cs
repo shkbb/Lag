@@ -9,7 +9,6 @@ using System.IO;
 using FFMpegCore;
 using Microsoft.Extensions.DependencyInjection;
 using Lag.Services;
-using Lag.Services.ObsIntegration;
 using Lag.ViewModels;
 using Lag.Views;
 
@@ -32,7 +31,7 @@ public class App : Application
 
     public override void Initialize()
     {
-        // Point the process at our bundled FFmpeg (shared 7.1 build that replaces OBS's libs):
+        // Point the process at our bundled FFmpeg (shared 7.1 build):
         // set it as the working dir + DLL search dir so avcodec-61 and its siblings resolve their
         // inter-dependencies, prepend it to PATH, and tell FFMpegCore (editor export) where
         // ffmpeg.exe / ffprobe.exe live.
@@ -43,6 +42,12 @@ public class App : Application
         string currentPath = Environment.GetEnvironmentVariable("PATH") ?? string.Empty;
         Environment.SetEnvironmentVariable("PATH", ffmpegDir + ";" + currentPath);
         GlobalFFOptions.Configure(new FFOptions { BinaryFolder = ffmpegDir });
+
+        // Bind the native FFmpeg libraries now (idempotent). The encoder probe in EncoderSelector
+        // only runs once and caches its result, and the Settings codec dropdown triggers it during
+        // ViewModel construction — so FFmpeg must be resolvable BEFORE any of that, or the probe
+        // finds zero encoders and recording fails with "No usable video encoder".
+        Lag.Services.VfrCapture.FfmpegInterop.Initialize(ffmpegDir);
 
         AvaloniaXamlLoader.Load(this);
 
@@ -189,6 +194,17 @@ public class App : Application
                 });
             };
 
+            // Start/stop-recording toggle hotkey (separate combo, configured in Settings → General).
+            globalHotkeyService.RecordPressed += (_, _) =>
+            {
+                Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                {
+                    if (mainViewModel.Settings.AreHotkeysSuppressed) return;
+                    if (mainViewModel.ToggleRecordingCommand.CanExecute(null))
+                        mainViewModel.ToggleRecordingCommand.Execute(null);
+                });
+            };
+
             // Clean up on shutdown
             desktop.ShutdownRequested += (_, _) =>
             {
@@ -237,25 +253,14 @@ public class App : Application
         services.AddSingleton<GlobalHotkeyManager>();
         services.AddSingleton<GlobalHotkeyService>();
 
-        // ── Recording engines ──
+        // ── Recording engine ──
         services.AddSingleton<HardwareDetector>();
-        services.AddSingleton<ObsRecorderService>();
         services.AddSingleton<Lag.Services.VfrCapture.VfrRecorderAdapter>();
-        // The UI talks to IReplayRecorder. The native WGC/NVENC VFR engine is now THE recorder —
-        // it replaces OBS on every machine that supports it (WGC + FFmpeg + an encoder, i.e. all of
-        // Win10 1903+). OBS stays only as an automatic safety net for the rare box where the native
-        // engine can't run; the user no longer chooses between them. No Settings dependency here, so
-        // SettingsViewModel can itself depend on IReplayRecorder without a DI cycle.
+        // The UI talks to IReplayRecorder. The native WGC VFR engine is THE recorder on every
+        // supported machine (WGC + FFmpeg + an encoder, i.e. all of Win10 1903+). No Settings
+        // dependency here, so SettingsViewModel can itself depend on IReplayRecorder without a DI cycle.
         services.AddSingleton<IReplayRecorder>(sp =>
-        {
-            if (Lag.Services.VfrCapture.VfrRecorderAdapter.IsAvailable())
-            {
-                Console.WriteLine("[App] Recorder: native VFR engine.");
-                return sp.GetRequiredService<Lag.Services.VfrCapture.VfrRecorderAdapter>();
-            }
-            Console.WriteLine("[App] Recorder: OBS replay buffer (VFR unavailable — fallback).");
-            return sp.GetRequiredService<ObsRecorderService>();
-        });
+            sp.GetRequiredService<Lag.Services.VfrCapture.VfrRecorderAdapter>());
 
         // ── ViewModels ──
         services.AddSingleton<SettingsViewModel>();

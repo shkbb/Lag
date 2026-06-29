@@ -10,6 +10,100 @@
     <Style Selector="Grid.row">
       <Setter Property="Margin" Value="18,15" />
     </Style>
+
+    <!-- ═══ Hardware preset cards ═══ -->
+    <Style Selector="Border.presetcard">
+      <Setter Property="Background" Value="{DynamicResource SurfaceCard}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderCard}" />
+      <Setter Property="BorderThickness" Value="1.5" />
+      <Setter Property="CornerRadius" Value="12" />
+      <Setter Property="Padding" Value="15,13" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="BorderBrush" Duration="0:0:0.12" />
+          <BrushTransition Property="Background" Duration="0:0:0.12" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Border.presetcard:pointerover">
+      <Setter Property="Background" Value="{DynamicResource SurfaceHover}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderStrong}" />
+    </Style>
+    <Style Selector="Border.presetcard.active">
+      <Setter Property="BorderBrush" Value="{DynamicResource Accent}" />
+    </Style>
+
+    <!-- "Recommended" badge -->
+    <Style Selector="Border.badge">
+      <Setter Property="Background" Value="{DynamicResource Accent}" />
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="Padding" Value="6,2" />
+      <Setter Property="VerticalAlignment" Value="Top" />
+    </Style>
+
+    <!-- Disk-low recommendation -->
+    <Style Selector="Border.hint">
+      <Setter Property="Background" Value="{DynamicResource SurfaceInput}" />
+      <Setter Property="CornerRadius" Value="9" />
+      <Setter Property="Padding" Value="14,11" />
+    </Style>
+
+    <!-- Live audio level meter (mic / output) -->
+    <Style Selector="Border.meter">
+      <Setter Property="Width" Value="240" />
+      <Setter Property="Height" Value="8" />
+      <Setter Property="CornerRadius" Value="4" />
+      <Setter Property="Background" Value="{DynamicResource SurfaceInput}" />
+      <Setter Property="ClipToBounds" Value="True" />
+    </Style>
+    <Style Selector="Border.meterfill">
+      <Setter Property="HorizontalAlignment" Value="Left" />
+      <Setter Property="CornerRadius" Value="4" />
+      <Setter Property="Background" Value="#FF43B581" />
+    </Style>
+    <!-- Mic level below the gate threshold (not transmitting) → muted grey instead of green -->
+    <Style Selector="Border.meterfill.gated">
+      <Setter Property="Background" Value="#FF5A6472" />
+    </Style>
+    <!-- Gate threshold marker line on the mic meter -->
+    <Style Selector="Border.metermarker">
+      <Setter Property="Width" Value="2" />
+      <Setter Property="Background" Value="{DynamicResource TextHi}" />
+    </Style>
+
+    <!-- Input-sensitivity bar (Discord-style level meter / threshold picker) -->
+    <Style Selector="Border.gatebar">
+      <Setter Property="Width" Value="480" />
+      <Setter Property="Height" Value="12" />
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="Background" Value="{DynamicResource SurfaceInput}" />
+      <Setter Property="ClipToBounds" Value="True" />
+      <Setter Property="Cursor" Value="Hand" />
+    </Style>
+    <Style Selector="Border.gatehandle">
+      <Setter Property="Width" Value="4" />
+      <Setter Property="CornerRadius" Value="2" />
+      <Setter Property="Background" Value="White" />
+    </Style>
+
+    <!-- "Hear yourself" chip button, accent-filled while active (monitoring on) -->
+    <Style Selector="Button.rchip.active">
+      <Setter Property="Foreground" Value="White" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Accent}" />
+    </Style>
+    <Style Selector="Button.rchip.active /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource Accent}" />
+    </Style>
+    <Style Selector="Button.rchip.active:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource Accent}" />
+    </Style>
+
+    <!-- Mic boosted past 100%: amber percentage as a gentle "louder than unity" caution -->
+    <Style Selector="TextBlock.boosted">
+      <Setter Property="Foreground" Value="#E5B84C" />
+    </Style>
+
   </UserControl.Styles>
 
   <Grid Background="{DynamicResource SurfaceApp}">
@@ -48,6 +142,51 @@
         <!-- ════════════════ VIDEO ════════════════ -->
         <StackPanel Spacing="26" Margin="0,28,0,0"
                     IsVisible="{Binding SelectedSettingsTab, Converter={StaticResource Eq}, ConverterParameter=0}">
+
+          <!-- ═══ Hardware-tailored presets ═══ -->
+          <StackPanel Spacing="12">
+            <StackPanel Spacing="2">
+              <TextBlock Classes="rgroup" Margin="0" Text="{DynamicResource Preset_SectionTitle}" />
+              <TextBlock Classes="rsub" Margin="0" Text="{DynamicResource Preset_Subtitle}" />
+            </StackPanel>
+
+            <ItemsControl ItemsSource="{Binding Presets}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate><UniformGrid Columns="3" /></ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:PresetCard">
+                  <Border Classes="presetcard" Classes.active="{Binding IsActive}" Margin="4" Tapped="OnPresetClick">
+                    <StackPanel Spacing="5">
+                      <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Grid.Column="0" Text="{Binding Title}" FontSize="15.5" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextHi}" VerticalAlignment="Center" />
+                        <Border Grid.Column="1" Classes="badge" IsVisible="{Binding IsRecommended}">
+                          <TextBlock Text="{DynamicResource Preset_RecommendedBadge}" FontSize="10"
+                                     FontWeight="SemiBold" Foreground="White" />
+                        </Border>
+                      </Grid>
+                      <TextBlock Text="{Binding Description}" FontSize="12" Foreground="{DynamicResource TextMuted}" />
+                      <TextBlock Text="{Binding Subtitle}" FontSize="11.5" Foreground="{DynamicResource Accent}"
+                                 TextWrapping="Wrap" Margin="0,2,0,0" />
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <Border Classes="hint" IsVisible="{Binding ShowCleanupHint}">
+              <StackPanel Orientation="Horizontal" Spacing="9">
+                <TextBlock Text="💡" FontSize="14" VerticalAlignment="Top" />
+                <TextBlock Text="{Binding CleanupHintText}" FontSize="12.5"
+                           Foreground="{DynamicResource TextHi}" TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+          </StackPanel>
+
+          <!-- ═══ Advanced: the manual controls, shown plainly under the presets ═══ -->
+          <TextBlock Classes="rgroup" Text="{DynamicResource Preset_Advanced}" />
+          <StackPanel Spacing="26">
 
           <StackPanel>
             <TextBlock Classes="rgroup" Text="{DynamicResource Settings_Group_Recording}" />
@@ -142,6 +281,7 @@
               </StackPanel>
             </Border>
           </StackPanel>
+            </StackPanel>
         </StackPanel>
 
         <!-- ════════════════ AUDIO ════════════════ -->
@@ -188,9 +328,9 @@
                   <CheckBox Grid.Column="0" IsChecked="{Binding MicEnabled}" VerticalAlignment="Center" />
                   <mi:MaterialIcon Grid.Column="1" Kind="Microphone" Width="20" Height="20" Margin="6,0,10,0" VerticalAlignment="Center" Foreground="{DynamicResource TextFaint}" />
                   <TextBlock Grid.Column="2" Text="{DynamicResource Settings_Microphone}" FontSize="14" Foreground="{DynamicResource TextRow}" VerticalAlignment="Center" />
-                  <Slider Grid.Column="3" Minimum="0" Maximum="100" TickFrequency="1" IsSnapToTickEnabled="True"
+                  <Slider Grid.Column="3" Minimum="0" Maximum="200" TickFrequency="1" IsSnapToTickEnabled="True"
                           Value="{Binding MicVolume}" IsEnabled="{Binding MicEnabled}" VerticalAlignment="Center" />
-                  <TextBlock Grid.Column="4" Text="{Binding MicVolume, StringFormat='{}{0}%'}" FontFamily="{StaticResource FontMono}"
+                  <TextBlock Grid.Column="4" Classes.boosted="{Binding IsMicBoosted}" Text="{Binding MicVolume, StringFormat='{}{0}%'}" FontFamily="{StaticResource FontMono}"
                              FontSize="11" Foreground="{DynamicResource TextFaint}" HorizontalAlignment="Right" VerticalAlignment="Center" />
                 </Grid>
                 <Grid ColumnDefinitions="Auto,Auto,*,120,42" Margin="18,11" IsVisible="{Binding ShowAppsList}">
@@ -235,6 +375,12 @@
                     <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Name}" /></DataTemplate></ComboBox.ItemTemplate>
                   </ComboBox>
                 </Grid>
+                <Grid Classes="row" ColumnDefinitions="*,Auto">
+                  <TextBlock Grid.Column="0" Classes="rrow" Text="{DynamicResource Settings_OutputLevel}" VerticalAlignment="Center" />
+                  <Border Grid.Column="1" Classes="meter" VerticalAlignment="Center">
+                    <Border Classes="meterfill" Width="{Binding OutputLevel, Converter={StaticResource LevelWidth}, ConverterParameter=240}" />
+                  </Border>
+                </Grid>
                 <Border Classes="rdivider" />
                 <Grid Classes="row" ColumnDefinitions="*,Auto">
                   <TextBlock Grid.Column="0" Classes="rrow" Text="{DynamicResource Settings_Microphone}" VerticalAlignment="Center" />
@@ -242,6 +388,75 @@
                             ItemsSource="{Binding Microphones}" SelectedItem="{Binding SelectedMicrophone}">
                     <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Name}" /></DataTemplate></ComboBox.ItemTemplate>
                   </ComboBox>
+                </Grid>
+                <Border Classes="rdivider" />
+                <Grid Classes="row" ColumnDefinitions="*,Auto" Margin="18,15,18,4">
+                  <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                    <TextBlock Classes="rrow" Text="{DynamicResource Settings_InputSensitivity}" />
+                    <TextBlock Classes="rsub" Margin="0,1,0,0" Text="{DynamicResource Settings_InputSensitivityHint}" />
+                  </StackPanel>
+                  <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="9" VerticalAlignment="Center">
+                    <TextBlock Text="{DynamicResource Settings_Auto}" FontSize="12.5"
+                               Foreground="{DynamicResource TextFaint}" VerticalAlignment="Center" />
+                    <ToggleSwitch IsChecked="{Binding InputSensitivityAuto}" OnContent="{x:Null}"
+                                  OffContent="{x:Null}" MinWidth="0" VerticalAlignment="Center" />
+                  </StackPanel>
+                </Grid>
+                <Grid Classes="row" ColumnDefinitions="*,Auto" Margin="18,2,18,15">
+                  <!-- AUTO: a live level bar that fills green with your voice -->
+                  <Border Grid.Column="0" Classes="gatebar" HorizontalAlignment="Left"
+                          IsVisible="{Binding InputSensitivityAuto}">
+                    <Border Classes="meterfill" CornerRadius="6"
+                            Width="{Binding MicLevel, Converter={StaticResource LevelWidth}, ConverterParameter=480}" />
+                  </Border>
+                  <!-- MANUAL: dim amber (cut) | green (passes) zones, brightened up to the live level,
+                       with a draggable threshold handle. Drag anywhere on the bar to set the threshold. -->
+                  <Border Grid.Column="0" Classes="gatebar" HorizontalAlignment="Left"
+                          IsVisible="{Binding !InputSensitivityAuto}"
+                          PointerPressed="OnGatePressed" PointerMoved="OnGateMoved">
+                    <Grid>
+                      <Border Background="#3343B581" CornerRadius="6" />
+                      <Border Background="#33CB8438" HorizontalAlignment="Left" CornerRadius="6,0,0,6"
+                              Width="{Binding InputSensitivityThreshold, Converter={StaticResource LevelWidth}, ConverterParameter=4.8}" />
+                      <Border HorizontalAlignment="Left" ClipToBounds="True"
+                              Width="{Binding MicLevel, Converter={StaticResource LevelWidth}, ConverterParameter=480}">
+                        <Grid Width="480" HorizontalAlignment="Left">
+                          <Border Background="#FF43B581" CornerRadius="6" />
+                          <Border Background="#FFCB8438" HorizontalAlignment="Left" CornerRadius="6,0,0,6"
+                                  Width="{Binding InputSensitivityThreshold, Converter={StaticResource LevelWidth}, ConverterParameter=4.8}" />
+                        </Grid>
+                      </Border>
+                      <StackPanel Orientation="Horizontal" IsHitTestVisible="False">
+                        <Border Background="Transparent"
+                                Width="{Binding InputSensitivityThreshold, Converter={StaticResource LevelWidth}, ConverterParameter=4.8}" />
+                        <Border Classes="gatehandle" />
+                      </StackPanel>
+                    </Grid>
+                  </Border>
+                  <TextBlock Grid.Column="1" Text="{Binding ThresholdDb}" Margin="12,0,0,0"
+                             FontFamily="{StaticResource FontMono}" FontSize="11"
+                             Foreground="{DynamicResource TextFaint}" VerticalAlignment="Center"
+                             IsVisible="{Binding !InputSensitivityAuto}" />
+                </Grid>
+                <Border Classes="rdivider" />
+                <Grid Classes="row" ColumnDefinitions="*,Auto">
+                  <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                    <TextBlock Classes="rrow" Text="{DynamicResource Settings_NoiseSuppression}" />
+                    <TextBlock Classes="rsub" Margin="0,1,0,0" Text="{DynamicResource Settings_NoiseSuppressionHint}" />
+                    <!-- RNNoise (BSD) attribution — keep visible for license compliance. -->
+                    <TextBlock Margin="0,2,0,0" FontSize="10.5" Foreground="{DynamicResource TextFaint}" Text="Powered by RNNoise" />
+                  </StackPanel>
+                  <ToggleSwitch Grid.Column="1" IsChecked="{Binding NoiseSuppression}" OnContent="{x:Null}"
+                                OffContent="{x:Null}" MinWidth="0" VerticalAlignment="Center" />
+                </Grid>
+                <Border Classes="rdivider" />
+                <Grid Classes="row" ColumnDefinitions="*,Auto">
+                  <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                    <TextBlock Classes="rrow" Text="{DynamicResource Settings_HearYourself}" />
+                    <TextBlock Classes="rsub" Margin="0,1,0,0" Text="{DynamicResource Settings_HearYourselfHint}" />
+                  </StackPanel>
+                  <Button Grid.Column="1" Classes="rchip" Classes.active="{Binding HearYourself}" VerticalAlignment="Center"
+                          Command="{Binding ToggleHearYourselfCommand}" Content="{Binding HearYourselfButtonText}" />
                 </Grid>
                 <Border Classes="rdivider" />
                 <Grid Classes="row" ColumnDefinitions="*,Auto">
@@ -371,6 +586,20 @@
                         <ItemsControl.ItemTemplate><DataTemplate><Border Classes="kbd"><TextBlock Text="{Binding}" /></Border></DataTemplate></ItemsControl.ItemTemplate>
                       </ItemsControl>
                       <Border Classes="kbd listening" IsVisible="{Binding IsCapturingPauseKey}"><TextBlock Text="{DynamicResource Settings_Hotkey_Listening}" /></Border>
+                    </Panel>
+                  </Button>
+                </Grid>
+                <Border Classes="rdivider" />
+                <Grid Classes="row" ColumnDefinitions="*,Auto">
+                  <TextBlock Grid.Column="0" Classes="rrow" Text="{DynamicResource Settings_Hotkey_Record}" VerticalAlignment="Center" />
+                  <Button Grid.Column="1" Classes="bare" Padding="0" Background="Transparent" BorderThickness="0" Cursor="Hand"
+                          VerticalAlignment="Center" Command="{Binding CaptureRecordHotkeyCommand}" ToolTip.Tip="{DynamicResource Settings_Hotkey_Desc}">
+                    <Panel>
+                      <ItemsControl ItemsSource="{Binding RecordHotkeyParts}" IsVisible="{Binding !IsCapturingRecordKey}">
+                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="6" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate><DataTemplate><Border Classes="kbd"><TextBlock Text="{Binding}" /></Border></DataTemplate></ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                      <Border Classes="kbd listening" IsVisible="{Binding IsCapturingRecordKey}"><TextBlock Text="{DynamicResource Settings_Hotkey_Listening}" /></Border>
                     </Panel>
                   </Button>
                 </Grid>

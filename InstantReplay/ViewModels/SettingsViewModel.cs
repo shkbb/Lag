@@ -3,7 +3,6 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Lag.Core;
 using Lag.Services;
-using Lag.Services.ObsIntegration;
 using Microsoft.Win32;
 using SharpHook.Native;
 using Velopack;
@@ -17,7 +16,7 @@ namespace Lag.ViewModels;
 /// </summary>
 public partial class SettingsViewModel : ViewModelBase
 {
-    private readonly Lag.Services.IReplayRecorder _engine;   // the active recorder (VFR, or OBS fallback)
+    private readonly Lag.Services.IReplayRecorder _engine;   // the active recorder (native VFR engine)
     private readonly GlobalHotkeyManager _hotkeyManager;
     private readonly GlobalHotkeyService _hotkeyService;
 
@@ -55,6 +54,7 @@ public partial class SettingsViewModel : ViewModelBase
     partial void OnSelectedBufferChanged(BufferOption value)
     {
         SaveSettingsRestartRequired();
+        RefreshPresetSelection();
     }
 
     /// <summary>
@@ -100,15 +100,18 @@ public partial class SettingsViewModel : ViewModelBase
     partial void OnSelectedMicrophoneChanged(MicrophoneInfo? value)
     {
         SaveSettingsRestartRequired();
+        RestartAudioMeterIfRunning();
     }
 
     private void RefreshMicrophones()
     {
+        string? prevId = SelectedMicrophone?.Id;
         Microphones.Clear();
         var mics = _hardwareDetector.GetMicrophones();
         foreach (var m in mics) Microphones.Add(m);
 
-        SelectedMicrophone = Microphones.FirstOrDefault();
+        // Preserve the current pick across a (hot-plug) refresh; fall back to the first device.
+        SelectedMicrophone = Microphones.FirstOrDefault(m => m.Id == prevId) ?? Microphones.FirstOrDefault();
     }
 
     // ───────────── Output device (whole-PC audio source) ─────────────
@@ -122,6 +125,7 @@ public partial class SettingsViewModel : ViewModelBase
     partial void OnSelectedOutputDeviceChanged(OutputDeviceInfo? value)
     {
         SaveSettingsRestartRequired();
+        RestartAudioMeterIfRunning();
     }
 
     /// <summary>Rebuilds the output list: a "Default" entry (empty id) first, then every active render
@@ -184,6 +188,7 @@ public partial class SettingsViewModel : ViewModelBase
     {
         try
         {
+            if (_screenshotKey == KeyCode.VcUndefined) { _hotkeyService.ClearScreenshotHotkey(); return; }
             _hotkeyService.UpdateScreenshotHotkey(_screenshotModifiers, _screenshotKey);
         }
         catch (Exception ex)
@@ -224,11 +229,53 @@ public partial class SettingsViewModel : ViewModelBase
     {
         try
         {
+            if (_pauseKey == KeyCode.VcUndefined) { _hotkeyService.ClearPauseHotkey(); return; }
             _hotkeyService.UpdatePauseHotkey(_pauseModifiers, _pauseKey);
         }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"Failed to apply pause hotkey: {ex.Message}");
+        }
+    }
+
+    // ───────────── Record start/stop (toggle) hotkey ─────────────
+
+    private KeyCode _recordKey = KeyCode.VcF7;
+    private ModifierMask _recordModifiers = ModifierMask.LeftAlt;
+
+    [ObservableProperty]
+    private string _recordHotkeyDisplayText = "Alt + F7";
+
+    partial void OnRecordHotkeyDisplayTextChanged(string value) =>
+        OnPropertyChanged(nameof(RecordHotkeyParts));
+
+    /// <summary>Record-toggle hotkey split into kbd-chip parts ("Alt","F7").</summary>
+    public IReadOnlyList<string> RecordHotkeyParts =>
+        RecordHotkeyDisplayText.Split('+', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+
+    [ObservableProperty]
+    private bool _isCapturingRecordKey;
+
+    private bool _recordCaptureMode;
+
+    [RelayCommand]
+    private void CaptureRecordHotkey()
+    {
+        _recordCaptureMode = true;
+        IsCapturingRecordKey = true;
+        _hotkeyManager.IsCapturing = true;
+    }
+
+    private void ApplyRecordHotkeyToService()
+    {
+        try
+        {
+            if (_recordKey == KeyCode.VcUndefined) { _hotkeyService.ClearRecordHotkey(); return; }
+            _hotkeyService.UpdateRecordHotkey(_recordModifiers, _recordKey);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Failed to apply record hotkey: {ex.Message}");
         }
     }
 
@@ -255,6 +302,7 @@ public partial class SettingsViewModel : ViewModelBase
         OnPropertyChanged(nameof(IsCustomFps));
         SaveSettingsRestartRequired();
         MaybeWarnIntensive();
+        RefreshPresetSelection();
     }
 
     /// <summary>Custom frame rate (used when the "Custom" preset is selected).</summary>
@@ -349,10 +397,19 @@ public partial class SettingsViewModel : ViewModelBase
     {
         get
         {
-            if (EffectiveFps > 60 || EffectiveBitrateKbps > 25_000) return true;
+            // Hardware-relative: "intensive" = beyond what we'd recommend for THIS machine. The Quality
+            // preset is our ceiling, so applying ANY preset never trips this — only a manual override
+            // above the hardware's headroom does (≈1440p/120/50Mbps on a 4070, ≈1080p/60 on an iGPU).
+            var ceiling = PresetResolver.Resolve(RecordingIntent.Quality, Profile);
+            int monH = SelectedMonitor != null ? (int)SelectedMonitor.Height : Profile.MonitorHeight;
+            int ceilH = ceiling.TargetHeight == 0 ? monH : ceiling.TargetHeight;
+
+            if (EffectiveFps > ceiling.Fps) return true;
+            // A FIXED bitrate above the ceiling (Auto / constant-quality is bounded, never counts).
+            if (ceiling.BitrateKbps > 0 && EffectiveBitrateKbps > ceiling.BitrateKbps) return true;
             int h = SelectedResolution?.TargetHeight ?? 0;
             if (h == 0) h = (int)(SelectedMonitor?.Height ?? 0);   // Native → the monitor's own height
-            return h > 1080;
+            return h > ceilH;
         }
     }
 
@@ -363,10 +420,20 @@ public partial class SettingsViewModel : ViewModelBase
 
     private bool _intensiveAcknowledged;
 
+    // Set while ApplyPreset writes the dropdowns one-by-one: each assignment fires its OnChanged →
+    // MaybeWarnIntensive, and an INTERMEDIATE state (e.g. the old 144 fps before fps is lowered to the
+    // preset's 60) would trip the warning even though the final preset is at/below the ceiling. A preset
+    // is never intensive (Quality IS the ceiling), so suppress the check until all values are written.
+    private bool _applyingPreset;
+
     private void MaybeWarnIntensive()
     {
-        if (_isInitializing || _intensiveAcknowledged) return;
-        if (IsIntensiveSelection) ShowIntensiveWarning = true;
+        if (_isInitializing || _intensiveAcknowledged || _applyingPreset) return;
+        if (IsIntensiveSelection)
+        {
+            OnPropertyChanged(nameof(IntensiveWarnSummary));   // refresh the ceiling shown in the text
+            ShowIntensiveWarning = true;
+        }
     }
 
     /// <summary>"I understand" — dismiss and don't nag again this session.</summary>
@@ -382,9 +449,28 @@ public partial class SettingsViewModel : ViewModelBase
         IntensiveTexts.TryGetValue(SelectedLanguage?.Code ?? "en", out var t) ? t : IntensiveTexts["en"];
 
     public string IntensiveWarnTitle => IntensiveT.Title;
-    public string IntensiveWarnSummary => IntensiveT.Summary;
     public string IntensiveWarnBody => IntensiveT.Body;
     public string IntensiveWarnOk => IntensiveT.Ok;
+
+    /// <summary>Summary line — the localized lead-in (reused up to its colon) followed by THIS machine's
+    /// recommended ceiling (the Quality preset), so the disclaimer reflects the real hardware instead of
+    /// a static 60/25/1080.</summary>
+    public string IntensiveWarnSummary
+    {
+        get
+        {
+            var ceiling = PresetResolver.Resolve(RecordingIntent.Quality, Profile);
+            int monH = SelectedMonitor != null ? (int)SelectedMonitor.Height : Profile.MonitorHeight;
+            int ceilH = ceiling.TargetHeight == 0 ? monH : ceiling.TargetHeight;
+            string mbps = ceiling.BitrateKbps > 0 ? $"{ceiling.BitrateKbps / 1000} Mbps" : "Auto";
+            string vals = $"{ceiling.Fps} FPS / {mbps} / {ceilH}p";
+
+            string tmpl = IntensiveT.Summary;
+            int colon = tmpl.LastIndexOfAny(new[] { ':', '：' });
+            string lead = colon > 0 ? tmpl.Substring(0, colon + 1) : tmpl;
+            return $"{lead} {vals}";
+        }
+    }
 
     private static readonly Dictionary<string, (string Title, string Summary, string Body, string Ok)> IntensiveTexts = new()
     {
@@ -524,6 +610,7 @@ public partial class SettingsViewModel : ViewModelBase
     {
         SaveSettingsRestartRequired();
         MaybeWarnIntensive();
+        RefreshPresetSelection();
     }
 
     // ───────────── Video Codec ─────────────
@@ -541,6 +628,7 @@ public partial class SettingsViewModel : ViewModelBase
     partial void OnSelectedCodecChanged(CodecOption value)
     {
         SaveSettingsRestartRequired();
+        RefreshPresetSelection();
     }
 
     // ───────────── Library Auto-Cleanup (opt-in) ─────────────
@@ -584,8 +672,10 @@ public partial class SettingsViewModel : ViewModelBase
     partial void OnSelectedBitrateChanged(BitrateOption value)
     {
         OnPropertyChanged(nameof(IsCustomBitrate));
+        OnPropertyChanged(nameof(BitrateSliderValue));   // slider re-reads the effective value when it (re)appears
         SaveSettingsRestartRequired();
         MaybeWarnIntensive();
+        RefreshPresetSelection();
     }
 
     /// <summary>Custom bitrate in Mbps (used when the "Custom" preset is selected).</summary>
@@ -623,6 +713,12 @@ public partial class SettingsViewModel : ViewModelBase
         get => EffectiveBitrateKbps / 1000.0;
         set
         {
+            // The slider is shown ONLY in Custom mode. When Auto (or a fixed preset) is selected the
+            // getter returns an out-of-range value (Auto → ≈0); the still-bound, hidden Slider clamps it
+            // to its Minimum (3) and, being TwoWay, writes that back here — which silently flipped the
+            // selection to "3 Mbps" after a refresh (the "Auto keeps reverting to 3 Mbps" bug). Only honour
+            // writes while the user is actually on the Custom slider.
+            if (!IsCustomBitrate) return;
             int mbps = Math.Clamp((int)Math.Round(value), MinBitrateMbps, MaxBitrateMbps);
             CustomBitrateMbps = mbps;
             var preset = BitrateOptions.FirstOrDefault(b => b.Kbps == mbps * 1000);
@@ -783,13 +879,59 @@ public partial class SettingsViewModel : ViewModelBase
 
     // ───────────── Microphone Volume ─────────────
 
-    /// <summary>Microphone volume in percent (0–100). Applied to the OBS mic source as a 0.0–1.0 gain.</summary>
+    /// <summary>Microphone volume in percent (0–100). Applied to the mic source as a 0.0–1.0 gain.</summary>
     [ObservableProperty]
     private int _micVolume = 100;
 
     partial void OnMicVolumeChanged(int value)
     {
         SaveSettingsRestartRequired();
+        OnPropertyChanged(nameof(IsMicBoosted));
+    }
+
+    /// <summary>True when the mic is boosted past 100% (gain &gt; 1.0) — flags the "louder than unity"
+    /// zone in the UI. The capture path hard-clamps samples to [-1,1], so a boost can't wrap/distort.</summary>
+    public bool IsMicBoosted => MicVolume > 100;
+
+    // ───────────── Input sensitivity (noise gate) ─────────────
+
+    /// <summary>Noise gate "input sensitivity": auto-track the room's noise floor (default) or use a
+    /// manual threshold. Affects recorded clips — below the threshold the mic is muted.</summary>
+    [ObservableProperty]
+    private bool _inputSensitivityAuto = true;
+
+    partial void OnInputSensitivityAutoChanged(bool value)
+    {
+        SaveSettingsRestartRequired();
+        PushGateConfig();   // apply live to the monitor / preview
+    }
+
+    /// <summary>Manual gate threshold, 0–100 on the mic-meter scale (used when not auto).</summary>
+    [ObservableProperty]
+    private int _inputSensitivityThreshold = 8;
+
+    partial void OnInputSensitivityThresholdChanged(int value)
+    {
+        SaveSettingsRestartRequired();
+        PushGateConfig();   // apply live to the monitor / preview
+        OnPropertyChanged(nameof(ThresholdDb));
+    }
+
+    /// <summary>Threshold shown as a dB-style label (UI convention, like Discord: 0% = −100 dB …
+    /// 100% = 0 dB). Cosmetic — the gate itself works on the perceptual 0..1 scale.</summary>
+    public string ThresholdDb => $"{InputSensitivityThreshold - 100} dB";
+
+    // ───────────── Noise suppression (RNNoise) ─────────────
+
+    /// <summary>RNNoise mic noise suppression (FFmpeg arnndn). Off by default. Affects recorded clips
+    /// AND the "hear yourself" preview — strips steady background noise (fans, hum, keyboard hiss).</summary>
+    [ObservableProperty]
+    private bool _noiseSuppression;
+
+    partial void OnNoiseSuppressionChanged(bool value)
+    {
+        SaveSettingsRestartRequired();
+        PushDenoiseConfig();   // apply live to the monitor / preview
     }
 
     // ───────────── Microphone Channels (stereo / mono) ─────────────
@@ -1285,6 +1427,14 @@ public partial class SettingsViewModel : ViewModelBase
 
             // Override defaults + device selections with persisted values when settings.json exists.
             LoadSettings();
+
+            // Build the hardware-tailored preset cards now that the option lists + persisted
+            // selections exist. Captures the machine profile (cheap; the encoder probe is already
+            // cached by the codec dropdown above) — fresh every launch, so upgrades are picked up.
+            InitPresets();
+
+            // Watch for audio-device hot-plug so the mic/output lists update live (headphones, USB mic).
+            InitDeviceWatcher();
         }
         finally
         {
@@ -1295,6 +1445,7 @@ public partial class SettingsViewModel : ViewModelBase
         ApplyHotkeyToGlobalService();
         ApplyScreenshotHotkeyToService();
         ApplyPauseHotkeyToService();
+        ApplyRecordHotkeyToService();
 
         // Re-assert "Game Mode off" each launch when enabled (Windows updates and the
         // user toggling it back in Windows Settings would otherwise silently undo it).
@@ -1322,6 +1473,7 @@ public partial class SettingsViewModel : ViewModelBase
     {
         try
         {
+            if (_hotkeyManager.RequiredKey == KeyCode.VcUndefined) { _hotkeyService.ClearSaveHotkey(); return; }
             _hotkeyService.UpdateHotkey(_hotkeyManager.RequiredModifiers, _hotkeyManager.RequiredKey);
         }
         catch (Exception ex)
@@ -1350,7 +1502,7 @@ public partial class SettingsViewModel : ViewModelBase
     /// </summary>
     public bool AreHotkeysSuppressed =>
         IsCapturingHotkey || IsCapturingPttKey || IsCapturingScreenshotKey || IsCapturingPauseKey ||
-        DateTime.UtcNow < _hotkeySuppressedUntil;
+        IsCapturingRecordKey || DateTime.UtcNow < _hotkeySuppressedUntil;
 
     private DateTime _hotkeySuppressedUntil = DateTime.MinValue;
 
@@ -1363,12 +1515,17 @@ public partial class SettingsViewModel : ViewModelBase
         // Swallow the keys the user is still holding (auto-repeat, late releases).
         _hotkeySuppressedUntil = DateTime.UtcNow.AddMilliseconds(800);
 
+        // Escape during capture = UNBIND: store the no-key sentinel (VcUndefined). FormatHotkey then
+        // shows "—" and the Apply* methods disable that Win32 hotkey. Persists as "VcUndefined".
+        KeyCode key = e.Cleared ? KeyCode.VcUndefined : e.Key;
+        ModifierMask mods = e.Cleared ? default : e.Modifiers;
+
         if (_screenshotCaptureMode)
         {
             _screenshotCaptureMode = false;
-            _screenshotKey = e.Key;
-            _screenshotModifiers = e.Modifiers;
-            ScreenshotHotkeyDisplayText = FormatHotkey(e.Modifiers, e.Key);
+            _screenshotKey = key;
+            _screenshotModifiers = mods;
+            ScreenshotHotkeyDisplayText = FormatHotkey(mods, key);
             IsCapturingScreenshotKey = false;
 
             ApplyScreenshotHotkeyToService();
@@ -1379,12 +1536,25 @@ public partial class SettingsViewModel : ViewModelBase
         if (_pauseCaptureMode)
         {
             _pauseCaptureMode = false;
-            _pauseKey = e.Key;
-            _pauseModifiers = e.Modifiers;
-            PauseHotkeyDisplayText = FormatHotkey(e.Modifiers, e.Key);
+            _pauseKey = key;
+            _pauseModifiers = mods;
+            PauseHotkeyDisplayText = FormatHotkey(mods, key);
             IsCapturingPauseKey = false;
 
             ApplyPauseHotkeyToService();
+            SaveSettings();
+            return;
+        }
+
+        if (_recordCaptureMode)
+        {
+            _recordCaptureMode = false;
+            _recordKey = key;
+            _recordModifiers = mods;
+            RecordHotkeyDisplayText = FormatHotkey(mods, key);
+            IsCapturingRecordKey = false;
+
+            ApplyRecordHotkeyToService();
             SaveSettings();
             return;
         }
@@ -1393,8 +1563,8 @@ public partial class SettingsViewModel : ViewModelBase
         if (_pttCaptureMode)
         {
             _pttCaptureMode = false;
-            _pttKey = e.Key;
-            PttKeyDisplayText = e.Key.ToString().Replace("Vc", "");
+            _pttKey = key;
+            PttKeyDisplayText = e.Cleared ? "—" : key.ToString().Replace("Vc", "");
             IsCapturingPttKey = false;
 
             ApplyPttToManager();
@@ -1402,10 +1572,10 @@ public partial class SettingsViewModel : ViewModelBase
             return;
         }
 
-        _hotkeyManager.RequiredKey = e.Key;
-        _hotkeyManager.RequiredModifiers = e.Modifiers;
+        _hotkeyManager.RequiredKey = key;
+        _hotkeyManager.RequiredModifiers = mods;
 
-        HotkeyDisplayText = FormatHotkey(e.Modifiers, e.Key);
+        HotkeyDisplayText = FormatHotkey(mods, key);
         IsCapturingHotkey = false;
 
         // Apply the new combination to the active Win32 hotkey, then persist it.
@@ -1418,6 +1588,8 @@ public partial class SettingsViewModel : ViewModelBase
     /// </summary>
     private static string FormatHotkey(ModifierMask modifiers, KeyCode key)
     {
+        if (key == KeyCode.VcUndefined) return "—";   // unbound / disabled
+
         var parts = new List<string>();
 
         if (modifiers.HasFlag(ModifierMask.LeftCtrl) || modifiers.HasFlag(ModifierMask.RightCtrl))
@@ -1461,7 +1633,7 @@ public partial class SettingsViewModel : ViewModelBase
 
     /// <summary>Persists settings AND, while a recording is live, flags that the change only takes
     /// effect after the recording is restarted. Use ONLY for settings baked into the capture
-    /// pipeline snapshot (everything in <see cref="Lag.Services.ObsIntegration.RecorderOptions"/>:
+    /// pipeline snapshot (everything in <see cref="Lag.Services.RecorderOptions"/>:
     /// monitor, fps, resolution, codec, bitrate, GPU, buffer, container, library folder, and all
     /// audio routing/levels). Settings that apply live — language, hotkeys, push-to-talk, Game
     /// Mode, autostart, library quota — call <see cref="SaveSettings"/> so they don't nag a
@@ -1495,6 +1667,8 @@ public partial class SettingsViewModel : ViewModelBase
                 ScreenshotModifiers = _screenshotModifiers.ToString(),
                 PauseKey = _pauseKey.ToString(),
                 PauseModifiers = _pauseModifiers.ToString(),
+                RecordKey = _recordKey.ToString(),
+                RecordModifiers = _recordModifiers.ToString(),
                 LibraryPath = LibraryPath,
                 FrameRate = EffectiveFps,
                 FileFormat = SelectedFormat,
@@ -1528,7 +1702,10 @@ public partial class SettingsViewModel : ViewModelBase
                 SystemAudioVolume = SystemAudioVolume,
                 MicEnabled = MicEnabled,
                 GameAudioEnabled = GameAudioEnabled,
-                GameAudioVolume = GameAudioVolume
+                GameAudioVolume = GameAudioVolume,
+                InputSensitivityAuto = InputSensitivityAuto,
+                InputSensitivityThreshold = InputSensitivityThreshold,
+                NoiseSuppression = NoiseSuppression
             };
 
             string dir = Path.GetDirectoryName(SettingsFilePath)!;
@@ -1578,6 +1755,12 @@ public partial class SettingsViewModel : ViewModelBase
                 _pauseModifiers = pauseMod;
             PauseHotkeyDisplayText = FormatHotkey(_pauseModifiers, _pauseKey);
 
+            if (Enum.TryParse<KeyCode>(settings.RecordKey, out var recordKey))
+                _recordKey = recordKey;
+            if (Enum.TryParse<ModifierMask>(settings.RecordModifiers, out var recordMod))
+                _recordModifiers = recordMod;
+            RecordHotkeyDisplayText = FormatHotkey(_recordModifiers, _recordKey);
+
 
             LibraryPath = settings.LibraryPath ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyVideos), "Lag");
             // FPS: clamp to this monitor's refresh (the file may come from a faster-panel machine),
@@ -1598,7 +1781,10 @@ public partial class SettingsViewModel : ViewModelBase
             }
 
             SelectedFormat = FormatOptions.Contains(settings.FileFormat) ? settings.FileFormat : "mp4";
-            MicVolume = Math.Clamp(settings.MicVolume, 0, 100);
+            MicVolume = Math.Clamp(settings.MicVolume, 0, 200);   // up to 200% (mic boost)
+            InputSensitivityAuto = settings.InputSensitivityAuto;
+            InputSensitivityThreshold = Math.Clamp(settings.InputSensitivityThreshold, 0, 100);
+            NoiseSuppression = settings.NoiseSuppression;
             SelectedResolution = ResolutionOptions.FirstOrDefault(r =>
                 r.TargetHeight == settings.OutputResolutionHeight) ?? ResolutionOptions[0];
             SelectedCodec = CodecOptions.FirstOrDefault(c =>
@@ -1663,7 +1849,7 @@ public partial class SettingsViewModel : ViewModelBase
             if (Enum.TryParse<KeyCode>(settings.PttKey, out var pttKey))
             {
                 _pttKey = pttKey;
-                PttKeyDisplayText = pttKey.ToString().Replace("Vc", "");
+                PttKeyDisplayText = pttKey == KeyCode.VcUndefined ? "—" : pttKey.ToString().Replace("Vc", "");
             }
             MicChannelIndex = settings.MicMono ? 1 : 0;
             SeparateAudioTracks = settings.SeparateAudioTracks;
@@ -1718,6 +1904,8 @@ public partial class SettingsViewModel : ViewModelBase
         /// <summary>Pause/resume-recording hotkey (separate combo). Default Alt+F8.</summary>
         public string PauseKey { get; set; } = "VcF8";
         public string PauseModifiers { get; set; } = "LeftAlt";
+        public string RecordKey { get; set; } = "VcF7";
+        public string RecordModifiers { get; set; } = "LeftAlt";
         public string FFmpegPath { get; set; } = "ffmpeg";
         public string LibraryPath { get; set; } = "";
         public int FrameRate { get; set; } = 30;
@@ -1791,6 +1979,13 @@ public partial class SettingsViewModel : ViewModelBase
         /// <summary>"Звук гри" row: capture the detected game's audio + its volume (default on, 100%).</summary>
         public bool GameAudioEnabled { get; set; } = true;
         public int GameAudioVolume { get; set; } = 100;
+
+        /// <summary>Input sensitivity (noise gate): auto-track the noise floor (default) + manual threshold.</summary>
+        public bool InputSensitivityAuto { get; set; } = true;
+        public int InputSensitivityThreshold { get; set; } = 8;
+
+        /// <summary>RNNoise mic noise suppression (arnndn). Off by default.</summary>
+        public bool NoiseSuppression { get; set; }
 
         /// <summary>Save system audio and mic as separate tracks in the file.</summary>
         public bool SeparateAudioTracks { get; set; }
@@ -1870,7 +2065,7 @@ public record GpuOption(int Index, string Display)
 /// </summary>
 public partial class AppAudioItem : ObservableObject
 {
-    /// <summary>Executable name used to match the OBS application-audio capture (e.g. "Discord.exe").</summary>
+    /// <summary>Executable name used to match the per-application audio capture (e.g. "Discord.exe").</summary>
     public string Exe { get; }
 
     /// <summary>Friendly name shown in the UI (app's FileDescription / window title / process name).
