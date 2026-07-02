@@ -36,6 +36,8 @@
 | **Smart Hardware Encoding** | Auto-picks the best encoder by probing your GPU — `H.264` / `HEVC` / `AV1` on `NVENC` (NVIDIA), `AMF` (AMD), `QSV` (Intel), or `x264` CPU fallback |
 | **Automatic Game Detection** | Detects the active game by GPU 3D-engine usage + Steam (no denylist, no curated DB), and auto-switches between game and full-desktop capture without stopping the buffer |
 | **Multi-track Audio** | Captures system/game sound **and** microphone — as separate tracks or a single mix. Per-app audio capture (record only chosen programs), selectable output device, push-to-talk, mono/stereo mic |
+| **Mic Noise Suppression** | Built-in **RNNoise** neural noise suppression cleans your microphone live — background hum, fans, and keyboard clatter are filtered out of recordings and mic monitoring |
+| **Hardware Presets** | One-click **Performance / Balanced / Quality** presets tuned to *your* machine — Lag probes your GPU, CPU, and displays and picks matching capture settings |
 | **Built-in Clip Editor** | Trim, cut out the middle, change speed, crop & reframe, rotate/flip, add text captions, and apply colour filters — then export to video or **GIF**, all inside the app |
 | **Global Hotkeys** | Save the last X seconds/minutes of gameplay with a single customizable keystroke |
 | **Pause & Resume** | Pause the rolling buffer — by button or a configurable global hotkey — then resume; the paused stretch is seamlessly absent from saved replays |
@@ -44,6 +46,7 @@
 | **Configurable Output** | Pick resolution, frame rate, bitrate, codec/vendor, container (`mp4` / `mkv` / `mov`), and GPU adapter |
 | **Auto-Updater** | Velopack integration: checks GitHub Releases on launch and updates automatically |
 | **Set and Forget** | Start with Windows, auto-start recording — configure once and forget |
+| **Light & Dark Themes** | A sleek dark theme and a warm cream light theme, plus a **System** mode that follows Windows live — with smoothly animated controls throughout |
 | **17 Languages** | Fully localized in 17 languages |
 
 ---
@@ -125,6 +128,8 @@ See [`LICENSE`](LICENSE) for full details.
 | **Апаратне прискорення** | Сам обирає найкращий кодек, перевіряючи вашу відеокарту — `H.264` / `HEVC` / `AV1` на `NVENC` (NVIDIA), `AMF` (AMD), `QSV` (Intel) або `x264` на процесорі |
 | **Автовизначення гри** | Визначає активну гру за завантаженням 3D-рушія GPU + Steam (без чорних списків і баз даних) і автоматично перемикається між грою та записом усього робочого столу, не зупиняючи буфер |
 | **Багатодоріжкове аудіо** | Записує звук системи/гри **та** мікрофон — окремими доріжками або одним міксом. Захоплення звуку обраних програм, вибір пристрою виводу, push-to-talk, моно/стерео мікрофон |
+| **Шумозаглушення мікрофона** | Вбудоване нейромережеве шумозаглушення **RNNoise** очищує мікрофон наживо — фоновий гул, вентилятори та стукіт клавіатури фільтруються із запису та прослуховування мікрофона |
+| **Апаратні пресети** | Пресети **Продуктивність / Баланс / Якість** в один клік, підібрані під *ваш* комп'ютер — Lag аналізує відеокарту, процесор і монітори та обирає відповідні налаштування запису |
 | **Вбудований редактор** | Обрізка, вирізання середини, зміна швидкості, кадрування та рефрейм, поворот/віддзеркалення, текстові підписи й кольорові фільтри — з експортом у відео або **GIF**, прямо в програмі |
 | **Глобальні гарячі клавіші** | Збережіть останні секунди або хвилини гри одним натисканням налаштованої клавіші |
 | **Пауза та відновлення** | Призупиніть кільцевий буфер — кнопкою або налаштовуваною глобальною гарячою клавішею — і відновіть; паузований проміжок безшовно відсутній у збережених повторах |
@@ -133,6 +138,7 @@ See [`LICENSE`](LICENSE) for full details.
 | **Гнучкий вихід** | Вибір роздільної здатності, частоти кадрів, бітрейту, кодека/виробника, контейнера (`mp4` / `mkv` / `mov`) та відеоадаптера |
 | **Автооновлення** | Velopack перевіряє GitHub при запуску й оновлює програму автоматично |
 | **Автоматизація** | Автозапуск разом з Windows та автоматичний початок запису |
+| **Світла і темна теми** | Стильна темна тема й тепла кремова світла, плюс режим **«Системна»**, що слідує за Windows наживо — з плавно анімованими елементами інтерфейсу |
 | **17 мов** | Повністю локалізовано 17 мовами |
 
 ---
