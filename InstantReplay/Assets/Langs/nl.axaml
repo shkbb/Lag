@@ -16,7 +16,7 @@
   <sys:String x:Key="Settings_Title">Instellingen</sys:String>
   <sys:String x:Key="Settings_PendingChanges">Wijzigingen worden van kracht na het herstarten van de opname.</sys:String>
   <sys:String x:Key="Settings_Group_Language">TAAL</sys:String>
-  <sys:String x:Key="Settings_Language">Taal</sys:String>
+  <sys:String x:Key="Settings_Language">Taal</sys:String>
   <sys:String x:Key="Settings_Theme">Thema</sys:String>
   <sys:String x:Key="Settings_Theme_Desc">Licht, donker of volg het systeem</sys:String>
   <sys:String x:Key="Theme_Light">Licht</sys:String>
@@ -83,7 +83,7 @@
   <sys:String x:Key="Editor_ResetTrim">Bijsnijden resetten</sys:String>
   <sys:String x:Key="Settings_Hotkey_Screenshot">Schermafbeelding</sys:String>
   <sys:String x:Key="Toast_ReplaySaved">Replay opgeslagen</sys:String>
-  <sys:String x:Key="Toast_ScreenshotSaved">Schermafbeelding opgeslagen</sys:String>
+  <sys:String x:Key="Toast_ScreenshotSaved">Schermafbeelding opgeslagen</sys:String>
   <sys:String x:Key="Toast_RecordingStarted">Opname gestart</sys:String>
   <sys:String x:Key="Toast_RecordingStopped">Opname gestopt</sys:String>
   <sys:String x:Key="Toast_NowRecording">Neemt nu op</sys:String>
@@ -166,7 +166,7 @@
 
   <sys:String x:Key="Library_EmptyTitle">Nog geen replays</sys:String>
   <!-- ════════ Pause recording ════════ -->
-  <sys:String x:Key="Settings_Hotkey_Pause">Opname pauzeren</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Pause">Opname pauzeren</sys:String>
   <sys:String x:Key="Settings_Hotkey_Record">Opname starten/stoppen</sys:String>
   <sys:String x:Key="Btn_PauseRecording">Pauzeren</sys:String>
   <sys:String x:Key="Btn_ResumeRecording">Hervatten</sys:String>
@@ -203,7 +203,7 @@
   <sys:String x:Key="Editor_TextSize">Grootte</sys:String>
   <sys:String x:Key="Library_ClearSelection">Selectie wissen</sys:String>
   <sys:String x:Key="Library_ClipCount">{0} CLIPS</sys:String>
-  <sys:String x:Key="Library_Favorites">Favorieten</sys:String>
+  <sys:String x:Key="Library_Favorites">Favorieten</sys:String>
   <sys:String x:Key="Library_Desktop">Bureaublad</sys:String>
   <sys:String x:Key="Library_GroupCount">{0} clips</sys:String>
   <sys:String x:Key="Library_NoResults">Geen clips komen overeen met je zoekopdracht.</sys:String>
@@ -242,4 +242,22 @@
   <sys:String x:Key="Settings_Threshold">Threshold</sys:String>
   <sys:String x:Key="Settings_Listen">Listen</sys:String>
   <sys:String x:Key="Settings_Stop">Stop</sys:String>
+  <sys:String x:Key="Settings_Group_Overlay">Overlay</sys:String>
+  <sys:String x:Key="Settings_WebcamOverlay">Webcam in opnames</sys:String>
+  <sys:String x:Key="Settings_WebcamOverlay_Desc">Toon je camera in een hoek van opgeslagen clips</sys:String>
+  <sys:String x:Key="Settings_WebcamDevice">Camera</sys:String>
+  <sys:String x:Key="Settings_WebcamPosition">Positie</sys:String>
+  <sys:String x:Key="Settings_WebcamSize">Grootte</sys:String>
+  <sys:String x:Key="Settings_KeysOverlay">Toon ingedrukte toetsen</sys:String>
+  <sys:String x:Key="Settings_KeysOverlay_Desc">Toon toetsaanslagen en muisknoppen in clips</sys:String>
+
+  <sys:String x:Key="Overlay_Enable">Video-overlays</sys:String>
+  <sys:String x:Key="Overlay_Enable_Desc">Verwerk webcam en toetsenbord/muis in opnames — kies hieronder een hoek voor elk</sys:String>
+  <sys:String x:Key="Overlay_None">Geen</sys:String>
+  <sys:String x:Key="Overlay_Camera">Camera</sys:String>
+  <sys:String x:Key="Overlay_Keys">Toetsenbord + muis</sys:String>
+
+  <sys:String x:Key="Overlay_Stats">Bronnenmonitor</sys:String>
+
+  <sys:String x:Key="Overlay_WheelHint">Sleep om te verplaatsen · sleep een rand of scroll om de grootte te wijzigen</sys:String>
 </ResourceDictionary>

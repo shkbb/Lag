@@ -229,6 +229,11 @@
               </Panel>
             </Border>
 
+            <!-- Thin loading strip while a clip is opening (big HDD files take seconds) -->
+            <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsClipLoading}"
+                         Height="3" MinHeight="3" VerticalAlignment="Top" Margin="1,1,1,0"
+                         Foreground="{DynamicResource Accent}" Background="Transparent" BorderThickness="0" />
+
             <!-- Big centre play (mockup): shown while paused, over the picture -->
             <Button Classes="playbtn" Width="66" Height="66" CornerRadius="33"
                     HorizontalAlignment="Center" VerticalAlignment="Center"
@@ -241,7 +246,7 @@
             <!-- Control bar (floating over the video). Screenshot mode hides all but fullscreen. -->
             <Border x:Name="ControlsBar" Margin="12" VerticalAlignment="Bottom"
                     Classes.compact="{Binding IsViewingImage}"
-                    Background="#D10A0C0F" CornerRadius="12" Padding="14,12,14,10">
+                    Background="{DynamicResource PlayerBarBrush}" CornerRadius="12" Padding="14,12,14,10">
               <StackPanel Spacing="10">
 
                 <!-- Progress: time + timeline -->
@@ -355,6 +360,11 @@
               Background="{DynamicResource SurfaceApp}" BorderBrush="{DynamicResource BorderCard}"
               BorderThickness="1" CornerRadius="14">
         <Grid RowDefinitions="Auto,*,Auto">
+
+          <!-- Thin strip while the replay LIST is being scanned (same as the Library's) -->
+          <ProgressBar Grid.Row="0" IsIndeterminate="True" IsVisible="{Binding Library.IsLoading}"
+                       Height="3" MinHeight="3" VerticalAlignment="Top" Margin="1,1,1,0"
+                       Foreground="{DynamicResource Accent}" Background="Transparent" BorderThickness="0" />
 
           <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="18,18,18,12">
             <TextBlock Grid.Column="0" Text="{DynamicResource Player_Replays}"

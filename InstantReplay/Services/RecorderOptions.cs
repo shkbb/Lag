@@ -84,6 +84,30 @@ public sealed class RecorderOptions
 
     /// <summary>Game-audio volume in percent (0–100).</summary>
     public int GameAudioVolume { get; init; } = 100;
+
+    // ── Overlay (baked into recorded frames). Positions are fractions of the free space
+    // (0 = left/top, 1 = right/bottom); scales are element height / frame height. ──
+
+    public bool WebcamOverlay { get; init; }
+
+    /// <summary>Camera device id (null/empty = system default).</summary>
+    public string? WebcamDeviceId { get; init; }
+
+    public double WebcamX { get; init; } = 0.97;
+    public double WebcamY { get; init; } = 0.95;
+    public double WebcamScale { get; init; } = 0.24;
+
+    public bool KeysOverlay { get; init; }
+    public double KeysX { get; init; } = 0.03;
+    public double KeysY { get; init; } = 0.95;
+    public double KeysScale { get; init; } = 0.20;
+
+    /// <summary>Steam-style resource monitor panel; detail: 0 = FPS, 1 = + CPU/GPU, 2 = + RAM.</summary>
+    public bool StatsOverlay { get; init; }
+    public double StatsX { get; init; } = 0.5;
+    public double StatsY { get; init; } = 0.02;
+    public double StatsScale { get; init; } = 0.045;
+    public int StatsDetail { get; init; } = 1;
 }
 
 /// <summary>One application whose audio should be captured, with its linear volume (1.0 = 100%).</summary>

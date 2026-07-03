@@ -16,7 +16,7 @@
   <sys:String x:Key="Settings_Title">設定</sys:String>
   <sys:String x:Key="Settings_PendingChanges">変更は録画の再開後に有効になります。</sys:String>
   <sys:String x:Key="Settings_Group_Language">言語</sys:String>
-  <sys:String x:Key="Settings_Language">言語</sys:String>
+  <sys:String x:Key="Settings_Language">言語</sys:String>
   <sys:String x:Key="Settings_Theme">テーマ</sys:String>
   <sys:String x:Key="Settings_Theme_Desc">ライト、ダーク、またはシステムに従う</sys:String>
   <sys:String x:Key="Theme_Light">ライト</sys:String>
@@ -83,7 +83,7 @@
   <sys:String x:Key="Editor_ResetTrim">トリミングをリセット</sys:String>
   <sys:String x:Key="Settings_Hotkey_Screenshot">スクリーンショット</sys:String>
   <sys:String x:Key="Toast_ReplaySaved">リプレイを保存しました</sys:String>
-  <sys:String x:Key="Toast_ScreenshotSaved">スクリーンショットを保存しました</sys:String>
+  <sys:String x:Key="Toast_ScreenshotSaved">スクリーンショットを保存しました</sys:String>
   <sys:String x:Key="Toast_RecordingStarted">録画を開始しました</sys:String>
   <sys:String x:Key="Toast_RecordingStopped">録画を停止しました</sys:String>
   <sys:String x:Key="Toast_NowRecording">録画中</sys:String>
@@ -166,7 +166,7 @@
 
   <sys:String x:Key="Library_EmptyTitle">まだリプレイがありません</sys:String>
   <!-- ════════ Pause recording ════════ -->
-  <sys:String x:Key="Settings_Hotkey_Pause">録画を一時停止</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Pause">録画を一時停止</sys:String>
   <sys:String x:Key="Settings_Hotkey_Record">録画の開始/停止</sys:String>
   <sys:String x:Key="Btn_PauseRecording">一時停止</sys:String>
   <sys:String x:Key="Btn_ResumeRecording">再開</sys:String>
@@ -203,7 +203,7 @@
   <sys:String x:Key="Editor_TextSize">サイズ</sys:String>
   <sys:String x:Key="Library_ClearSelection">選択を解除</sys:String>
   <sys:String x:Key="Library_ClipCount">{0} クリップ</sys:String>
-  <sys:String x:Key="Library_Favorites">お気に入り</sys:String>
+  <sys:String x:Key="Library_Favorites">お気に入り</sys:String>
   <sys:String x:Key="Library_Desktop">デスクトップ</sys:String>
   <sys:String x:Key="Library_GroupCount">{0} クリップ</sys:String>
   <sys:String x:Key="Library_NoResults">検索に一致するクリップがありません。</sys:String>
@@ -242,4 +242,22 @@
   <sys:String x:Key="Settings_Threshold">Threshold</sys:String>
   <sys:String x:Key="Settings_Listen">Listen</sys:String>
   <sys:String x:Key="Settings_Stop">Stop</sys:String>
+  <sys:String x:Key="Settings_Group_Overlay">オーバーレイ</sys:String>
+  <sys:String x:Key="Settings_WebcamOverlay">録画にウェブカメラを表示</sys:String>
+  <sys:String x:Key="Settings_WebcamOverlay_Desc">保存したクリップの隅にカメラを表示します</sys:String>
+  <sys:String x:Key="Settings_WebcamDevice">カメラ</sys:String>
+  <sys:String x:Key="Settings_WebcamPosition">位置</sys:String>
+  <sys:String x:Key="Settings_WebcamSize">サイズ</sys:String>
+  <sys:String x:Key="Settings_KeysOverlay">押したキーを表示</sys:String>
+  <sys:String x:Key="Settings_KeysOverlay_Desc">キーとマウス操作をクリップに表示します</sys:String>
+
+  <sys:String x:Key="Overlay_Enable">ビデオオーバーレイ</sys:String>
+  <sys:String x:Key="Overlay_Enable_Desc">ウェブカメラとキーボード/マウスを録画に埋め込みます — 下でそれぞれの隅を選択</sys:String>
+  <sys:String x:Key="Overlay_None">なし</sys:String>
+  <sys:String x:Key="Overlay_Camera">カメラ</sys:String>
+  <sys:String x:Key="Overlay_Keys">キーボード + マウス</sys:String>
+
+  <sys:String x:Key="Overlay_Stats">リソースモニター</sys:String>
+
+  <sys:String x:Key="Overlay_WheelHint">ドラッグで移動 · 端をドラッグまたはホイールでサイズ変更</sys:String>
 </ResourceDictionary>

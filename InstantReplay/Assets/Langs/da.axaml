@@ -16,7 +16,7 @@
   <sys:String x:Key="Settings_Title">Indstillinger</sys:String>
   <sys:String x:Key="Settings_PendingChanges">Ændringerne træder i kraft, når optagelsen genstartes.</sys:String>
   <sys:String x:Key="Settings_Group_Language">SPROG</sys:String>
-  <sys:String x:Key="Settings_Language">Sprog</sys:String>
+  <sys:String x:Key="Settings_Language">Sprog</sys:String>
   <sys:String x:Key="Settings_Theme">Tema</sys:String>
   <sys:String x:Key="Settings_Theme_Desc">Lyst, mørkt eller følg systemet</sys:String>
   <sys:String x:Key="Theme_Light">Lyst</sys:String>
@@ -83,7 +83,7 @@
   <sys:String x:Key="Editor_ResetTrim">Nulstil trimning</sys:String>
   <sys:String x:Key="Settings_Hotkey_Screenshot">Skærmbillede</sys:String>
   <sys:String x:Key="Toast_ReplaySaved">Replay gemt</sys:String>
-  <sys:String x:Key="Toast_ScreenshotSaved">Skærmbillede gemt</sys:String>
+  <sys:String x:Key="Toast_ScreenshotSaved">Skærmbillede gemt</sys:String>
   <sys:String x:Key="Toast_RecordingStarted">Optagelse startet</sys:String>
   <sys:String x:Key="Toast_RecordingStopped">Optagelse stoppet</sys:String>
   <sys:String x:Key="Toast_NowRecording">Optager nu</sys:String>
@@ -166,7 +166,7 @@
 
   <sys:String x:Key="Library_EmptyTitle">Ingen replays endnu</sys:String>
   <!-- ════════ Pause recording ════════ -->
-  <sys:String x:Key="Settings_Hotkey_Pause">Sæt optagelse på pause</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Pause">Sæt optagelse på pause</sys:String>
   <sys:String x:Key="Settings_Hotkey_Record">Start/stop optagelse</sys:String>
   <sys:String x:Key="Btn_PauseRecording">Pause</sys:String>
   <sys:String x:Key="Btn_ResumeRecording">Genoptag</sys:String>
@@ -203,7 +203,7 @@
   <sys:String x:Key="Editor_TextSize">Størrelse</sys:String>
   <sys:String x:Key="Library_ClearSelection">Ryd markering</sys:String>
   <sys:String x:Key="Library_ClipCount">{0} KLIP</sys:String>
-  <sys:String x:Key="Library_Favorites">Favoritter</sys:String>
+  <sys:String x:Key="Library_Favorites">Favoritter</sys:String>
   <sys:String x:Key="Library_Desktop">Skrivebord</sys:String>
   <sys:String x:Key="Library_GroupCount">{0} klip</sys:String>
   <sys:String x:Key="Library_NoResults">Ingen klip matcher din søgning.</sys:String>
@@ -242,4 +242,22 @@
   <sys:String x:Key="Settings_Threshold">Threshold</sys:String>
   <sys:String x:Key="Settings_Listen">Listen</sys:String>
   <sys:String x:Key="Settings_Stop">Stop</sys:String>
+  <sys:String x:Key="Settings_Group_Overlay">Overlay</sys:String>
+  <sys:String x:Key="Settings_WebcamOverlay">Webcam i optagelser</sys:String>
+  <sys:String x:Key="Settings_WebcamOverlay_Desc">Vis dit kamera i et hjørne af gemte klip</sys:String>
+  <sys:String x:Key="Settings_WebcamDevice">Kamera</sys:String>
+  <sys:String x:Key="Settings_WebcamPosition">Placering</sys:String>
+  <sys:String x:Key="Settings_WebcamSize">Størrelse</sys:String>
+  <sys:String x:Key="Settings_KeysOverlay">Vis trykkede taster</sys:String>
+  <sys:String x:Key="Settings_KeysOverlay_Desc">Vis tastatur- og museknapper oven på klip</sys:String>
+
+  <sys:String x:Key="Overlay_Enable">Video-overlays</sys:String>
+  <sys:String x:Key="Overlay_Enable_Desc">Indlejr webcam og tastatur/mus i optagelser — vælg et hjørne til hver nedenfor</sys:String>
+  <sys:String x:Key="Overlay_None">Ingen</sys:String>
+  <sys:String x:Key="Overlay_Camera">Kamera</sys:String>
+  <sys:String x:Key="Overlay_Keys">Tastatur + mus</sys:String>
+
+  <sys:String x:Key="Overlay_Stats">Ressourceovervågning</sys:String>
+
+  <sys:String x:Key="Overlay_WheelHint">Træk for at flytte · træk i en kant eller rul med hjulet for at ændre størrelse</sys:String>
 </ResourceDictionary>

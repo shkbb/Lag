@@ -16,7 +16,7 @@
   <sys:String x:Key="Settings_Title">Nustatymai</sys:String>
   <sys:String x:Key="Settings_PendingChanges">Pakeitimai įsigalios iš naujo paleidus įrašymą.</sys:String>
   <sys:String x:Key="Settings_Group_Language">KALBA</sys:String>
-  <sys:String x:Key="Settings_Language">Kalba</sys:String>
+  <sys:String x:Key="Settings_Language">Kalba</sys:String>
   <sys:String x:Key="Settings_Theme">Tema</sys:String>
   <sys:String x:Key="Settings_Theme_Desc">Šviesi, tamsi arba pagal sistemą</sys:String>
   <sys:String x:Key="Theme_Light">Šviesi</sys:String>
@@ -83,7 +83,7 @@
   <sys:String x:Key="Editor_ResetTrim">Atstatyti apkarpymą</sys:String>
   <sys:String x:Key="Settings_Hotkey_Screenshot">Ekrano nuotrauka</sys:String>
   <sys:String x:Key="Toast_ReplaySaved">Pakartojimas išsaugotas</sys:String>
-  <sys:String x:Key="Toast_ScreenshotSaved">Ekrano nuotrauka išsaugota</sys:String>
+  <sys:String x:Key="Toast_ScreenshotSaved">Ekrano nuotrauka išsaugota</sys:String>
   <sys:String x:Key="Toast_RecordingStarted">Įrašymas pradėtas</sys:String>
   <sys:String x:Key="Toast_RecordingStopped">Įrašymas sustabdytas</sys:String>
   <sys:String x:Key="Toast_NowRecording">Dabar įrašoma</sys:String>
@@ -166,7 +166,7 @@
 
   <sys:String x:Key="Library_EmptyTitle">Pakartojimų dar nėra</sys:String>
   <!-- ════════ Pause recording ════════ -->
-  <sys:String x:Key="Settings_Hotkey_Pause">Pristabdyti įrašymą</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Pause">Pristabdyti įrašymą</sys:String>
   <sys:String x:Key="Settings_Hotkey_Record">Pradėti/stabdyti įrašymą</sys:String>
   <sys:String x:Key="Btn_PauseRecording">Pristabdyti</sys:String>
   <sys:String x:Key="Btn_ResumeRecording">Tęsti</sys:String>
@@ -203,7 +203,7 @@
   <sys:String x:Key="Editor_TextSize">Dydis</sys:String>
   <sys:String x:Key="Library_ClearSelection">Išvalyti žymėjimą</sys:String>
   <sys:String x:Key="Library_ClipCount">{0} KLIPŲ</sys:String>
-  <sys:String x:Key="Library_Favorites">Mėgstami</sys:String>
+  <sys:String x:Key="Library_Favorites">Mėgstami</sys:String>
   <sys:String x:Key="Library_Desktop">Darbalaukis</sys:String>
   <sys:String x:Key="Library_GroupCount">{0} klipų</sys:String>
   <sys:String x:Key="Library_NoResults">Nė vienas klipas neatitinka paieškos.</sys:String>
@@ -242,4 +242,22 @@
   <sys:String x:Key="Settings_Threshold">Threshold</sys:String>
   <sys:String x:Key="Settings_Listen">Listen</sys:String>
   <sys:String x:Key="Settings_Stop">Stop</sys:String>
+  <sys:String x:Key="Settings_Group_Overlay">Perdanga</sys:String>
+  <sys:String x:Key="Settings_WebcamOverlay">Kamera įrašuose</sys:String>
+  <sys:String x:Key="Settings_WebcamOverlay_Desc">Rodyti kamerą išsaugotų klipų kampe</sys:String>
+  <sys:String x:Key="Settings_WebcamDevice">Kamera</sys:String>
+  <sys:String x:Key="Settings_WebcamPosition">Padėtis</sys:String>
+  <sys:String x:Key="Settings_WebcamSize">Dydis</sys:String>
+  <sys:String x:Key="Settings_KeysOverlay">Rodyti paspaustus klavišus</sys:String>
+  <sys:String x:Key="Settings_KeysOverlay_Desc">Rodyti klavišų ir pelės paspaudimus klipuose</sys:String>
+
+  <sys:String x:Key="Overlay_Enable">Vaizdo perdangos</sys:String>
+  <sys:String x:Key="Overlay_Enable_Desc">Įtraukti kamerą ir klaviatūrą/pelę į įrašus — pasirinkite kampą kiekvienam žemiau</sys:String>
+  <sys:String x:Key="Overlay_None">Nieko</sys:String>
+  <sys:String x:Key="Overlay_Camera">Kamera</sys:String>
+  <sys:String x:Key="Overlay_Keys">Klaviatūra + pelė</sys:String>
+
+  <sys:String x:Key="Overlay_Stats">Išteklių stebėjimas</sys:String>
+
+  <sys:String x:Key="Overlay_WheelHint">Tempkite norėdami perkelti · už krašto arba ratuku keiskite dydį</sys:String>
 </ResourceDictionary>

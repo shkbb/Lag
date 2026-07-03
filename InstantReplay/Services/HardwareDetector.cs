@@ -63,8 +63,11 @@ public sealed partial class HardwareDetector
 
     /// <summary>
     /// Represents an available display monitor and its unscaled native render bounds.
+    /// StableId is the monitor's PnP device path — unlike the GDI \\.\DISPLAYn DeviceName,
+    /// it survives reboots and display-topology changes (docking, virtual displays), so it is
+    /// what monitor selection gets persisted and matched by.
     /// </summary>
-    public record MonitorInfo(int Index, string DeviceName, uint Width, uint Height, bool IsPrimary, uint RefreshRate = 0)
+    public record MonitorInfo(int Index, string DeviceName, uint Width, uint Height, bool IsPrimary, uint RefreshRate = 0, string StableId = "")
     {
         public override string ToString() =>
             $"{DeviceName} ({Width}x{Height}{(RefreshRate > 0 ? $" @{RefreshRate}Hz" : "")}){(IsPrimary ? " [Primary]" : "")}";
@@ -102,12 +105,54 @@ public sealed partial class HardwareDetector
                     bool isPrimary = (info.dwFlags & MONITORINFOF_PRIMARY) != 0;
                     string name = new string(info.szDevice).TrimEnd('\0');
                     uint refresh = QueryRefreshRate(name);
+                    string stableId = QueryMonitorStableId(name);
 
-                    monitors.Add(new MonitorInfo(monitors.Count, name, width, height, isPrimary, refresh));
+                    monitors.Add(new MonitorInfo(monitors.Count, name, width, height, isPrimary, refresh, stableId));
                 }
                 return true;
             }, IntPtr.Zero);
     }
+
+    /// <summary>
+    /// Boot-stable identity of the physical monitor behind a \\.\DISPLAYn adapter name: the
+    /// monitor's PnP device interface path (\\?\DISPLAY#VENDOR….#UID…#…). GDI display numbers
+    /// get reshuffled by driver/topology changes, so persistence must not key on them.
+    /// Empty when the query fails (matching then falls back to the primary display).
+    /// </summary>
+    private static string QueryMonitorStableId(string deviceName)
+    {
+        var dd = new DISPLAY_DEVICE();
+        dd.cb = Marshal.SizeOf(typeof(DISPLAY_DEVICE));
+        // iDevNum 0 = the (first) monitor attached to this display adapter.
+        if (EnumDisplayDevices(deviceName, 0, ref dd, EDD_GET_DEVICE_INTERFACE_NAME))
+            return dd.DeviceID?.TrimEnd('\0') ?? "";
+        return "";
+    }
+
+    /// <summary>HMONITOR of the display currently hosting the window (IntPtr.Zero when unknown).
+    /// Used to vsync-lock the render timer to that display's DXGI output.</summary>
+    public static IntPtr GetWindowMonitor(IntPtr hwnd) =>
+        hwnd == IntPtr.Zero ? IntPtr.Zero : MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+
+    /// <summary>Refresh rate (Hz) of the monitor currently hosting the given window; 0 when
+    /// unknown. Static and cheap (three user32 calls) — window move/state handlers call it to
+    /// retune the render timer to the panel the user is actually looking at.</summary>
+    public static uint GetWindowRefreshRate(IntPtr hwnd)
+    {
+        IntPtr hmon = GetWindowMonitor(hwnd);
+        if (hmon == IntPtr.Zero) return 0;
+
+        var info = new MONITORINFOEX();
+        info.cbSize = Marshal.SizeOf(typeof(MONITORINFOEX));
+        if (!GetMonitorInfo(hmon, ref info)) return 0;
+
+        return QueryRefreshRate(new string(info.szDevice).TrimEnd('\0'));
+    }
+
+    private const uint MONITOR_DEFAULTTONEAREST = 2;
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr MonitorFromWindow(IntPtr hwnd, uint dwFlags);
 
     /// <summary>Current refresh rate (Hz) of a display by its adapter device name (\\.\DISPLAYn).
     /// 0 when it can't be read.</summary>
@@ -129,6 +174,22 @@ public sealed partial class HardwareDetector
 
     [DllImport("user32.dll", CharSet = CharSet.Auto)]
     private static extern bool EnumDisplaySettings(string lpszDeviceName, int iModeNum, ref DEVMODE lpDevMode);
+
+    private const uint EDD_GET_DEVICE_INTERFACE_NAME = 0x1;
+
+    [DllImport("user32.dll", CharSet = CharSet.Auto)]
+    private static extern bool EnumDisplayDevices(string? lpDevice, uint iDevNum, ref DISPLAY_DEVICE lpDisplayDevice, uint dwFlags);
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+    private struct DISPLAY_DEVICE
+    {
+        public int cb;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)] public string DeviceName;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)] public string DeviceString;
+        public int StateFlags;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)] public string DeviceID;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)] public string DeviceKey;
+    }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
     private struct DEVMODE

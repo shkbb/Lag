@@ -16,7 +16,7 @@
   <sys:String x:Key="Settings_Title">Asetukset</sys:String>
   <sys:String x:Key="Settings_PendingChanges">Muutokset tulevat voimaan, kun tallennus käynnistetään uudelleen.</sys:String>
   <sys:String x:Key="Settings_Group_Language">KIELI</sys:String>
-  <sys:String x:Key="Settings_Language">Kieli</sys:String>
+  <sys:String x:Key="Settings_Language">Kieli</sys:String>
   <sys:String x:Key="Settings_Theme">Teema</sys:String>
   <sys:String x:Key="Settings_Theme_Desc">Vaalea, tumma tai järjestelmän mukaan</sys:String>
   <sys:String x:Key="Theme_Light">Vaalea</sys:String>
@@ -83,7 +83,7 @@
   <sys:String x:Key="Editor_ResetTrim">Nollaa leikkaus</sys:String>
   <sys:String x:Key="Settings_Hotkey_Screenshot">Kuvakaappaus</sys:String>
   <sys:String x:Key="Toast_ReplaySaved">Uusinta tallennettu</sys:String>
-  <sys:String x:Key="Toast_ScreenshotSaved">Kuvakaappaus tallennettu</sys:String>
+  <sys:String x:Key="Toast_ScreenshotSaved">Kuvakaappaus tallennettu</sys:String>
   <sys:String x:Key="Toast_RecordingStarted">Tallennus aloitettu</sys:String>
   <sys:String x:Key="Toast_RecordingStopped">Tallennus pysäytetty</sys:String>
   <sys:String x:Key="Toast_NowRecording">Tallentaa nyt</sys:String>
@@ -166,7 +166,7 @@
 
   <sys:String x:Key="Library_EmptyTitle">Ei vielä uusintoja</sys:String>
   <!-- ════════ Pause recording ════════ -->
-  <sys:String x:Key="Settings_Hotkey_Pause">Keskeytä tallennus</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Pause">Keskeytä tallennus</sys:String>
   <sys:String x:Key="Settings_Hotkey_Record">Aloita/lopeta tallennus</sys:String>
   <sys:String x:Key="Btn_PauseRecording">Keskeytä</sys:String>
   <sys:String x:Key="Btn_ResumeRecording">Jatka</sys:String>
@@ -203,7 +203,7 @@
   <sys:String x:Key="Editor_TextSize">Koko</sys:String>
   <sys:String x:Key="Library_ClearSelection">Tyhjennä valinta</sys:String>
   <sys:String x:Key="Library_ClipCount">{0} LEIKETTÄ</sys:String>
-  <sys:String x:Key="Library_Favorites">Suosikit</sys:String>
+  <sys:String x:Key="Library_Favorites">Suosikit</sys:String>
   <sys:String x:Key="Library_Desktop">Työpöytä</sys:String>
   <sys:String x:Key="Library_GroupCount">{0} leikettä</sys:String>
   <sys:String x:Key="Library_NoResults">Mikään leike ei vastaa hakuasi.</sys:String>
@@ -242,4 +242,22 @@
   <sys:String x:Key="Settings_Threshold">Threshold</sys:String>
   <sys:String x:Key="Settings_Listen">Listen</sys:String>
   <sys:String x:Key="Settings_Stop">Stop</sys:String>
+  <sys:String x:Key="Settings_Group_Overlay">Peittokuva</sys:String>
+  <sys:String x:Key="Settings_WebcamOverlay">Webkamera tallenteissa</sys:String>
+  <sys:String x:Key="Settings_WebcamOverlay_Desc">Näytä kamera tallennettujen klippien kulmassa</sys:String>
+  <sys:String x:Key="Settings_WebcamDevice">Kamera</sys:String>
+  <sys:String x:Key="Settings_WebcamPosition">Sijainti</sys:String>
+  <sys:String x:Key="Settings_WebcamSize">Koko</sys:String>
+  <sys:String x:Key="Settings_KeysOverlay">Näytä painetut näppäimet</sys:String>
+  <sys:String x:Key="Settings_KeysOverlay_Desc">Näytä näppäin- ja hiiripainallukset klipeissä</sys:String>
+
+  <sys:String x:Key="Overlay_Enable">Videopeittokuvat</sys:String>
+  <sys:String x:Key="Overlay_Enable_Desc">Sisällytä webkamera ja näppäimistö/hiiri tallenteisiin — valitse kummallekin kulma alta</sys:String>
+  <sys:String x:Key="Overlay_None">Ei mitään</sys:String>
+  <sys:String x:Key="Overlay_Camera">Kamera</sys:String>
+  <sys:String x:Key="Overlay_Keys">Näppäimistö + hiiri</sys:String>
+
+  <sys:String x:Key="Overlay_Stats">Resurssien valvonta</sys:String>
+
+  <sys:String x:Key="Overlay_WheelHint">Siirrä vetämällä · muuta kokoa reunasta vetämällä tai rullalla</sys:String>
 </ResourceDictionary>

@@ -16,7 +16,7 @@
   <sys:String x:Key="Settings_Title">Iestatījumi</sys:String>
   <sys:String x:Key="Settings_PendingChanges">Izmaiņas stāsies spēkā pēc ierakstīšanas restartēšanas.</sys:String>
   <sys:String x:Key="Settings_Group_Language">VALODA</sys:String>
-  <sys:String x:Key="Settings_Language">Valoda</sys:String>
+  <sys:String x:Key="Settings_Language">Valoda</sys:String>
   <sys:String x:Key="Settings_Theme">Tēma</sys:String>
   <sys:String x:Key="Settings_Theme_Desc">Gaiša, tumša vai kā sistēmā</sys:String>
   <sys:String x:Key="Theme_Light">Gaiša</sys:String>
@@ -83,7 +83,7 @@
   <sys:String x:Key="Editor_ResetTrim">Atiestatīt apgriešanu</sys:String>
   <sys:String x:Key="Settings_Hotkey_Screenshot">Ekrānuzņēmums</sys:String>
   <sys:String x:Key="Toast_ReplaySaved">Atkārtojums saglabāts</sys:String>
-  <sys:String x:Key="Toast_ScreenshotSaved">Ekrānuzņēmums saglabāts</sys:String>
+  <sys:String x:Key="Toast_ScreenshotSaved">Ekrānuzņēmums saglabāts</sys:String>
   <sys:String x:Key="Toast_RecordingStarted">Ierakstīšana sākta</sys:String>
   <sys:String x:Key="Toast_RecordingStopped">Ierakstīšana apturēta</sys:String>
   <sys:String x:Key="Toast_NowRecording">Tagad ieraksta</sys:String>
@@ -166,7 +166,7 @@
 
   <sys:String x:Key="Library_EmptyTitle">Vēl nav atkārtojumu</sys:String>
   <!-- ════════ Pause recording ════════ -->
-  <sys:String x:Key="Settings_Hotkey_Pause">Pauzēt ierakstu</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Pause">Pauzēt ierakstu</sys:String>
   <sys:String x:Key="Settings_Hotkey_Record">Sākt/apturēt ierakstu</sys:String>
   <sys:String x:Key="Btn_PauseRecording">Pauzēt</sys:String>
   <sys:String x:Key="Btn_ResumeRecording">Atsākt</sys:String>
@@ -203,7 +203,7 @@
   <sys:String x:Key="Editor_TextSize">Izmērs</sys:String>
   <sys:String x:Key="Library_ClearSelection">Notīrīt atlasi</sys:String>
   <sys:String x:Key="Library_ClipCount">{0} KLIPI</sys:String>
-  <sys:String x:Key="Library_Favorites">Izlase</sys:String>
+  <sys:String x:Key="Library_Favorites">Izlase</sys:String>
   <sys:String x:Key="Library_Desktop">Darbvirsma</sys:String>
   <sys:String x:Key="Library_GroupCount">{0} klipi</sys:String>
   <sys:String x:Key="Library_NoResults">Neviens klips neatbilst meklējumam.</sys:String>
@@ -242,4 +242,22 @@
   <sys:String x:Key="Settings_Threshold">Threshold</sys:String>
   <sys:String x:Key="Settings_Listen">Listen</sys:String>
   <sys:String x:Key="Settings_Stop">Stop</sys:String>
+  <sys:String x:Key="Settings_Group_Overlay">Pārklājums</sys:String>
+  <sys:String x:Key="Settings_WebcamOverlay">Tīmekļa kamera ierakstos</sys:String>
+  <sys:String x:Key="Settings_WebcamOverlay_Desc">Rādīt kameru saglabāto klipu stūrī</sys:String>
+  <sys:String x:Key="Settings_WebcamDevice">Kamera</sys:String>
+  <sys:String x:Key="Settings_WebcamPosition">Pozīcija</sys:String>
+  <sys:String x:Key="Settings_WebcamSize">Izmērs</sys:String>
+  <sys:String x:Key="Settings_KeysOverlay">Rādīt nospiestos taustiņus</sys:String>
+  <sys:String x:Key="Settings_KeysOverlay_Desc">Rādīt taustiņu un peles klikšķus klipos</sys:String>
+
+  <sys:String x:Key="Overlay_Enable">Video pārklājumi</sys:String>
+  <sys:String x:Key="Overlay_Enable_Desc">Iekļaut kameru un tastatūru/peli ierakstos — izvēlieties stūri katram zemāk</sys:String>
+  <sys:String x:Key="Overlay_None">Nekas</sys:String>
+  <sys:String x:Key="Overlay_Camera">Kamera</sys:String>
+  <sys:String x:Key="Overlay_Keys">Tastatūra + pele</sys:String>
+
+  <sys:String x:Key="Overlay_Stats">Resursu monitorings</sys:String>
+
+  <sys:String x:Key="Overlay_WheelHint">Velciet, lai pārvietotu · aiz malas vai ar ritenīti mainiet izmēru</sys:String>
 </ResourceDictionary>

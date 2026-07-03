@@ -53,6 +53,11 @@ public sealed unsafe class NvencVfrEncoder : IDisposable
     /// <summary>Diagnostics: cumulative microseconds in colour-convert vs encode submit + frame count.</summary>
     public long ConvertUs, EncodeUs, TimedFrames;
 
+    /// <summary>Forced-IDR cadence in real time (µs) — keyframe spacing must be time-bound,
+    /// not frame-bound, because VFR frame rates swing ~15–170 fps (see EncodeLocked).</summary>
+    private const long ForcedKeyframeUs = 2_000_000;
+    private long _lastForcedKfUs = long.MinValue;
+
     /// <summary>Microsecond time base — fine enough to carry exact present times for VFR.</summary>
     public const int TimeBaseDen = 1_000_000;
 
@@ -220,6 +225,7 @@ public sealed unsafe class NvencVfrEncoder : IDisposable
             }
             Opt("rc-lookahead", "0");
             Opt("spatial-aq", "1");     // adaptive quantisation — sharpens detail and motion
+            Opt("forced-idr", "1");     // frames forced via pict_type=I become real IDRs
         }
         else if (name.Contains("amf"))
         {
@@ -227,17 +233,20 @@ public sealed unsafe class NvencVfrEncoder : IDisposable
             if (_autoQuality) { Opt("rc", "cqp"); Opt("qp_i", QualityAmf.ToString()); Opt("qp_p", QualityAmf.ToString()); }
             else Opt("rc", "vbr_peak");
             Opt("preanalysis", "false");
+            Opt("forced_idr", "1");     // frames forced via pict_type=I become real IDRs
         }
         else if (name.Contains("qsv"))
         {
             Opt("preset", "veryfast");
             // Auto: QSV ICQ — quality is carried on ctx->global_quality (set in OpenEncoder), nothing here.
+            Opt("forced_idr", "1");     // frames forced via pict_type=I become real IDRs
         }
         else if (name == "libx264")
         {
             Opt("preset", "veryfast");
             Opt("tune", "zerolatency");
             if (_autoQuality) Opt("crf", QualityX264.ToString());   // constant quality
+            Opt("forced-idr", "1");     // frames forced via pict_type=I become real IDRs
         }
     }
 
@@ -264,6 +273,19 @@ public sealed unsafe class NvencVfrEncoder : IDisposable
             long t1 = System.Diagnostics.Stopwatch.GetTimestamp();
 
             _frame->pts = ptsUs;
+            // VFR makes a frame-count GOP unbounded in TIME: 240 frames at an idle-desktop
+            // ~15 fps is a 16-second keyframe gap → seeks decode seconds of video and the
+            // replay ring has to reach far past the audio window to find a start keyframe
+            // (video-only silent head that libVLC players choke on). Force an IDR every 2 s
+            // of real presentation time regardless of frame rate; gop_size remains only as
+            // a frame-count backstop. ("forced-idr" per vendor makes these true IDRs — the
+            // ring's NAL-based keyframe detection only trusts IDR/IRAP.)
+            if (_lastForcedKfUs == long.MinValue) _lastForcedKfUs = ptsUs; // frame 0 is an IDR already
+            else if (ptsUs - _lastForcedKfUs >= ForcedKeyframeUs)
+            {
+                _frame->pict_type = AVPictureType.AV_PICTURE_TYPE_I;
+                _lastForcedKfUs = ptsUs;
+            }
             int sr = ffmpeg.avcodec_send_frame(_ctx, _frame);
             ffmpeg.av_frame_unref(_frame);
             if (sr < 0 && sr != ffmpeg.AVERROR(ffmpeg.EAGAIN))

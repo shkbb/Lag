@@ -46,6 +46,9 @@ public sealed class VfrRecorderAdapter : IReplayRecorder
     }
 
     public void SaveReplay() => _engine.SaveReplay();
+
+    /// <summary>Cumulative captured-frame counter — the live stats HUD derives FPS from its delta.</summary>
+    public long FramesCaptured => _engine.FramesCaptured;
     public void Teardown() => _engine.Stop();
     public void SetMicMuted(bool muted) => _engine.SetMicMuted(muted);
     public bool IsPaused => _engine.IsPaused;
@@ -83,6 +86,20 @@ public sealed class VfrRecorderAdapter : IReplayRecorder
         InputGateThreshold = o.InputGateThreshold,
         NoiseSuppression = o.NoiseSuppression,
         CaptureCursor = true,
+        WebcamOverlay = o.WebcamOverlay,
+        WebcamDeviceId = o.WebcamDeviceId,
+        WebcamX = o.WebcamX,
+        WebcamY = o.WebcamY,
+        WebcamScale = o.WebcamScale,
+        KeysOverlay = o.KeysOverlay,
+        KeysX = o.KeysX,
+        KeysY = o.KeysY,
+        KeysScale = o.KeysScale,
+        StatsOverlay = o.StatsOverlay,
+        StatsX = o.StatsX,
+        StatsY = o.StatsY,
+        StatsScale = o.StatsScale,
+        StatsDetail = o.StatsDetail,
     };
 
     /// <summary>Maps the UI's codec FORMAT choice ("h264" / "hevc" / "av1"; "" = Auto) to the codec

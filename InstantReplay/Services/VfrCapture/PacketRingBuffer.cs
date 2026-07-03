@@ -40,6 +40,13 @@ public sealed class PacketRingBuffer
         }
     }
 
+    /// <summary>Absolute pts (µs) of the oldest buffered packet, or null when empty. Lets the
+    /// save path align the video clip's start with where companion (audio) streams begin.</summary>
+    public long? OldestPtsUs
+    {
+        get { lock (_gate) return _packets.First?.Value.PtsUs; }
+    }
+
     public void Add(EncodedPacket packet)
     {
         lock (_gate)
@@ -80,10 +87,17 @@ public sealed class PacketRingBuffer
     /// </summary>
     public List<EncodedPacket> Snapshot() => Snapshot(out _);
 
+    /// <summary>Clip starts up to this much before the companion streams without being re-aligned —
+    /// a sub-second video-only lead is imperceptible and every player handles it.</summary>
+    private const long AlignToleranceUs = 500_000;
+
     /// <summary>As <see cref="Snapshot()"/>, and reports the ABSOLUTE pts the clip was re-based from
     /// (<paramref name="absBaseUs"/>) so a companion stream (audio) can re-base to the same origin
-    /// and stay in sync.</summary>
-    public List<EncodedPacket> Snapshot(out long absBaseUs)
+    /// and stay in sync. When <paramref name="minStartUs"/> is given (the oldest pts the companion
+    /// streams still hold), a start keyframe that would leave a significant companion-less head is
+    /// advanced to the first keyframe the companions can cover — libVLC-based players never engage
+    /// audio that begins many seconds into the file, so the streams must start together.</summary>
+    public List<EncodedPacket> Snapshot(out long absBaseUs, long minStartUs = long.MinValue)
     {
         absBaseUs = 0;
         lock (_gate)
@@ -106,6 +120,22 @@ public sealed class PacketRingBuffer
                 foreach (var kf in _keyframes) { start = kf; break; }
             }
             if (start == null) return result; // no keyframe yet — nothing decodable
+
+            // Align with the companion streams (keeps the original start when no keyframe
+            // at/after minStartUs exists — a silent head beats an empty clip).
+            if (minStartUs != long.MinValue && minStartUs - start.Value.PtsUs > AlignToleranceUs)
+            {
+                foreach (var kf in _keyframes)
+                {
+                    if (kf.Value.PtsUs >= minStartUs)
+                    {
+                        Console.WriteLine($"[PacketRingBuffer] start advanced " +
+                            $"{(kf.Value.PtsUs - start.Value.PtsUs) / 1_000_000.0:0.0}s to align with audio.");
+                        start = kf;
+                        break;
+                    }
+                }
+            }
 
             long baseUs = start.Value.PtsUs;
             absBaseUs = baseUs;

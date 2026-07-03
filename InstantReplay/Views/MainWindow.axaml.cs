@@ -16,6 +16,17 @@ public partial class MainWindow : Window
         // Tunnel so the window sees ESC even when focus is inside the native VideoView host.
         AddHandler(KeyDownEvent, OnPreviewKeyDown, RoutingStrategies.Tunnel);
 
+        // Keep the render timer matched to the refresh rate of the monitor this window is ON
+        // (fullscreen on the 165 Hz panel → 165 Hz composition; drag to a 180 Hz panel → 180).
+        // A mismatched fixed rate beats against vsync and shows as playback judder.
+        Opened += (_, _) => RetuneRenderTimer();
+        PositionChanged += (_, _) => RetuneRenderTimer();
+        PropertyChanged += (_, e) =>
+        {
+            if (e.Property == WindowStateProperty)
+                Avalonia.Threading.Dispatcher.UIThread.Post(RetuneRenderTimer);
+        };
+
         // Intercept closing to hide the window instead
         Closing += (s, e) =>
         {
@@ -81,6 +92,22 @@ public partial class MainWindow : Window
 
     /// <summary>Swaps the CTA between cyan "Start" and red "Stop" recording state.</summary>
     private void UpdateRecordCta(bool isRecording) => RecordCta.Classes.Set("rec", isRecording);
+
+    /// <summary>Points the render timer at the refresh rate of the monitor under this window.
+    /// Cheap enough to run on every PositionChanged tick (three user32 calls; the timer ignores
+    /// writes that don't change the value).</summary>
+    private void RetuneRenderTimer()
+    {
+        if (Program.RenderTimer is not { } timer) return;
+        var handle = TryGetPlatformHandle()?.Handle ?? System.IntPtr.Zero;
+        if (handle == System.IntPtr.Zero) return;
+
+        // Hz feeds the clock fallback; the HMONITOR lets the timer tick on the panel's REAL
+        // vblank (DXGI WaitForVBlank) — phase-locked composition, like a native video player.
+        uint hz = Lag.Services.HardwareDetector.GetWindowRefreshRate(handle);
+        if (hz > 0) timer.Hz = (int)hz;
+        timer.SetMonitor(Lag.Services.HardwareDetector.GetWindowMonitor(handle));
+    }
 
     /// <summary>True fullscreen: window state only — sidebar/titlebar collapse via bindings.</summary>
     private void ApplyFullscreen(bool isFullscreen)

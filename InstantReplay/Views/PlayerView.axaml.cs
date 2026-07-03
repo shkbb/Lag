@@ -320,6 +320,9 @@ public partial class PlayerView : UserControl
 
         PlayerArea.Margin = fs ? new Thickness(0) : new Thickness(24, 20, 24, 24);
         VideoFrame.CornerRadius = new CornerRadius(fs ? 0 : 12);
+        // The 1px frame border must go too: with it the video scales into (screen − 2px) and a
+        // same-aspect clip no longer fills edge-to-edge — thin black bars appear at the sides.
+        VideoFrame.BorderThickness = new Thickness(fs ? 0 : 1);
 
         // The replays panel switches between an inline column (windowed) and an overlay
         // pinned to the right edge of the video (fullscreen).

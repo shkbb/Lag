@@ -16,7 +16,7 @@
   <sys:String x:Key="Settings_Title">Seaded</sys:String>
   <sys:String x:Key="Settings_PendingChanges">Muudatused jõustuvad pärast salvestamise taaskäivitamist.</sys:String>
   <sys:String x:Key="Settings_Group_Language">KEEL</sys:String>
-  <sys:String x:Key="Settings_Language">Keel</sys:String>
+  <sys:String x:Key="Settings_Language">Keel</sys:String>
   <sys:String x:Key="Settings_Theme">Teema</sys:String>
   <sys:String x:Key="Settings_Theme_Desc">Hele, tume või süsteemi järgi</sys:String>
   <sys:String x:Key="Theme_Light">Hele</sys:String>
@@ -83,7 +83,7 @@
   <sys:String x:Key="Editor_ResetTrim">Lähtesta kärpimine</sys:String>
   <sys:String x:Key="Settings_Hotkey_Screenshot">Ekraanipilt</sys:String>
   <sys:String x:Key="Toast_ReplaySaved">Kordus salvestatud</sys:String>
-  <sys:String x:Key="Toast_ScreenshotSaved">Ekraanipilt salvestatud</sys:String>
+  <sys:String x:Key="Toast_ScreenshotSaved">Ekraanipilt salvestatud</sys:String>
   <sys:String x:Key="Toast_RecordingStarted">Salvestamine alustatud</sys:String>
   <sys:String x:Key="Toast_RecordingStopped">Salvestamine peatatud</sys:String>
   <sys:String x:Key="Toast_NowRecording">Salvestab nüüd</sys:String>
@@ -166,7 +166,7 @@
 
   <sys:String x:Key="Library_EmptyTitle">Kordusi pole veel</sys:String>
   <!-- ════════ Pause recording ════════ -->
-  <sys:String x:Key="Settings_Hotkey_Pause">Peata salvestus</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Pause">Peata salvestus</sys:String>
   <sys:String x:Key="Settings_Hotkey_Record">Alusta/peata salvestamine</sys:String>
   <sys:String x:Key="Btn_PauseRecording">Peata</sys:String>
   <sys:String x:Key="Btn_ResumeRecording">Jätka</sys:String>
@@ -203,7 +203,7 @@
   <sys:String x:Key="Editor_TextSize">Suurus</sys:String>
   <sys:String x:Key="Library_ClearSelection">Tühjenda valik</sys:String>
   <sys:String x:Key="Library_ClipCount">{0} KLIPPI</sys:String>
-  <sys:String x:Key="Library_Favorites">Lemmikud</sys:String>
+  <sys:String x:Key="Library_Favorites">Lemmikud</sys:String>
   <sys:String x:Key="Library_Desktop">Töölaud</sys:String>
   <sys:String x:Key="Library_GroupCount">{0} klippi</sys:String>
   <sys:String x:Key="Library_NoResults">Otsingule ei vasta ühtegi klippi.</sys:String>
@@ -242,4 +242,22 @@
   <sys:String x:Key="Settings_Threshold">Threshold</sys:String>
   <sys:String x:Key="Settings_Listen">Listen</sys:String>
   <sys:String x:Key="Settings_Stop">Stop</sys:String>
+  <sys:String x:Key="Settings_Group_Overlay">Ülekate</sys:String>
+  <sys:String x:Key="Settings_WebcamOverlay">Veebikaamera salvestustes</sys:String>
+  <sys:String x:Key="Settings_WebcamOverlay_Desc">Näita kaamerat salvestatud klippide nurgas</sys:String>
+  <sys:String x:Key="Settings_WebcamDevice">Kaamera</sys:String>
+  <sys:String x:Key="Settings_WebcamPosition">Asukoht</sys:String>
+  <sys:String x:Key="Settings_WebcamSize">Suurus</sys:String>
+  <sys:String x:Key="Settings_KeysOverlay">Näita vajutatud klahve</sys:String>
+  <sys:String x:Key="Settings_KeysOverlay_Desc">Kuva klippidel vajutatud klahvid ja hiirenupud</sys:String>
+
+  <sys:String x:Key="Overlay_Enable">Video ülekatted</sys:String>
+  <sys:String x:Key="Overlay_Enable_Desc">Lisa veebikaamera ja klaviatuur/hiir salvestustesse — vali igaühele nurk allpool</sys:String>
+  <sys:String x:Key="Overlay_None">Puudub</sys:String>
+  <sys:String x:Key="Overlay_Camera">Kaamera</sys:String>
+  <sys:String x:Key="Overlay_Keys">Klaviatuur + hiir</sys:String>
+
+  <sys:String x:Key="Overlay_Stats">Ressursimonitor</sys:String>
+
+  <sys:String x:Key="Overlay_WheelHint">Lohista liigutamiseks · serva lohistades või rattaga muuda suurust</sys:String>
 </ResourceDictionary>

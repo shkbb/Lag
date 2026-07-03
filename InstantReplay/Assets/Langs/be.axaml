@@ -16,7 +16,7 @@
   <sys:String x:Key="Settings_Title">Налады</sys:String>
   <sys:String x:Key="Settings_PendingChanges">Змены ўступяць у сілу пасля перазапуску запісу.</sys:String>
   <sys:String x:Key="Settings_Group_Language">МОВА</sys:String>
-  <sys:String x:Key="Settings_Language">Мова</sys:String>
+  <sys:String x:Key="Settings_Language">Мова</sys:String>
   <sys:String x:Key="Settings_Theme">Тэма</sys:String>
   <sys:String x:Key="Settings_Theme_Desc">Светлая, цёмная або як у сістэме</sys:String>
   <sys:String x:Key="Theme_Light">Светлая</sys:String>
@@ -83,7 +83,7 @@
   <sys:String x:Key="Editor_ResetTrim">Скінуць абрэзку</sys:String>
   <sys:String x:Key="Settings_Hotkey_Screenshot">Здымак экрана</sys:String>
   <sys:String x:Key="Toast_ReplaySaved">Паўтор захаваны</sys:String>
-  <sys:String x:Key="Toast_ScreenshotSaved">Здымак экрана захаваны</sys:String>
+  <sys:String x:Key="Toast_ScreenshotSaved">Здымак экрана захаваны</sys:String>
   <sys:String x:Key="Toast_RecordingStarted">Запіс пачаты</sys:String>
   <sys:String x:Key="Toast_RecordingStopped">Запіс спынены</sys:String>
   <sys:String x:Key="Toast_NowRecording">Зараз запісваецца</sys:String>
@@ -166,7 +166,7 @@
 
   <sys:String x:Key="Library_EmptyTitle">Пакуль няма паўтораў</sys:String>
   <!-- ════════ Pause recording ════════ -->
-  <sys:String x:Key="Settings_Hotkey_Pause">Паўза запісу</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Pause">Паўза запісу</sys:String>
   <sys:String x:Key="Settings_Hotkey_Record">Старт/стоп запісу</sys:String>
   <sys:String x:Key="Btn_PauseRecording">Паўза</sys:String>
   <sys:String x:Key="Btn_ResumeRecording">Узнавіць</sys:String>
@@ -203,7 +203,7 @@
   <sys:String x:Key="Editor_TextSize">Памер</sys:String>
   <sys:String x:Key="Library_ClearSelection">Ачысціць вылучэнне</sys:String>
   <sys:String x:Key="Library_ClipCount">{0} КЛІПАЎ</sys:String>
-  <sys:String x:Key="Library_Favorites">Абранае</sys:String>
+  <sys:String x:Key="Library_Favorites">Абранае</sys:String>
   <sys:String x:Key="Library_Desktop">Працоўны стол</sys:String>
   <sys:String x:Key="Library_GroupCount">{0} кліпаў</sys:String>
   <sys:String x:Key="Library_NoResults">Няма кліпаў па вашым запыце.</sys:String>
@@ -242,4 +242,22 @@
   <sys:String x:Key="Settings_Threshold">Threshold</sys:String>
   <sys:String x:Key="Settings_Listen">Listen</sys:String>
   <sys:String x:Key="Settings_Stop">Stop</sys:String>
+  <sys:String x:Key="Settings_Group_Overlay">Аверлэй</sys:String>
+  <sys:String x:Key="Settings_WebcamOverlay">Вэб-камера ў запісах</sys:String>
+  <sys:String x:Key="Settings_WebcamOverlay_Desc">Паказваць камеру ў куце захаваных кліпаў</sys:String>
+  <sys:String x:Key="Settings_WebcamDevice">Камера</sys:String>
+  <sys:String x:Key="Settings_WebcamPosition">Пазіцыя</sys:String>
+  <sys:String x:Key="Settings_WebcamSize">Памер</sys:String>
+  <sys:String x:Key="Settings_KeysOverlay">Паказваць націснутыя клавішы</sys:String>
+  <sys:String x:Key="Settings_KeysOverlay_Desc">Накладаць націснутыя клавішы і кнопкі мышы на кліпы</sys:String>
+
+  <sys:String x:Key="Overlay_Enable">Відэа-аверлэі</sys:String>
+  <sys:String x:Key="Overlay_Enable_Desc">Дадаваць вэб-камеру і клавіятуру/мыш у запісы — абярыце кут для кожнага ніжэй</sys:String>
+  <sys:String x:Key="Overlay_None">Нічога</sys:String>
+  <sys:String x:Key="Overlay_Camera">Камера</sys:String>
+  <sys:String x:Key="Overlay_Keys">Клавіятура + мыш</sys:String>
+
+  <sys:String x:Key="Overlay_Stats">Маніторынг рэсурсаў</sys:String>
+
+  <sys:String x:Key="Overlay_WheelHint">Цягніце, каб перамясціць · за край або колцам мышы — каб змяніць памер</sys:String>
 </ResourceDictionary>

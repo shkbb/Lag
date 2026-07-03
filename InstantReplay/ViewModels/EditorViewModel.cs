@@ -1571,6 +1571,7 @@ public partial class EditorViewModel : ViewModelBase, IDisposable
         }
 
         // ── Audio: per-track volume + audible range gate + tempo ──
+        var audioLabels = new List<string>();
         foreach (var track in AudioTracks.Where(t => !t.IsMuted && t.Volume > 0))
         {
             // Track range relative to the trimmed segment (t starts at 0 after input -ss).
@@ -1586,10 +1587,22 @@ public partial class EditorViewModel : ViewModelBase, IDisposable
                 aparts.Add(BuildAtempoChain(speed));
 
             filters.Add($"[0:a:{track.StreamIndex}]{string.Join(',', aparts)}[a{track.StreamIndex}]");
-            maps.Add($"-map \"[a{track.StreamIndex}]\"");
+            audioLabels.Add($"[a{track.StreamIndex}]");
         }
 
-        bool hasAudio = maps.Any(m => m.Contains("[a"));
+        // Most players only play the FIRST audio stream, so exporting tracks separately silently
+        // loses the rest (e.g. the mic). Mix every audible track into a single output stream.
+        // normalize=0 keeps the user's per-track volumes instead of dividing by input count.
+        bool hasAudio = audioLabels.Count > 0;
+        if (audioLabels.Count == 1)
+        {
+            maps.Add($"-map \"{audioLabels[0]}\"");
+        }
+        else if (audioLabels.Count > 1)
+        {
+            filters.Add($"{string.Concat(audioLabels)}amix=inputs={audioLabels.Count}:duration=longest:normalize=0[aout]");
+            maps.Add("-map \"[aout]\"");
+        }
 
         if (filters.Count > 0)
             args.Append($"-filter_complex \"{string.Join(';', filters)}\" ");

@@ -81,6 +81,7 @@
       <SolidColorBrush x:Key="Divider5Brush" Color="#0DFFFFFF" />
       <SolidColorBrush x:Key="Overlay85Brush" Color="#D90A0C0F" />
       <SolidColorBrush x:Key="Overlay88Brush" Color="#E00A0C0F" />
+      <SolidColorBrush x:Key="PlayerBarBrush" Color="#D10A0C0F" />  <!-- floating player control bar over the video -->
       <SolidColorBrush x:Key="HoverVeilBrush" Color="#0AFFFFFF" />
       <SolidColorBrush x:Key="Track14Brush" Color="#24FFFFFF" />
       <SolidColorBrush x:Key="VolumeFillBrush" Color="#FFAEB6C0" />
@@ -214,6 +215,7 @@
       <SolidColorBrush x:Key="Divider5Brush" Color="#112A2415" />
       <SolidColorBrush x:Key="Overlay85Brush" Color="#D90A0C0F" />   <!-- dark scrim over video thumbnails -->
       <SolidColorBrush x:Key="Overlay88Brush" Color="#E00A0C0F" />
+      <SolidColorBrush x:Key="PlayerBarBrush" Color="#EBF8F4EA" />   <!-- floating player bar: near-opaque cream over the dark video stage -->
       <SolidColorBrush x:Key="HoverVeilBrush" Color="#0C2A2415" />
       <SolidColorBrush x:Key="Track14Brush" Color="#262A2415" />
       <SolidColorBrush x:Key="VolumeFillBrush" Color="#FF8F8770" />

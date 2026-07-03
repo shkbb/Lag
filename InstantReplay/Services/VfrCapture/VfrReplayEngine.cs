@@ -52,6 +52,24 @@ public sealed record VfrEngineOptions
     public bool AudioEnabled { get; init; } = true;       // false = video-only (diagnostics / A-B)
     public IntPtr ForcedWindow { get; init; }             // capture this exact window, bypass detection (testing/manual)
     public bool DuplicationOnly { get; init; }            // testing: skip foreground gating + WGC (measure duplication path)
+
+    // ── Overlay (webcam PiP + keyboard/mouse block baked into the frames) ──
+    // X/Y are fractions of the free space (0 = left/top edge, 1 = right/bottom edge);
+    // scales are the element height as a fraction of the frame height.
+    public bool WebcamOverlay { get; init; }
+    public string? WebcamDeviceId { get; init; }          // null/"" = default camera
+    public double WebcamX { get; init; } = 0.97;
+    public double WebcamY { get; init; } = 0.95;
+    public double WebcamScale { get; init; } = 0.24;
+    public bool KeysOverlay { get; init; }
+    public double KeysX { get; init; } = 0.03;
+    public double KeysY { get; init; } = 0.95;
+    public double KeysScale { get; init; } = 0.20;
+    public bool StatsOverlay { get; init; }
+    public double StatsX { get; init; } = 0.5;
+    public double StatsY { get; init; } = 0.02;
+    public double StatsScale { get; init; } = 0.045;
+    public int StatsDetail { get; init; } = 1;   // 0 = FPS, 1 = + CPU/GPU, 2 = + RAM
 }
 
 /// <summary>
@@ -80,6 +98,7 @@ public sealed class VfrReplayEngine : IDisposable
     private WgcCaptureSource? _capture;
     private NvencVfrEncoder? _encoder;
     private PacketRingBuffer? _ring;
+    private OverlayCompositor? _overlay;   // webcam / keystroke overlay (null = disabled)
     private bool _fpsAdaptDone;   // fixed-bitrate fps-hint retune: done once per capture session
 
     // Periodic capture/encode diagnostics — every ~2s log the WINDOWED captured fps + per-frame convert
@@ -188,6 +207,33 @@ public sealed class VfrReplayEngine : IDisposable
             _encoderChoice = EncoderSelector.Select(options.PreferredCodec)
                 ?? throw new InvalidOperationException("No usable video encoder.");
             Console.WriteLine($"[VfrReplayEngine] Armed. Encoder: {_encoderChoice.FriendlyName}, buffer {options.BufferSeconds}s.");
+
+            // Overlay compositor (webcam / keys). Failure must never block recording — it
+            // degrades to plain capture.
+            _overlay?.Dispose();
+            _overlay = null;
+            var overlayOpts = new OverlayOptions
+            {
+                WebcamEnabled = options.WebcamOverlay,
+                WebcamDeviceId = options.WebcamDeviceId,
+                WebcamX = options.WebcamX,
+                WebcamY = options.WebcamY,
+                WebcamScale = options.WebcamScale,
+                KeysEnabled = options.KeysOverlay,
+                KeysX = options.KeysX,
+                KeysY = options.KeysY,
+                KeysScale = options.KeysScale,
+                StatsEnabled = options.StatsOverlay,
+                StatsX = options.StatsX,
+                StatsY = options.StatsY,
+                StatsScale = options.StatsScale,
+                StatsDetail = options.StatsDetail,
+            };
+            if (overlayOpts.AnyEnabled)
+            {
+                try { _overlay = new OverlayCompositor(_d3d, overlayOpts); }
+                catch (Exception ex) { Console.WriteLine($"[VfrReplayEngine] overlay init failed: {ex.Message}"); }
+            }
 
             _running = true;
             _lockTimer ??= new Timer(_ => SafeEvaluateLock(), null, 500, 2000);
@@ -400,7 +446,11 @@ public sealed class VfrReplayEngine : IDisposable
         if (_minIntervalUs > 0 && _lastEncodedUs != long.MinValue && ptsUs - _lastEncodedUs < _minIntervalUs) return;
         _lastEncodedUs = ptsUs;
 
-        encoder.Encode(bgra, ptsUs);
+        // Overlay (webcam / keys): composed into a copy on this same thread; pass-through
+        // when disabled or when there is nothing to draw. Never throws (falls back to bgra).
+        var frame = _overlay?.Compose(bgra) ?? bgra;
+
+        encoder.Encode(frame, ptsUs);
         System.Threading.Interlocked.Increment(ref FramesEncoded);
 
         LogStageStats(encoder, ptsUs);
@@ -659,7 +709,15 @@ public sealed class VfrReplayEngine : IDisposable
         // (otherwise the clip can end on the last system sound, short of the video).
         PumpAudio();
 
-        var packets = ring.Snapshot(out long baseUs);
+        // The audio rings hold exactly the configured window, but the video ring can reach one
+        // GOP further back (its clip must open on a keyframe). Starting there would put a
+        // video-only silent head on the file — libVLC players then never engage audio — so the
+        // video start is clamped to where audio actually exists (tolerance inside Snapshot).
+        long minStart = long.MinValue;
+        foreach (var t in tracks)
+            if (t.Ring?.OldestPtsUs is { } oldest && oldest > minStart) minStart = oldest;
+
+        var packets = ring.Snapshot(out long baseUs, minStart);
         if (packets.Count == 0) { Console.WriteLine("[VfrReplayEngine] SaveReplay: buffer empty."); return null; }
 
         // Each audio track, re-based to the SAME origin as the video clip so they stay in sync.
@@ -769,6 +827,10 @@ public sealed class VfrReplayEngine : IDisposable
         _lockTimer?.Dispose();
         _lockTimer = null;
         TeardownCapture();
+        // After the capture teardown: no more OnFrame callbacks can be running, so the
+        // compositor (and its webcam stream) can go down safely.
+        _overlay?.Dispose();
+        _overlay = null;
     }
 
     public void Dispose()

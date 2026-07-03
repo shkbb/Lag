@@ -16,7 +16,7 @@
   <sys:String x:Key="Settings_Title">Ajustes</sys:String>
   <sys:String x:Key="Settings_PendingChanges">Los cambios surtirán efecto tras reiniciar la grabación.</sys:String>
   <sys:String x:Key="Settings_Group_Language">IDIOMA</sys:String>
-  <sys:String x:Key="Settings_Language">Idioma</sys:String>
+  <sys:String x:Key="Settings_Language">Idioma</sys:String>
   <sys:String x:Key="Settings_Theme">Tema</sys:String>
   <sys:String x:Key="Settings_Theme_Desc">Claro, oscuro o según el sistema</sys:String>
   <sys:String x:Key="Theme_Light">Claro</sys:String>
@@ -83,7 +83,7 @@
   <sys:String x:Key="Editor_ResetTrim">Restablecer recorte</sys:String>
   <sys:String x:Key="Settings_Hotkey_Screenshot">Captura de pantalla</sys:String>
   <sys:String x:Key="Toast_ReplaySaved">Repetición guardada</sys:String>
-  <sys:String x:Key="Toast_ScreenshotSaved">Captura de pantalla guardada</sys:String>
+  <sys:String x:Key="Toast_ScreenshotSaved">Captura de pantalla guardada</sys:String>
   <sys:String x:Key="Toast_RecordingStarted">Grabación iniciada</sys:String>
   <sys:String x:Key="Toast_RecordingStopped">Grabación detenida</sys:String>
   <sys:String x:Key="Toast_NowRecording">Grabando ahora</sys:String>
@@ -166,7 +166,7 @@
 
   <sys:String x:Key="Library_EmptyTitle">Aún no hay repeticiones</sys:String>
   <!-- ════════ Pause recording ════════ -->
-  <sys:String x:Key="Settings_Hotkey_Pause">Pausar grabación</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Pause">Pausar grabación</sys:String>
   <sys:String x:Key="Settings_Hotkey_Record">Iniciar/detener grabación</sys:String>
   <sys:String x:Key="Btn_PauseRecording">Pausar</sys:String>
   <sys:String x:Key="Btn_ResumeRecording">Reanudar</sys:String>
@@ -203,7 +203,7 @@
   <sys:String x:Key="Editor_TextSize">Tamaño</sys:String>
   <sys:String x:Key="Library_ClearSelection">Borrar selección</sys:String>
   <sys:String x:Key="Library_ClipCount">{0} CLIPS</sys:String>
-  <sys:String x:Key="Library_Favorites">Favoritos</sys:String>
+  <sys:String x:Key="Library_Favorites">Favoritos</sys:String>
   <sys:String x:Key="Library_Desktop">Escritorio</sys:String>
   <sys:String x:Key="Library_GroupCount">{0} clips</sys:String>
   <sys:String x:Key="Library_NoResults">Ningún clip coincide con tu búsqueda.</sys:String>
@@ -242,4 +242,22 @@
   <sys:String x:Key="Settings_Threshold">Threshold</sys:String>
   <sys:String x:Key="Settings_Listen">Listen</sys:String>
   <sys:String x:Key="Settings_Stop">Stop</sys:String>
+  <sys:String x:Key="Settings_Group_Overlay">Superposición</sys:String>
+  <sys:String x:Key="Settings_WebcamOverlay">Cámara web en las grabaciones</sys:String>
+  <sys:String x:Key="Settings_WebcamOverlay_Desc">Mostrar tu cámara en una esquina de los clips guardados</sys:String>
+  <sys:String x:Key="Settings_WebcamDevice">Cámara</sys:String>
+  <sys:String x:Key="Settings_WebcamPosition">Posición</sys:String>
+  <sys:String x:Key="Settings_WebcamSize">Tamaño</sys:String>
+  <sys:String x:Key="Settings_KeysOverlay">Mostrar teclas pulsadas</sys:String>
+  <sys:String x:Key="Settings_KeysOverlay_Desc">Superponer teclas y botones del ratón en los clips</sys:String>
+
+  <sys:String x:Key="Overlay_Enable">Superposiciones de vídeo</sys:String>
+  <sys:String x:Key="Overlay_Enable_Desc">Integra la cámara y el teclado/ratón en las grabaciones — elige una esquina para cada uno</sys:String>
+  <sys:String x:Key="Overlay_None">Ninguno</sys:String>
+  <sys:String x:Key="Overlay_Camera">Cámara</sys:String>
+  <sys:String x:Key="Overlay_Keys">Teclado + ratón</sys:String>
+
+  <sys:String x:Key="Overlay_Stats">Monitor de recursos</sys:String>
+
+  <sys:String x:Key="Overlay_WheelHint">Arrastra para mover · arrastra un borde o usa la rueda para cambiar el tamaño</sys:String>
 </ResourceDictionary>

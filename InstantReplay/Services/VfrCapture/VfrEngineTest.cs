@@ -78,12 +78,27 @@ public static class VfrEngineTest
             AudioApps = (Environment.GetEnvironmentVariable("LAG_VFR_APPS") ?? "")
                 .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                 .Select(e => (e, 1.0f)).ToList(),
+            // Overlay: LAG_VFR_WEBCAM=1 draws the default camera PiP (bottom-right by default);
+            // LAG_VFR_KEYS=1 draws the keyboard+mouse block (bottom-left; fed synthetically below).
+            WebcamOverlay = Environment.GetEnvironmentVariable("LAG_VFR_WEBCAM") == "1",
+            KeysOverlay = Environment.GetEnvironmentVariable("LAG_VFR_KEYS") == "1",
+            StatsOverlay = Environment.GetEnvironmentVariable("LAG_VFR_STATS") == "1",
+            StatsDetail = 2,   // headless test shows the full panel
         });
 
         int seconds = int.TryParse(Environment.GetEnvironmentVariable("LAG_VFR_SECONDS"), out var s) ? s : 15;
+        bool fakeKeys = Environment.GetEnvironmentVariable("LAG_VFR_KEYS") == "1";
         Console.WriteLine($"[VfrTest] Buffering for {seconds}s (start/keep a game in the foreground)...");
         for (int i = 0; i < seconds; i++)
         {
+            // Feed the keystroke tracker directly (in-process state only) so the badges render
+            // in a headless run where no global hook is active.
+            if (fakeKeys)
+            {
+                KeystrokeTracker.Instance.OnKey(SharpHook.Native.KeyCode.VcW, down: true);
+                KeystrokeTracker.Instance.OnKey(SharpHook.Native.KeyCode.VcLeftShift, down: i % 2 == 0);
+                KeystrokeTracker.Instance.OnMouseButton(1, down: i % 3 != 0);
+            }
             Thread.Sleep(1000);
             if (i % 5 == 4)
             {

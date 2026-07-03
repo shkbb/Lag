@@ -218,6 +218,7 @@
     <core:StringToUpperConverter x:Key="Upper" />
     <core:IntensityToBrushConverter x:Key="Intensity" />
     <core:LevelToWidthConverter x:Key="LevelWidth" />
+    <core:OneMinusIntConverter x:Key="OneMinus" />
 
     <!-- Popup overlay + slider SIZING (theme-invariant). The matching COLOURS — ToggleSwitch,
          ComboBox dropdown, menu, tooltip and SystemAccentColor — are themed per-variant in

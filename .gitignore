@@ -4,13 +4,14 @@
 **/[Bb]in/
 **/[Oo]bj/
 
-# ───────── Publish / Velopack release artifacts ─────────
+# ───────── Publish / release artifacts ─────────
 publish/
 **/publish/
 release-publish/
 **/release-publish/
 [Rr]eleases/
 **/[Rr]eleases/
+installer/Output/
 
 # ───────── Tooling / generated ─────────
 graphify-out/

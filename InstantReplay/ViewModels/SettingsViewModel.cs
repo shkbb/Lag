@@ -5,8 +5,6 @@ using Lag.Core;
 using Lag.Services;
 using Microsoft.Win32;
 using SharpHook.Native;
-using Velopack;
-using Velopack.Sources;
 
 namespace Lag.ViewModels;
 
@@ -995,6 +993,89 @@ public partial class SettingsViewModel : ViewModelBase
         SaveSettingsRestartRequired();
     }
 
+    // ───────────── Overlay (webcam PiP + keyboard/mouse block baked into recordings) ─────────────
+    // The interactive preview (SettingsView code-behind) drags/resizes the two elements and
+    // commits the results here: X/Y = fraction of the free space (0..1), Scale = element
+    // height as a fraction of the frame height.
+
+    public System.Collections.ObjectModel.ObservableCollection<Lag.Services.VfrCapture.WebcamCaptureSource.DeviceInfo> Webcams { get; } = new();
+
+    /// <summary>Master switch for all recording overlays.</summary>
+    [ObservableProperty]
+    private bool _overlayEnabled;
+
+    partial void OnOverlayEnabledChanged(bool value)
+    {
+        SaveSettingsRestartRequired();
+        StatsHudChanged?.Invoke();   // the master switch also gates the live HUD
+    }
+
+    [ObservableProperty] private bool _webcamShown;
+    partial void OnWebcamShownChanged(bool value) => SaveSettingsRestartRequired();
+
+    [ObservableProperty] private bool _keysShown;
+    partial void OnKeysShownChanged(bool value) => SaveSettingsRestartRequired();
+
+    /// <summary>Raised when the LIVE stats HUD settings change (it applies them instantly —
+    /// the HUD is an on-screen window, not part of the recording, so no restart is needed).</summary>
+    public event Action? StatsHudChanged;
+
+    [ObservableProperty] private bool _statsShown;
+    partial void OnStatsShownChanged(bool value) { SaveSettings(); StatsHudChanged?.Invoke(); }
+
+    /// <summary>Resource-monitor detail: 0 = FPS, 1 = + CPU/GPU, 2 = + RAM.</summary>
+    [ObservableProperty] private int _statsDetail = 1;
+    partial void OnStatsDetailChanged(int value) { SaveSettings(); StatsHudChanged?.Invoke(); }
+
+    public double WebcamX { get; set; } = 0.97;
+    public double WebcamY { get; set; } = 0.95;
+    public double WebcamScale { get; set; } = 0.24;
+    public double KeysX { get; set; } = 0.03;
+    public double KeysY { get; set; } = 0.95;
+    public double KeysScale { get; set; } = 0.20;
+    public double StatsX { get; set; } = 0.5;
+    public double StatsY { get; set; } = 0.02;
+    public double StatsScale { get; set; } = 0.045;
+
+    /// <summary>Called by the preview after a drag/resize gesture ends.</summary>
+    public void CommitOverlayLayout()
+    {
+        SaveSettingsRestartRequired();
+        StatsHudChanged?.Invoke();   // the live HUD repositions immediately
+    }
+
+    [ObservableProperty]
+    private Lag.Services.VfrCapture.WebcamCaptureSource.DeviceInfo? _selectedWebcam;
+
+    /// <summary>True while the async device enumeration restores the persisted selection —
+    /// that assignment must not re-save settings or raise the restart-required toast.</summary>
+    private bool _restoringWebcam;
+    private string _savedWebcamId = "";
+
+    partial void OnSelectedWebcamChanged(Lag.Services.VfrCapture.WebcamCaptureSource.DeviceInfo? value)
+    {
+        if (!_restoringWebcam) SaveSettingsRestartRequired();
+    }
+
+
+    /// <summary>Fills the camera dropdown off-thread (device queries can block), then restores
+    /// the persisted selection on the UI thread without triggering a save.</summary>
+    private void RefreshWebcamsAsync()
+    {
+        _ = Task.Run(async () =>
+        {
+            var list = await Lag.Services.VfrCapture.WebcamCaptureSource.ListDevicesAsync();
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                Webcams.Clear();
+                foreach (var d in list) Webcams.Add(d);
+                _restoringWebcam = true;
+                SelectedWebcam = Webcams.FirstOrDefault(w => w.Id == _savedWebcamId) ?? Webcams.FirstOrDefault();
+                _restoringWebcam = false;
+            });
+        });
+    }
+
     // ───────────── Automation ─────────────
 
     /// <summary>The Run-key registry value name used for "Start with Windows".</summary>
@@ -1243,12 +1324,9 @@ public partial class SettingsViewModel : ViewModelBase
         }
     }
 
-    // ───────────── About / Auto-Update (Velopack) ─────────────
+    // ───────────── About / Auto-Update (GitHub Releases + the Inno installer) ─────────────
 
-    // GitHub repository hosting the published Velopack releases.
-    private const string UpdateRepoUrl = "https://github.com/shkbb/Lag";
-
-    /// <summary>Currently installed app version (or "Debug/Dev" when not installed via Velopack).</summary>
+    /// <summary>Currently installed app version (or "Debug/Dev" for loose/portable builds).</summary>
     [ObservableProperty]
     private string _appVersion = "Debug/Dev";
 
@@ -1260,25 +1338,17 @@ public partial class SettingsViewModel : ViewModelBase
     [ObservableProperty]
     private string _updateStatus = string.Empty;
 
-    /// <summary>Resolves the installed version via Velopack (local metadata, no network).</summary>
+    /// <summary>The running build's stamped version, or "Debug/Dev" for loose/portable builds.</summary>
     private static string ResolveAppVersion()
     {
-        try
-        {
-            var mgr = new UpdateManager(new GithubSource(UpdateRepoUrl, string.Empty, false));
-            return mgr.IsInstalled && mgr.CurrentVersion != null
-                ? mgr.CurrentVersion.ToString()
-                : "Debug/Dev";
-        }
-        catch
-        {
+        if (Lag.Services.AppUpdateService.DetectInstall() == Lag.Services.InstallKind.DevOrPortable)
             return "Debug/Dev";
-        }
+        return Lag.Services.AppUpdateService.CurrentVersion()?.ToString(3) ?? "Debug/Dev";
     }
 
     /// <summary>
-    /// Checks GitHub releases for a newer version; if found, downloads it and restarts into it.
-    /// Does nothing in local/dev mode (not installed via Velopack).
+    /// Checks GitHub releases for a newer version; if found, downloads the installer and hands
+    /// off to a silent install that relaunches the app. Does nothing in dev/portable mode.
     /// </summary>
     [RelayCommand]
     private async Task CheckForUpdatesAsync()
@@ -1289,26 +1359,8 @@ public partial class SettingsViewModel : ViewModelBase
         UpdateStatus = Lag.Core.Localizer.Get("Update_Checking");
         try
         {
-            var mgr = new UpdateManager(new GithubSource(UpdateRepoUrl, string.Empty, false));
-
-            // Don't check for updates in local debug mode (not installed via Velopack).
-            if (!mgr.IsInstalled)
-            {
-                UpdateStatus = Lag.Core.Localizer.Get("Update_DevMode");
-                return;
-            }
-
-            var newVersion = await mgr.CheckForUpdatesAsync();
-            if (newVersion == null)
-            {
-                UpdateStatus = Lag.Core.Localizer.Get("Update_UpToDate");
-                return;
-            }
-
-            // Download and restart into the new version.
-            UpdateStatus = Lag.Core.Localizer.Get("Update_Downloading");
-            await mgr.DownloadUpdatesAsync(newVersion);
-            mgr.ApplyUpdatesAndRestart(newVersion);
+            if (await RunUpdateFlowAsync(silent: false) is { } status)
+                UpdateStatus = status;
         }
         catch (Exception ex)
         {
@@ -1322,29 +1374,55 @@ public partial class SettingsViewModel : ViewModelBase
     }
 
     /// <summary>Silent auto-update run once at startup: checks GitHub, and if a newer version exists,
-    /// downloads it and relaunches straight into it — so the app is up to date from the first real use
-    /// (a self-updating launcher). When already current it returns instantly with no restart. Only runs
-    /// in an installed (Velopack) build; dev / portable builds are a no-op.</summary>
+    /// installs it and relaunches — so the app is up to date from the first real use. Legacy Velopack
+    /// installs additionally MIGRATE onto the installer even at an equal version (the installer
+    /// removes the old layout). Dev / portable builds are a no-op.</summary>
     public async Task AutoUpdateOnStartupAsync()
     {
         try
         {
-            var mgr = new UpdateManager(new GithubSource(UpdateRepoUrl, string.Empty, false));
-            if (!mgr.IsInstalled) return;                 // dev / portable build — nothing to update
-
-            var newVersion = await mgr.CheckForUpdatesAsync();
-            if (newVersion == null) return;               // already up to date — no restart
-
-            await mgr.DownloadUpdatesAsync(newVersion);
-            Console.WriteLine($"[AutoUpdate] {newVersion.TargetFullRelease.Version} downloaded — applying and restarting.");
-            // Apply now and relaunch into the new version (same as the manual button), so the user is on
-            // the latest immediately rather than only after the next manual exit.
-            mgr.ApplyUpdatesAndRestart(newVersion);
+            await RunUpdateFlowAsync(silent: true);
         }
         catch (Exception ex)
         {
             Console.WriteLine($"[AutoUpdate] check failed: {ex.Message}");
         }
+    }
+
+    /// <summary>
+    /// The shared update flow. Returns a localized status message (never null when
+    /// <paramref name="silent"/> is false); on a successful handoff the PROCESS EXITS.
+    /// </summary>
+    private async Task<string?> RunUpdateFlowAsync(bool silent)
+    {
+        var kind = Lag.Services.AppUpdateService.DetectInstall();
+        if (kind == Lag.Services.InstallKind.DevOrPortable)
+            return silent ? null : Lag.Core.Localizer.Get("Update_DevMode");
+
+        var current = Lag.Services.AppUpdateService.CurrentVersion();
+        var latest = await Lag.Services.AppUpdateService.GetLatestAsync();
+        if (latest == null || current == null)
+            return silent ? null : Lag.Core.Localizer.Get("Update_UpToDate");
+
+        // Installed builds move only FORWARD; a legacy Velopack layout also takes an
+        // equal-version install — that run migrates it onto the installer.
+        bool wanted = latest.Version > current
+                      || (kind == Lag.Services.InstallKind.LegacyVelopack && latest.Version >= current);
+        if (!wanted)
+            return silent ? null : Lag.Core.Localizer.Get("Update_UpToDate");
+
+        if (!silent) UpdateStatus = Lag.Core.Localizer.Get("Update_Downloading");
+        return await HandOffToInstallerAsync(latest);
+    }
+
+    private static async Task<string?> HandOffToInstallerAsync(Lag.Services.UpdateInfo latest)
+    {
+        if (!await Lag.Services.AppUpdateService.DownloadAndInstallAsync(latest))
+            return Lag.Core.Localizer.Format("Update_Failed", "download");
+
+        // The installer takes over from here (closes stragglers, installs, relaunches).
+        Environment.Exit(0);
+        return null; // unreachable
     }
 
     /// <summary>Opens the logs folder (Documents\Lag\Logs) in Explorer so logs are one click away to share.</summary>
@@ -1435,6 +1513,9 @@ public partial class SettingsViewModel : ViewModelBase
 
             // Watch for audio-device hot-plug so the mic/output lists update live (headphones, USB mic).
             InitDeviceWatcher();
+
+            // Camera list for the overlay dropdown (async; restores the persisted pick when done).
+            RefreshWebcamsAsync();
         }
         finally
         {
@@ -1451,6 +1532,12 @@ public partial class SettingsViewModel : ViewModelBase
         // user toggling it back in Windows Settings would otherwise silently undo it).
         if (DisableGameMode)
             ApplyDisableGameMode(true);
+
+        // Re-assert the autostart Run key each launch when enabled: it stores an absolute exe
+        // path, which goes stale when the install moves (e.g. the Velopack → installer
+        // migration) — rewriting it with the current path self-heals autostart.
+        if (StartWithWindows)
+            ApplyStartWithWindows(true);
 
         // Mirror the persisted push-to-talk state onto the global hook.
         ApplyPttToManager();
@@ -1673,6 +1760,22 @@ public partial class SettingsViewModel : ViewModelBase
                 FrameRate = EffectiveFps,
                 FileFormat = SelectedFormat,
                 MonitorDeviceName = SelectedMonitor?.DeviceName ?? string.Empty,
+                MonitorStableId = SelectedMonitor?.StableId ?? string.Empty,
+                OverlayEnabled = OverlayEnabled,
+                WebcamDeviceId = SelectedWebcam?.Id ?? _savedWebcamId,
+                WebcamShown = WebcamShown,
+                WebcamX = WebcamX,
+                WebcamY = WebcamY,
+                WebcamScale = WebcamScale,
+                KeysShown = KeysShown,
+                KeysX = KeysX,
+                KeysY = KeysY,
+                KeysScale = KeysScale,
+                StatsShown = StatsShown,
+                StatsX = StatsX,
+                StatsY = StatsY,
+                StatsScale = StatsScale,
+                StatsDetail = StatsDetail,
                 MicrophoneId = SelectedMicrophone?.Id ?? string.Empty,
                 StartWithWindows = StartWithWindows,
                 AutoStartRecording = AutoStartRecording,
@@ -1854,18 +1957,45 @@ public partial class SettingsViewModel : ViewModelBase
             MicChannelIndex = settings.MicMono ? 1 : 0;
             SeparateAudioTracks = settings.SeparateAudioTracks;
 
-            // Restore the persisted monitor/microphone by matching against the enumerated devices.
-            if (!string.IsNullOrEmpty(settings.MonitorDeviceName))
-            {
-                var monitor = Monitors.FirstOrDefault(m => m.DeviceName == settings.MonitorDeviceName);
-                if (monitor != null) SelectedMonitor = monitor;
-            }
+            // Restore the persisted monitor. Match by the boot-stable PnP id — GDI \\.\DISPLAYn
+            // numbers get reshuffled across reboots (docking, virtual display drivers), so a
+            // device-name match can silently land on a DIFFERENT physical panel. The name match
+            // remains only as a one-time migration for settings saved before MonitorStableId
+            // existed; the next save then self-heals to the stable id. No match → stay on the
+            // primary that RefreshMonitors() preselected.
+            HardwareDetector.MonitorInfo? monitor = null;
+            if (!string.IsNullOrEmpty(settings.MonitorStableId))
+                monitor = Monitors.FirstOrDefault(m => m.StableId == settings.MonitorStableId);
+            else if (!string.IsNullOrEmpty(settings.MonitorDeviceName))
+                monitor = Monitors.FirstOrDefault(m => m.DeviceName == settings.MonitorDeviceName);
+            if (monitor != null) SelectedMonitor = monitor;
+            Console.WriteLine($"[Settings] monitor restore: savedStableId='{settings.MonitorStableId}' " +
+                              $"savedName='{settings.MonitorDeviceName}' → " +
+                              (monitor != null ? $"matched {monitor}" : $"no match, keeping {SelectedMonitor}"));
 
             if (!string.IsNullOrEmpty(settings.MicrophoneId))
             {
                 var mic = Microphones.FirstOrDefault(m => m.Id == settings.MicrophoneId);
                 if (mic != null) SelectedMicrophone = mic;
             }
+
+            // Overlay. The camera itself is matched later, when the async enumeration lands
+            // (RefreshWebcamsAsync reads _savedWebcamId).
+            OverlayEnabled = settings.OverlayEnabled;
+            _savedWebcamId = settings.WebcamDeviceId ?? "";
+            WebcamShown = settings.WebcamShown;
+            WebcamX = Math.Clamp(settings.WebcamX, 0, 1);
+            WebcamY = Math.Clamp(settings.WebcamY, 0, 1);
+            WebcamScale = Math.Clamp(settings.WebcamScale, 0.06, 0.45);
+            KeysShown = settings.KeysShown;
+            KeysX = Math.Clamp(settings.KeysX, 0, 1);
+            KeysY = Math.Clamp(settings.KeysY, 0, 1);
+            KeysScale = Math.Clamp(settings.KeysScale, 0.06, 0.42);
+            StatsShown = settings.StatsShown;
+            StatsX = Math.Clamp(settings.StatsX, 0, 1);
+            StatsY = Math.Clamp(settings.StatsY, 0, 1);
+            StatsScale = Math.Clamp(settings.StatsScale, 0.02, 0.10);
+            StatsDetail = Math.Clamp(settings.StatsDetail, 0, 2);
 
             // Automation flags (registry side-effects are suppressed during init via _isInitializing).
             StartWithWindows = settings.StartWithWindows;
@@ -1910,6 +2040,27 @@ public partial class SettingsViewModel : ViewModelBase
         public string LibraryPath { get; set; } = "";
         public int FrameRate { get; set; } = 30;
         public string MonitorDeviceName { get; set; } = "";
+
+        /// <summary>Boot-stable PnP monitor id (see HardwareDetector.MonitorInfo.StableId).</summary>
+        public string MonitorStableId { get; set; } = "";
+
+        // ── Overlay (webcam PiP + keyboard/mouse block); X/Y = free-space fractions,
+        // scale = element height / frame height ──
+        public bool OverlayEnabled { get; set; }
+        public string WebcamDeviceId { get; set; } = "";
+        public bool WebcamShown { get; set; } = true;
+        public double WebcamX { get; set; } = 0.97;
+        public double WebcamY { get; set; } = 0.95;
+        public double WebcamScale { get; set; } = 0.24;
+        public bool KeysShown { get; set; }
+        public double KeysX { get; set; } = 0.03;
+        public double KeysY { get; set; } = 0.95;
+        public double KeysScale { get; set; } = 0.20;
+        public bool StatsShown { get; set; }
+        public double StatsX { get; set; } = 0.5;
+        public double StatsY { get; set; } = 0.02;
+        public double StatsScale { get; set; } = 0.045;
+        public int StatsDetail { get; set; } = 1;
         public string MicrophoneId { get; set; } = "";
         public bool StartWithWindows { get; set; }
         public bool AutoStartRecording { get; set; }

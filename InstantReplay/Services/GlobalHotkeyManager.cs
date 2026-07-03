@@ -73,11 +73,14 @@ public sealed class GlobalHotkeyManager : IDisposable
         lock (_lock)
         {
             if (_hook != null) return;
-            // Keyboard events only: the old global mouse subscription (click-to-pause for the
-            // native VLC window) is gone — video clicks are plain Avalonia events now.
             _hook = new TaskPoolGlobalHook();
             _hook.KeyPressed += OnKeyPressed;
             _hook.KeyReleased += OnKeyReleased;
+            // Mouse BUTTONS feed the recording keystroke overlay. Buttons only — never
+            // MouseMoved/Dragged (those are the high-rate events that lagged the cursor
+            // system-wide); the handlers are one volatile-bool check when the overlay is off.
+            _hook.MousePressed += OnMousePressed;
+            _hook.MouseReleased += OnMouseReleased;
         }
 
         // RunAsync blocks until the hook is disposed, so we fire-and-forget.
@@ -89,12 +92,28 @@ public sealed class GlobalHotkeyManager : IDisposable
     /// In capture mode, raises <see cref="HotkeyCaptured"/>.
     /// In normal mode, checks if the key combo matches the configured hotkey.
     /// </summary>
+    /// <summary>Mouse buttons exist solely to feed the keystroke overlay (no hotkey logic).</summary>
+    private void OnMousePressed(object? sender, MouseHookEventArgs e)
+    {
+        if (_disposed) return;
+        Lag.Services.VfrCapture.KeystrokeTracker.Instance.OnMouseButton((int)e.Data.Button, down: true);
+    }
+
+    private void OnMouseReleased(object? sender, MouseHookEventArgs e)
+    {
+        if (_disposed) return;
+        Lag.Services.VfrCapture.KeystrokeTracker.Instance.OnMouseButton((int)e.Data.Button, down: false);
+    }
+
     private void OnKeyPressed(object? sender, KeyboardHookEventArgs e)
     {
         if (_disposed) return;
 
         var modifiers = e.RawEvent.Mask;
         var key = e.Data.KeyCode;
+
+        // Recording keystroke overlay (a no-op single bool check while it's off).
+        Lag.Services.VfrCapture.KeystrokeTracker.Instance.OnKey(key, down: true);
 
         // --- Capture mode: used by Settings to bind a new hotkey ---
         if (IsCapturing)
@@ -135,6 +154,8 @@ public sealed class GlobalHotkeyManager : IDisposable
     {
         if (_disposed) return;
 
+        Lag.Services.VfrCapture.KeystrokeTracker.Instance.OnKey(e.Data.KeyCode, down: false);
+
         if (PttEnabled && e.Data.KeyCode == PttKey)
         {
             PttReleased?.Invoke(this, EventArgs.Empty);
@@ -168,6 +189,8 @@ public sealed class GlobalHotkeyManager : IDisposable
             {
                 _hook.KeyPressed -= OnKeyPressed;
                 _hook.KeyReleased -= OnKeyReleased;
+                _hook.MousePressed -= OnMousePressed;
+                _hook.MouseReleased -= OnMouseReleased;
                 _hook.Dispose();
                 _hook = null;
             }

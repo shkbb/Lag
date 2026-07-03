@@ -16,7 +16,7 @@
   <sys:String x:Key="Settings_Title">Settings</sys:String>
   <sys:String x:Key="Settings_PendingChanges">Changes will take effect after restarting the recording.</sys:String>
   <sys:String x:Key="Settings_Group_Language">LANGUAGE</sys:String>
-  <sys:String x:Key="Settings_Language">Language</sys:String>
+  <sys:String x:Key="Settings_Language">Language</sys:String>
   <sys:String x:Key="Settings_Theme">Theme</sys:String>
   <sys:String x:Key="Settings_Theme_Desc">Light, dark, or follow your system</sys:String>
   <sys:String x:Key="Theme_Light">Light</sys:String>
@@ -104,7 +104,7 @@
   <sys:String x:Key="Editor_ResetTrim">Reset trim</sys:String>
   <sys:String x:Key="Settings_Hotkey_Screenshot">Screenshot</sys:String>
   <sys:String x:Key="Toast_ReplaySaved">Replay saved</sys:String>
-  <sys:String x:Key="Toast_ScreenshotSaved">Screenshot saved</sys:String>
+  <sys:String x:Key="Toast_ScreenshotSaved">Screenshot saved</sys:String>
   <sys:String x:Key="Toast_RecordingStarted">Recording started</sys:String>
   <sys:String x:Key="Toast_RecordingStopped">Recording stopped</sys:String>
   <sys:String x:Key="Toast_NowRecording">Now recording</sys:String>
@@ -136,7 +136,7 @@
   <sys:String x:Key="Library_ShowInFolder">Show in folder</sys:String>
   <sys:String x:Key="Library_FreeSpace">Free space</sys:String>
   <sys:String x:Key="Library_Search">Search clips</sys:String>
-  <sys:String x:Key="Library_Favorites">Favorites</sys:String>
+  <sys:String x:Key="Library_Favorites">Favorites</sys:String>
   <sys:String x:Key="Library_Desktop">Desktop</sys:String>
   <sys:String x:Key="Library_Today">Today</sys:String>
   <sys:String x:Key="Library_Yesterday">Yesterday</sys:String>
@@ -196,7 +196,7 @@
 
   <sys:String x:Key="Library_EmptyTitle">No replays yet</sys:String>
   <!-- ════════ Pause recording ════════ -->
-  <sys:String x:Key="Settings_Hotkey_Pause">Pause recording</sys:String>
+  <sys:String x:Key="Settings_Hotkey_Pause">Pause recording</sys:String>
   <sys:String x:Key="Settings_Hotkey_Record">Start/stop recording</sys:String>
   <sys:String x:Key="Btn_PauseRecording">Pause</sys:String>
   <sys:String x:Key="Btn_ResumeRecording">Resume</sys:String>
@@ -244,4 +244,22 @@
   <sys:String x:Key="Settings_Threshold">Threshold</sys:String>
   <sys:String x:Key="Settings_Listen">Listen</sys:String>
   <sys:String x:Key="Settings_Stop">Stop</sys:String>
+  <sys:String x:Key="Settings_Group_Overlay">Overlay</sys:String>
+  <sys:String x:Key="Settings_WebcamOverlay">Webcam in recordings</sys:String>
+  <sys:String x:Key="Settings_WebcamOverlay_Desc">Show your camera in a corner of saved clips</sys:String>
+  <sys:String x:Key="Settings_WebcamDevice">Camera</sys:String>
+  <sys:String x:Key="Settings_WebcamPosition">Position</sys:String>
+  <sys:String x:Key="Settings_WebcamSize">Size</sys:String>
+  <sys:String x:Key="Settings_KeysOverlay">Show pressed keys</sys:String>
+  <sys:String x:Key="Settings_KeysOverlay_Desc">Overlay pressed keyboard and mouse buttons on clips</sys:String>
+
+  <sys:String x:Key="Overlay_Enable">Video overlays</sys:String>
+  <sys:String x:Key="Overlay_Enable_Desc">Bake the webcam and keyboard/mouse into recordings — pick a corner for each below</sys:String>
+  <sys:String x:Key="Overlay_None">None</sys:String>
+  <sys:String x:Key="Overlay_Camera">Camera</sys:String>
+  <sys:String x:Key="Overlay_Keys">Keyboard + mouse</sys:String>
+
+  <sys:String x:Key="Overlay_Stats">Resource monitor</sys:String>
+
+  <sys:String x:Key="Overlay_WheelHint">Drag to move · drag an edge or scroll the mouse wheel to resize</sys:String>
 </ResourceDictionary>

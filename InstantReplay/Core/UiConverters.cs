@@ -21,6 +21,20 @@ public class EqualsConverter : IValueConverter
 }
 
 /// <summary>
+/// Two-way "1 − x" for int indexes. Bridges a segmented control whose VISUAL order is the
+/// reverse of the bound property's value order (e.g. mic channels: UI shows [Mono, Stereo]
+/// but the setting is 0 = stereo, 1 = mono), so SelectedIndex can bind directly.
+/// </summary>
+public class OneMinusIntConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => value is int i ? 1 - i : value;
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => value is int i ? 1 - i : value;
+}
+
+/// <summary>
 /// Maps a quality "intensity tier" (0 = normal, 1 = caution, 2 = extreme) to a text brush, so
 /// dropdown options for high FPS / bitrate / resolution stand out: tier 0 keeps the
 /// inherited theme colour, tier 1 is amber, tier 2 is red.

@@ -7,7 +7,7 @@
         x:DataType="vm:MainViewModel"
         Title="Lag"
         Icon="avares://Lag/Assets/icon.ico"
-        Width="1200" Height="760"
+        Width="1360" Height="840"
         MinWidth="1080" MinHeight="640"
         Background="#0C0D11"
         ExtendClientAreaToDecorationsHint="True"
@@ -189,6 +189,28 @@
       <Setter Property="Opacity" Value="1" />
       <Setter Property="RenderTransform" Value="translateX(0)" />
     </Style>
+
+    <!-- ── Animation pass ── -->
+    <!-- Recording CTA: the stop-square softly blinks while recording -->
+    <Style Selector="Button#RecordCta.rec Rectangle">
+      <Style.Animations>
+        <Animation Duration="0:0:1.1" IterationCount="Infinite" Easing="SineEaseInOut">
+          <KeyFrame Cue="0%"><Setter Property="Opacity" Value="1" /></KeyFrame>
+          <KeyFrame Cue="50%"><Setter Property="Opacity" Value="0.35" /></KeyFrame>
+          <KeyFrame Cue="100%"><Setter Property="Opacity" Value="1" /></KeyFrame>
+        </Animation>
+      </Style.Animations>
+    </Style>
+    <!-- Nav rail icons: springy press -->
+    <Style Selector="Button.railitem mi|MaterialIcon">
+      <Setter Property="RenderTransform" Value="scale(1)" />
+      <Setter Property="Transitions">
+        <Transitions><TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.12" Easing="CubicEaseOut" /></Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Button.railitem:pressed mi|MaterialIcon">
+      <Setter Property="RenderTransform" Value="scale(0.82)" />
+    </Style>
   </Window.Styles>
 
   <Grid RowDefinitions="Auto,*" Background="{DynamicResource SurfaceApp}">
@@ -361,7 +383,12 @@
                                    Background="{DynamicResource SurfaceApp}"
                                    Content="{Binding CurrentView}">
         <TransitioningContentControl.PageTransition>
-          <CrossFade Duration="0:0:0.18" />
+          <CompositePageTransition>
+            <CompositePageTransition.PageTransitions>
+              <CrossFade Duration="0:0:0.22" />
+              <PageSlide Duration="0:0:0.22" Orientation="Vertical" />
+            </CompositePageTransition.PageTransitions>
+          </CompositePageTransition>
         </TransitioningContentControl.PageTransition>
       </TransitioningContentControl>
 

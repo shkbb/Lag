@@ -13,6 +13,35 @@ public partial class LibraryView : UserControl
     public LibraryView()
     {
         InitializeComponent();
+
+        // The chip strip only scrolls horizontally, so a plain wheel would do nothing —
+        // translate vertical wheel ticks into horizontal offset. Tunnel routing so the
+        // ScrollViewer's own (vertical) wheel handling never swallows the event.
+        ChipsScroller.AddHandler(PointerWheelChangedEvent, OnChipsWheel, RoutingStrategies.Tunnel);
+
+        // The card grid is by far the heaviest layout in the app — building it DURING the
+        // page transition ate every animation frame (the library "just popped in, laggy").
+        // Keep the body collapsed until the page slide finishes, then fade+rise it in.
+        AttachedToVisualTree += (_, _) =>
+        {
+            LibraryBody.IsVisible = false;
+            Avalonia.Threading.DispatcherTimer.RunOnce(() =>
+            {
+                LibraryBody.IsVisible = true;
+                Lag.Core.FxAnimations.SlideFadeIn(LibraryBody, 12, 220);
+            }, System.TimeSpan.FromMilliseconds(240));
+        };
+    }
+
+    /// <summary>Mouse wheel over the category chips: scroll the strip horizontally.</summary>
+    private void OnChipsWheel(object? sender, PointerWheelEventArgs e)
+    {
+        double delta = e.Delta.X != 0 ? e.Delta.X : e.Delta.Y; // support tilt wheels too
+        if (delta == 0 || sender is not ScrollViewer sv) return;
+
+        double max = System.Math.Max(0, sv.Extent.Width - sv.Viewport.Width);
+        sv.Offset = sv.Offset.WithX(System.Math.Clamp(sv.Offset.X - delta * 60, 0, max));
+        e.Handled = true;
     }
 
     /// <summary>Resolves the clip a context-menu item / card was invoked on (its inherited DataContext).</summary>

@@ -85,22 +85,117 @@ public class App : Application
 
     // ───────────── Theme ─────────────
 
+    /// <summary>The snapshot overlay of a theme cross-fade still in flight (null between fades).</summary>
+    private static Avalonia.Controls.Image? _themeFadeOverlay;
+
     /// <summary>
     /// Switches the active colour theme. "light" / "dark" force the cream Light or the
     /// original Dark palette; anything else ("system") follows the OS theme live via
     /// ThemeVariant.Default. All {DynamicResource} bindings re-resolve from Palette.axaml's
     /// per-variant ThemeDictionaries the instant the variant changes.
+    ///
+    /// The visible switch is a whole-window CROSS-FADE: the current UI is frozen into a
+    /// bitmap overlaid on top, the variant flips instantly underneath, and the frozen frame
+    /// fades out — so every surface (including plain backgrounds that have no Transitions)
+    /// appears to melt into the new theme together. Skipped at startup (no visible window
+    /// yet) and when the flip causes no actual variant change (e.g. system == current).
     /// </summary>
     public static void SetTheme(string? mode)
     {
         if (Current is null) return;
 
-        Current.RequestedThemeVariant = mode switch
+        var target = mode switch
         {
             "light" => ThemeVariant.Light,
             "dark" => ThemeVariant.Dark,
             _ => ThemeVariant.Default,   // "system" → inherit the OS light/dark setting (updates live)
         };
+
+        var win = (Current.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.MainWindow;
+        var before = Current.ActualThemeVariant;
+
+        if (win is { IsVisible: true } && TrySnapshotWindow(win, out var overlay))
+        {
+            Current.RequestedThemeVariant = target;
+            if (Current.ActualThemeVariant == before)
+            {
+                RemoveThemeFadeOverlay(overlay);   // nothing visibly changed — drop the frozen frame
+                return;
+            }
+            _themeFadeOverlay = overlay;
+            FadeOutThemeOverlay(overlay);
+        }
+        else
+        {
+            Current.RequestedThemeVariant = target;
+        }
+    }
+
+    /// <summary>Freezes the window's current pixels into an Image parked in its OverlayLayer.</summary>
+    private static bool TrySnapshotWindow(Window win, out Avalonia.Controls.Image overlay)
+    {
+        overlay = null!;
+        try
+        {
+            // A fade may still be running from a rapid previous switch — clear it first so the
+            // new snapshot doesn't capture the half-faded old frame on top of everything.
+            if (_themeFadeOverlay is { } old) RemoveThemeFadeOverlay(old);
+
+            var layer = Avalonia.Controls.Primitives.OverlayLayer.GetOverlayLayer(win);
+            if (layer is null) return false;
+
+            double scale = win.RenderScaling;
+            var size = new PixelSize(
+                (int)Math.Ceiling(win.ClientSize.Width * scale),
+                (int)Math.Ceiling(win.ClientSize.Height * scale));
+            if (size.Width <= 0 || size.Height <= 0) return false;
+
+            var bmp = new Avalonia.Media.Imaging.RenderTargetBitmap(size, new Vector(96 * scale, 96 * scale));
+            bmp.Render(win);
+
+            overlay = new Avalonia.Controls.Image
+            {
+                Source = bmp,
+                Width = win.ClientSize.Width,
+                Height = win.ClientSize.Height,
+                Stretch = Avalonia.Media.Stretch.Fill,
+                IsHitTestVisible = false,
+            };
+            layer.Children.Add(overlay);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[App] theme snapshot failed: {ex.Message}");
+            return false;   // fall back to the instant switch — never break theming over polish
+        }
+    }
+
+    private static void FadeOutThemeOverlay(Avalonia.Controls.Image overlay)
+    {
+        overlay.Transitions = new Avalonia.Animation.Transitions
+        {
+            new Avalonia.Animation.DoubleTransition
+            {
+                Property = Visual.OpacityProperty,
+                Duration = TimeSpan.FromMilliseconds(280),
+                Easing = new Avalonia.Animation.Easings.CubicEaseOut(),
+            }
+        };
+        // Next dispatcher frame: the re-themed UI beneath is already composed, start the fade.
+        Avalonia.Threading.Dispatcher.UIThread.Post(() => overlay.Opacity = 0,
+            Avalonia.Threading.DispatcherPriority.Background);
+        Avalonia.Threading.DispatcherTimer.RunOnce(() => RemoveThemeFadeOverlay(overlay),
+            TimeSpan.FromMilliseconds(600));
+    }
+
+    private static void RemoveThemeFadeOverlay(Avalonia.Controls.Image overlay)
+    {
+        if (ReferenceEquals(_themeFadeOverlay, overlay)) _themeFadeOverlay = null;
+        var source = overlay.Source as IDisposable;
+        (overlay.Parent as Panel)?.Children.Remove(overlay);
+        overlay.Source = null;
+        source?.Dispose();
     }
 
     /// <summary>

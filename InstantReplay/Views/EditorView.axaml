@@ -512,15 +512,15 @@
                   <TextBlock Text="{DynamicResource Editor_Speed}" FontSize="12"
                              Foreground="{DynamicResource Fg2Brush}" />
                   <StackPanel Orientation="Horizontal" Spacing="8">
-                    <ListBox Classes="segctl" VerticalAlignment="Center"
-                             ItemsSource="{Binding SpeedOptions}"
-                             SelectedItem="{Binding SelectedSpeed}">
+                    <controls:SegmentedListBox Classes="segctl" VerticalAlignment="Center"
+                                               ItemsSource="{Binding SpeedOptions}"
+                                               SelectedItem="{Binding SelectedSpeed}">
                       <ListBox.ItemTemplate>
                         <DataTemplate x:DataType="vm:EditorSpeedOption">
                           <TextBlock Text="{Binding Display}" />
                         </DataTemplate>
                       </ListBox.ItemTemplate>
-                    </ListBox>
+                    </controls:SegmentedListBox>
                     <TextBox Width="52" VerticalAlignment="Center"
                              Text="{Binding SpeedText}" />
                   </StackPanel>

@@ -143,6 +143,37 @@
     <Style Selector="Button.ov:pointerover /template/ ContentPresenter">
       <Setter Property="Background" Value="{DynamicResource SurfaceHover2}" />
     </Style>
+
+    <!-- ── Animation pass: cards fade-rise in on load, lift on hover; chips pop on select ── -->
+    <Style Selector="Border.clipcardr">
+      <Setter Property="RenderTransform" Value="translateY(0px)" />
+      <Setter Property="Transitions">
+        <Transitions><TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.16" Easing="CubicEaseOut" /></Transitions>
+      </Setter>
+      <Style.Animations>
+        <Animation Duration="0:0:0.3" Easing="CubicEaseOut" FillMode="None">
+          <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0" /></KeyFrame>
+          <KeyFrame Cue="100%"><Setter Property="Opacity" Value="1" /></KeyFrame>
+        </Animation>
+      </Style.Animations>
+    </Style>
+    <Style Selector="Border.clipcardr:pointerover">
+      <Setter Property="RenderTransform" Value="translateY(-3px)" />
+    </Style>
+    <Style Selector="Button.gamechip.sel">
+      <Style.Animations>
+        <Animation Duration="0:0:0.18" Easing="CubicEaseOut" FillMode="None">
+          <KeyFrame Cue="0%">
+            <Setter Property="ScaleTransform.ScaleX" Value="0.92" />
+            <Setter Property="ScaleTransform.ScaleY" Value="0.92" />
+          </KeyFrame>
+          <KeyFrame Cue="100%">
+            <Setter Property="ScaleTransform.ScaleX" Value="1" />
+            <Setter Property="ScaleTransform.ScaleY" Value="1" />
+          </KeyFrame>
+        </Animation>
+      </Style.Animations>
+    </Style>
   </UserControl.Styles>
 
   <UserControl.KeyBindings>
@@ -212,9 +243,10 @@
           </Grid>
         </Border>
 
-        <!-- Game/Desktop category chips — horizontally scrollable when there are many. -->
-        <ScrollViewer Grid.Column="1" Margin="10,0,12,0" VerticalAlignment="Center"
-                      HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+        <!-- Game/Desktop category chips — horizontally scrollable when there are many.
+             The scrollbar is hidden; the mouse wheel scrolls the strip instead (code-behind). -->
+        <ScrollViewer x:Name="ChipsScroller" Grid.Column="1" Margin="10,0,12,0" VerticalAlignment="Center"
+                      HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled">
           <ItemsControl ItemsSource="{Binding GameChips}">
             <ItemsControl.ItemsPanel>
               <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="7" /></ItemsPanelTemplate>
@@ -245,10 +277,15 @@
     </StackPanel>
 
     <!-- ════════════════ Body ════════════════ -->
+    <!-- Thin loading strip while the clip list / thumbnails are being scanned -->
+    <ProgressBar Grid.Row="1" IsIndeterminate="True" IsVisible="{Binding IsLoading}"
+                 Height="3" MinHeight="3" VerticalAlignment="Top" ZIndex="5"
+                 Foreground="{DynamicResource Accent}" Background="Transparent" BorderThickness="0" />
+
     <!-- NO bottom padding on the ScrollViewer — it ate into the viewport and hid the last card's title.
          All trailing space is a content-flow bottom margin on the grid instead, which correctly extends
          the scrollable extent so the last full card (incl. its title) can be scrolled into view. -->
-    <ScrollViewer Grid.Row="1" Padding="38,16,38,0" VerticalScrollBarVisibility="Auto"
+    <ScrollViewer x:Name="LibraryBody" Grid.Row="1" Padding="38,16,38,0" VerticalScrollBarVisibility="Auto"
                   Background="Transparent" PointerPressed="OnBodyPressed">
       <Panel>
 

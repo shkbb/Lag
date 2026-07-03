@@ -26,7 +26,8 @@ public sealed class VlcVideoRenderer : IDisposable
 
     private MediaPlayer? _player;
     private IntPtr _buffer;
-    private uint _width, _height, _pitch;
+    private uint _width, _height, _pitch;   // the CODED buffer libvlc decodes into
+    private uint _visW, _visH;              // the VISIBLE region shown to the user
     private WriteableBitmap? _bitmap;
     private int _invalidatePending;
     private bool _disposed;
@@ -71,12 +72,23 @@ public sealed class VlcVideoRenderer : IDisposable
 
         uint pitch = (width * 4 + 31) & ~31u; // libvlc requires 32-byte aligned rows
 
+        // libvlc hands this callback the CODED buffer size (macroblock-aligned: a 2580×1080
+        // clip arrives as 2592×1088). Blitting the whole buffer would show the codec's edge
+        // padding as part of the picture — wrong aspect ratio (black side bars in fullscreen)
+        // and garbage bands at the right/bottom. The VISIBLE size comes from
+        // libvlc_video_get_size; when unavailable, fall back to the full buffer.
+        uint visW = 0, visH = 0;
+        try { _player?.Size(0, ref visW, ref visH); } catch { visW = visH = 0; }
+        if (visW == 0 || visH == 0 || visW > width || visH > height) { visW = width; visH = height; }
+
         lock (_sync)
         {
             FreeBuffer();
             _width = width;
             _height = height;
             _pitch = pitch;
+            _visW = visW;
+            _visH = visH;
             _buffer = Marshal.AllocHGlobal((int)(pitch * height));
             // Zero the fresh buffer: at high playback rates libvlc may flash it before the
             // first real frame lands — uninitialized memory showed up as a gray screen.
@@ -86,15 +98,19 @@ public sealed class VlcVideoRenderer : IDisposable
         pitches = pitch;
         lines = height;
 
-        uint w = width, h = height;
+        // One line per media open — keeps size/padding mismatches diagnosable from the log.
+        Console.WriteLine($"[VlcVideoRenderer] format {width}x{height} (visible {visW}x{visH}), pitch {pitch}.");
+
+        uint w = visW, h = visH;
         Dispatcher.UIThread.Post(() =>
         {
             lock (_sync)
             {
-                if (_disposed || _width != w || _height != h) return;
+                if (_disposed || _visW != w || _visH != h) return;
                 if (_bitmap == null || _bitmap.PixelSize.Width != w || _bitmap.PixelSize.Height != h)
                 {
                     _bitmap?.Dispose();
+                    // The bitmap is the VISIBLE size — the coded padding never leaves _buffer.
                     _bitmap = new WriteableBitmap(
                         new PixelSize((int)w, (int)h), new Vector(96, 96),
                         PixelFormat.Bgra8888, AlphaFormat.Opaque);
@@ -129,15 +145,24 @@ public sealed class VlcVideoRenderer : IDisposable
         lock (_sync)
         {
             if (_disposed || _bitmap == null || _buffer == IntPtr.Zero) return;
-            if (_bitmap.PixelSize.Width != _width || _bitmap.PixelSize.Height != _height) return;
+            if (_bitmap.PixelSize.Width != _visW || _bitmap.PixelSize.Height != _visH) return;
 
+            // Copy only the VISIBLE region out of the (possibly padded) coded buffer.
             using var fb = _bitmap.Lock();
-            int copyBytes = Math.Min(fb.RowBytes, (int)_pitch);
-            for (uint y = 0; y < _height; y++)
+            if (fb.RowBytes == (int)_pitch && _visW == _width)
             {
-                CopyMemory(fb.Address + (int)(y * (uint)fb.RowBytes),
-                           _buffer + (int)(y * _pitch),
-                           (UIntPtr)copyBytes);
+                // No horizontal padding and matching layout — one block copy for all rows.
+                CopyMemory(fb.Address, _buffer, (UIntPtr)(_pitch * _visH));
+            }
+            else
+            {
+                int copyBytes = Math.Min(fb.RowBytes, (int)(_visW * 4));
+                for (uint y = 0; y < _visH; y++)
+                {
+                    CopyMemory(fb.Address + (int)(y * (uint)fb.RowBytes),
+                               _buffer + (int)(y * _pitch),
+                               (UIntPtr)copyBytes);
+                }
             }
         }
 

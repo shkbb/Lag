@@ -89,6 +89,8 @@
     <PackageReference Include="NAudio.Wasapi" Version="2.3.0" />
     <PackageReference Include="SharpDX.DXGI" Version="4.2.0" />
     <PackageReference Include="SharpDX.Direct3D11" Version="4.2.0" />
+    <!-- Direct2D + DirectWrite: the in-frame overlay compositor (webcam PiP, keystroke badges) -->
+    <PackageReference Include="SharpDX.Direct2D1" Version="4.2.0" />
     <PackageReference Include="VideoLAN.LibVLC.Windows" Version="3.0.21" />
     <!-- Native VFR capture engine: binds to the bundled FFmpeg 7.1 libs in ffmpeg/
          (avcodec-61/avformat-61/avutil-59) for hardware/CPU encode + mp4 mux with real

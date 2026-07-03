@@ -47,6 +47,9 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
     /// <summary>Real saved replay clips shown in the right sidebar (shared with the Library view).</summary>
     public ObservableCollection<ReplayClip> Clips => _library.Clips;
 
+    /// <summary>The shared library VM — the sidebar's loading strip binds to its IsLoading.</summary>
+    public LibraryViewModel Library => _library;
+
     /// <summary>Total number of saved clips (sidebar stat).</summary>
     public int TotalClips => Clips.Count;
 
@@ -100,6 +103,11 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
     /// <summary>Whether video is currently playing.</summary>
     [ObservableProperty]
     private bool _isPlaying;
+
+    /// <summary>True from "clip requested" until libvlc actually starts playing — drives the thin
+    /// loading strip over the video (large files on HDDs take seconds to open: moov at the end).</summary>
+    [ObservableProperty]
+    private bool _isClipLoading;
 
     /// <summary>Current playback position (0.0 to 1.0).</summary>
     [ObservableProperty]
@@ -301,6 +309,12 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
             _positionTimer.Elapsed += (_, _) => UpdatePlaybackPosition();
 
             // LibVLC raises these on its own threads — marshal all bound-property writes to the UI.
+            // The loading strip ends on the FIRST RENDERED FRAME, not on libvlc's "Playing" state —
+            // Playing fires as soon as the play request is accepted, long before slow-opening
+            // files (moov at the end, HDD) actually show a picture. FrameRendered is already
+            // marshalled to the UI thread by the renderer.
+            VideoRenderer.FrameRendered += () => { if (IsClipLoading) IsClipLoading = false; };
+
             _mediaPlayer.Playing += (_, _) => Dispatcher.UIThread.Post(() =>
             {
                 IsPlaying = true;
@@ -316,6 +330,7 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
             _mediaPlayer.Stopped += (_, _) => Dispatcher.UIThread.Post(() =>
             {
                 IsPlaying = false;
+                IsClipLoading = false;
                 _positionTimer?.Stop();
                 _isUpdatingPosition = true;
                 Position = 0;
@@ -375,6 +390,7 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
             }
             IsViewingImage = true;
             IsPlaying = false;
+            IsClipLoading = false;
             TimeDisplay = "";
             return;
         }
@@ -390,6 +406,9 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
 
         string path = clip.FilePath;
         bool isGif = path.EndsWith(".gif", StringComparison.OrdinalIgnoreCase);
+
+        // The loading strip runs until libvlc reports Playing (big HDD files open slowly).
+        IsClipLoading = true;
 
         // Build + swap the media on the worker thread. Assigning Media stops the current input,
         // which can block for SECONDS at deep slow-mo — doing it off the UI thread is what stops the

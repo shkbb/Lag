@@ -92,6 +92,10 @@ public static class Program
         // handler above; this top-level filter logs the faulting DLL to crash.log just before death.
         InstallNativeCrashHandler();
 
+        // TRANSITION SHIM — the app now updates itself via GitHub Releases + the Inno installer
+        // (AppUpdateService), but users still on the legacy Velopack layout receive ONE last
+        // Velopack package whose Update.exe invokes these hooks; keep processing them until the
+        // Velopack channel is retired, then drop this and the package reference.
         // MUST run first: handles Velopack's install/update/uninstall hooks and exits early
         // for those special invocations before any UI is created. (Velopack maintenance must not
         // be blocked by the single-instance guard below.)
@@ -136,28 +140,48 @@ public static class Program
             .UsePlatformDetect()
             .WithInterFont()
             .LogToTrace()
-            .AfterSetup(_ => RaiseRenderTimerTo120Fps());
+            .AfterSetup(_ => RaiseRenderTimerToDisplayRate());
+
+    /// <summary>
+    /// Composition rate for the render timer: the highest refresh rate among the connected
+    /// displays. A fixed rate that mismatches the panel's Hz beats against vsync and shows
+    /// as playback judder (e.g. a 120 Hz timer on a 170 Hz panel repeats/skips frames on an
+    /// irregular cadence). Clamped to 60–240 so a bogus driver value can't stall or spin us.
+    /// </summary>
+    private static int TargetRenderHz()
+    {
+        uint max = 0;
+        try
+        {
+            foreach (var m in new Lag.Services.HardwareDetector().GetAvailableMonitors())
+                if (m.RefreshRate > max) max = m.RefreshRate;
+        }
+        catch { /* fall through to the 60 Hz floor below */ }
+        return Math.Clamp((int)max, 60, 240);
+    }
+
+    /// <summary>The app's adjustable render timer (null when the rebind failed and the stock
+    /// 60 Hz timer is in use). MainWindow retunes it to the monitor it currently sits on.</summary>
+    public static Lag.Services.DynamicRenderTimer? RenderTimer { get; private set; }
 
     /// <summary>
     /// Avalonia's default render timer ticks at 60 Hz, which silently halves 120 fps replay
     /// playback in the built-in player no matter how fast the decoder is. Rebinds the timer
-    /// to 120 Hz. AvaloniaLocator/UiThreadRenderTimer are public at runtime but excluded
-    /// from the 11.2 reference assemblies, hence reflection. Any failure leaves the stock
-    /// 60 Hz timer in place.
+    /// to our <see cref="Lag.Services.DynamicRenderTimer"/>: it starts at the fastest connected
+    /// display's rate (<see cref="TargetRenderHz"/>) and is then retuned live by MainWindow to
+    /// the refresh rate of the monitor the window is actually on (a background periodic timer,
+    /// like DefaultRenderTimer — the UI-thread variant caps at ≈76 Hz). AvaloniaLocator is
+    /// public at runtime but excluded from the 11.2 reference assemblies, hence reflection.
+    /// Any failure leaves the stock 60 Hz timer in place.
     /// </summary>
-    private static void RaiseRenderTimerTo120Fps()
+    private static void RaiseRenderTimerToDisplayRate()
     {
+        int hz = TargetRenderHz();
         try
         {
-            var baseAsm = typeof(Avalonia.Rendering.IRenderTimer).Assembly;
-            // DefaultRenderTimer, not UiThreadRenderTimer: the UI-thread variant waits the full interval
-            // AFTER each composition pass finishes (≈76 Hz ceiling). The background periodic timer keeps a
-            // true 120 Hz cadence for the player. (Confirmed 2026-06-29 it does NOT break UI animations —
-            // dropdowns/segments/hovers all animate fine on it; the toggle-knob issue was unrelated.)
-            var timerType = baseAsm.GetType("Avalonia.Rendering.DefaultRenderTimer")
-                ?? throw new MissingMemberException("DefaultRenderTimer");
-            var timer = (Avalonia.Rendering.IRenderTimer)Activator.CreateInstance(timerType, 120)!;
+            var timer = new Lag.Services.DynamicRenderTimer(hz);
 
+            var baseAsm = typeof(Avalonia.Rendering.IRenderTimer).Assembly;
             var locatorType = baseAsm.GetType("Avalonia.AvaloniaLocator")
                 ?? throw new MissingMemberException("AvaloniaLocator");
             var locator = locatorType.GetProperty("CurrentMutable")!.GetValue(null)!;
@@ -167,31 +191,29 @@ public static class Program
             var toConstant = helper.GetType().GetMethod("ToConstant")!;
             if (toConstant.IsGenericMethodDefinition)
                 toConstant = toConstant.MakeGenericMethod(typeof(Avalonia.Rendering.IRenderTimer));
-            toConstant.Invoke(helper, new object[] { timer });
+            toConstant.Invoke(helper, new object[] { timer.Interface });
 
-            // Verification: if the compositor really adopted our timer it will Start() it on
-            // the first subscription and ticks arrive at ~120/s. Counted over the first 2s.
-            // (IRenderTimer.Tick is also hidden from the reference assemblies.)
-            // Window starts at t=8s: during startup the UI thread is busy with engine init and
-            // dispatcher-driven ticks are starved, which would skew the measurement.
+            RenderTimer = timer;
+
+            // Verification: if the compositor really adopted our timer it will subscribe and
+            // ticks arrive at ~Hz/s. Counted over t=8–10s (startup starvation would skew earlier).
             int ticks = 0;
             var sw = System.Diagnostics.Stopwatch.StartNew();
-            Action<TimeSpan> onTick = _ =>
+            timer.AddTick(_ =>
             {
                 long ms = sw.ElapsedMilliseconds;
                 if (ms is >= 8000 and < 10000 && ticks >= 0) ticks++;
                 else if (ms >= 10000 && ticks > 0)
                 {
-                    Console.WriteLine($"[RenderTimer] ~{ticks / 2} ticks/s (target 120).");
+                    Console.WriteLine($"[RenderTimer] ~{ticks / 2} ticks/s (current target {timer.Hz}).");
                     ticks = int.MinValue; // log once
                 }
-            };
-            timerType.GetEvent("Tick")!.AddEventHandler(timer, onTick);
-            Console.WriteLine("[RenderTimer] Rebound to 120 fps DefaultRenderTimer.");
+            });
+            Console.WriteLine($"[RenderTimer] Bound DynamicRenderTimer @ {hz} Hz (fastest display; follows the window's monitor).");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[RenderTimer] 120 fps rebind failed, staying at 60: {ex}");
+            Console.WriteLine($"[RenderTimer] rebind failed, staying at 60 Hz: {ex}");
         }
     }
 }

@@ -180,6 +180,10 @@ public partial class MainViewModel : ViewModelBase
         _hotkeyManager = hotkeyManager;
 
         Settings = settings;
+
+        // Live performance HUD (Steam-style): follows its settings instantly, no restart.
+        Settings.StatsHudChanged += () => Avalonia.Threading.Dispatcher.UIThread.Post(UpdateStatsHud);
+        Avalonia.Threading.Dispatcher.UIThread.Post(UpdateStatsHud);
         Library = library;
         Player = player;
         Editor = editor;
@@ -421,6 +425,32 @@ public partial class MainViewModel : ViewModelBase
         });
     }
 
+    // ───────────── Live performance HUD ─────────────
+
+    private Lag.Views.StatsHudWindow? _statsHud;
+
+    /// <summary>Shows/hides/retunes the on-screen stats HUD from the current settings.</summary>
+    private void UpdateStatsHud()
+    {
+        try
+        {
+            bool want = Settings.OverlayEnabled && Settings.StatsShown;
+            if (want && _statsHud == null)
+            {
+                _statsHud = new Lag.Views.StatsHudWindow(
+                    () => (_engine as Lag.Services.VfrCapture.VfrRecorderAdapter)?.FramesCaptured ?? 0);
+                _statsHud.Show();
+            }
+            else if (!want && _statsHud != null)
+            {
+                _statsHud.Close();
+                _statsHud = null;
+            }
+            _statsHud?.Apply(Settings.StatsDetail, Settings.StatsScale, Settings.StatsX, Settings.StatsY);
+        }
+        catch (Exception ex) { Console.WriteLine($"[StatsHud] update failed: {ex.Message}"); }
+    }
+
     // ───────────── Recording Commands ─────────────
 
     /// <summary>Starts background recording with current settings.</summary>
@@ -492,7 +522,18 @@ public partial class MainViewModel : ViewModelBase
                 AudioApps = Settings.AudioApps
                     .Where(a => a.IsEnabled)
                     .Select(a => new AppAudioCapture(a.Exe, a.Volume / 100f))
-                    .ToList()
+                    .ToList(),
+                WebcamOverlay = Settings.OverlayEnabled && Settings.WebcamShown,
+                WebcamDeviceId = Settings.SelectedWebcam?.Id,
+                WebcamX = Settings.WebcamX,
+                WebcamY = Settings.WebcamY,
+                WebcamScale = Settings.WebcamScale,
+                KeysOverlay = Settings.OverlayEnabled && Settings.KeysShown,
+                KeysX = Settings.KeysX,
+                KeysY = Settings.KeysY,
+                KeysScale = Settings.KeysScale,
+                // NB: the resource monitor is a LIVE on-screen HUD (StatsHudWindow), NOT baked
+                // into recordings — the engine's stats plumbing stays available but unused.
             };
 
             // Shift heavy native initialization to a background thread to prevent UI freezing/crashing

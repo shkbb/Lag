@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Lag.ViewModels"
              xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:controls="using:Lag.Controls"
              x:Class="Lag.Views.SettingsView"
              x:DataType="vm:SettingsViewModel">
 
@@ -9,6 +10,15 @@
     <!-- One card row: label/control split, comfortable padding -->
     <Style Selector="Grid.row">
       <Setter Property="Margin" Value="18,15" />
+    </Style>
+
+    <!-- Interactive overlay preview: a draggable element box + its resize grip -->
+    <Style Selector="Border.ovbox">
+      <Setter Property="Background" Value="{DynamicResource AccentDim}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Accent}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="Cursor" Value="SizeAll" />
     </Style>
 
     <!-- ═══ Hardware preset cards ═══ -->
@@ -104,10 +114,19 @@
       <Setter Property="Foreground" Value="#E5B84C" />
     </Style>
 
+    <!-- Preview elements pop in when the overlay tab builds -->
+    <Style Selector="Border.ovbox">
+      <Style.Animations>
+        <Animation Duration="0:0:0.22" Easing="CubicEaseOut" FillMode="None">
+          <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0" /></KeyFrame>
+          <KeyFrame Cue="100%"><Setter Property="Opacity" Value="1" /></KeyFrame>
+        </Animation>
+      </Style.Animations>
+    </Style>
   </UserControl.Styles>
 
   <Grid Background="{DynamicResource SurfaceApp}">
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
+    <ScrollViewer x:Name="SettingsScroll" VerticalScrollBarVisibility="Auto">
       <!-- Fixed-width centered column (min window is 900, so 800 always fits). A MaxWidth + Center
            StackPanel shrinks to content, so tabs of different content width made the whole column
            (heading + tabs + cards) jump horizontally when switching. Fixed width = stable. -->
@@ -128,7 +147,14 @@
         </Grid>
 
         <!-- Tab pills -->
-        <Border Classes="rsegtrack" HorizontalAlignment="Left" Margin="0,26,0,0">
+        <controls:SegmentedListBox Classes="segctl" HorizontalAlignment="Left" Margin="0,26,0,0" SelectionChanged="OnTabsChanged"
+                                   SelectedIndex="{Binding SelectedSettingsTab, Mode=TwoWay}">
+          <ListBoxItem Content="{DynamicResource Tab_Video}" />
+          <ListBoxItem Content="{DynamicResource Tab_Audio}" />
+          <ListBoxItem Content="{DynamicResource Settings_Group_Overlay}" />
+          <ListBoxItem Content="{DynamicResource Tab_General}" />
+        </controls:SegmentedListBox>
+        <Border IsVisible="False">
           <StackPanel Orientation="Horizontal" Spacing="3">
             <Button Classes="rseg" Classes.sel="{Binding SelectedSettingsTab, Converter={StaticResource Eq}, ConverterParameter=0}"
                     Click="OnTabClick" Tag="0" Content="{DynamicResource Tab_Video}" />
@@ -141,7 +167,7 @@
 
         <!-- ════════════════ VIDEO ════════════════ -->
         <StackPanel Spacing="26" Margin="0,28,0,0"
-                    IsVisible="{Binding SelectedSettingsTab, Converter={StaticResource Eq}, ConverterParameter=0}">
+                    IsVisible="{Binding SelectedSettingsTab, Converter={StaticResource Eq}, ConverterParameter=0}" x:Name="TabPanel0">
 
           <!-- ═══ Hardware-tailored presets ═══ -->
           <StackPanel Spacing="12">
@@ -208,13 +234,13 @@
                   <TextBlock Grid.Column="0" Classes="rrow" Text="{DynamicResource Settings_FrameRate}" VerticalAlignment="Center" />
                   <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                     <TextBox Text="{Binding CustomFps}" Width="56" IsVisible="{Binding IsCustomFps}" />
-                    <ListBox Classes="segctl" ItemsSource="{Binding FpsOptions}" SelectedItem="{Binding SelectedFps}">
+                    <controls:SegmentedListBox Classes="segctl" ItemsSource="{Binding FpsOptions}" SelectedItem="{Binding SelectedFps}">
                       <ListBox.ItemTemplate>
                         <DataTemplate x:DataType="vm:FpsOption">
                           <TextBlock Text="{Binding Display}" Foreground="{Binding Tier, Converter={StaticResource Intensity}}" />
                         </DataTemplate>
                       </ListBox.ItemTemplate>
-                    </ListBox>
+                    </controls:SegmentedListBox>
                   </StackPanel>
                 </Grid>
                 <Border Classes="rdivider" />
@@ -239,8 +265,8 @@
               <StackPanel>
                 <Grid Classes="row" ColumnDefinitions="*,Auto">
                   <TextBlock Grid.Column="0" Classes="rrow" Text="{DynamicResource Settings_Codec}" VerticalAlignment="Center" />
-                  <ListBox Grid.Column="1" Classes="segctl" VerticalAlignment="Center"
-                           ItemsSource="{Binding CodecOptions}" SelectedItem="{Binding SelectedCodec}" />
+                  <controls:SegmentedListBox Grid.Column="1" Classes="segctl" VerticalAlignment="Center"
+                                             ItemsSource="{Binding CodecOptions}" SelectedItem="{Binding SelectedCodec}" />
                 </Grid>
                 <Border Classes="rdivider" />
                 <Grid Classes="row" ColumnDefinitions="*,Auto">
@@ -281,12 +307,101 @@
               </StackPanel>
             </Border>
           </StackPanel>
+
             </StackPanel>
+        </StackPanel>
+
+        <!-- ════════════════ OVERLAY ════════════════ -->
+        <StackPanel Spacing="26" Margin="0,28,0,0"
+                    IsVisible="{Binding SelectedSettingsTab, Converter={StaticResource Eq}, ConverterParameter=2}" x:Name="TabPanel2">
+          <!-- ── Overlay: Medal-style corner slots — pick WHAT goes into WHICH corner ── -->
+          <StackPanel>
+            <TextBlock Classes="rgroup" Text="{DynamicResource Settings_Group_Overlay}" />
+            <Border Classes="rcard">
+              <StackPanel>
+                <Grid Classes="row" ColumnDefinitions="*,Auto">
+                  <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,12,0">
+                    <TextBlock Classes="rrow" Text="{DynamicResource Overlay_Enable}" />
+                    <TextBlock Classes="rsub" Text="{DynamicResource Overlay_Enable_Desc}" Margin="0,2,0,0" />
+                  </StackPanel>
+                  <ToggleSwitch Grid.Column="1" VerticalAlignment="Center" IsChecked="{Binding OverlayEnabled}"
+                                OnContent="{x:Null}" OffContent="{x:Null}" MinWidth="0" />
+                </Grid>
+
+                <!-- Interactive preview: drag an element around the frame, resize by its corner grip -->
+                <Border Margin="18,4,18,15" Background="{DynamicResource SurfaceInput}" CornerRadius="10"
+                        Padding="10" IsVisible="{Binding OverlayEnabled}">
+                  <StackPanel>
+                  <Border CornerRadius="8" ClipToBounds="True" Background="{DynamicResource VideoBrush}">
+                    <Canvas x:Name="OverlayStage" Width="736" Height="414">
+
+                      <Border x:Name="OvKeysBox" Classes="ovbox" IsVisible="{Binding KeysShown}"
+                              PointerPressed="OnOvBoxPressed" PointerMoved="OnOvBoxMoved" PointerReleased="OnOvBoxReleased" PointerWheelChanged="OnOvBoxWheel">
+                        <Panel>
+                          <StackPanel Orientation="Horizontal" Spacing="5" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <mi:MaterialIcon Kind="KeyboardOutline" Width="22" Height="22" Foreground="{DynamicResource TextMid}" />
+                            <mi:MaterialIcon Kind="MouseOutline" Width="18" Height="18" Foreground="{DynamicResource TextMid}" />
+                          </StackPanel>
+                        </Panel>
+                      </Border>
+
+                      <Border x:Name="OvWebcamBox" Classes="ovbox" IsVisible="{Binding WebcamShown}"
+                              PointerPressed="OnOvBoxPressed" PointerMoved="OnOvBoxMoved" PointerReleased="OnOvBoxReleased" PointerWheelChanged="OnOvBoxWheel">
+                        <Panel>
+                          <mi:MaterialIcon Kind="Webcam" Width="24" Height="24" Foreground="{DynamicResource TextMid}"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Panel>
+                      </Border>
+
+                      <Border x:Name="OvStatsBox" Classes="ovbox" IsVisible="{Binding StatsShown}"
+                              PointerPressed="OnOvBoxPressed" PointerMoved="OnOvBoxMoved" PointerReleased="OnOvBoxReleased" PointerWheelChanged="OnOvBoxWheel">
+                        <Panel>
+                          <mi:MaterialIcon Kind="Speedometer" Width="16" Height="16" Foreground="{DynamicResource TextMid}"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Panel>
+                      </Border>
+                    </Canvas>
+                  </Border>
+                  <TextBlock Text="{DynamicResource Overlay_WheelHint}" FontSize="11" Foreground="{DynamicResource TextFaint}" HorizontalAlignment="Center" Margin="0,8,0,2" />
+                  </StackPanel>
+                </Border>
+
+                <Border Classes="rdivider" IsVisible="{Binding OverlayEnabled}" />
+                <Grid Classes="row" ColumnDefinitions="*,Auto,Auto" IsVisible="{Binding OverlayEnabled}">
+                  <TextBlock Grid.Column="0" Classes="rrow" Text="{DynamicResource Overlay_Camera}" VerticalAlignment="Center" />
+                  <ComboBox Grid.Column="1" VerticalAlignment="Center" MinWidth="180" Margin="0,0,14,0"
+                            ItemsSource="{Binding Webcams}" SelectedItem="{Binding SelectedWebcam}"
+                            IsEnabled="{Binding WebcamShown}" />
+                  <ToggleSwitch Grid.Column="2" VerticalAlignment="Center" IsChecked="{Binding WebcamShown}"
+                                OnContent="{x:Null}" OffContent="{x:Null}" MinWidth="0" />
+                </Grid>
+                <Border Classes="rdivider" IsVisible="{Binding OverlayEnabled}" />
+                <Grid Classes="row" ColumnDefinitions="*,Auto" IsVisible="{Binding OverlayEnabled}">
+                  <TextBlock Grid.Column="0" Classes="rrow" Text="{DynamicResource Overlay_Keys}" VerticalAlignment="Center" />
+                  <ToggleSwitch Grid.Column="1" VerticalAlignment="Center" IsChecked="{Binding KeysShown}"
+                                OnContent="{x:Null}" OffContent="{x:Null}" MinWidth="0" />
+                </Grid>
+                <Border Classes="rdivider" IsVisible="{Binding OverlayEnabled}" />
+                <Grid Classes="row" ColumnDefinitions="*,Auto,Auto" IsVisible="{Binding OverlayEnabled}">
+                  <TextBlock Grid.Column="0" Classes="rrow" Text="{DynamicResource Overlay_Stats}" VerticalAlignment="Center" />
+                  <!-- Detail levels use universal acronyms — no localization needed -->
+                  <ComboBox Grid.Column="1" VerticalAlignment="Center" MinWidth="180" Margin="0,0,14,0"
+                            SelectedIndex="{Binding StatsDetail, Mode=TwoWay}" IsEnabled="{Binding StatsShown}">
+                    <ComboBoxItem Content="FPS" />
+                    <ComboBoxItem Content="FPS + CPU/GPU" />
+                    <ComboBoxItem Content="FPS + CPU/GPU + RAM" />
+                  </ComboBox>
+                  <ToggleSwitch Grid.Column="2" VerticalAlignment="Center" IsChecked="{Binding StatsShown}"
+                                OnContent="{x:Null}" OffContent="{x:Null}" MinWidth="0" />
+                </Grid>
+              </StackPanel>
+            </Border>
+          </StackPanel>
         </StackPanel>
 
         <!-- ════════════════ AUDIO ════════════════ -->
         <StackPanel Spacing="26" Margin="0,28,0,0"
-                    IsVisible="{Binding SelectedSettingsTab, Converter={StaticResource Eq}, ConverterParameter=1}">
+                    IsVisible="{Binding SelectedSettingsTab, Converter={StaticResource Eq}, ConverterParameter=1}" x:Name="TabPanel1">
 
           <StackPanel>
             <TextBlock Classes="rgroup" Text="{DynamicResource Settings_Group_SystemAudio}" />
@@ -294,14 +409,11 @@
               <StackPanel>
                 <Grid Classes="row" ColumnDefinitions="*,Auto">
                   <TextBlock Grid.Column="0" Classes="rrow" Text="{DynamicResource Settings_AudioMode}" VerticalAlignment="Center" />
-                  <Border Grid.Column="1" Classes="segment" VerticalAlignment="Center">
-                    <StackPanel Orientation="Horizontal" Spacing="2">
-                      <Button Classes="seg" Classes.sel="{Binding AudioModeIndex, Converter={StaticResource Eq}, ConverterParameter=0}"
-                              Click="OnSourceSegClick" Tag="0" Content="{DynamicResource AudioMode_All}" />
-                      <Button Classes="seg" Classes.sel="{Binding AudioModeIndex, Converter={StaticResource Eq}, ConverterParameter=1}"
-                              Click="OnSourceSegClick" Tag="1" Content="{DynamicResource AudioMode_Apps}" />
-                    </StackPanel>
-                  </Border>
+                  <controls:SegmentedListBox Grid.Column="1" Classes="segctl" VerticalAlignment="Center"
+                                             SelectedIndex="{Binding AudioModeIndex, Mode=TwoWay}">
+                    <ListBoxItem Content="{DynamicResource AudioMode_All}" />
+                    <ListBoxItem Content="{DynamicResource AudioMode_Apps}" />
+                  </controls:SegmentedListBox>
                 </Grid>
                 <Border Classes="rdivider" />
                 <Grid Classes="row" ColumnDefinitions="*,Auto">
@@ -443,11 +555,9 @@
                   <StackPanel Grid.Column="0" VerticalAlignment="Center">
                     <TextBlock Classes="rrow" Text="{DynamicResource Settings_NoiseSuppression}" />
                     <TextBlock Classes="rsub" Margin="0,1,0,0" Text="{DynamicResource Settings_NoiseSuppressionHint}" />
-                    <!-- RNNoise (BSD) attribution — keep visible for license compliance. -->
-                    <TextBlock Margin="0,2,0,0" FontSize="10.5" Foreground="{DynamicResource TextFaint}" Text="Powered by RNNoise" />
                   </StackPanel>
-                  <ToggleSwitch Grid.Column="1" IsChecked="{Binding NoiseSuppression}" OnContent="{x:Null}"
-                                OffContent="{x:Null}" MinWidth="0" VerticalAlignment="Center" />
+                  <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3"><ToggleSwitch HorizontalAlignment="Right" IsChecked="{Binding NoiseSuppression}" OnContent="{x:Null}"
+                                OffContent="{x:Null}" MinWidth="0" VerticalAlignment="Center" /><TextBlock FontSize="10.5" Foreground="{DynamicResource TextFaint}" Text="Powered by RNNoise" HorizontalAlignment="Right" /></StackPanel>
                 </Grid>
                 <Border Classes="rdivider" />
                 <Grid Classes="row" ColumnDefinitions="*,Auto">
@@ -461,14 +571,13 @@
                 <Border Classes="rdivider" />
                 <Grid Classes="row" ColumnDefinitions="*,Auto">
                   <TextBlock Grid.Column="0" Classes="rrow" Text="{DynamicResource Settings_MicChannels}" VerticalAlignment="Center" />
-                  <Border Grid.Column="1" Classes="segment" VerticalAlignment="Center">
-                    <StackPanel Orientation="Horizontal" Spacing="2">
-                      <Button Classes="seg" Classes.sel="{Binding MicChannelIndex, Converter={StaticResource Eq}, ConverterParameter=1}"
-                              Click="OnChannelSegClick" Tag="1" Content="{DynamicResource Channels_Mono}" />
-                      <Button Classes="seg" Classes.sel="{Binding MicChannelIndex, Converter={StaticResource Eq}, ConverterParameter=0}"
-                              Click="OnChannelSegClick" Tag="0" Content="{DynamicResource Channels_Stereo}" />
-                    </StackPanel>
-                  </Border>
+                  <!-- Visual order [Mono, Stereo] is the reverse of the setting (0 = stereo, 1 = mono),
+                       hence the two-way 1−x converter on SelectedIndex. -->
+                  <controls:SegmentedListBox Grid.Column="1" Classes="segctl" VerticalAlignment="Center"
+                                             SelectedIndex="{Binding MicChannelIndex, Mode=TwoWay, Converter={StaticResource OneMinus}}">
+                    <ListBoxItem Content="{DynamicResource Channels_Mono}" />
+                    <ListBoxItem Content="{DynamicResource Channels_Stereo}" />
+                  </controls:SegmentedListBox>
                 </Grid>
               </StackPanel>
             </Border>
@@ -511,7 +620,7 @@
 
         <!-- ════════════════ GENERAL ════════════════ -->
         <StackPanel Spacing="26" Margin="0,28,0,0"
-                    IsVisible="{Binding SelectedSettingsTab, Converter={StaticResource Eq}, ConverterParameter=2}">
+                    IsVisible="{Binding SelectedSettingsTab, Converter={StaticResource Eq}, ConverterParameter=3}" x:Name="TabPanel3">
 
           <Border Classes="rcard">
             <StackPanel>
@@ -521,8 +630,8 @@
                   <TextBlock Classes="rrow" Text="{DynamicResource Settings_Theme}" />
                   <TextBlock Classes="rsub" Text="{DynamicResource Settings_Theme_Desc}" Margin="0,2,0,0" />
                 </StackPanel>
-                <ListBox Grid.Column="1" Classes="segctl" VerticalAlignment="Center"
-                         ItemsSource="{Binding ThemeOptions}" SelectedItem="{Binding SelectedTheme}" />
+                <controls:SegmentedListBox Grid.Column="1" Classes="segctl" VerticalAlignment="Center"
+                                           ItemsSource="{Binding ThemeOptions}" SelectedItem="{Binding SelectedTheme}" />
               </Grid>
               <Border Classes="rdivider" />
               <Grid Classes="row" ColumnDefinitions="*,Auto">
