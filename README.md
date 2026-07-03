@@ -38,6 +38,8 @@
 | **Multi-track Audio** | Captures system/game sound **and** microphone — as separate tracks or a single mix. Per-app audio capture (record only chosen programs), selectable output device, push-to-talk, mono/stereo mic |
 | **Mic Noise Suppression** | Built-in **RNNoise** neural noise suppression cleans your microphone live — background hum, fans, and keyboard clatter are filtered out of recordings and mic monitoring |
 | **Hardware Presets** | One-click **Performance / Balanced / Quality** presets tuned to *your* machine — Lag probes your GPU, CPU, and displays and picks matching capture settings |
+| **Webcam & Input Overlays** | Bake your camera and a live keyboard+mouse visualization straight into recordings — place and resize them freely in an interactive preview |
+| **Live Performance HUD** | On-screen FPS / CPU / GPU / RAM monitor with three detail levels — click-through, always on top, and never captured into your clips |
 | **Built-in Clip Editor** | Trim, cut out the middle, change speed, crop & reframe, rotate/flip, add text captions, and apply colour filters — then export to video or **GIF**, all inside the app |
 | **Global Hotkeys** | Save the last X seconds/minutes of gameplay with a single customizable keystroke |
 | **Pause & Resume** | Pause the rolling buffer — by button or a configurable global hotkey — then resume; the paused stretch is seamlessly absent from saved replays |
@@ -65,8 +67,12 @@ The recorder is a **custom native VFR engine** (`Services/VfrCapture/`): it capt
 
 1. Open the [**Releases**](../../releases) tab
 2. Download the latest **`Lag-win-Setup.exe`**
-3. Run the installer — the app installs instantly and launches
+3. Run the installer — a friendly setup wizard guides you through (pick a folder and a language)
 4. Future updates are downloaded and applied automatically
+
+> **Windows SmartScreen:** the installer is not code-signed yet, so on the first run Windows may
+> show an *"unrecognized app"* prompt. Click **More info → Run anyway** — every release is built
+> from the source code in this repository.
 
 ---
 
@@ -130,6 +136,8 @@ See [`LICENSE`](LICENSE) for full details.
 | **Багатодоріжкове аудіо** | Записує звук системи/гри **та** мікрофон — окремими доріжками або одним міксом. Захоплення звуку обраних програм, вибір пристрою виводу, push-to-talk, моно/стерео мікрофон |
 | **Шумозаглушення мікрофона** | Вбудоване нейромережеве шумозаглушення **RNNoise** очищує мікрофон наживо — фоновий гул, вентилятори та стукіт клавіатури фільтруються із запису та прослуховування мікрофона |
 | **Апаратні пресети** | Пресети **Продуктивність / Баланс / Якість** в один клік, підібрані під *ваш* комп'ютер — Lag аналізує відеокарту, процесор і монітори та обирає відповідні налаштування запису |
+| **Оверлеї вебкамери та вводу** | Запікайте камеру й живу візуалізацію клавіатури з мишею прямо в записи — розташування та розмір налаштовуються перетягуванням в інтерактивному превʼю |
+| **Живий монітор продуктивності** | FPS / CPU / GPU / RAM на екрані з трьома рівнями деталізації — прозорий для кліків, завжди зверху й ніколи не потрапляє у ваші кліпи |
 | **Вбудований редактор** | Обрізка, вирізання середини, зміна швидкості, кадрування та рефрейм, поворот/віддзеркалення, текстові підписи й кольорові фільтри — з експортом у відео або **GIF**, прямо в програмі |
 | **Глобальні гарячі клавіші** | Збережіть останні секунди або хвилини гри одним натисканням налаштованої клавіші |
 | **Пауза та відновлення** | Призупиніть кільцевий буфер — кнопкою або налаштовуваною глобальною гарячою клавішею — і відновіть; паузований проміжок безшовно відсутній у збережених повторах |
@@ -157,8 +165,12 @@ Lag записує у кільцевий **буфер повтору** в пам
 
 1. Перейдіть на вкладку [**Releases**](../../releases)
 2. Завантажте найновіший файл **`Lag-win-Setup.exe`**
-3. Запустіть його — програма встановиться за секунду й запуститься
+3. Запустіть його — зручний майстер встановлення проведе вас (оберіть папку та мову)
 4. Усі майбутні оновлення завантажуватимуться автоматично
+
+> **Windows SmartScreen:** інсталятор поки не має цифрового підпису, тому при першому запуску
+> Windows може показати попередження про *«нерозпізнану програму»*. Натисніть
+> **Докладніше → Виконати все одно** — кожен реліз зібраний із вихідного коду цього репозиторію.
 
 ---
 
