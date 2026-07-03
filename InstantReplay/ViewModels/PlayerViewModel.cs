@@ -382,7 +382,7 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
                 using var fs = File.OpenRead(clip.FilePath);
                 var old = StillImage;
                 StillImage = new Avalonia.Media.Imaging.Bitmap(fs);
-                old?.Dispose();
+                Lag.Core.DeferredDispose.Later(old);   // may still be on screen this frame
             }
             catch (Exception ex)
             {
@@ -401,7 +401,7 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
             IsViewingImage = false;
             var oldStill = StillImage;
             StillImage = null;
-            oldStill?.Dispose();
+            Lag.Core.DeferredDispose.Later(oldStill);   // may still be on screen this frame
         }
 
         string path = clip.FilePath;

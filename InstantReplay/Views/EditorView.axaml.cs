@@ -113,7 +113,12 @@ public partial class EditorView : UserControl
             VideoImage.Source = _vm.VideoRenderer.Bitmap;
     }
 
-    private void OnVideoFrameRendered() => VideoImage.InvalidateVisual();
+    // Triple-buffered renderer: the presented bitmap instance rotates every frame — re-read it.
+    private void OnVideoFrameRendered()
+    {
+        if (_vm != null)
+            VideoImage.Source = _vm.VideoRenderer.Bitmap;
+    }
 
     /// <summary>Right tools panel tabs (Clip / Filters).</summary>
     private void OnToolsTabClick(object? sender, RoutedEventArgs e)

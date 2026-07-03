@@ -10,15 +10,20 @@ using LibVLCSharp.Shared;
 namespace Lag.Services;
 
 /// <summary>
-/// Renders libvlc video into an Avalonia <see cref="WriteableBitmap"/> via the vmem
-/// callback API instead of a native HWND. This removes every airspace limitation of
-/// NativeControlHost: the video is a regular Avalonia visual, so rounded corners,
+/// Renders libvlc video into Avalonia <see cref="WriteableBitmap"/>s via the vmem callback API
+/// instead of a native HWND — the video is a regular Avalonia visual, so rounded corners,
 /// overlays and pointer events all work natively.
 ///
-/// Threading model: libvlc invokes the format/lock/display callbacks on its decoder
-/// threads. The pixel copy happens there (WriteableBitmap memory is thread-safe to
-/// write); only the cheap "repaint" notification is marshalled to the UI thread,
-/// coalesced so a fast decoder can't flood the dispatcher.
+/// TRIPLE-BUFFERED for thread safety: the libvlc decoder thread only ever writes the WRITE
+/// buffer, the compositor only ever reads the DISPLAY buffer, and READY hands frames between
+/// them (rotations under one lock). Writing into the same bitmap the render thread is
+/// uploading crashed the app natively — hence never a shared buffer, and old bitmaps are
+/// disposed DEFERRED (an Image may still reference them for a frame or two).
+///
+/// libvlc hands the format callback the CODED buffer size (macroblock-aligned: a 2580×1080
+/// clip arrives as 2592×1088). Blitting the whole buffer would show the codec's edge padding —
+/// wrong aspect ratio and garbage bands — so the bitmaps are the VISIBLE size and only that
+/// region is copied out of the (pitch-strided) native buffer.
 /// </summary>
 public sealed class VlcVideoRenderer : IDisposable
 {
@@ -28,7 +33,9 @@ public sealed class VlcVideoRenderer : IDisposable
     private IntPtr _buffer;
     private uint _width, _height, _pitch;   // the CODED buffer libvlc decodes into
     private uint _visW, _visH;              // the VISIBLE region shown to the user
-    private WriteableBitmap? _bitmap;
+    private readonly WriteableBitmap?[] _bufs = new WriteableBitmap?[3];
+    private int _write, _ready, _display;
+    private bool _hasReady;
     private int _invalidatePending;
     private bool _disposed;
 
@@ -38,16 +45,17 @@ public sealed class VlcVideoRenderer : IDisposable
     private MediaPlayer.LibVLCVideoLockCb? _lockCb;
     private MediaPlayer.LibVLCVideoDisplayCb? _displayCb;
 
-    /// <summary>The bitmap receiving decoded frames. Recreated when the video size changes.</summary>
+    /// <summary>The bitmap holding the newest PRESENTED frame. The instance rotates every
+    /// frame — views must re-read it on each <see cref="FrameRendered"/>.</summary>
     public WriteableBitmap? Bitmap
     {
-        get { lock (_sync) return _bitmap; }
+        get { lock (_sync) return _bufs[_display]; }
     }
 
-    /// <summary>Raised on the UI thread when <see cref="Bitmap"/> was (re)created.</summary>
+    /// <summary>Raised on the UI thread when the bitmaps were (re)created.</summary>
     public event Action? BitmapChanged;
 
-    /// <summary>Raised on the UI thread (coalesced) after a new frame was written.</summary>
+    /// <summary>Raised on the UI thread (coalesced) after a new frame was presented.</summary>
     public event Action? FrameRendered;
 
     /// <summary>Hooks the vmem callbacks. Must be called before any playback starts.</summary>
@@ -72,11 +80,7 @@ public sealed class VlcVideoRenderer : IDisposable
 
         uint pitch = (width * 4 + 31) & ~31u; // libvlc requires 32-byte aligned rows
 
-        // libvlc hands this callback the CODED buffer size (macroblock-aligned: a 2580×1080
-        // clip arrives as 2592×1088). Blitting the whole buffer would show the codec's edge
-        // padding as part of the picture — wrong aspect ratio (black side bars in fullscreen)
-        // and garbage bands at the right/bottom. The VISIBLE size comes from
-        // libvlc_video_get_size; when unavailable, fall back to the full buffer.
+        // Visible size (see the class doc); fall back to the buffer size when unavailable.
         uint visW = 0, visH = 0;
         try { _player?.Size(0, ref visW, ref visH); } catch { visW = visH = 0; }
         if (visW == 0 || visH == 0 || visW > width || visH > height) { visW = width; visH = height; }
@@ -98,7 +102,6 @@ public sealed class VlcVideoRenderer : IDisposable
         pitches = pitch;
         lines = height;
 
-        // One line per media open — keeps size/padding mismatches diagnosable from the log.
         Console.WriteLine($"[VlcVideoRenderer] format {width}x{height} (visible {visW}x{visH}), pitch {pitch}.");
 
         uint w = visW, h = visH;
@@ -107,14 +110,16 @@ public sealed class VlcVideoRenderer : IDisposable
             lock (_sync)
             {
                 if (_disposed || _visW != w || _visH != h) return;
-                if (_bitmap == null || _bitmap.PixelSize.Width != w || _bitmap.PixelSize.Height != h)
+                for (int i = 0; i < 3; i++)
                 {
-                    _bitmap?.Dispose();
-                    // The bitmap is the VISIBLE size — the coded padding never leaves _buffer.
-                    _bitmap = new WriteableBitmap(
+                    // Deferred: the old display bitmap may still be an Image.Source right now.
+                    Lag.Core.DeferredDispose.Later(_bufs[i]);
+                    _bufs[i] = new WriteableBitmap(
                         new PixelSize((int)w, (int)h), new Vector(96, 96),
                         PixelFormat.Bgra8888, AlphaFormat.Opaque);
                 }
+                _write = 0; _ready = 1; _display = 2;
+                _hasReady = false;
             }
             BitmapChanged?.Invoke();
         });
@@ -144,34 +149,50 @@ public sealed class VlcVideoRenderer : IDisposable
     {
         lock (_sync)
         {
-            if (_disposed || _bitmap == null || _buffer == IntPtr.Zero) return;
-            if (_bitmap.PixelSize.Width != _visW || _bitmap.PixelSize.Height != _visH) return;
+            var target = _bufs[_write];
+            if (_disposed || target == null || _buffer == IntPtr.Zero) return;
+            if (target.PixelSize.Width != _visW || target.PixelSize.Height != _visH) return;
 
-            // Copy only the VISIBLE region out of the (possibly padded) coded buffer.
-            using var fb = _bitmap.Lock();
-            if (fb.RowBytes == (int)_pitch && _visW == _width)
+            // Copy only the VISIBLE region out of the (possibly padded) coded buffer,
+            // into the WRITE buffer — never the one the compositor reads.
+            using (var fb = target.Lock())
             {
-                // No horizontal padding and matching layout — one block copy for all rows.
-                CopyMemory(fb.Address, _buffer, (UIntPtr)(_pitch * _visH));
-            }
-            else
-            {
-                int copyBytes = Math.Min(fb.RowBytes, (int)(_visW * 4));
-                for (uint y = 0; y < _visH; y++)
+                if (fb.RowBytes == (int)_pitch && _visW == _width)
                 {
-                    CopyMemory(fb.Address + (int)(y * (uint)fb.RowBytes),
-                               _buffer + (int)(y * _pitch),
-                               (UIntPtr)copyBytes);
+                    CopyMemory(fb.Address, _buffer, (UIntPtr)(_pitch * _visH));
+                }
+                else
+                {
+                    int copyBytes = Math.Min(fb.RowBytes, (int)(_visW * 4));
+                    for (uint y = 0; y < _visH; y++)
+                    {
+                        CopyMemory(fb.Address + (int)(y * (uint)fb.RowBytes),
+                                   _buffer + (int)(y * _pitch),
+                                   (UIntPtr)copyBytes);
+                    }
                 }
             }
+
+            // The frame is complete — hand it to the presenter slot.
+            (_write, _ready) = (_ready, _write);
+            _hasReady = true;
         }
 
-        // Coalesced repaint: at most one pending invalidation regardless of decode rate.
+        // Coalesced present: at most one pending rotation regardless of decode rate.
         if (Interlocked.CompareExchange(ref _invalidatePending, 1, 0) == 0)
         {
             Dispatcher.UIThread.Post(() =>
             {
                 Interlocked.Exchange(ref _invalidatePending, 0);
+                lock (_sync)
+                {
+                    if (_disposed) return;
+                    if (_hasReady)
+                    {
+                        (_display, _ready) = (_ready, _display);
+                        _hasReady = false;
+                    }
+                }
                 FrameRendered?.Invoke();
             }, DispatcherPriority.Render);
         }
@@ -193,8 +214,11 @@ public sealed class VlcVideoRenderer : IDisposable
             if (_disposed) return;
             _disposed = true;
             FreeBuffer();
-            _bitmap?.Dispose();
-            _bitmap = null;
+            for (int i = 0; i < 3; i++)
+            {
+                Lag.Core.DeferredDispose.Later(_bufs[i]);   // an Image may still show one
+                _bufs[i] = null;
+            }
         }
     }
 }

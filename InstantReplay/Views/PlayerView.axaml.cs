@@ -196,7 +196,9 @@ public partial class PlayerView : UserControl
 
     private void OnVideoBitmapChanged() => UpdateVideoSource();
 
-    private void OnVideoFrameRendered() => VideoImage.InvalidateVisual();
+    // The renderer is triple-buffered: the presented bitmap INSTANCE rotates every frame,
+    // so re-read the Source instead of just invalidating the old one.
+    private void OnVideoFrameRendered() => UpdateVideoSource();
 
     private void OnPlayerVmPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
