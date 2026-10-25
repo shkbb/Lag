@@ -107,6 +107,22 @@ public static class VfrEngineTest
             }
         }
 
+        // Carry-over rehearsal (LAG_VFR_CARRY=1): drop the session as if the game had exited, let the
+        // engine re-lock onto the desktop, record a bit more, then save. One clip must come out
+        // holding BOTH halves - that is the whole point of the carry-over path.
+        if (Environment.GetEnvironmentVariable("LAG_VFR_CARRY") == "1")
+        {
+            Console.WriteLine($"[VfrTest] --- simulating the game exiting (buffered {engine.BufferedSeconds:F1}s) ---");
+            engine.SimulateTargetLoss();
+            Console.WriteLine($"[VfrTest] carried over: {engine.CarriedSeconds:F1}s");
+            for (int i = 0; i < 6; i++)
+            {
+                Thread.Sleep(1000);
+                Console.WriteLine($"[VfrTest] ...post-switch {i + 1}s, carried={engine.CarriedSeconds:F1}s, " +
+                                  $"total buffered={engine.BufferedSeconds:F1}s");
+            }
+        }
+
         Console.WriteLine("[VfrTest] Saving replay...");
         string? saved = engine.SaveReplay();
         Console.WriteLine(saved != null ? $"[VfrTest] DONE → {saved}" : "[VfrTest] SaveReplay returned null (no game locked?).");

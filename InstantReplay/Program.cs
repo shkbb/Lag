@@ -74,6 +74,59 @@ public static class Program
             return;
         }
 
+        // Which audio track the Windows media stack (the Media Player app's) picks for a clip:
+        // LAG_MFPROBE=file1;file2 ...
+        if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LAG_MFPROBE")))
+        {
+            Lag.Services.VfrCapture.PlaybackTrackProbe.Run();
+            return;
+        }
+
+        // What WGC's per-frame timestamp means vs. arrival (clock-domain research), foreground window:
+        // LAG_WGCPROBE=1 [LAG_WGCPROBE_SECONDS=s] [LAG_WGCPROBE_FPS=n]. Encodes nothing.
+        if (Environment.GetEnvironmentVariable("LAG_WGCPROBE") == "1")
+        {
+            Lag.Services.VfrCapture.WgcTimestampProbe.Run();
+            return;
+        }
+
+        // Counts frames reaching a monitor's output via Desktop Duplication (frame-generation research):
+        // LAG_DUPPROBE=1 [LAG_DUPPROBE_OUTPUT=n] [LAG_DUPPROBE_SECONDS=s]. Encodes nothing.
+        if (Environment.GetEnvironmentVariable("LAG_DUPPROBE") == "1")
+        {
+            Lag.Services.VfrCapture.DuplicationProbe.Run();
+            return;
+        }
+
+        // Headless check of the stall attribution (no GPU/FFmpeg): LAG_STALLTEST=1.
+        if (Environment.GetEnvironmentVariable("LAG_STALLTEST") == "1")
+        {
+            Lag.Services.VfrCapture.StallMonitorSelfTest.Run();
+            return;
+        }
+
+        // Headless GC stress check of the replay buffer (no GPU/FFmpeg): LAG_GCTEST=1
+        // (optionally LAG_GCTEST_PACKETS=<csv of real packet sizes from ffprobe>).
+        if (Environment.GetEnvironmentVariable("LAG_GCTEST") == "1")
+        {
+            Lag.Services.VfrCapture.GcSelfTest.Run();
+            return;
+        }
+
+        // Headless check of the cadence stabiliser (no GPU/FFmpeg): LAG_CADENCETEST=1.
+        if (Environment.GetEnvironmentVariable("LAG_CADENCETEST") == "1")
+        {
+            Lag.Services.VfrCapture.CadenceSelfTest.Run();
+            return;
+        }
+
+        // Headless checks of the carry-over stitching logic (no GPU/FFmpeg): LAG_CARRYTEST=1.
+        if (Environment.GetEnvironmentVariable("LAG_CARRYTEST") == "1")
+        {
+            Lag.Services.VfrCapture.CarryOverSelfTest.Run();
+            return;
+        }
+
         // Headless validation of the per-app (process) loopback interop: LAG_PROCTEST=<pid>.
         if (int.TryParse(Environment.GetEnvironmentVariable("LAG_PROCTEST"), out var procTestPid))
         {
