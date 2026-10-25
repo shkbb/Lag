@@ -47,6 +47,8 @@ public sealed class VfrRecorderAdapter : IReplayRecorder
 
     public void SaveReplay() => _engine.SaveReplay();
 
+    public (string Name, string? Exe)? LastSavedGameTag => _engine.LastSavedGameTag;
+
     /// <summary>Cumulative captured-frame counter — the live stats HUD derives FPS from its delta.</summary>
     public long FramesCaptured => _engine.FramesCaptured;
     public void Teardown() => _engine.Stop();

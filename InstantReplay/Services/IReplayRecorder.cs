@@ -46,6 +46,11 @@ public interface IReplayRecorder : IDisposable
     /// back-ends that don't report a target; the native engine overrides it.</summary>
     CaptureTarget? CurrentTarget => null;
 
+    /// <summary>Set when the clip just saved OPENED on carried-over footage from a game that had
+    /// already exited (see the engine's stitching). By then <see cref="CurrentTarget"/> is the
+    /// desktop, so the library would mis-tag that clip without this. Null otherwise.</summary>
+    (string Name, string? Exe)? LastSavedGameTag => null;
+
     /// <summary>Raised when <see cref="CurrentTarget"/> changes. Default no-op for back-ends that
     /// don't report a target.</summary>
     event EventHandler? CaptureTargetChanged

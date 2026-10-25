@@ -201,22 +201,24 @@ public partial class MainViewModel : ViewModelBase
             // Tag the saved clip with the game/app that was captured, so the Library can group and
             // filter by it. The engine already knows the target; write it to the clip's sidecar
             // BEFORE the refresh below picks the clip up. Recorder-agnostic (uses CurrentTarget).
+            // A clip that opens on carried-over game footage is tagged with THAT game, even though
+            // the live target has already fallen back to the desktop by the time it is written.
             var target = _engine.CurrentTarget;
+            var carried = _engine.LastSavedGameTag;
             Lag.Services.ClipMetadataStore.Write(outputVideoPath, new Lag.Services.ClipMetadata
             {
-                Game = target is { IsGame: true } ? target.Value.Name : null,
-                Exe = target?.Exe,
+                Game = carried?.Name ?? (target is { IsGame: true } ? target.Value.Name : null),
+                Exe = carried?.Exe ?? target?.Exe,
             });
 
             // Auto-refresh library
             _ = Library.RefreshCommand.ExecuteAsync(null);
 
-            // On-screen toast (topmost, visible over games) + the save sound.
+            // Second stage of the save feedback: the clip is on disk. Silent on purpose - the chime
+            // already played the moment the hotkey was pressed, and stitched saves can re-encode for
+            // several seconds, so this one just confirms the result.
             Lag.Services.ToastService.Show(
                 Localizer.Get("Toast_ReplaySaved"), Path.GetFileName(outputVideoPath));
-
-            // Play the custom "replay saved" sound (replaces the old system beep).
-            PlaySaveSound();
         };
 
         // Live "now capturing X" indicator: the engine reports its target (game/desktop) as it locks
@@ -249,6 +251,7 @@ public partial class MainViewModel : ViewModelBase
                 Avalonia.Threading.Dispatcher.UIThread.Post(() =>
                 {
                     StatusText = Localizer.Get("Status_Saving");
+                    BeginSaveFeedback();
                     StartSaveWatchdog();
                 });
                 _ = Task.Run(() => _engine.SaveReplay());
@@ -629,6 +632,23 @@ public partial class MainViewModel : ViewModelBase
         }
     }
 
+    /// <summary>
+    /// First stage of the save feedback: acknowledge the keypress IMMEDIATELY, with the chime, so
+    /// you know it registered. Writing the clip takes a moment (seconds when a carried-over game
+    /// tail has to be re-encoded), and the silent confirmation toast follows on ReplaySaved.
+    ///
+    /// Lives in one place because a save can start down EITHER of two paths — the SharpHook global
+    /// hotkey handler, which drives the engine directly, or the SaveReplay command used by the Win32
+    /// hotkey, the tray and the UI button. Feedback attached to only one of them is silently missing
+    /// for the other, which is exactly what happened when this lived inside the command.
+    /// </summary>
+    private void BeginSaveFeedback()
+    {
+        Lag.Services.ToastService.Show(Localizer.Get("Status_Saving"), null,
+            Material.Icons.MaterialIconKind.ContentSave);
+        PlaySaveSound();
+    }
+
     /// <summary>Manually triggers a replay save (same as hotkey).</summary>
     [RelayCommand]
     private void SaveReplay()
@@ -650,6 +670,8 @@ public partial class MainViewModel : ViewModelBase
         
         IsSaving = true;
         StatusText = Localizer.Get("Status_Saving");
+
+        BeginSaveFeedback();
         StartSaveWatchdog();
         _ = Task.Run(() =>
         {
@@ -684,7 +706,8 @@ public partial class MainViewModel : ViewModelBase
                 IsSaving = false;
                 StatusText = Localizer.Format("Status_SaveError", "timeout");
             }
-        }, TimeSpan.FromSeconds(20));
+            // Long enough for a stitched save to re-encode a full buffer on the CPU fallback.
+        }, TimeSpan.FromSeconds(120));
     }
 
     /// <summary>Plays the "replay saved" chime (Assets/save.wav).</summary>
