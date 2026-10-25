@@ -24,6 +24,11 @@ public sealed class ClipMetadata
 
     /// <summary>Produced/overwritten by the built-in editor.</summary>
     public bool Edited { get; set; }
+
+    /// <summary>Clip length in seconds, cached from the one probe we ever run for this file. Null
+    /// until then. Without it the library re-probed every clip with a separate ffprobe process on
+    /// every visit, which is what made opening it take many seconds.</summary>
+    public double? DurationSeconds { get; set; }
 }
 
 /// <summary>Reads/writes the <see cref="ClipMetadata"/> sidecar for a clip. Never throws.
@@ -90,6 +95,9 @@ public static class ClipMetadataStore
         mutate(meta);
         Write(clipPath, meta);
     }
+
+    public static void SetDuration(string clipPath, TimeSpan duration) =>
+        Update(clipPath, m => m.DurationSeconds = duration.TotalSeconds);
 
     public static void SetFavorite(string clipPath, bool favorite) => Update(clipPath, m => m.Favorite = favorite);
     public static void SetEdited(string clipPath, bool edited) => Update(clipPath, m => m.Edited = edited);

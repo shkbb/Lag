@@ -190,9 +190,15 @@ public partial class LibraryViewModel : ViewModelBase
     private static IEnumerable<string> GetVideoFiles(string dir) =>
         VideoPatterns.SelectMany(p => Directory.GetFiles(dir, p));
 
-    /// <summary>Enumerates replays AND screenshots living in the library folder.</summary>
-    private static IEnumerable<string> GetMediaFiles(string dir) =>
-        VideoPatterns.Concat(ImagePatterns).SelectMany(p => Directory.GetFiles(dir, p));
+    /// <summary>Enumerates replays AND screenshots living in the library folder. Returns
+    /// <see cref="FileInfo"/> objects because the directory enumeration already carries size and
+    /// timestamps — the scan reads them for free instead of issuing a separate stat call per clip
+    /// for the sort and another for the card.</summary>
+    private static IEnumerable<FileInfo> GetMediaFileInfos(string dir)
+    {
+        var d = new DirectoryInfo(dir);
+        return VideoPatterns.Concat(ImagePatterns).SelectMany(p => d.GetFiles(p));
+    }
 
     private static bool IsImageFile(string path) =>
         Path.GetExtension(path).ToLowerInvariant() is ".png" or ".jpg" or ".jpeg";
@@ -345,6 +351,13 @@ public partial class LibraryViewModel : ViewModelBase
     /// <summary>Cancels an in-flight refresh so a newer one supersedes it (re-entrancy guard).</summary>
     private System.Threading.CancellationTokenSource? _refreshCts;
 
+    /// <summary>Fingerprint of the folder contents behind the currently published cards. A refresh
+    /// runs on every navigation to Library/Player/Editor as well as after each save, and rebuilding
+    /// the bound collection re-creates every card (the grid does not virtualize, so that is hundreds
+    /// of controls) even when nothing on disk changed. Matching this lets an unchanged folder keep
+    /// the cards — and the user's selection — exactly as they are.</summary>
+    private string? _publishedSignature;
+
     [RelayCommand]
     private async Task RefreshAsync()
     {
@@ -362,80 +375,33 @@ public partial class LibraryViewModel : ViewModelBase
         {
             string libraryDir = _settings.LibraryPath;
 
-            // ALL scanning, ffprobe and thumbnail generation runs OFF the UI thread, building a local
-            // list. The UI-bound collection is then touched exactly once, on the UI thread — this
-            // both removes the crash (no concurrent/again-on-UI mutation mid-virtualization) and the
-            // lag (heavy ffmpeg/bitmap work no longer runs on continuations of the UI thread).
-            var built = await Task.Run(async () =>
+            // ── Phase 1: the cheap pass ──
+            // Filesystem metadata and the cached sidecars only — no ffprobe, no image decoding, no
+            // quota sweep. Everything here is a directory listing plus a small JSON read per clip,
+            // so the grid appears almost immediately instead of after every clip has been probed by
+            // its own ffprobe process (that serial probing is what cost ~20s on a full library).
+            string signature = "";
+            var built = await Task.Run(() =>
             {
-                EnforceStorageQuota(); // keep under the size quota before scanning
-
                 var result = new List<ReplayClip>();
                 if (!Directory.Exists(libraryDir)) { Directory.CreateDirectory(libraryDir); return result; }
 
-                Directory.CreateDirectory(ThumbnailCacheDir);
-                CleanupLegacyThumbnailFolder(libraryDir);
+                var sig = new System.Text.StringBuilder();
 
-                var files = GetMediaFiles(libraryDir).OrderByDescending(File.GetCreationTime);
-                foreach (var filePath in files)
+                foreach (var fileInfo in GetMediaFileInfos(libraryDir).OrderByDescending(f => f.CreationTime))
                 {
                     if (token.IsCancellationRequested) break;
 
-                    var fileInfo = new FileInfo(filePath);
-                    Avalonia.Media.Imaging.Bitmap? avaloniaBitmap = null;
-                    TimeSpan duration = TimeSpan.Zero;
+                    string filePath = fileInfo.FullName;
                     bool isImage = IsImageFile(filePath);
-                    string thumbPath = isImage ? filePath : GetThumbnailCachePath(filePath);
 
-                    if (isImage)
-                    {
-                        // Screenshots are their own thumbnail — just decode them downscaled.
-                        try
-                        {
-                            await using var fs = File.OpenRead(filePath);
-                            avaloniaBitmap = Avalonia.Media.Imaging.Bitmap.DecodeToWidth(fs, 640);
-                        }
-                        catch (Exception ex)
-                        {
-                            System.Diagnostics.Debug.WriteLine($"[Library] Failed to load screenshot {filePath}: {ex.Message}");
-                        }
-                    }
-                    else
-                    {
-                        // ── Step 1: Get duration via FFProbe ──
-                        try
-                        {
-                            var mediaInfo = await FFProbe.AnalyseAsync(filePath);
-                            duration = mediaInfo.Duration;
-                        }
-                        catch (Exception ex)
-                        {
-                            System.Diagnostics.Debug.WriteLine($"[FFProbe] Failed to get duration for {filePath}: {ex.Message}");
-                        }
+                    // Path + size + write time: covers added, deleted, re-encoded and edited clips.
+                    sig.Append(filePath).Append('|').Append(fileInfo.Length).Append('|')
+                       .Append(fileInfo.LastWriteTimeUtc.Ticks).Append('\n');
 
-                        // ── Step 2: Generate or load cached thumbnail ──
-                        try
-                        {
-                            if (!File.Exists(thumbPath) || File.GetLastWriteTime(thumbPath) < fileInfo.LastWriteTime)
-                            {
-                                var snapshotTime = duration.TotalSeconds > 3 ? TimeSpan.FromSeconds(2) : TimeSpan.Zero;
-                                await FFMpeg.SnapshotAsync(filePath, thumbPath, new Size(320, 180), snapshotTime);
-                            }
-
-                            if (File.Exists(thumbPath))
-                            {
-                                await using var fs = File.OpenRead(thumbPath);
-                                avaloniaBitmap = new Avalonia.Media.Imaging.Bitmap(fs);
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            System.Diagnostics.Debug.WriteLine($"[FFMpeg] Failed to generate thumbnail for {filePath}: {ex.Message}");
-                        }
-                    }
-
-                    // Per-clip sidecar metadata (game/app, favourite, edited). "-edit" in the name is
-                    // a fallback "edited" signal for clips the editor named that way without a sidecar.
+                    // Per-clip sidecar metadata (game/app, favourite, edited, cached duration).
+                    // "-edit" in the name is a fallback "edited" signal for clips the editor named
+                    // that way without a sidecar.
                     var meta = Lag.Services.ClipMetadataStore.Read(filePath);
                     bool edited = (meta?.Edited ?? false) ||
                         Path.GetFileNameWithoutExtension(filePath).Contains("-edit", StringComparison.OrdinalIgnoreCase);
@@ -443,9 +409,12 @@ public partial class LibraryViewModel : ViewModelBase
                     result.Add(new ReplayClip
                     {
                         FilePath = filePath,
-                        ThumbnailPath = thumbPath,
-                        Thumbnail = avaloniaBitmap,
-                        Duration = duration,
+                        ThumbnailPath = isImage ? filePath : GetThumbnailCachePath(filePath),
+                        // Already decoded on an earlier visit? Show it right away; phase 2 then has
+                        // nothing to do for this card.
+                        Thumbnail = CachedThumb(isImage ? filePath : GetThumbnailCachePath(filePath)),
+                        Duration = meta?.DurationSeconds is > 0 ? TimeSpan.FromSeconds(meta.DurationSeconds.Value)
+                                                                : TimeSpan.Zero,
                         CreatedDate = fileInfo.CreationTime,
                         FileSize = fileInfo.Length,
                         IsImage = isImage,
@@ -455,11 +424,26 @@ public partial class LibraryViewModel : ViewModelBase
                         IsEdited = edited
                     });
                 }
+                signature = sig.ToString();
                 return result;
             }, token);
 
             // A newer refresh started while we were building → drop this (stale) result untouched.
             if (token.IsCancellationRequested || !ReferenceEquals(_refreshCts, cts)) return;
+
+            // Nothing on disk changed since the cards on screen were built: leave them (and the
+            // selection) alone rather than re-creating every card.
+            if (_publishedSignature != null && signature == _publishedSignature && Clips.Count == built.Count)
+            {
+                // ...but a previous refresh may have been cancelled part-way through hydrating (the
+                // user switched tabs while thumbnails were still loading), which would strand those
+                // cards blank forever now that the rebuild is skipped. Finish whatever is missing.
+                var pending = new List<ReplayClip>();
+                foreach (var c in Clips)
+                    if (c.Thumbnail == null || (!c.IsImage && c.Duration <= TimeSpan.Zero)) pending.Add(c);
+                if (pending.Count > 0) _ = HydrateClipsAsync(pending, libraryDir, cts);
+                return;
+            }
 
             // Publish to the UI-bound collection — on the UI thread (continuation of the await), once.
             Clips.Clear();
@@ -468,6 +452,10 @@ public partial class LibraryViewModel : ViewModelBase
 
             // Rebuild the filter chips + day groups from the freshly published clips.
             RebuildView();
+            _publishedSignature = signature;
+
+            // ── Phase 2: fill the cards in behind the grid (fire-and-forget) ──
+            _ = HydrateClipsAsync(built, libraryDir, cts);
         }
         catch (OperationCanceledException) { /* superseded by a newer refresh */ }
         finally
@@ -481,6 +469,187 @@ public partial class LibraryViewModel : ViewModelBase
                 IsLoading = false;
             }
         }
+    }
+
+    /// <summary>
+    /// Phase 2 of a refresh: thumbnails and any missing durations, produced AFTER the grid is already
+    /// on screen and pushed into the (observable) cards as each one finishes. Clips are processed
+    /// newest-first — the order they appear in — so the cards the user is actually looking at fill in
+    /// first, and a few run at once because ffprobe/ffmpeg are separate processes that spend most of
+    /// their time waiting on I/O. Cancelled wholesale when a newer refresh supersedes this one.
+    /// </summary>
+    private async Task HydrateClipsAsync(List<ReplayClip> clips, string libraryDir,
+                                         System.Threading.CancellationTokenSource cts)
+    {
+        var token = cts.Token;
+        try
+        {
+            // Housekeeping that used to run before the scan and delayed the first paint for no reason.
+            await Task.Run(() =>
+            {
+                Directory.CreateDirectory(ThumbnailCacheDir);
+                CleanupLegacyThumbnailFolder(libraryDir);
+                EnforceStorageQuota();
+            }, token);
+
+            // Enough to keep the disk busy, few enough that a library refresh never hogs the machine
+            // while a recording is running.
+            int parallel = Math.Clamp(Environment.ProcessorCount / 2, 2, 6);
+            // Deliberately not disposed: when a newer refresh cancels this one we return while some
+            // workers are still unwinding, and disposing the semaphore under them would turn a normal
+            // cancellation into an ObjectDisposedException on a background thread. SemaphoreSlim holds
+            // no unmanaged handle unless AvailableWaitHandle is touched, so letting it be collected
+            // is safe.
+            var gate = new System.Threading.SemaphoreSlim(parallel);
+            var tasks = new List<Task>(clips.Count);
+
+            foreach (var clip in clips)
+            {
+                if (token.IsCancellationRequested) break;
+                await gate.WaitAsync(token);
+                tasks.Add(Task.Run(async () =>
+                {
+                    try { await HydrateClipAsync(clip, token); }
+                    finally { gate.Release(); }
+                }, token));
+            }
+            await Task.WhenAll(tasks);
+        }
+        catch (OperationCanceledException) { /* superseded */ }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Library] hydrate failed: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Loads one card's thumbnail (and its duration, if this clip has never been probed), then hands
+    /// the results to the UI thread. The probed duration is written to the sidecar so the clip is
+    /// never probed again — the second visit to the library needs no external process at all.
+    /// </summary>
+    private async Task HydrateClipAsync(ReplayClip clip, System.Threading.CancellationToken token)
+    {
+        string filePath = clip.FilePath;
+        Avalonia.Media.Imaging.Bitmap? bitmap = null;
+        TimeSpan duration = clip.Duration;
+
+        // Nothing left to fetch: the thumbnail came from the in-memory cache and the duration from
+        // the sidecar. This is the steady state once a library has been opened once.
+        if (clip.Thumbnail != null && (duration > TimeSpan.Zero || clip.IsImage)) return;
+
+        if (clip.IsImage)
+        {
+            // Screenshots are their own thumbnail — just decode them downscaled.
+            try
+            {
+                await using var fs = File.OpenRead(filePath);
+                bitmap = Avalonia.Media.Imaging.Bitmap.DecodeToWidth(fs, 640);
+                if (bitmap != null) CacheThumb(filePath, bitmap);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[Library] Failed to load screenshot {filePath}: {ex.Message}");
+            }
+        }
+        else
+        {
+            string thumbPath = clip.ThumbnailPath;
+            var fileInfo = new FileInfo(filePath);
+
+            // Probe ONLY when the sidecar has no duration for this clip yet.
+            if (duration <= TimeSpan.Zero)
+            {
+                try
+                {
+                    var mediaInfo = await FFProbe.AnalyseAsync(filePath);
+                    duration = mediaInfo.Duration;
+                    if (duration > TimeSpan.Zero)
+                        Lag.Services.ClipMetadataStore.SetDuration(filePath, duration);
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[FFProbe] Failed to get duration for {filePath}: {ex.Message}");
+                }
+            }
+
+            if (token.IsCancellationRequested) return;
+
+            try
+            {
+                if (!File.Exists(thumbPath) || File.GetLastWriteTime(thumbPath) < fileInfo.LastWriteTime)
+                {
+                    var snapshotTime = duration.TotalSeconds > 3 ? TimeSpan.FromSeconds(2) : TimeSpan.Zero;
+                    await FFMpeg.SnapshotAsync(filePath, thumbPath, new Size(320, 180), snapshotTime);
+                }
+
+                if (File.Exists(thumbPath))
+                {
+                    await using var fs = File.OpenRead(thumbPath);
+                    bitmap = new Avalonia.Media.Imaging.Bitmap(fs);
+                    if (bitmap != null) CacheThumb(thumbPath, bitmap);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[FFMpeg] Failed to generate thumbnail for {filePath}: {ex.Message}");
+            }
+        }
+
+        if (token.IsCancellationRequested || (bitmap == null && duration == clip.Duration)) return;
+
+        var finalDuration = duration;
+        var finalBitmap = bitmap;
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            // No Dispose on the cancelled path: this bitmap is in the shared cache and another card
+            // may already be rendering it. Dropping the reference is enough.
+            if (token.IsCancellationRequested) return;
+            if (finalBitmap != null) clip.Thumbnail = finalBitmap;
+            if (finalDuration > TimeSpan.Zero) clip.Duration = finalDuration;
+        });
+    }
+
+    /// <summary>
+    /// Decoded thumbnails, kept between refreshes and keyed by thumbnail path + its write time.
+    ///
+    /// A refresh runs on every visit to the Library AND after every saved replay, and re-decoding
+    /// hundreds of JPEGs each time is pure waste — with this, a revisit shows its cards already
+    /// filled instead of blank ones that populate over the next second. Entries are only ever added
+    /// or dropped wholesale; a bitmap handed to the UI is never disposed while a card may still be
+    /// rendering it (that race is what crashed the app before).
+    /// </summary>
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, Avalonia.Media.Imaging.Bitmap>
+        _thumbCache = new();
+
+    /// <summary>Bounds the cache: ~600 cards of 320x180 is well under 150 MB, and a library that
+    /// large is already far past what fits on screen. Cleared wholesale rather than evicted one by
+    /// one — the bitmaps stay alive for any card still showing them, and are collected once dropped.</summary>
+    private const int ThumbCacheLimit = 600;
+
+    /// <summary>Cache key for a thumbnail file: its path plus write time, so a regenerated thumbnail
+    /// (the clip was edited/overwritten) never serves the stale image.</summary>
+    private static string? ThumbCacheKey(string thumbPath)
+    {
+        try
+        {
+            if (!File.Exists(thumbPath)) return null;
+            return thumbPath + "|" + File.GetLastWriteTimeUtc(thumbPath).Ticks;
+        }
+        catch { return null; }
+    }
+
+    private static Avalonia.Media.Imaging.Bitmap? CachedThumb(string thumbPath)
+    {
+        string? key = ThumbCacheKey(thumbPath);
+        return key != null && _thumbCache.TryGetValue(key, out var bmp) ? bmp : null;
+    }
+
+    private static void CacheThumb(string thumbPath, Avalonia.Media.Imaging.Bitmap bmp)
+    {
+        string? key = ThumbCacheKey(thumbPath);
+        if (key == null) return;
+        if (_thumbCache.Count >= ThumbCacheLimit) _thumbCache.Clear();
+        _thumbCache[key] = bmp;
     }
 
     /// <summary>

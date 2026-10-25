@@ -36,11 +36,18 @@ public partial class ReplayClip : ObservableObject
     /// <summary>Absolute path to the generated thumbnail image.</summary>
     public string ThumbnailPath { get; set; } = string.Empty;
 
-    /// <summary>In-memory Avalonia Bitmap for the UI.</summary>
-    public Avalonia.Media.Imaging.Bitmap? Thumbnail { get; set; }
+    /// <summary>In-memory Avalonia Bitmap for the UI. Observable: the library shows cards immediately
+    /// and streams thumbnails in afterwards, so this is assigned after the card is already on screen.</summary>
+    [ObservableProperty]
+    private Avalonia.Media.Imaging.Bitmap? _thumbnail;
 
-    /// <summary>Duration of the video clip.</summary>
-    public TimeSpan Duration { get; set; }
+    /// <summary>Duration of the video clip. Observable for the same reason as <see cref="Thumbnail"/> —
+    /// it arrives from the sidecar cache or a probe once the card is already visible. The two derived
+    /// labels are refreshed with it.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DurationDisplay))]
+    [NotifyPropertyChangedFor(nameof(ShortMeta))]
+    private TimeSpan _duration;
 
     /// <summary>Date and time when the replay was saved.</summary>
     public DateTime CreatedDate { get; set; }
