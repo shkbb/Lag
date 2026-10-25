@@ -98,6 +98,11 @@ public sealed class VfrReplayEngine : IDisposable
     private WgcCaptureSource? _capture;
     private NvencVfrEncoder? _encoder;
     private PacketRingBuffer? _ring;
+    /// <summary>Tail of the PREVIOUS capture session (e.g. the game you just quit), kept so those
+    /// last seconds can still be saved — <see cref="SaveReplay"/> stitches it in front of the live
+    /// buffer. Trimmed on every lock tick so carry-over + live never exceeds the configured buffer,
+    /// and dropped once the new session has filled that window. Guarded by <see cref="_gate"/>.</summary>
+    private CarryOverSegment? _carry;
     private OverlayCompositor? _overlay;   // webcam / keystroke overlay (null = disabled)
     private bool _fpsAdaptDone;   // fixed-bitrate fps-hint retune: done once per capture session
 
@@ -126,7 +131,37 @@ public sealed class VfrReplayEngine : IDisposable
     private uint _lockedPid;
     private DateTime _lockCooldownUntil = DateTime.MinValue;   // back-off after a failed lock (no retry-thrash)
     private long _lastEncodedUs = long.MinValue;
-    private long _minIntervalUs;
+
+    // ── Frame timestamps: ARRIVAL time, deliberately ────────────────────────────────────────────
+    // Each frame is stamped with the engine clock at the moment it reaches us — the same clock audio
+    // is stamped on — and then regularised by the cadence grid. WGC's own per-frame timestamp
+    // (SystemRelativeTime, passed in as sourceTicks) is NOT used, and should not be reintroduced
+    // without re-measuring. It looked like "when the game presented", but measured on the user's rig
+    // (LAG_WGCPROBE, Dying Light, 2026-09-25) it is the DWM composition TARGET time: 3.8–10.6 ms in
+    // the FUTURE relative to arrival, quantised to the fastest monitor's refresh (180 Hz there, while
+    // the game ran on a 165 Hz panel). Run through CadenceGrid(165) on the same live frames:
+    //   arrival time for every frame   63.6% within ±10% of median, stdev 5.07 ms   <- used
+    //   WGC timestamp for every frame  39.8%,                         stdev 6.66 ms
+    //   per-frame mix (earlier build)  57.6%,                         stdev 5.21 ms
+    // The earlier build accepted the WGC time only within 5 ms of arrival, so ~87% of frames fell back
+    // to arrival while the rest carried a ~7 ms-early stamp: two clocks interleaved in one clip.
+
+    /// <summary>Regularises frame timestamps onto the output cadence — see <see cref="CadenceGrid"/>.
+    /// Also enforces the frame-rate cap (a frame whose slot is taken is the one dropped).</summary>
+    private CadenceGrid _grid = new(0);
+
+    /// <summary>Raised from other threads (a new session, a resume from pause) to have the capture
+    /// thread re-anchor the cadence grid and reset stall tracking before its next frame. That state is
+    /// only ever touched by the capture thread: re-anchoring it directly from the UI thread on resume
+    /// raced with a frame being snapped at that very moment.</summary>
+    private volatile bool _timelineResetPending;
+
+    /// <summary>Attributes gaps in the frame stream to the game or to us — see
+    /// <see cref="CaptureStallMonitor"/>. Fed on the capture thread, reported on the timer thread.</summary>
+    private readonly CaptureStallMonitor _stalls = new();
+
+    private readonly object _statsGate = new();   // LogCaptureStats is not re-entrant
+    private NvencVfrEncoder? _diagEncoder;         // encoder the current stats window's baseline belongs to
     private long _startQpc;   // engine clock origin for this capture session
 
     /// <summary>Immutable snapshot of the pause state, swapped atomically via the volatile
@@ -152,6 +187,11 @@ public sealed class VfrReplayEngine : IDisposable
     /// <summary>Raised after a replay file is written. Arg is the absolute path.</summary>
     public event EventHandler<string>? ReplaySaved;
 
+    /// <summary>Game the last saved clip STARTED on, when it opened with carried-over footage from
+    /// a game that had already exited. The live target is the desktop by then, so the library would
+    /// otherwise tag that clip as a desktop recording. Null when the clip is purely live.</summary>
+    public (string Name, string? Exe)? LastSavedGameTag { get; private set; }
+
     public bool IsRunning => _running;
     public bool IsPaused => _pause.Paused;
     public string FriendlyEncoder => _encoderChoice?.FriendlyName ?? "—";
@@ -167,7 +207,11 @@ public sealed class VfrReplayEngine : IDisposable
     /// <summary>Diagnostics: frames delivered by WGC and frames actually submitted to the encoder.</summary>
     public long FramesCaptured;
     public long FramesEncoded;
-    public double BufferedSeconds => _ring?.BufferedSeconds ?? 0;
+    public double BufferedSeconds
+    {
+        get { lock (_gate) return (_ring?.BufferedSeconds ?? 0) + (_carry?.DurationSeconds ?? 0); }
+    }
+
 
     /// <summary>Diagnostics: average per-frame milliseconds in colour-convert and encode-submit.</summary>
     public (double ConvertMs, double EncodeMs) AvgStageMs
@@ -201,7 +245,10 @@ public sealed class VfrReplayEngine : IDisposable
             // gate threw away ~half the VFR bursts (encoded 68 of 120 captured) and, since encoded
             // fps fell below the CBR fps-hint, also starved the bitrate. A 2× floor keeps the stream
             // near the captured rate so fps AND bitrate land where intended.
-            _minIntervalUs = options.MaxFps > 0 ? 1_000_000L / (options.MaxFps * 2L) : 0;
+            // Output cadence: one slot per 1/MaxFps. Every frame is timestamped on this grid (see
+            // SnapToGrid), which both regularises playback and enforces the cap — so MaxFps is now
+            // honoured exactly rather than being a soft 2x floor.
+            _grid = new CadenceGrid(options.MaxFps > 0 ? options.MaxFps : 0);
 
             _d3d ??= new D3D11Context(options.AdapterIndex);
             _encoderChoice = EncoderSelector.Select(options.PreferredCodec)
@@ -245,6 +292,12 @@ public sealed class VfrReplayEngine : IDisposable
         if (_disposed || !_running) return;
         try { EvaluateLock(); }
         catch (Exception ex) { Console.WriteLine($"[VfrReplayEngine] lock eval error: {ex.Message}"); }
+        // Age the previous session's tail down as the new one fills (bounds memory; see TrimCarryOver).
+        try { TrimCarryOver(); }
+        catch (Exception ex) { Console.WriteLine($"[VfrReplayEngine] carry trim error: {ex.Message}"); }
+        // Capture stats + stall attribution, logged from here so the capture thread never writes logs.
+        try { LogCaptureStats(); }
+        catch (Exception ex) { Console.WriteLine($"[VfrReplayEngine] stats error: {ex.Message}"); }
     }
 
     private void EvaluateLock()
@@ -366,6 +419,7 @@ public sealed class VfrReplayEngine : IDisposable
                 _lockedHwnd = hwnd;
                 _lockedPid = pid;
                 _lastEncodedUs = long.MinValue;
+                _timelineResetPending = true;           // new session: re-anchor grid + stall tracking on frame 1
                 _fpsAdaptDone = false;                  // re-measure the fps-hint for this new session
                 _startQpc = System.Diagnostics.Stopwatch.GetTimestamp();
                 _pause = new PauseState(0, 0, false);   // a fresh session/clock is never paused
@@ -436,60 +490,113 @@ public sealed class VfrReplayEngine : IDisposable
         if (_pause.Paused) return;
         System.Threading.Interlocked.Increment(ref FramesCaptured);
 
-        // PTS from the ENGINE's own clock at receive time, not the source timestamp: the engine clock
-        // is one monotonic timeline (paused time subtracted) shared by video and audio, so they stay
-        // in sync and a source switch / pause never breaks the VFR cadence.
-        long ptsUs = EngineNowUs();
-
-        // Frame-rate cap: skip frames closer than the min interval to bound encoder load on very
-        // high-fps games (the file stays VFR, just capped at MaxFps).
-        if (_minIntervalUs > 0 && _lastEncodedUs != long.MinValue && ptsUs - _lastEncodedUs < _minIntervalUs) return;
-        _lastEncodedUs = ptsUs;
-
-        // Overlay (webcam / keys): composed into a copy on this same thread; pass-through
-        // when disabled or when there is nothing to draw. Never throws (falls back to bgra).
-        var frame = _overlay?.Compose(bgra) ?? bgra;
-
-        encoder.Encode(frame, ptsUs);
-        System.Threading.Interlocked.Increment(ref FramesEncoded);
-
-        LogStageStats(encoder, ptsUs);
-
-        // Fixed-bitrate mode only: once, after a short warm-up, retune the encoder's fps-hint to the
-        // MEASURED capture rate so a CBR target actually holds. A hint above the real fps underfills
-        // (bits/frame = bit_rate/hint); a hint at-or-below it is capped by rc_max, so it holds.
-        if (_options.BitrateKbps > 0 && !_fpsAdaptDone)
+        // Resets requested from other threads (new session / resume) are applied here, on the only
+        // thread that touches the grid and the stall tracker.
+        if (_timelineResetPending)
         {
-            try { MaybeAdaptFpsHint(); }
-            catch (Exception ex) { _fpsAdaptDone = true; Console.WriteLine($"[fps-adapt] error, keeping encoder: {ex.Message}"); }
+            _timelineResetPending = false;
+            _grid.Repin();
+            _stalls.Reset();
+        }
+
+        // PTS = arrival on the engine clock (the clock audio uses too; see the note above the grid
+        // fields for why WGC's sourceTicks is ignored), snapped to the output cadence grid. The grid
+        // also enforces the frame-rate cap: a frame landing in an already filled slot is dropped.
+        long nowUs = EngineNowUs();
+        _stalls.FrameArrived(nowUs, nowUs);
+
+        // Per-stage times for the stall monitor. Nothing is LOGGED from this thread: a synchronous log
+        // write here (FileLog flushes every line to disk) stalls capture — the periodic stats line now
+        // comes from the lock timer instead (LogCaptureStats).
+        long overlayUs = 0, convertUs = 0, encodeUs = 0, retuneUs = 0;
+        try
+        {
+            long ptsUs = _grid.Snap(nowUs);
+            if (ptsUs == CadenceGrid.Drop) return;
+            _lastEncodedUs = ptsUs;
+
+            // Overlay (webcam / keys): composed into a copy on this same thread; pass-through
+            // when disabled or when there is nothing to draw. Never throws (falls back to bgra).
+            long o0 = System.Diagnostics.Stopwatch.GetTimestamp();
+            var frame = _overlay?.Compose(bgra) ?? bgra;
+            overlayUs = (System.Diagnostics.Stopwatch.GetTimestamp() - o0) * 1_000_000L
+                        / System.Diagnostics.Stopwatch.Frequency;
+
+            long c0 = encoder.ConvertUs, e0 = encoder.EncodeUs;
+            encoder.Encode(frame, ptsUs);
+            convertUs = encoder.ConvertUs - c0;
+            encodeUs = encoder.EncodeUs - e0;
+            System.Threading.Interlocked.Increment(ref FramesEncoded);
+
+            // Fixed-bitrate mode only: once, after a short warm-up, retune the encoder's fps-hint to the
+            // MEASURED capture rate so a CBR target actually holds. A hint above the real fps underfills
+            // (bits/frame = bit_rate/hint); a hint at-or-below it is capped by rc_max, so it holds.
+            if (_options.BitrateKbps > 0 && !_fpsAdaptDone)
+            {
+                long r0 = System.Diagnostics.Stopwatch.GetTimestamp();
+                try { MaybeAdaptFpsHint(); }
+                catch (Exception ex) { _fpsAdaptDone = true; Console.WriteLine($"[fps-adapt] error, keeping encoder: {ex.Message}"); }
+                retuneUs = (System.Diagnostics.Stopwatch.GetTimestamp() - r0) * 1_000_000L
+                           / System.Diagnostics.Stopwatch.Frequency;
+            }
+        }
+        finally
+        {
+            _stalls.FrameDone(overlayUs, convertUs, encodeUs, retuneUs);
         }
     }
 
-    /// <summary>Every ~2s, logs the windowed captured fps + per-frame convert/encode ms so a low capture
-    /// rate under game load can be attributed (encoder too slow vs colour-convert GPU contention).</summary>
-    private void LogStageStats(NvencVfrEncoder enc, long nowUs)
+    /// <summary>
+    /// Logs the windowed captured fps, per-frame convert/encode ms and cadence-grid drops,
+    /// followed by any stalls the <see cref="CaptureStallMonitor"/> attributed in that window.
+    ///
+    /// Runs on the lock timer (every ~2s), NOT on the capture thread: FileLog flushes each line to disk
+    /// synchronously, and doing that from the WGC callback is exactly the kind of work that makes the
+    /// frame pool overflow and drop presents. Everything read here is a counter the capture thread only
+    /// ever increments, so a slightly stale read is harmless.
+    /// </summary>
+    private void LogCaptureStats()
     {
-        if (_diagWindowStartUs == 0)   // seed the first window
+        if (!System.Threading.Monitor.TryEnter(_statsGate)) return;   // a slow previous tick is still logging
+        try
         {
+            var enc = _encoder;
+            if (enc == null) { _diagEncoder = null; return; }
+            long nowUs = EngineNowUs();
+
+            // A new encoder (new session, or the fps-hint reopen) restarts its counters — and a new
+            // session restarts the engine clock — so re-seed the window rather than diff across it.
+            if (!ReferenceEquals(enc, _diagEncoder))
+            {
+                _diagEncoder = enc;
+                _diagWindowStartUs = nowUs;
+                _diagFrames0 = enc.TimedFrames; _diagConvert0 = enc.ConvertUs; _diagEncode0 = enc.EncodeUs;
+                _diagCaptured0 = System.Threading.Interlocked.Read(ref FramesCaptured);
+                _grid.TakeCollisions();
+                _stalls.DrainReport();   // stalls from the previous session belong to it, not to this window
+                return;
+            }
+
+            double secs = (nowUs - _diagWindowStartUs) / 1_000_000.0;
+            if (secs < 1.0) return;
+
+            long df = enc.TimedFrames - _diagFrames0;            // frames actually encoded this window
+            long dcap = System.Threading.Interlocked.Read(ref FramesCaptured) - _diagCaptured0;   // WGC frames pulled
+            long drops = _grid.TakeCollisions();
+            if (df > 0)
+            {
+                double convMs = (enc.ConvertUs - _diagConvert0) / 1000.0 / df;
+                double encMs = (enc.EncodeUs - _diagEncode0) / 1000.0 / df;
+                Console.WriteLine($"[capture] encoded {df / secs:F0} fps (wgc {dcap / secs:F0}) | convert {convMs:F1}ms + encode {encMs:F1}ms/frame | preset p{_options.Preset} | grid {_grid.Fps:F0}fps, {drops} off-slot");
+            }
             _diagWindowStartUs = nowUs;
             _diagFrames0 = enc.TimedFrames; _diagConvert0 = enc.ConvertUs; _diagEncode0 = enc.EncodeUs;
             _diagCaptured0 = System.Threading.Interlocked.Read(ref FramesCaptured);
-            return;
-        }
-        double secs = (nowUs - _diagWindowStartUs) / 1_000_000.0;
-        if (secs < 2.0) return;
 
-        long df = enc.TimedFrames - _diagFrames0;            // frames actually encoded this window
-        long dcap = System.Threading.Interlocked.Read(ref FramesCaptured) - _diagCaptured0;   // WGC frames pulled
-        if (df > 0)
-        {
-            double convMs = (enc.ConvertUs - _diagConvert0) / 1000.0 / df;
-            double encMs = (enc.EncodeUs - _diagEncode0) / 1000.0 / df;
-            Console.WriteLine($"[capture] encoded {df / secs:F0} fps (wgc {dcap / secs:F0}) | convert {convMs:F1}ms + encode {encMs:F1}ms/frame | preset p{_options.Preset}");
+            string? stalls = _stalls.DrainReport();
+            if (stalls != null) Console.WriteLine(stalls);
         }
-        _diagWindowStartUs = nowUs;
-        _diagFrames0 = enc.TimedFrames; _diagConvert0 = enc.ConvertUs; _diagEncode0 = enc.EncodeUs;
-        _diagCaptured0 = System.Threading.Interlocked.Read(ref FramesCaptured);
+        finally { System.Threading.Monitor.Exit(_statsGate); }
     }
 
     /// <summary>One-time (per session) fps-hint retune for the fixed-bitrate path. Runs on the
@@ -560,6 +667,12 @@ public sealed class VfrReplayEngine : IDisposable
     /// <summary>Starts loopback game/system audio capture → AAC into its own rolling buffer, on the
     /// SAME engine clock as the video so the two stay in sync on save. Best-effort: any failure
     /// leaves the session video-only.</summary>
+    /// <summary>Bitrate of the default "All" mix track. Must stay above <see cref="SourceTrackKbps"/> —
+    /// Windows plays whichever audio track has the highest bitrate (see StartAudio).</summary>
+    internal const int AllTrackKbps = 192;
+    /// <summary>Bitrate of the per-source tracks (System, Microphone) kept for the editor.</summary>
+    internal const int SourceTrackKbps = 160;
+
     private void StartAudio()
     {
         if (!_options.AudioEnabled) { Console.WriteLine("[VfrReplayEngine] audio disabled (video-only)."); return; }
@@ -588,13 +701,21 @@ public sealed class VfrReplayEngine : IDisposable
                 // Track 0: "All" = game + mic mixed. DEFAULT track, so EVERY player plays it and you
                 // hear everything; tracks 1-2 stay separate for the editor. This is the layout
                 // we use: an "All Audio" default + per-source tracks.
-                var allEnc = new AacAudioEncoder(gf.SampleRate, gf.Channels, MapSampleFormat(gf), 160);
+                //
+                // It is encoded at a HIGHER bitrate than the per-source tracks on purpose: the Windows
+                // media stack (Media Player app, anything built on WinRT MediaPlaybackItem) ignores the
+                // MP4 "enabled/default" flag and plays the audio track with the highest bitrate. With
+                // every track at 160 kbps it picked "System" — game + Discord, no microphone — so users
+                // heard their own voice in our player but not in Windows'. Measured with LAG_MFPROBE:
+                // All 192k -> Windows picks All; all equal or All lower -> it picks System. (Medal's
+                // files work for the same reason: its "All Audio" track carries the highest bitrate.)
+                var allEnc = new AacAudioEncoder(gf.SampleRate, gf.Channels, MapSampleFormat(gf), AllTrackKbps);
                 var allRing = new PacketRingBuffer(_options.BufferSeconds);
                 allEnc.PacketReady += p => allRing.Add(p);
                 tracks.Add(new AudioTrackState("All", allEnc, allRing));
 
                 // Track 1: System (game only).
-                var gameEnc = new AacAudioEncoder(gf.SampleRate, gf.Channels, MapSampleFormat(gf), 160);
+                var gameEnc = new AacAudioEncoder(gf.SampleRate, gf.Channels, MapSampleFormat(gf), SourceTrackKbps);
                 var gameRing = new PacketRingBuffer(_options.BufferSeconds);
                 gameEnc.PacketReady += p => gameRing.Add(p);
                 tracks.Add(new AudioTrackState("System", gameEnc, gameRing));
@@ -617,7 +738,7 @@ public sealed class VfrReplayEngine : IDisposable
                     allEnc.EncodeMic(buf, n, f.SampleRate, f.Channels, f.BitsPerSample / 8, MapSampleFormat(f)); // into the mix
                     if (micEnc == null)
                     {
-                        micEnc = new AacAudioEncoder(f.SampleRate, f.Channels, MapSampleFormat(f), 160);
+                        micEnc = new AacAudioEncoder(f.SampleRate, f.Channels, MapSampleFormat(f), SourceTrackKbps);
                         var micRing = new PacketRingBuffer(_options.BufferSeconds);
                         micEnc.PacketReady += p => micRing.Add(p);
                         micTrack.Encoder = micEnc; micTrack.Ring = micRing;
@@ -698,47 +819,155 @@ public sealed class VfrReplayEngine : IDisposable
         PacketRingBuffer? ring;
         NvencVfrEncoder? encoder;
         List<AudioTrackState> tracks;
-        lock (_gate) { ring = _ring; encoder = _encoder; tracks = new List<AudioTrackState>(_audioTracks); }
-        if (ring == null || encoder == null)
+        CarryOverSegment? carry;
+        lock (_gate)
         {
-            Console.WriteLine("[VfrReplayEngine] SaveReplay: no active capture (no game?).");
+            ring = _ring; encoder = _encoder; carry = _carry;
+            tracks = new List<AudioTrackState>(_audioTracks);
+        }
+
+        var liveVideo = new List<EncodedPacket>();
+        var liveAudio = new List<Mp4Muxer.AudioTrack>();
+        StreamSpec? liveSpec = null;
+
+        if (ring != null && encoder != null)
+        {
+            // Flush the audio timeline right up to NOW so the saved tail matches the video length
+            // (otherwise the clip can end on the last system sound, short of the video).
+            PumpAudio();
+
+            // The audio rings hold exactly the configured window, but the video ring can reach one
+            // GOP further back (its clip must open on a keyframe). Starting there would put a
+            // video-only silent head on the file - libVLC players then never engage audio - so the
+            // video start is clamped to where audio actually exists (tolerance inside Snapshot).
+            long minStart = long.MinValue;
+            foreach (var t in tracks)
+                if (t.Ring?.OldestPtsUs is { } oldest && oldest > minStart) minStart = oldest;
+
+            liveVideo = ring.Snapshot(out long baseUs, minStart);
+            if (liveVideo.Count > 0)
+            {
+                liveSpec = encoder.GetStreamSpec();
+                // Each audio track, re-based to the SAME origin as the video clip so they stay in sync.
+                foreach (var t in tracks)
+                {
+                    if (t.Encoder == null || t.Ring == null) continue;
+                    var ap = t.Ring.SnapshotRebasedFrom(baseUs);
+                    if (ap.Count > 0) liveAudio.Add(new Mp4Muxer.AudioTrack(t.Encoder.GetStreamSpec(), ap, t.Title));
+                }
+            }
+        }
+
+        if (liveSpec == null && carry == null)
+        {
+            Console.WriteLine("[VfrReplayEngine] SaveReplay: no active capture and nothing carried over.");
             return null;
         }
 
-        // Flush the audio timeline right up to NOW so the saved tail matches the video length
-        // (otherwise the clip can end on the last system sound, short of the video).
-        PumpAudio();
+        string path = NewClipPath();
+        LastSavedGameTag = null;
+        bool ok;
 
-        // The audio rings hold exactly the configured window, but the video ring can reach one
-        // GOP further back (its clip must open on a keyframe). Starting there would put a
-        // video-only silent head on the file — libVLC players then never engage audio — so the
-        // video start is clamped to where audio actually exists (tolerance inside Snapshot).
-        long minStart = long.MinValue;
-        foreach (var t in tracks)
-            if (t.Ring?.OldestPtsUs is { } oldest && oldest > minStart) minStart = oldest;
-
-        var packets = ring.Snapshot(out long baseUs, minStart);
-        if (packets.Count == 0) { Console.WriteLine("[VfrReplayEngine] SaveReplay: buffer empty."); return null; }
-
-        // Each audio track, re-based to the SAME origin as the video clip so they stay in sync.
-        var audioTracks = new List<Mp4Muxer.AudioTrack>();
-        foreach (var t in tracks)
+        if (carry == null)
         {
-            if (t.Encoder == null || t.Ring == null) continue;
-            var ap = t.Ring.SnapshotRebasedFrom(baseUs);
-            if (ap.Count > 0) audioTracks.Add(new Mp4Muxer.AudioTrack(t.Encoder.GetStreamSpec(), ap, t.Title));
+            ok = Mp4Muxer.Write(path, liveSpec!, liveVideo, liveAudio);
+        }
+        else
+        {
+            // The previous session tail (usually the game just quit) becomes the head of the clip and
+            // the live buffer follows it, so saving right after quitting still gets you the play
+            // instead of only the desktop that replaced it.
+            var headVideo = carry.VideoRebased();
+            var headAudio = new List<Mp4Muxer.AudioTrack>();
+            foreach (var t in carry.Audio)
+            {
+                var ap = carry.AudioRebased(t);
+                if (ap.Count > 0) headAudio.Add(new Mp4Muxer.AudioTrack(t.Spec, ap, t.Title));
+            }
+            if (carry.WasGame) LastSavedGameTag = (carry.TargetName, carry.TargetExe);
+
+            if (liveSpec == null || headVideo.Count == 0)
+            {
+                // Nothing live yet (the new session has not produced a keyframe) - save just the tail.
+                ok = headVideo.Count > 0 && Mp4Muxer.Write(path, carry.VideoSpec, headVideo, headAudio);
+            }
+            else
+            {
+                long offset = headVideo[^1].PtsUs + ReplayStitcher.SeamGapUs;
+                Console.WriteLine($"[VfrReplayEngine] stitching {carry.DurationSeconds:0.0}s carried " +
+                                  $"({carry.VideoSpec.Width}x{carry.VideoSpec.Height}) + live " +
+                                  $"({liveSpec.Width}x{liveSpec.Height}).");
+
+                if (ReplayStitcher.CanConcatDirect(carry.VideoSpec, liveSpec))
+                {
+                    // Identical stream parameters - one track, no re-encode, still instant.
+                    var video = new List<EncodedPacket>(headVideo.Count + liveVideo.Count);
+                    video.AddRange(headVideo);
+                    video.AddRange(ReplayStitcher.Shift(liveVideo, offset));
+                    ok = Mp4Muxer.Write(path, carry.VideoSpec, video, MergeAudio(headAudio, liveAudio, offset));
+                }
+                else
+                {
+                    ok = ReplayStitcher.TranscodeStitch(path, carry.VideoSpec, headVideo, headAudio,
+                                                       liveSpec, liveVideo, liveAudio,
+                                                       _options.BitrateKbps, _options.Preset);
+                    if (!ok)
+                    {
+                        // Re-encoding is the only way to put two frame sizes in one track, so if it
+                        // fails, write both halves side by side - losing the play is the one outcome
+                        // worth avoiding.
+                        Console.WriteLine("[VfrReplayEngine] stitch failed - saving the halves separately.");
+                        ok = Mp4Muxer.Write(path, liveSpec, liveVideo, liveAudio);
+                        string headPath = System.IO.Path.ChangeExtension(path, null) + "-Game" +
+                                          System.IO.Path.GetExtension(path);
+                        if (Mp4Muxer.Write(headPath, carry.VideoSpec, headVideo, headAudio))
+                            ReplaySaved?.Invoke(this, headPath);
+                    }
+                }
+            }
         }
 
+        if (!ok) return null;
+
+        // The tail is deliberately NOT dropped here: saving never consumes the rolling buffer, and the
+        // carried tail is part of it. It keeps shrinking as the new session fills (TrimCarryOver) and
+        // disappears once the live buffer covers the full window.
+        ReplaySaved?.Invoke(this, path);
+        return path;
+    }
+
+    /// <summary>Path for a new clip in the library, named by local time.</summary>
+    private string NewClipPath()
+    {
         string dir = _options.LibraryPath;
         System.IO.Directory.CreateDirectory(dir);
         string ext = NormalizeContainer(_options.FileFormat);
-        string path = System.IO.Path.Combine(dir, $"{DateTime.Now:yyyy-MM-dd_HH-mm-ss}-Replay.{ext}");
+        return System.IO.Path.Combine(dir, $"{DateTime.Now:yyyy-MM-dd_HH-mm-ss}-Replay.{ext}");
+    }
 
-        bool ok = Mp4Muxer.Write(path, encoder.GetStreamSpec(), packets, audioTracks);
-        if (!ok) return null;
+    /// <summary>
+    /// Joins the carried audio tracks onto the live ones, matched by title (System, Microphone), so
+    /// each track spans the whole clip. The live tracks define the track list: a live track with no
+    /// counterpart simply starts silent, and a carried track the live session no longer has (the
+    /// audio mode changed with the target) is dropped rather than left to cut out mid-clip.
+    /// </summary>
+    private static List<Mp4Muxer.AudioTrack> MergeAudio(List<Mp4Muxer.AudioTrack> head,
+                                                        List<Mp4Muxer.AudioTrack> live, long offsetUs)
+    {
+        var merged = new List<Mp4Muxer.AudioTrack>(live.Count);
+        foreach (var l in live)
+        {
+            var shifted = ReplayStitcher.Shift(l.Packets, offsetUs);
+            var h = head.Find(x => string.Equals(x.Title, l.Title, StringComparison.OrdinalIgnoreCase)
+                                   && ReplayStitcher.CanConcatAudio(x.Spec, l.Spec));
+            if (h == null) { merged.Add(l with { Packets = shifted }); continue; }
 
-        ReplaySaved?.Invoke(this, path);
-        return path;
+            var packets = new List<EncodedPacket>(h.Packets.Count + shifted.Count);
+            packets.AddRange(h.Packets);
+            packets.AddRange(shifted);
+            merged.Add(l with { Packets = packets });
+        }
+        return merged;
     }
 
     /// <summary>Push-to-talk: mute/unmute the microphone mid-capture. No-op when video-only.</summary>
@@ -770,12 +999,76 @@ public sealed class VfrReplayEngine : IDisposable
                 long span = (System.Diagnostics.Stopwatch.GetTimestamp() - cur.PauseStartQpc)
                             * 1_000_000L / System.Diagnostics.Stopwatch.Frequency;
                 _pause = new PauseState(cur.AccumUs + span, 0, false);
+                _timelineResetPending = true;   // the clock jumped back by the pause: re-anchor on the next frame
             }
             Console.WriteLine($"[VfrReplayEngine] {(paused ? "paused" : "resumed")} (total paused {_pause.AccumUs / 1000}ms).");
         }
     }
 
-    private void TeardownCapture()
+    /// <summary>Ends the current capture session the same way a game exiting does — keeping its tail
+    /// as carry-over — so the lock timer re-locks onto whatever is there now. Test-only
+    /// (<see cref="CarryOverSelfTest"/> / LAG_VFR_CARRY): the real trigger is the locked window dying.</summary>
+    internal void SimulateTargetLoss() => TeardownCapture(keepCarry: true);
+
+    /// <summary>Seconds of carried-over footage currently held (0 when none). Diagnostics.</summary>
+    internal double CarriedSeconds { get { lock (_gate) return _carry?.DurationSeconds ?? 0; } }
+
+    /// <summary>Keeps a finished session's tail so it can still be saved after the switch. Called on
+    /// teardown, after the encoders are flushed but before they are disposed (their specs are still
+    /// readable). Best-effort: any failure just means no carry-over, never a failed teardown.</summary>
+    private void CaptureCarryOver(PacketRingBuffer? ring, StreamSpec? videoSpec,
+                                  List<AudioTrackState> tracks, bool wasGame, string targetName, string? targetExe)
+    {
+        try
+        {
+            // Nothing recorded in this session (a lock that failed, or one torn down before its first
+            // frame): keep whatever tail we already hold instead of clearing it - that older tail is
+            // still the footage worth saving, and TrimCarryOver retires it on its own schedule.
+            if (ring == null || videoSpec == null) return;
+            var video = ring.SnapshotAbsolute();
+            if (video.Count == 0) return;
+
+            var audio = new List<CarryAudioTrack>();
+            foreach (var t in tracks)
+            {
+                if (t.Encoder == null || t.Ring == null) continue;
+                var pk = t.Ring.SnapshotAbsolute();
+                if (pk.Count == 0) continue;
+                try { audio.Add(new CarryAudioTrack(t.Encoder.GetStreamSpec(), pk, t.Title)); } catch { }
+            }
+
+            var seg = new CarryOverSegment(videoSpec, video, audio, wasGame, targetName, targetExe)
+                      .TrimmedToLast(_options.BufferSeconds);
+            lock (_gate) _carry = seg;
+            if (seg != null)
+                Console.WriteLine($"[CarryOver] holding {seg.DurationSeconds:0.0}s of " +
+                                  $"{(wasGame ? $"game '{targetName}'" : "desktop")} " +
+                                  $"@ {seg.VideoSpec.Width}x{seg.VideoSpec.Height} — still saveable.");
+        }
+        catch (Exception ex) { Console.WriteLine($"[CarryOver] capture failed: {ex.Message}"); }
+    }
+
+    /// <summary>Shrinks the carry-over as the new session fills, so carry-over + live never exceeds the
+    /// user's buffer length — the total replay stays exactly as long as configured and the extra memory
+    /// is transient. Dropped entirely once the live buffer covers the whole window.</summary>
+    private void TrimCarryOver()
+    {
+        CarryOverSegment? carry; double live;
+        lock (_gate) { carry = _carry; live = _ring?.BufferedSeconds ?? 0; }
+        if (carry == null) return;
+
+        double room = _options.BufferSeconds - live;
+        var trimmed = room > 0.5 ? carry.TrimmedToLast(room) : null;
+        if (ReferenceEquals(trimmed, carry)) return;
+
+        lock (_gate) { if (ReferenceEquals(_carry, carry)) _carry = trimmed; }
+        if (trimmed == null)
+            Console.WriteLine("[CarryOver] released — the live buffer now covers the full window.");
+    }
+
+    /// <param name="keepCarry">Keep this session's tail in <see cref="_carry"/> so it can still be
+    /// saved after the switch (game → desktop). False on a full stop, where nothing follows it.</param>
+    private void TeardownCapture(bool keepCarry = true)
     {
         // Stop the audio pulse first so it can't touch an encoder we're about to dispose.
         _audioPumpTimer?.Dispose();
@@ -783,11 +1076,13 @@ public sealed class VfrReplayEngine : IDisposable
 
         WgcCaptureSource? cap; NvencVfrEncoder? enc;
         WasapiAudioSource? aud; List<AudioTrackState> tracks;
+        PacketRingBuffer? ring; bool wasGame; string tname; string? texe;
         bool wasActive;
         lock (_gate)
         {
-            cap = _capture; enc = _encoder; aud = _audio;
+            cap = _capture; enc = _encoder; aud = _audio; ring = _ring;
             tracks = new List<AudioTrackState>(_audioTracks);
+            wasGame = TargetIsGame; tname = TargetName; texe = TargetExe;
             _capture = null; _encoder = null; _ring = null;
             _audio = null; _audioTracks.Clear();
             _lockedHwnd = IntPtr.Zero; _lockedPid = 0; _lockKind = LockKind.None;
@@ -806,10 +1101,19 @@ public sealed class VfrReplayEngine : IDisposable
         // texture or the colour converter — so freeing the WGC frame pool next can't race a frame
         // that's mid-convert (a use-after-free that crashed under load during a lock-switch re-arm).
         enc?.Flush();     Console.WriteLine($"[Teardown] encoder flushed @ {swTd.ElapsedMilliseconds}ms");
+        // Snapshot the video spec BEFORE disposing — the extradata (SPS/PPS) lives in the encoder
+        // context and the carry-over tail is unplayable without it.
+        StreamSpec? carrySpec = null;
+        try { if (keepCarry) carrySpec = enc?.GetStreamSpec(); } catch { }
         enc?.Dispose();   Console.WriteLine($"[Teardown] encoder disposed @ {swTd.ElapsedMilliseconds}ms");
         cap?.Dispose();   Console.WriteLine($"[Teardown] capture disposed @ {swTd.ElapsedMilliseconds}ms");
         aud?.Dispose();   Console.WriteLine($"[Teardown] audio disposed @ {swTd.ElapsedMilliseconds}ms");   // stop WASAPI first so no more PCM arrives
-        foreach (var t in tracks) { t.Encoder?.Flush(); t.Encoder?.Dispose(); }
+        // Flush the audio encoders so the tail's audio reaches its ring, THEN capture the carry-over
+        // (specs are still readable), and only then dispose them.
+        foreach (var t in tracks) { try { t.Encoder?.Flush(); } catch { } }
+        if (keepCarry) CaptureCarryOver(ring, carrySpec, tracks, wasGame, tname, texe);
+        else lock (_gate) _carry = null;
+        foreach (var t in tracks) { try { t.Encoder?.Dispose(); } catch { } }
         Console.WriteLine($"[Teardown] complete @ {swTd.ElapsedMilliseconds}ms");
         SetProcessPriority(System.Diagnostics.ProcessPriorityClass.Normal);
         try { System.Runtime.GCSettings.LatencyMode = System.Runtime.GCLatencyMode.Interactive; } catch { }
@@ -826,7 +1130,7 @@ public sealed class VfrReplayEngine : IDisposable
         _running = false;
         _lockTimer?.Dispose();
         _lockTimer = null;
-        TeardownCapture();
+        TeardownCapture(keepCarry: false);
         // After the capture teardown: no more OnFrame callbacks can be running, so the
         // compositor (and its webcam stream) can go down safely.
         _overlay?.Dispose();

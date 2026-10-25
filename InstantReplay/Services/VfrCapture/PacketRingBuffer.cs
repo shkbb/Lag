@@ -166,6 +166,19 @@ public sealed class PacketRingBuffer
         }
     }
 
+    /// <summary>Every buffered packet with its ABSOLUTE timestamps, as a private copy. Used when a
+    /// capture session ends to hand its tail to <see cref="CarryOverSegment"/> — that tail is re-based
+    /// only at save time, because each session's clock has its own origin.</summary>
+    public List<EncodedPacket> SnapshotAbsolute()
+    {
+        lock (_gate)
+        {
+            var result = new List<EncodedPacket>(_packets.Count);
+            for (var n = _packets.First; n != null; n = n.Next) result.Add(n.Value);
+            return result;
+        }
+    }
+
     public void Clear()
     {
         lock (_gate) { _packets.Clear(); _keyframes.Clear(); }
