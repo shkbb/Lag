@@ -255,7 +255,11 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
         // Keep the sidebar stats live as the shared clip collection changes (refresh, save, delete).
         _library.Clips.CollectionChanged += OnClipsCollectionChanged;
 
-        InitializeVLC();
+        // libVLC is NOT started here. This view-model is a singleton built during startup, so doing
+        // it here loaded the whole VLC engine and its plugin set, created a MediaPlayer and a control
+        // thread on every launch — including the normal case of the app sitting in the tray keeping a
+        // replay buffer, where no clip is ever opened. It is started on the first clip instead (the
+        // same lazy pattern the editor already uses).
     }
 
     private void OnClipsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -282,10 +286,14 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
     }
 
     /// <summary>
-    /// Initializes the LibVLC engine and creates the MediaPlayer instance.
+    /// Starts the LibVLC engine and creates the MediaPlayer, once, on first use. Called from
+    /// <see cref="LoadAndPlay"/> — every playback path goes through it — so the engine is paid for
+    /// only when a clip is actually opened. Safe to call repeatedly.
     /// </summary>
-    private void InitializeVLC()
+    private void EnsureVlc()
     {
+        if (_libVLC != null) return;
+
         try
         {
             LibVLCSharp.Shared.Core.Initialize();
@@ -359,6 +367,7 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
     /// </summary>
     public void LoadAndPlay(ReplayClip clip)
     {
+        EnsureVlc();   // first clip of the session pays for the engine; later ones are free
         if (_mediaPlayer == null || _libVLC == null) return;
 
         // A new clip always starts at normal speed: carrying deep slow-mo onto the next clip made it

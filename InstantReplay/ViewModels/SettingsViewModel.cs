@@ -763,6 +763,7 @@ public partial class SettingsViewModel : ViewModelBase
         OnPropertyChanged(nameof(IsAppsMode));
         OnPropertyChanged(nameof(ShowSystemAudioRow));
         OnPropertyChanged(nameof(ShowAppsList));
+        UpdateAudioAppsScanner();   // the list may have just appeared/disappeared
         SaveSettingsRestartRequired();
     }
 
@@ -781,6 +782,7 @@ public partial class SettingsViewModel : ViewModelBase
     {
         OnPropertyChanged(nameof(ShowSystemAudioRow));
         OnPropertyChanged(nameof(ShowAppsList));
+        UpdateAudioAppsScanner();   // the list may have just appeared/disappeared
         SaveSettingsRestartRequired();
     }
 
@@ -1545,11 +1547,15 @@ public partial class SettingsViewModel : ViewModelBase
         // Listen for hotkey capture events
         _hotkeyManager.HotkeyCaptured += OnHotkeyCaptured;
 
-        // Live "apps playing audio" scanner: scan now, then every 4 s.
-        RefreshAudioAppsNow();
+        // Live "apps playing audio" scanner. Built here, but only RUN while the list is actually on
+        // screen (see UpdateAudioAppsScanner): each pass enumerates the WASAPI sessions and runs the
+        // full game detector — GPU sample, Steam check and a Process lookup per visible window — and
+        // doing that every 4 s for the life of the process, minimised to tray, is pure waste. The
+        // user's enabled apps are restored from settings, not from this scan, so recording is
+        // unaffected by the scanner being idle.
         _audioAppsTimer = new Avalonia.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(4) };
         _audioAppsTimer.Tick += (_, _) => RefreshAudioAppsNow();
-        _audioAppsTimer.Start();
+        UpdateAudioAppsScanner();
     }
 
     /// <summary>
@@ -1737,11 +1743,57 @@ public partial class SettingsViewModel : ViewModelBase
         SaveSettings();
     }
 
+    /// <summary>Debounce timer for <see cref="SaveSettings"/>. Null until the first save.</summary>
+    private Avalonia.Threading.DispatcherTimer? _saveDebounce;
+
+    /// <summary>
+    /// Queues a settings save. The write itself is debounced by a beat because several settings are
+    /// bound straight to sliders (volumes, bitrate, mic sensitivity): dragging one raises a change
+    /// per tick, and each used to serialize the whole settings object and write the file
+    /// synchronously on the UI thread — up to a hundred file writes for one drag. Coalescing them
+    /// into a single write keeps the UI smooth and spares the disk, and
+    /// <see cref="FlushPendingSave"/> guarantees the last edit still reaches disk on exit.
+    /// </summary>
     private void SaveSettings()
     {
         // Never persist while constructing/loading — see _isInitializing.
         if (_isInitializing) return;
 
+        // Callers are normally property setters on the UI thread; anything else hops over, since a
+        // DispatcherTimer may only be driven from there.
+        if (!Avalonia.Threading.Dispatcher.UIThread.CheckAccess())
+        {
+            Avalonia.Threading.Dispatcher.UIThread.Post(SaveSettings);
+            return;
+        }
+
+        _saveDebounce ??= CreateSaveDebounce();
+        _saveDebounce.Stop();
+        _saveDebounce.Start();
+    }
+
+    private Avalonia.Threading.DispatcherTimer CreateSaveDebounce()
+    {
+        var t = new Avalonia.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(350) };
+        t.Tick += (_, _) => { t.Stop(); WriteSettingsToDisk(); };
+        return t;
+    }
+
+    /// <summary>Writes any pending settings change immediately. Called on the way out so a value the
+    /// user changed in the last instant before quitting is never lost to the debounce.</summary>
+    public void FlushPendingSave()
+    {
+        try
+        {
+            if (_saveDebounce is not { IsEnabled: true }) return;
+            _saveDebounce.Stop();
+            WriteSettingsToDisk();
+        }
+        catch { /* never let a settings flush block shutdown */ }
+    }
+
+    private void WriteSettingsToDisk()
+    {
         try
         {
             var settings = new SettingsData

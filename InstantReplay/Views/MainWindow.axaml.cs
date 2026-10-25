@@ -23,7 +23,10 @@ public partial class MainWindow : Window
         PositionChanged += (_, _) => RetuneRenderTimer();
         PropertyChanged += (_, e) =>
         {
-            if (e.Property == WindowStateProperty)
+            // IsVisible matters as much as WindowState: hiding to the tray leaves the window
+            // "Normal", so without it the compositor would keep pacing at full refresh rate for a
+            // window nobody can see.
+            if (e.Property == WindowStateProperty || e.Property == IsVisibleProperty)
                 Avalonia.Threading.Dispatcher.UIThread.Post(RetuneRenderTimer);
         };
 
@@ -99,6 +102,20 @@ public partial class MainWindow : Window
     private void RetuneRenderTimer()
     {
         if (Program.RenderTimer is not { } timer) return;
+
+        // Hidden in the tray (or minimised) — the usual state while a game is running and the app is
+        // just keeping its replay buffer. There is nothing of this window to compose, so drop off the
+        // panel's vblank (DXGI WaitForVerticalBlank keeps a GPU wait outstanding at the panel's full
+        // rate, on an above-normal-priority thread, competing with the game) and idle on the clock
+        // instead. 60 Hz, not lower: the save toast and the stats HUD are separate windows that stay
+        // visible over the game and still need to animate smoothly. Full rate returns on Show.
+        if (!IsVisible || WindowState == WindowState.Minimized)
+        {
+            timer.SetMonitor(System.IntPtr.Zero);
+            timer.Hz = 60;
+            return;
+        }
+
         var handle = TryGetPlatformHandle()?.Handle ?? System.IntPtr.Zero;
         if (handle == System.IntPtr.Zero) return;
 

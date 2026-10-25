@@ -303,6 +303,7 @@ public class App : Application
             // Clean up on shutdown
             desktop.ShutdownRequested += (_, _) =>
             {
+                FlushSettings();
                 _serviceProvider?.Dispose();
             };
 
@@ -394,6 +395,13 @@ public class App : Application
             vm.NavigateToLibraryCommand.Execute(null);
     }
 
+    /// <summary>Writes any debounced settings change before the process goes away (settings saves are
+    /// coalesced, so a value changed a moment before quitting could otherwise be lost).</summary>
+    private void FlushSettings()
+    {
+        try { _serviceProvider?.GetService<SettingsViewModel>()?.FlushPendingSave(); } catch { }
+    }
+
     private void TrayIcon_ExitClicked(object? sender, EventArgs e)
     {
         // The window is already hidden in the tray, so there's nothing to visually close — just tear
@@ -410,6 +418,7 @@ public class App : Application
         })
         { IsBackground = true, Name = "ExitWatchdog" }.Start();
 
+        FlushSettings();
         try { _serviceProvider?.Dispose(); } catch { /* never let a Dispose fault block exit */ }
         Environment.Exit(0);
     }

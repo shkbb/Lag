@@ -130,6 +130,27 @@ public partial class SettingsViewModel
     {
         if (_audioViewAttached && _windowActive && SelectedSettingsTab == 1) StartAudioMeter();
         else StopAudioMeter();
+
+        // The per-app scanner is driven by exactly the same visibility signals.
+        UpdateAudioAppsScanner();
+    }
+
+    /// <summary>
+    /// Runs the "apps playing audio" scan only while that list is on screen: the Audio tab visible,
+    /// the window focused, and an audio mode that shows the list at all. Off screen it would sample
+    /// the GPU and walk every window every 4 seconds to refresh a list nobody is looking at.
+    /// Starting it also takes an immediate pass, so the list is populated by the time it is drawn.
+    /// </summary>
+    private void UpdateAudioAppsScanner()
+    {
+        if (_audioAppsTimer == null) return;   // still constructing
+
+        bool wanted = _audioViewAttached && _windowActive && SelectedSettingsTab == 1 && ShowAppsList;
+        if (!wanted) { _audioAppsTimer.Stop(); return; }
+        if (_audioAppsTimer.IsEnabled) return;
+
+        RefreshAudioAppsNow();
+        _audioAppsTimer.Start();
     }
 
     private void StartAudioMeter()
