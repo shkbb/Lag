@@ -67,18 +67,29 @@ def take(ranges):
     return "\n\n".join(p.strip("\n") for p in parts)
 
 
-def widen(body):
-    """Private top-level items -> pub(super); private fields of top-level structs -> pub(super)."""
+def widen(body, methods):
+    """Private top-level items, fields of top-level structs, `thread_local!` statics and (with `methods`) methods of
+    inherent impls -> pub(super). Trait impls (`impl X for Y`) keep their methods as they are."""
     out = []
-    in_struct = False
+    block = None  # "struct" | "thread_local" | "impl" | "trait_impl"
     for ln in body.split("\n"):
         if re.match(r"^(fn|struct|enum|const|static|type|trait) ", ln):
             ln = "pub(super) " + ln
         if re.match(r"^(pub(\([a-z]+\))? )?struct \w+.*\{\s*$", ln):
-            in_struct = True
-        elif in_struct and ln.startswith("}"):
-            in_struct = False
-        elif in_struct and re.match(r"^    \w+: ", ln):
+            block = "struct"
+        elif ln.startswith("thread_local!"):
+            block = "thread_local"
+        elif re.match(r"^impl\b.* for .*\{\s*$", ln):
+            block = "trait_impl"
+        elif re.match(r"^impl\b.*\{\s*$", ln):
+            block = "impl"
+        elif block and ln.startswith("}"):
+            block = None
+        elif block == "struct" and re.match(r"^    \w+: ", ln):
+            ln = "    pub(super) " + ln[4:]
+        elif block == "thread_local" and ln.startswith("    static "):
+            ln = "    pub(super) " + ln[4:]
+        elif block == "impl" and methods and re.match(r"^    (unsafe )?fn ", ln):
             ln = "    pub(super) " + ln[4:]
         out.append(ln)
     return "\n".join(out)
@@ -87,8 +98,7 @@ def widen(body):
 base = os.path.splitext(SRC)[0]
 os.makedirs(base, exist_ok=True)
 for name, doc, ranges in spec["MODULES"]:
-    body = widen(take(ranges))
-    body = re.sub(r"\n    fn ", "\n    pub(super) fn ", body) if name in spec.get("PUB_METHODS", []) else body
+    body = widen(take(ranges), name in spec.get("PUB_METHODS", []))
     sib = ", ".join(f"{n}::*" for n in names if n != name)
     out = f"{doc.rstrip()}\n\n{IMPORTS}#[allow(unused_imports)]\nuse super::{{{sib}}};\nuse super::*;\n\n{body}\n"
     open(f"{base}/{name}.rs", "w", encoding="utf-8", newline="\n").write(out)

@@ -30,6 +30,26 @@ pub(super) struct State {
 }
 
 impl State {
+    /// A fresh page state for `settings`; `groups` is the model the page shows (rebuilt by `refresh`).
+    pub(super) fn new(settings: SettingsData, groups: Rc<VecModel<SettingsGroup>>) -> Self {
+        Self {
+            hardware: None,
+            settings,
+            groups,
+            tab: 0,
+            custom_fps: false,
+            custom_bitrate: false,
+            acknowledged: false,
+            applying_preset: false,
+            pending: false,
+            capture: String::new(),
+            suppressed_until: Instant::now(),
+            update_status: String::new(),
+            apps: Vec::new(),
+            app_icons: Default::default(),
+        }
+    }
+
     pub(super) fn groups(&self) -> Vec<(String, Vec<SettingsRowData>)> {
         let Some(h) = &self.hardware else {
             return vec![];

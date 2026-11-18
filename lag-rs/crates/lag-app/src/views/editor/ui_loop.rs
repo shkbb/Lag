@@ -17,7 +17,6 @@ pub(super) fn run(
     events: mpsc::Receiver<UiMessage>,
     mpv_player: Rc<RefCell<Option<Arc<MpvPlayer>>>>,
 ) {
-    let _vm = ui.global::<EditorVM>();
     // ── Native video surface + overlay window (player v2 engine, see editor/native.rs) ──
     let host: Rc<RefCell<Option<super::native::EditorHost>>> = Rc::new(RefCell::new(None));
     let host_failed = Rc::new(Cell::new(false));
