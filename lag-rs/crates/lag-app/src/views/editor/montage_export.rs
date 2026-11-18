@@ -6,11 +6,12 @@ use super::export::{audio_track_filters, build_video_filter_chain};
 use super::model::{EditModel, TextItem};
 use super::montage::Montage;
 use super::unique_hex_id;
-use crate::services::ffmpeg;
+use super::worker::UiMessage;
+use crate::services::{clip_merge, ffmpeg};
 use std::path::{Path, PathBuf};
 use std::process::Child;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::{mpsc, Arc, Mutex};
 
 /// One input of the montage export: a span of one segment's source played with that segment's edit.
 pub struct MontagePiece<'a> {
@@ -174,6 +175,50 @@ pub fn export_montage(
         let _ = std::fs::remove_file(p);
     }
     result
+}
+
+/// Runs the montage export on a worker thread and reports like the clip export (`ExportProgress` /
+/// `ExportFinished`). Untouched clips of one format are joined without re-encoding (services::clip_merge).
+pub(super) fn spawn_montage_export(
+    export_gen: u64,
+    montage: Montage,
+    res: i32,
+    out: PathBuf,
+    cancel: Arc<AtomicBool>,
+    child: Arc<Mutex<Option<Child>>>,
+    tx: mpsc::Sender<UiMessage>,
+) {
+    let _ = std::thread::Builder::new().name("Lag.MontageExport".into()).spawn(move || {
+        let progress = |p: f64| {
+            let _ = tx.send(UiMessage::ExportProgress(export_gen, p.clamp(0.0, 100.0) as i32));
+        };
+        let result = if montage.is_plain_join() && res == 0 {
+            let paths: Vec<String> =
+                montage.segments().iter().filter_map(|s| s.edit.current_clip_path.clone()).collect();
+            log::info!("[Montage] untouched clips: plain join of {}", paths.len());
+            clip_merge::run(&paths, &out, &cancel, &child, &progress).map(|()| 0)
+        } else {
+            export_montage(&montage, res, &out, &cancel, &child, &progress)
+        };
+        let name = out.file_name().and_then(|s| s.to_str()).unwrap_or("").to_string();
+        let message = match result {
+            Ok(0) if out.exists() => Ok(name),
+            _ if cancel.load(Ordering::Acquire) => {
+                let _ = std::fs::remove_file(&out);
+                Err(None)
+            }
+            Ok(code) => {
+                let _ = std::fs::remove_file(&out);
+                Err(Some(format!("ffmpeg exit {code}")))
+            }
+            Err(e) => {
+                let _ = std::fs::remove_file(&out);
+                log::warn!("[Montage] export failed: {e}");
+                Err(Some(e))
+            }
+        };
+        let _ = tx.send(UiMessage::ExportFinished(export_gen, message));
+    });
 }
 
 #[cfg(test)]

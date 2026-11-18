@@ -16,6 +16,7 @@ use std::sync::{mpsc, Arc};
 
 mod bind_export;
 mod bind_frame;
+mod bind_montage;
 mod bind_navigation;
 mod bind_text;
 mod bind_timeline;
@@ -26,6 +27,7 @@ mod merge;
 mod model;
 mod montage;
 mod montage_export;
+mod montage_runtime;
 mod native;
 mod preview;
 mod runtime;
@@ -36,6 +38,7 @@ mod worker;
 
 use bind_export::*;
 use bind_frame::*;
+use bind_montage::*;
 use bind_navigation::*;
 use bind_text::*;
 use bind_timeline::*;
@@ -87,5 +90,6 @@ pub fn init(ui: &AppWindow, ctx: &Rc<AppCtx>) {
     bind_frame(ui, &state);
     bind_text(ui, &state);
     bind_export(ui, &state);
+    bind_montage(ui, &state);
     ui_loop::run(ui, &state, events, mpv_player);
 }

@@ -26,6 +26,7 @@ pub(super) fn bind_timeline(ui: &AppWindow, state: &Rc<RefCell<EditorRuntime>>) 
             if s.model.is_playing {
                 let _ = s.commands.send(MpvCommand::Pause(true));
                 s.model.is_playing = false;
+                s.play_through = false;
                 if let Some(ui) = s.ui.upgrade() {
                     ui.global::<EditorVM>().set_is_playing(false);
                 }
@@ -49,6 +50,8 @@ pub(super) fn bind_timeline(ui: &AppWindow, state: &Rc<RefCell<EditorRuntime>>) 
                 }
                 s.queue_seek(&st, target);
             }
+            // a montage plays on into the next segment
+            s.play_through = s.montage.is_montage();
             let _ = s.commands.send(MpvCommand::Play);
         });
     }
@@ -64,6 +67,10 @@ pub(super) fn bind_timeline(ui: &AppWindow, state: &Rc<RefCell<EditorRuntime>>) 
         let st = state.clone();
         vm.on_undo(move || {
             let mut s = st.borrow_mut();
+            // a montage operation (split, move, remove, add) newer than the segment's own edits goes first
+            if s.undo_any() {
+                return;
+            }
             let prev_pos = s.model.position;
             if s.model.undo() {
                 let new_pos = s.model.position;

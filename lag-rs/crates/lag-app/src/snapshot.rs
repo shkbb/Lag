@@ -209,6 +209,23 @@ impl Snapshot {
                         vm.invoke_merge_pick(c.path);
                     }
                 }
+                // montage: `editor-montage-run` = "Montage (N)", `editor-segment N` selects, `editor-scrub F` puts
+                // the playhead at fraction F of the clip, `editor-split` = razor, `editor-add N` = sidebar "+"
+                "editor-montage-run" => ui.global::<crate::EditorVM>().invoke_merge_clips(),
+                "editor-segment" => ui.global::<crate::EditorVM>().invoke_select_segment(num(&a, 0) as i32),
+                "editor-scrub" => {
+                    let vm = ui.global::<crate::EditorVM>();
+                    vm.invoke_timeline_drag(3, num(&a, 0) as f32, 800.0);
+                    vm.invoke_timeline_drag_end();
+                }
+                "editor-split" => ui.global::<crate::EditorVM>().invoke_split_segment(),
+                "editor-add" => {
+                    use slint::Model;
+                    let vm = ui.global::<crate::EditorVM>();
+                    if let Some(c) = vm.get_clips().row_data(num(&a, 0) as usize) {
+                        vm.invoke_add_to_montage(c.path);
+                    }
+                }
                 // Same path as the language picker in Settings (persists to the scratch settings only).
                 "lang" => {
                     let code = a.first().copied().unwrap_or("en");

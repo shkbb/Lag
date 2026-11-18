@@ -259,7 +259,11 @@
   "Editor_Import": "Impordi",
   "Editor_ImportTitle": "Ava video redaktoris",
   "Editor_ImportFilter": "Videod",
-  "Editor_Merge": "Liida",
   "Editor_MergeHint": "Vali klipid järjekorras",
-  "Editor_Merging": "Liitmine... {0}%"
+  "Editor_Montage": "Montaaž",
+  "Editor_MontageRun": "Loo montaaž",
+  "Editor_PlayMontage": "Esita kõik",
+  "Editor_Split": "Poolita",
+  "Editor_RemoveSegment": "Eemalda",
+  "Editor_AddFile": "Fail"
 }

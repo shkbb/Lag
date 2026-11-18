@@ -259,7 +259,11 @@
   "Editor_Import": "Імпортувати",
   "Editor_ImportTitle": "Відкрити відео в редакторі",
   "Editor_ImportFilter": "Відео",
-  "Editor_Merge": "Склеїти",
   "Editor_MergeHint": "Виберіть кліпи по порядку",
-  "Editor_Merging": "Склеювання... {0}%"
+  "Editor_Montage": "Монтаж",
+  "Editor_MontageRun": "Змонтувати",
+  "Editor_PlayMontage": "Весь монтаж",
+  "Editor_Split": "Розрізати",
+  "Editor_RemoveSegment": "Прибрати",
+  "Editor_AddFile": "Файл"
 }

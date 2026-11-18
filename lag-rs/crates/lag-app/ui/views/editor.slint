@@ -9,16 +9,17 @@ import { LagScrollView } from "../components/scrollbar.slint";
 import { ClipPickerItem } from "../components/list_items.slint";
 import {
     EditorClipItem, EditorAudioTrackData, EditorFilterData,
-    EditorCutBand, EditorTextOverlayData, EditorColorSwatch
+    EditorCutBand, EditorTextOverlayData, EditorColorSwatch, EditorSegmentData
 } from "../components/editor/types.slint";
 import { EditorTimeline } from "../components/editor/timeline.slint";
+import { MontageStrip } from "../components/editor/montage_strip.slint";
 import { EditorPreviewStage } from "../components/editor/preview_stage.slint";
 import { EditorToolsPanel } from "../components/editor/tools_panel.slint";
 import { EditorExportFlyout } from "../components/editor/export_flyout.slint";
 
 export {
     EditorClipItem, EditorAudioTrackData, EditorFilterData,
-    EditorCutBand, EditorTextOverlayData, EditorColorSwatch
+    EditorCutBand, EditorTextOverlayData, EditorColorSwatch, EditorSegmentData
 }
 
 export global EditorVM {
@@ -115,6 +116,19 @@ export global EditorVM {
     callback toggle-merge-mode();
     callback merge-pick(string);
     callback merge-clips();
+    // montage: the strip's segments, shown when there is more than one; total length and the montage clock
+    in property <[EditorSegmentData]> montage-segments: [];
+    in property <bool> montage-active: false;
+    in property <string> montage-total: "";
+    in property <string> montage-time: "";
+    callback select-segment(int);
+    callback segment-dropped(int, length, length);
+    callback split-segment();
+    callback remove-segment();
+    callback play-montage();
+    callback add-to-montage(string);
+    callback add-montage-file();
+    callback strip-resized(length);
     callback back();
     callback active-changed(bool);
     callback play-pause();
@@ -192,6 +206,15 @@ export component EditorPage inherits Rectangle {
             }
             if ((ev.text == "z" || ev.text == "Z" || ev.text == "\u{001a}") && ev.modifiers.control) {
                 EditorVM.undo();
+                return accept;
+            }
+            if (EditorVM.montage-active && EditorVM.editing-text-index < 0 && !ev.modifiers.control
+                && (ev.text == "s" || ev.text == "S" || ev.text == "ы" || ev.text == "Ы" || ev.text == "і" || ev.text == "І")) {
+                EditorVM.split-segment();
+                return accept;
+            }
+            if (EditorVM.montage-active && EditorVM.editing-text-index < 0 && ev.text == Key.Delete) {
+                EditorVM.remove-segment();
                 return accept;
             }
             if (ev.text == Key.Escape && EditorVM.editing-text-index >= 0) {
@@ -408,7 +431,7 @@ export component EditorPage inherits Rectangle {
                                 overflow: elide;
                             }
                             Text {
-                                text: EditorVM.merge-mode ? Tr.t("Editor_CancelExport", Tr.rev) : Tr.t("Editor_Merge", Tr.rev);
+                                text: EditorVM.merge-mode ? Tr.t("Editor_CancelExport", Tr.rev) : Tr.t("Editor_Montage", Tr.rev);
                                 color: merge-link-ta.has-hover ? Theme.accent-hover-brush : Theme.accent-brush;
                                 opacity: EditorVM.is-exporting ? 0.45 : 1;
                                 font-family: Theme.font-ui;
@@ -465,6 +488,27 @@ export component EditorPage inherits Rectangle {
                                                 height: 100%;
                                                 source: clip.thumbnail;
                                                 image-fit: cover;
+                                            }
+                                            // add this clip to the montage (after the selected segment)
+                                            if !EditorVM.merge-mode: Rectangle {
+                                                x: parent.width - 30px;
+                                                y: 6px;
+                                                width: 24px;
+                                                height: 24px;
+                                                border-radius: 12px;
+                                                background: add-ta.has-hover ? Theme.accent-brush : #000000a8;
+                                                MaterialIcon {
+                                                    source: Icons.plus;
+                                                    size: 14px;
+                                                    tint: add-ta.has-hover ? Theme.on-accent-brush : #ffffff;
+                                                }
+                                                add-ta := TouchArea {
+                                                    mouse-cursor: pointer;
+                                                    clicked => {
+                                                        EditorVM.add-to-montage(clip.path);
+                                                        keys.focus();
+                                                    }
+                                                }
                                             }
                                             // picked for the merge: accent frame + its place in the order
                                             if clip.merge-number > 0: Rectangle {
@@ -531,7 +575,7 @@ export component EditorPage inherits Rectangle {
                                     alignment: center;
                                     spacing: 6px;
                                     Text {
-                                        text: Tr.t("Editor_Merge", Tr.rev);
+                                        text: Tr.t("Editor_MontageRun", Tr.rev);
                                         color: Theme.on-accent-brush;
                                         font-family: Theme.font-ui;
                                         font-size: Theme.font-size-body;
@@ -606,6 +650,19 @@ export component EditorPage inherits Rectangle {
                         select-text(idx) => { EditorVM.select-text(idx); }
                         move-text(idx, nx, ny) => { EditorVM.move-text(idx, nx, ny); }
                         push-undo => { EditorVM.push-undo(); }
+                    }
+
+                    if EditorVM.montage-active: MontageStrip {
+                        segments: EditorVM.montage-segments;
+                        clock: EditorVM.montage-time;
+                        enabled: !EditorVM.is-exporting;
+                        select-segment(i) => { root.clear-reframe(); EditorVM.select-segment(i); keys.focus(); }
+                        segment-dropped(i, dx, w) => { EditorVM.segment-dropped(i, dx, w); keys.focus(); }
+                        play-all => { EditorVM.play-montage(); keys.focus(); }
+                        split => { EditorVM.split-segment(); keys.focus(); }
+                        remove => { EditorVM.remove-segment(); keys.focus(); }
+                        add-file => { EditorVM.add-montage-file(); keys.focus(); }
+                        resized(w) => { EditorVM.strip-resized(w); }
                     }
 
                     EditorTimeline {
@@ -696,6 +753,7 @@ export component EditorPage inherits Rectangle {
         format-options: EditorVM.export-format-options;
         selected-format-index <=> EditorVM.selected-export-format-index;
         export-as-gif <=> EditorVM.export-as-gif;
+        allow-gif: !EditorVM.montage-active;
 
         resolution-selected(idx) => { EditorVM.select-export-resolution(idx); }
         format-selected(idx) => { EditorVM.select-export-format(idx); }

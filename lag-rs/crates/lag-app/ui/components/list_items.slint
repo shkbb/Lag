@@ -121,6 +121,12 @@ export component FilterCardItem {
 export component ClipPickerItem {
     callback clicked();
 
+    // under the content: buttons inside the card (the montage "+") get their own clicks
+    ta := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+    }
+
     Rectangle {
         width: 100%;
         height: 100%;
@@ -133,11 +139,6 @@ export component ClipPickerItem {
             alignment: center;
             @children
         }
-    }
-
-    ta := TouchArea {
-        mouse-cursor: pointer;
-        clicked => { root.clicked(); }
     }
 }
 

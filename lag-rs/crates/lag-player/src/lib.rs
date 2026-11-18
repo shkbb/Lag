@@ -267,6 +267,15 @@ impl MpvPlayer {
         self.command(&["set", "aid", "auto"])?;
         self.command(&["loadfile", path, "replace"])
     }
+    /// Like `load`, but playback starts at `start` seconds (mpv's per-file `start` option: no frame of the file's
+    /// beginning is shown first, unlike load + seek).
+    pub fn load_at(&self, path: &str, start: f64) -> Result<()> {
+        self.set_speed(1.0)?;
+        let _ = self.set_slowmo_smoothing(1.0);
+        self.command(&["set", "loop-file", "no"])?;
+        self.command(&["set", "aid", "auto"])?;
+        self.command(&["loadfile", path, "replace", "-1", &format!("start={:.3}", start.max(0.0))])
+    }
     pub fn play(&self) -> Result<()> {
         if self.property("eof-reached").as_deref() == Ok("yes") && self.property("seekable").as_deref() == Ok("yes") {
             let _ = self.seek_exact(0.0);

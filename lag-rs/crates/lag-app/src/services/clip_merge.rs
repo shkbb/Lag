@@ -10,7 +10,7 @@
 //!   once (NVENC, x264 as the fallback).
 
 use super::ffmpeg::{self, ProbeResult};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::Child;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
@@ -58,11 +58,6 @@ fn even(v: i32) -> i32 {
 /// Total length of the result (progress denominator).
 pub fn total_duration(sources: &[MergeSource]) -> f64 {
     sources.iter().map(|s| s.info.duration_sec.max(0.0)).sum()
-}
-
-/// Where the result goes: next to the first clip, so it shows up in the same library folder.
-pub fn output_path(first_clip: &str) -> PathBuf {
-    ffmpeg::unique_sibling_path(first_clip, "merged", "mp4")
 }
 
 /// The concat demuxer's list file. Paths are single-quoted; a quote inside a path becomes `'\''`.

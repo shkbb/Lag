@@ -237,10 +237,90 @@ impl Montage {
     }
 }
 
+/// The clip is used whole and unchanged (no trim, cuts, speed, frame, crop, rotation, look, captions or volume
+/// changes): a montage of such clips can be joined without re-encoding.
+pub fn is_untouched(e: &EditModel) -> bool {
+    e.trim_start_sec <= 0.05
+        && e.trim_end_sec >= e.duration_sec - 0.05
+        && e.cuts.is_empty()
+        && (e.effective_speed() - 1.0).abs() < 1e-6
+        && e.selected_aspect_index == 0
+        && !e.is_cropped()
+        && !e.is_reframed()
+        && e.rotation == 0
+        && !e.flip_h
+        && !e.flip_v
+        && e.selected_filter_index == 0
+        && !e.has_color_adjust()
+        && e.texts.iter().all(|t| t.text.trim().is_empty())
+        && e.audio_tracks.iter().all(|t| t.volume == 100 && !t.is_muted)
+}
+
+/// Width of each block in the montage strip: proportional to its duration, at least `min_w`. The strip draws
+/// the same formula (montage_strip.slint), so a drag offset maps to the same positions here.
+pub fn block_widths(durations: &[f64], strip_w: f64, min_w: f64, gap: f64) -> Vec<f64> {
+    let total: f64 = durations.iter().sum();
+    let avail = (strip_w - gap * durations.len().saturating_sub(1) as f64).max(0.0);
+    durations.iter().map(|d| if total > 0.0 { (d / total * avail).max(min_w) } else { min_w }).collect()
+}
+
+/// Where a block dragged by `dx` pixels lands: the index it takes after the move (`Montage::move_segment` `to`).
+pub fn drop_index(widths: &[f64], from: usize, dx: f64, gap: f64) -> usize {
+    let mut x = 0.0;
+    let centers: Vec<f64> = widths
+        .iter()
+        .map(|w| {
+            let c = x + w / 2.0;
+            x += w + gap;
+            c
+        })
+        .collect();
+    let Some(&c) = centers.get(from) else { return from };
+    let moved = c + dx;
+    centers.iter().enumerate().filter(|&(i, &other)| i != from && other < moved).count()
+}
+
+impl Montage {
+    /// Every segment is an untouched clip: the export can join the files without re-encoding.
+    pub fn is_plain_join(&self) -> bool {
+        self.segments.iter().all(|s| is_untouched(&s.edit))
+    }
+
+    /// Durations of the segments in order (the strip's block sizes).
+    pub fn durations(&self) -> Vec<f64> {
+        self.segments.iter().map(Segment::duration).collect()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::views::editor::model::Cut;
+
+    #[test]
+    fn plain_join_only_for_untouched_clips() {
+        let mut m = Montage::from_edits(vec![clip("a.mp4", 10.0), clip("b.mp4", 10.0)]);
+        assert!(m.is_plain_join());
+        let mut b = m.segments()[1].edit.clone();
+        b.trim_end_sec = 8.0;
+        m.select(1);
+        m.commit(&b);
+        assert!(!m.is_plain_join());
+    }
+
+    #[test]
+    fn dragging_a_block_lands_where_its_centre_goes() {
+        let w = block_widths(&[10.0, 10.0, 20.0], 412.0, 72.0, 6.0);
+        assert_eq!(w, vec![100.0, 100.0, 200.0]);
+        assert_eq!(drop_index(&w, 0, 0.0, 6.0), 0);
+        // centres 50 / 156 / 312: block 0 moved by 60 (centre 110) stays, by 120 (centre 170) passes block 1
+        assert_eq!(drop_index(&w, 0, 60.0, 6.0), 0);
+        assert_eq!(drop_index(&w, 0, 120.0, 6.0), 1);
+        assert_eq!(drop_index(&w, 0, 400.0, 6.0), 2);
+        assert_eq!(drop_index(&w, 2, -400.0, 6.0), 0);
+        // tiny clips keep a usable width
+        assert_eq!(block_widths(&[1.0, 99.0], 300.0, 72.0, 0.0)[0], 72.0);
+    }
 
     fn clip(path: &str, dur: f64) -> EditModel {
         let mut m = EditModel::new("Native");

@@ -18,6 +18,12 @@ pub(super) fn bind_frame(ui: &AppWindow, state: &Rc<RefCell<EditorRuntime>>) {
                 s.model.push_undo();
                 s.model.selected_aspect_index = idx;
                 s.model.reset_reframe();
+                // a montage is one video: its frame shape is shared by every segment
+                if s.montage.is_montage() {
+                    let live = s.model.clone();
+                    s.montage.commit(&live);
+                    s.montage.set_aspect_everywhere(idx);
+                }
             }
             if let Some(ui) = s.ui.upgrade() {
                 s.sync_overlay_to_ui(&ui.global::<EditorVM>());

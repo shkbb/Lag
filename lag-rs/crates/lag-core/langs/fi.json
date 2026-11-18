@@ -259,7 +259,11 @@
   "Editor_Import": "Tuo",
   "Editor_ImportTitle": "Avaa video editorissa",
   "Editor_ImportFilter": "Videot",
-  "Editor_Merge": "Yhdistä",
   "Editor_MergeHint": "Valitse leikkeet järjestyksessä",
-  "Editor_Merging": "Yhdistetään... {0}%"
+  "Editor_Montage": "Koostaminen",
+  "Editor_MontageRun": "Koosta",
+  "Editor_PlayMontage": "Toista kaikki",
+  "Editor_Split": "Jaa",
+  "Editor_RemoveSegment": "Poista",
+  "Editor_AddFile": "Tiedosto"
 }

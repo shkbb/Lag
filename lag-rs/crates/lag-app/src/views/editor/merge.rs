@@ -1,19 +1,15 @@
-//! Editor side of clip merging (owner, 2026-11-18): "Merge" in the clip sidebar switches to picking mode, clips
-//! are picked in order (their number shows on the card), "Merge (N)" joins them via `services::clip_merge`
-//! on a worker thread, reusing the export's progress / cancel plumbing, and the result opens in the editor so it
-//! can be trimmed, reframed to 9:16, captioned and exported like any clip.
+//! Picking clips for a montage in the clip sidebar (owner, 2026-11-18): "Montage" switches the sidebar to picking
+//! mode, clips are picked in order (their number shows on the card), and "Montage (N)" opens them as a montage
+//! (montage.rs) - every clip then trimmed, cut, reframed and captioned on its own before one export.
 
-use super::{tr_fmt, EditorRuntime, Job, UiMessage};
+use super::EditorRuntime;
 use crate::services::clip_merge;
 use crate::{AppWindow, EditorClipItem, EditorVM};
 use slint::{ComponentHandle, Model};
 use std::cell::RefCell;
-use std::path::Path;
 use std::rc::Rc;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
 
-/// Clips picked for the merge, in the order they were picked.
+/// Clips picked for the montage, in the order they were picked.
 #[derive(Debug, Default)]
 pub(super) struct MergePicks {
     paths: Vec<String>,
@@ -96,58 +92,13 @@ pub(super) fn wire(ui: &AppWindow, state: &Rc<RefCell<EditorRuntime>>) {
     }
 }
 
+/// "Montage (N)": the picked clips become a new montage (probed on a worker thread first).
 fn start(s: &mut EditorRuntime) {
     if s.is_exporting || !s.merge.ready() {
         return;
     }
     let paths = s.merge.paths().to_vec();
-    let out = clip_merge::output_path(&paths[0]);
-    s.is_exporting = true;
-    s.export_gen = s.export_gen.wrapping_add(1);
-    s.job = Job::Merge { out: out.clone() };
-    let cancel = Arc::new(AtomicBool::new(false));
-    s.export_cancel = Some(cancel.clone());
-    if let Some(ui) = s.ui.upgrade() {
-        let vm = ui.global::<EditorVM>();
-        vm.set_is_exporting(true);
-        vm.set_export_progress(0);
-        vm.set_export_status(tr_fmt("Editor_Merging", "0").into());
-    }
-    let (gen, child, tx) = (s.export_gen, s.export_child.clone(), s.messages_tx.clone());
-    let _ = std::thread::Builder::new().name("Lag.ClipMerge".into()).spawn(move || {
-        let progress = |p: f64| {
-            let _ = tx.send(UiMessage::ExportProgress(gen, p.clamp(0.0, 100.0) as i32));
-        };
-        let result = clip_merge::run(&paths, &out, &cancel, &child, &progress);
-        let message = match result {
-            Ok(()) => Ok(file_name(&out)),
-            Err(_) if cancel.load(Ordering::Acquire) => Err(None),
-            Err(e) => {
-                log::warn!("[ClipMerge] failed: {e}");
-                Err(Some(e))
-            }
-        };
-        let _ = tx.send(UiMessage::ExportFinished(gen, message));
-    });
-}
-
-/// The merged file exists: leave picking mode and open it for editing.
-pub(super) fn finished(s: &mut EditorRuntime, vm: &EditorVM, out: &Path) {
-    vm.set_merge_mode(false);
-    s.merge.clear();
-    sync_to_ui(vm, &s.merge);
-    let path = out.to_string_lossy().into_owned();
-    log::info!("[ClipMerge] done -> {path}");
-    s.open_clip(&path, 1.0);
-}
-
-/// Progress text of the running merge.
-pub(super) fn progress_text(pct: i32) -> String {
-    tr_fmt("Editor_Merging", &pct.to_string())
-}
-
-fn file_name(p: &Path) -> String {
-    p.file_name().and_then(|s| s.to_str()).unwrap_or("").to_string()
+    s.add_clips(paths, true);
 }
 
 #[cfg(test)]

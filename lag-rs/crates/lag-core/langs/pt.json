@@ -259,7 +259,11 @@
   "Editor_Import": "Importar",
   "Editor_ImportTitle": "Abrir um vídeo no editor",
   "Editor_ImportFilter": "Vídeos",
-  "Editor_Merge": "Juntar",
   "Editor_MergeHint": "Escolha os clipes por ordem",
-  "Editor_Merging": "A juntar... {0}%"
+  "Editor_Montage": "Montagem",
+  "Editor_MontageRun": "Criar montagem",
+  "Editor_PlayMontage": "Reproduzir tudo",
+  "Editor_Split": "Dividir",
+  "Editor_RemoveSegment": "Remover",
+  "Editor_AddFile": "Ficheiro"
 }

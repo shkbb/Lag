@@ -12,6 +12,8 @@ export component EditorExportFlyout {
     in property <[ComboBoxItemData]> format-options;
     in-out property <int> selected-format-index: 0;
     in-out property <bool> export-as-gif: false;
+    // a montage is exported as one video only
+    in property <bool> allow-gif: true;
 
     callback resolution-selected(int);
     callback format-selected(int);
@@ -59,7 +61,7 @@ export component EditorExportFlyout {
                 }
             }
 
-            if !root.export-as-gif: VerticalLayout {
+            if !root.export-as-gif || !root.allow-gif: VerticalLayout {
                 spacing: 6px;
                 Text {
                     text: Tr.t("Editor_Format", Tr.rev);
@@ -74,7 +76,7 @@ export component EditorExportFlyout {
                 }
             }
 
-            LagCheckBox {
+            if root.allow-gif: LagCheckBox {
                 checked <=> root.export-as-gif;
                 label: Tr.t("Editor_ExportGif", Tr.rev);
                 toggled(v) => { root.gif-toggled(v); }

@@ -259,7 +259,11 @@
   "Editor_Import": "Importuoti",
   "Editor_ImportTitle": "Atidaryti vaizdo įrašą redaktoriuje",
   "Editor_ImportFilter": "Vaizdo įrašai",
-  "Editor_Merge": "Sujungti",
   "Editor_MergeHint": "Pasirinkite klipus iš eilės",
-  "Editor_Merging": "Sujungiama... {0}%"
+  "Editor_Montage": "Montažas",
+  "Editor_MontageRun": "Sukurti montažą",
+  "Editor_PlayMontage": "Leisti viską",
+  "Editor_Split": "Padalinti",
+  "Editor_RemoveSegment": "Pašalinti",
+  "Editor_AddFile": "Failas"
 }

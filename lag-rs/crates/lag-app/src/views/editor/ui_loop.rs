@@ -2,7 +2,8 @@
 //! trim end, interpolates the playhead.
 
 use super::merge;
-use super::{model::*, runtime::*, tr, tr_fmt, worker::*};
+use super::montage_runtime::{montage_clock, track_names};
+use super::{model::*, runtime::*, tr_fmt, worker::*};
 use crate::{AppWindow, EditorVM, MainVM, Page};
 use lag_player::{MpvPlayer, PlayerEvent};
 use slint::{ComponentHandle, Model, Timer, TimerMode};
@@ -109,6 +110,9 @@ pub(super) fn run(
                                     continue;
                                 }
                                 if sec >= s.model.trim_end_sec {
+                                    if s.advance_to_next_segment() {
+                                        continue;
+                                    }
                                     s.model.is_playing = false;
                                     let target = (s.model.trim_end_sec / dur).clamp(0.0, 1.0);
                                     s.model.position = target;
@@ -193,32 +197,10 @@ pub(super) fn run(
                         res.duration_sec,
                         res.audio_streams
                     );
-                    s.model.source_width = res.video_width;
-                    s.model.source_height = res.video_height;
-                    s.model.reset_reframe();
-
-                    let end_at_max = (s.model.trim_end_sec - s.model.duration_sec).abs() < 0.05;
-                    if res.duration_sec > 0.0 {
-                        s.model.duration_sec = res.duration_sec.max(1.0);
+                    // a re-opened montage segment already has its size, tracks and framing (and the user's edits)
+                    if !s.model.is_probed() {
+                        s.model.apply_probe(&res, &track_names());
                     }
-                    if end_at_max || s.model.trim_end_sec > s.model.duration_sec {
-                        s.model.trim_end_sec = s.model.duration_sec;
-                    }
-                    s.model.trim_start_sec = s.model.trim_start_sec.min(s.model.trim_end_sec);
-
-                    let dur = s.model.duration_sec;
-                    s.model.audio_tracks.clear();
-                    if res.audio_streams >= 3 {
-                        s.model.audio_tracks.push(AudioTrack::new(1, tr("Editor_TrackSystem"), dur));
-                        s.model.audio_tracks.push(AudioTrack::new(2, tr("Editor_TrackMic"), dur));
-                    } else if res.audio_streams == 2 {
-                        s.model.audio_tracks.push(AudioTrack::new(0, tr("Editor_TrackSystem"), dur));
-                        s.model.audio_tracks.push(AudioTrack::new(1, tr("Editor_TrackMic"), dur));
-                    } else if res.audio_streams == 1 {
-                        s.model.audio_tracks.push(AudioTrack::new(0, tr("Editor_TrackAudio"), dur));
-                    }
-
-                    s.model.link_audio_to_trim();
                     s.apply_preview_audio();
                     s.sync_all_to_ui();
                 }
@@ -247,15 +229,10 @@ pub(super) fn run(
                 UiMessage::FilterThumb(..) => {}
                 UiMessage::ExportProgress(gen, pct) if gen == s.export_gen => {
                     vm.set_export_progress(pct);
-                    let text = match s.job {
-                        Job::Export => tr_fmt("Editor_Exporting", &pct.to_string()),
-                        Job::Merge { .. } => merge::progress_text(pct),
-                    };
-                    vm.set_export_status(text.into());
+                    vm.set_export_status(tr_fmt("Editor_Exporting", &pct.to_string()).into());
                 }
                 UiMessage::ExportProgress(..) => {}
                 UiMessage::ExportFinished(gen, res) if gen == s.export_gen => {
-                    let job = std::mem::replace(&mut s.job, Job::Export);
                     s.is_exporting = false;
                     vm.set_is_exporting(false);
                     vm.set_export_progress(0);
@@ -263,9 +240,6 @@ pub(super) fn run(
                         Ok(fname) => {
                             vm.set_export_status(tr_fmt("Editor_ExportDone", &fname).into());
                             s.ctx.request_library_refresh();
-                            if let Job::Merge { out } = job {
-                                merge::finished(&mut s, &vm, &out);
-                            }
                         }
                         Err(None) => vm.set_export_status("".into()),
                         Err(Some(err)) => {
@@ -274,7 +248,23 @@ pub(super) fn run(
                     }
                 }
                 UiMessage::ExportFinished(..) => {}
+                UiMessage::MontageProbed(gen, probed, replace) => {
+                    if replace {
+                        // the clips picked in "Montage" mode are in: leave picking mode
+                        vm.set_merge_mode(false);
+                        s.merge.clear();
+                        merge::sync_to_ui(&vm, &s.merge);
+                    }
+                    s.apply_probed_clips(gen, probed, replace);
+                }
             }
+        }
+
+        // montage strip: block sizes follow the live segment's trim, the clock follows the playhead
+        if s.montage.is_montage() {
+            s.refresh_strip_if_resized(&vm);
+            let clock = montage_clock(&s.montage, &s.model);
+            vm.set_montage_time(format!("{} / {}", format_time(clock), format_time(s.montage.duration())).into());
         }
 
         // 30fps playhead interpolation while playing and not scrubbing

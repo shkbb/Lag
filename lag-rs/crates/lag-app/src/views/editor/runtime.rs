@@ -2,6 +2,7 @@
 //! and the methods that push the model into `EditorVM`.
 
 use super::merge;
+use super::montage::Montage;
 use super::{model::*, preview::*, tr, worker::*};
 use crate::app_ctx::AppCtx;
 use crate::{
@@ -11,10 +12,9 @@ use crate::{
 use slint::{Color, ComponentHandle, Image, Model, ModelRc, Timer, TimerMode, VecModel};
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::path::PathBuf;
 use std::process::Child;
 use std::rc::Rc;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::AtomicBool;
 use std::sync::{mpsc, Arc, Mutex};
 use std::time::{Duration, Instant};
 
@@ -30,15 +30,6 @@ pub(super) fn parse_hex_color(hex: &str) -> Color {
     Color::from_rgb_u8(255, 255, 255)
 }
 
-/// The background FFmpeg job that `export_gen` / `export_cancel` / `export_child` currently belong to.
-pub(super) enum Job {
-    Export,
-    /// Merging clips into `out` (opened in the editor when it succeeds).
-    Merge {
-        out: PathBuf,
-    },
-}
-
 pub(super) struct EditorRuntime {
     pub(super) ui: slint::Weak<AppWindow>,
     pub(super) ctx: Rc<AppCtx>,
@@ -51,8 +42,17 @@ pub(super) struct EditorRuntime {
     pub(super) export_cancel: Option<Arc<AtomicBool>>,
     pub(super) export_child: Arc<Mutex<Option<Child>>>,
     pub(super) is_exporting: bool,
-    pub(super) job: Job,
     pub(super) merge: merge::MergePicks,
+    /// All segments of the edit; `model` is the selected one's live copy (see montage.rs).
+    pub(super) montage: Montage,
+    /// Playback runs on into the next segment (set by Play while a montage is open, cleared by Pause/Stop).
+    pub(super) play_through: bool,
+    /// Generation of the last "add clips" probe (a newer request makes older results stale).
+    pub(super) montage_gen: u64,
+    /// The selected segment's length as last shown in the strip (refresh the strip when a trim changes it).
+    pub(super) strip_live_duration: f64,
+    /// The strip's width (logical px) as last reported by the UI: the blocks are laid out for it.
+    pub(super) strip_width: f64,
     pub(super) stopped_by_inactive: bool,
     pub(super) sidebar_durations: HashMap<String, f64>,
 
@@ -84,6 +84,11 @@ impl EditorRuntime {
         Self {
             ui: ui.as_weak(),
             ctx: ctx.clone(),
+            montage: Montage::single(model.clone()),
+            play_through: false,
+            montage_gen: 0,
+            strip_live_duration: 0.0,
+            strip_width: 0.0,
             model,
             commands,
             messages_tx,
@@ -93,7 +98,6 @@ impl EditorRuntime {
             export_cancel: None,
             export_child: Arc::new(Mutex::new(None)),
             is_exporting: false,
-            job: Job::Export,
             merge: merge::MergePicks::default(),
             stopped_by_inactive: false,
             sidebar_durations: HashMap::new(),
@@ -319,42 +323,18 @@ impl EditorRuntime {
         });
     }
 
+    /// Opens one clip as a new edit (a montage of one segment) and plays it.
     pub(super) fn open_clip(&mut self, path: &str, duration_hint: f64) {
-        if let Some(c) = self.thumb_cancel.take() {
-            c.store(true, Ordering::Release);
-        }
-        self.clip_gen = self.clip_gen.wrapping_add(1);
-        self.stopped_by_inactive = false;
-
         let default_audio = tr("Editor_TrackAudio");
         self.model.reset_for_clip(path, duration_hint, &default_audio);
-        self.last_mpv_pos = 0.0;
-        self.last_mpv_pos_at = Instant::now();
-
+        self.montage = Montage::single(self.model.clone());
+        self.play_through = false;
         if let Some(ui) = self.ui.upgrade() {
             let vm = ui.global::<EditorVM>();
-            vm.set_reframe_selected(false);
             vm.set_export_status("".into());
             vm.set_export_progress(0);
-            vm.set_video_image(Image::default());
-            vm.set_time_display(format!("0:00 / {}", format_time(self.model.duration_sec)).into());
-            vm.set_timeline_thumbs(ModelRc::from(Rc::new(VecModel::from(vec![Image::default(); 10]))));
-            let filters: Vec<EditorFilterData> = self
-                .model
-                .filter_options
-                .iter()
-                .map(|f| EditorFilterData { name: f.name.into(), preview: Image::default(), has_preview: false })
-                .collect();
-            vm.set_filter_options(ModelRc::from(Rc::new(VecModel::from(filters))));
-            self.sync_all_to_ui();
         }
-
-        let _ = self.commands.send(MpvCommand::Load(path.to_string()));
-        self.apply_all_preview();
-
-        let cancel = Arc::new(AtomicBool::new(false));
-        self.thumb_cancel = Some(cancel.clone());
-        spawn_probe_and_thumbs(self.clip_gen, path.to_string(), duration_hint, cancel, self.messages_tx.clone());
+        self.load_live_edit(true);
     }
 
     pub(super) fn refresh_localized_options(&mut self) {

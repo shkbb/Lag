@@ -1,4 +1,5 @@
 //! Export options, export and cancel.
+use super::montage_export::{montage_output_path, spawn_montage_export};
 use super::{export::*, model::*, runtime::*, tr_fmt};
 use crate::{AppWindow, EditorVM};
 use slint::ComponentHandle;
@@ -42,26 +43,43 @@ pub(super) fn bind_export(ui: &AppWindow, state: &Rc<RefCell<EditorRuntime>>) {
             };
             s.is_exporting = true;
             s.export_gen = s.export_gen.wrapping_add(1);
-            s.job = Job::Export;
             let cancel = Arc::new(AtomicBool::new(false));
             s.export_cancel = Some(cancel.clone());
-            let ext = if s.model.export_as_gif { "gif" } else { s.model.selected_export_format() };
-            let out_path = build_output_path(&clip_path, ext);
+            let montage = s.montage.is_montage();
+            // a montage is one video (no GIF: the export menu hides it while a montage is open)
+            let ext = if s.model.export_as_gif && !montage { "gif" } else { s.model.selected_export_format() };
             if let Some(ui) = s.ui.upgrade() {
                 let vm = ui.global::<EditorVM>();
                 vm.set_is_exporting(true);
                 vm.set_export_progress(0);
                 vm.set_export_status(tr_fmt("Editor_Exporting", "0").into());
             }
-            spawn_export(
-                s.export_gen,
-                s.model.clone(),
-                clip_path,
-                out_path,
-                cancel,
-                s.export_child.clone(),
-                s.messages_tx.clone(),
-            );
+            if montage {
+                let live = s.model.clone();
+                s.montage.commit(&live);
+                let out_path = montage_output_path(&s.montage, ext);
+                let res = s.model.selected_export_res().height;
+                spawn_montage_export(
+                    s.export_gen,
+                    s.montage.clone(),
+                    res,
+                    out_path,
+                    cancel,
+                    s.export_child.clone(),
+                    s.messages_tx.clone(),
+                );
+            } else {
+                let out_path = build_output_path(&clip_path, ext);
+                spawn_export(
+                    s.export_gen,
+                    s.model.clone(),
+                    clip_path,
+                    out_path,
+                    cancel,
+                    s.export_child.clone(),
+                    s.messages_tx.clone(),
+                );
+            }
         });
     }
     {

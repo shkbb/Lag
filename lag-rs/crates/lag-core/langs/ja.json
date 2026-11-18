@@ -259,7 +259,11 @@
   "Editor_Import": "インポート",
   "Editor_ImportTitle": "エディターで動画を開く",
   "Editor_ImportFilter": "動画",
-  "Editor_Merge": "結合",
   "Editor_MergeHint": "順番にクリップを選択",
-  "Editor_Merging": "結合中... {0}%"
+  "Editor_Montage": "モンタージュ",
+  "Editor_MontageRun": "モンタージュを作成",
+  "Editor_PlayMontage": "すべて再生",
+  "Editor_Split": "分割",
+  "Editor_RemoveSegment": "削除",
+  "Editor_AddFile": "ファイル"
 }

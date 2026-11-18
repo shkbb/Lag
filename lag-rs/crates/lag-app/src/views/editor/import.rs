@@ -1,6 +1,41 @@
 //! "Import": the system Open dialog for any video file.
 
 use super::tr;
+use crate::AppWindow;
+use slint::{ComponentHandle, Timer, TimerMode};
+use std::cell::Cell;
+use std::rc::Rc;
+use std::sync::mpsc;
+use std::time::Duration;
+
+thread_local! {
+    /// One Open dialog at a time.
+    static DIALOG_OPEN: Cell<bool> = const { Cell::new(false) };
+}
+
+/// Shows the Open dialog (modal to the main window) on its own thread - it pumps its own messages while Slint keeps
+/// rendering - and calls `done` with the picked file on the UI thread. Nothing happens when it is cancelled.
+pub(super) fn ask_for_video(ui: &AppWindow, done: impl FnOnce(String) + 'static) {
+    if DIALOG_OPEN.with(|d| d.replace(true)) {
+        return;
+    }
+    let owner = crate::shell::nofocus::hwnd(ui.window()).map_or(0, |h| h.0 as isize);
+    let (tx, rx) = mpsc::channel();
+    std::thread::spawn(move || {
+        let _ = tx.send(pick_video_file(owner));
+    });
+    let timer = Rc::new(Timer::default());
+    let keep = timer.clone();
+    let done = std::cell::RefCell::new(Some(done));
+    timer.start(TimerMode::Repeated, Duration::from_millis(50), move || {
+        let Ok(picked) = rx.try_recv() else { return };
+        keep.stop();
+        DIALOG_OPEN.with(|d| d.set(false));
+        if let (Some(path), Some(done)) = (picked, done.borrow_mut().take()) {
+            done(path);
+        }
+    });
+}
 
 /// Video file types the editor imports (everything FFmpeg/mpv here decodes that people actually have).
 pub(super) const IMPORT_PATTERN: &str = "*.mp4;*.mkv;*.mov;*.webm;*.avi;*.m4v;*.wmv;*.flv;*.ts;*.mts;*.m2ts";

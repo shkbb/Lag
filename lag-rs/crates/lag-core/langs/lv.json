@@ -259,7 +259,11 @@
   "Editor_Import": "Importēt",
   "Editor_ImportTitle": "Atvērt video redaktorā",
   "Editor_ImportFilter": "Video",
-  "Editor_Merge": "Apvienot",
   "Editor_MergeHint": "Izvēlieties klipus pēc kārtas",
-  "Editor_Merging": "Apvieno... {0}%"
+  "Editor_Montage": "Montāža",
+  "Editor_MontageRun": "Izveidot montāžu",
+  "Editor_PlayMontage": "Atskaņot visu",
+  "Editor_Split": "Sadalīt",
+  "Editor_RemoveSegment": "Noņemt",
+  "Editor_AddFile": "Fails"
 }

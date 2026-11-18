@@ -259,7 +259,11 @@
   "Editor_Import": "Importera",
   "Editor_ImportTitle": "Öppna en video i redigeraren",
   "Editor_ImportFilter": "Videor",
-  "Editor_Merge": "Slå ihop",
   "Editor_MergeHint": "Välj klipp i ordning",
-  "Editor_Merging": "Slår ihop... {0}%"
+  "Editor_Montage": "Montage",
+  "Editor_MontageRun": "Skapa montage",
+  "Editor_PlayMontage": "Spela allt",
+  "Editor_Split": "Dela",
+  "Editor_RemoveSegment": "Ta bort",
+  "Editor_AddFile": "Fil"
 }

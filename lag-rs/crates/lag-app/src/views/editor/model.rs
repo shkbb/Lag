@@ -2,6 +2,7 @@
 //! rotation, look, captions, undo. No UI and no FFmpeg here (pure, unit-tested).
 
 use super::geometry::*;
+use crate::services::ffmpeg::ProbeResult;
 use std::path::Path;
 
 pub(super) const MIN_TRIM_GAP_SEC: f64 = 0.2;
@@ -154,6 +155,14 @@ pub struct EditSnap {
     pub color_s: i32,
     pub cuts: Vec<Cut>,
     pub texts: Vec<TextItem>,
+}
+
+/// Display names of the audio lanes (localized by the caller).
+#[derive(Debug, Clone)]
+pub struct TrackNames {
+    pub single: String,
+    pub system: String,
+    pub mic: String,
 }
 
 #[derive(Debug, Clone)]
@@ -570,6 +579,44 @@ impl EditModel {
     }
 
     /// Every audio lane takes the video trim range (when `audio_follows_video`).
+    /// Has ffprobe's result been applied yet (size, length, audio tracks)? Re-opening an edited montage segment
+    /// must not reset its tracks or framing.
+    pub fn is_probed(&self) -> bool {
+        self.source_width > 0 && self.source_height > 0
+    }
+
+    /// Fills in what ffprobe found: picture size (re-centres the frame), real length (keeps an end trim that was
+    /// at the very end there), and the audio tracks the recorder writes: one mixed track, or All + System + Mic
+    /// (the editor edits System and Mic and leaves the All mix out), or two separate tracks.
+    pub fn apply_probe(&mut self, res: &ProbeResult, names: &TrackNames) {
+        self.source_width = res.video_width;
+        self.source_height = res.video_height;
+        self.reset_reframe();
+        let end_at_max = (self.trim_end_sec - self.duration_sec).abs() < 0.05;
+        if res.duration_sec > 0.0 {
+            self.duration_sec = res.duration_sec.max(1.0);
+        }
+        if end_at_max || self.trim_end_sec > self.duration_sec {
+            self.trim_end_sec = self.duration_sec;
+        }
+        self.trim_start_sec = self.trim_start_sec.min(self.trim_end_sec);
+        let dur = self.duration_sec;
+        self.audio_tracks.clear();
+        match res.audio_streams {
+            0 => {}
+            1 => self.audio_tracks.push(AudioTrack::new(0, names.single.clone(), dur)),
+            2 => {
+                self.audio_tracks.push(AudioTrack::new(0, names.system.clone(), dur));
+                self.audio_tracks.push(AudioTrack::new(1, names.mic.clone(), dur));
+            }
+            _ => {
+                self.audio_tracks.push(AudioTrack::new(1, names.system.clone(), dur));
+                self.audio_tracks.push(AudioTrack::new(2, names.mic.clone(), dur));
+            }
+        }
+        self.link_audio_to_trim();
+    }
+
     pub fn link_audio_to_trim(&mut self) {
         if !self.audio_follows_video {
             return;

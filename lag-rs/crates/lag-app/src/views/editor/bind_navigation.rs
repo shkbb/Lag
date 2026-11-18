@@ -4,11 +4,9 @@ use super::{runtime::*, worker::*};
 use crate::app_ctx::AppCtx;
 use crate::services::AppCtxPlaybackExt;
 use crate::{AppWindow, EditorVM, MainVM, Page};
-use slint::{ComponentHandle, Timer, TimerMode};
-use std::cell::{Cell, RefCell};
+use slint::ComponentHandle;
+use std::cell::RefCell;
 use std::rc::Rc;
-use std::sync::mpsc;
-use std::time::Duration;
 
 pub(super) fn bind_navigation(ui: &AppWindow, state: &Rc<RefCell<EditorRuntime>>) {
     let vm = ui.global::<EditorVM>();
@@ -22,34 +20,17 @@ pub(super) fn bind_navigation(ui: &AppWindow, state: &Rc<RefCell<EditorRuntime>>
         });
     }
 
-    // Import: any video file from disk into the editor (owner, 2026-11-18). The system file dialog runs on its
-    // own thread (it pumps its own messages; Slint keeps rendering); the picked file opens like a sidebar clip.
-    // Export then writes `<name>-edit.<ext>` next to that file.
+    // Import: any video file from disk into the editor (owner, 2026-11-18); it opens like a sidebar clip and the
+    // export writes `<name>-edit.<ext>` next to that file.
     {
         let st = state.clone();
         let weak = ui.as_weak();
-        let busy = Rc::new(Cell::new(false));
         vm.on_import_clip(move || {
-            if busy.replace(true) {
-                return;
-            }
-            let owner =
-                weak.upgrade().and_then(|ui| crate::shell::nofocus::hwnd(ui.window())).map_or(0, |h| h.0 as isize);
-            let (tx, rx) = mpsc::channel();
-            std::thread::spawn(move || {
-                let _ = tx.send(pick_video_file(owner));
-            });
-            let (st, busy) = (st.clone(), busy.clone());
-            let timer = Rc::new(Timer::default());
-            let keep = timer.clone();
-            timer.start(TimerMode::Repeated, Duration::from_millis(50), move || {
-                let Ok(picked) = rx.try_recv() else { return };
-                keep.stop();
-                busy.set(false);
-                if let Some(path) = picked {
-                    log::info!("[Editor] import {path}");
-                    st.borrow_mut().open_clip(&path, 1.0);
-                }
+            let Some(ui) = weak.upgrade() else { return };
+            let st = st.clone();
+            ask_for_video(&ui, move |path| {
+                log::info!("[Editor] import {path}");
+                st.borrow_mut().open_clip(&path, 1.0);
             });
         });
     }

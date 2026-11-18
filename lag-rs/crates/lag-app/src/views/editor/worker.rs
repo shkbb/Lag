@@ -37,6 +37,12 @@ pub(super) enum MpvCommand {
     /// The native video surface exists: create mpv on it (player v2 engine, owner 2026-11-17).
     InitNative(isize),
     Load(String),
+    /// Load a montage segment: start at its trim start, then play or stay paused.
+    LoadAt {
+        path: String,
+        start: f64,
+        play: bool,
+    },
     Play,
     Pause(bool),
     Stop,
@@ -70,7 +76,9 @@ pub(super) enum UiMessage {
     TimelineThumb(u64, usize, Pixels),
     FilterThumb(u64, usize, Pixels),
     ExportProgress(u64, i32),
-    ExportFinished(u64, Result<String, Option<String>>), // Ok(filename), Err(None) = cancelled, Err(Some(err))
+    ExportFinished(u64, Result<String, Option<String>>),
+    /// Clips probed for the montage: (montage_gen, [(path, probe)], replace the montage instead of adding)
+    MontageProbed(u64, Vec<(String, ProbeResult)>, bool), // Ok(filename), Err(None) = cancelled, Err(Some(err))
 }
 
 /// Editor engine = the player's v2 engine (owner, 2026-11-17: "the editor is dead"): mpv draws straight into a
@@ -141,7 +149,8 @@ pub(super) fn mpv_worker(rx: mpsc::Receiver<MpvCommand>, tx: mpsc::Sender<UiMess
             }
         }
         let player = &p;
-        let report_pause = matches!(cmd, MpvCommand::Play | MpvCommand::Pause(_) | MpvCommand::Load(_));
+        let report_pause =
+            matches!(cmd, MpvCommand::Play | MpvCommand::Pause(_) | MpvCommand::Load(_) | MpvCommand::LoadAt { .. });
         let res = (|| -> lag_player::Result<()> {
             match cmd {
                 MpvCommand::InitNative(_) => {}
@@ -150,6 +159,12 @@ pub(super) fn mpv_worker(rx: mpsc::Receiver<MpvCommand>, tx: mpsc::Sender<UiMess
                     last_crop = None;
                     player.load(&path)?;
                     player.play()?;
+                }
+                MpvCommand::LoadAt { path, start, play } => {
+                    log::info!("[Editor] mpv load at {start:.2}s (play={play})");
+                    last_crop = None;
+                    player.load_at(&path, start)?;
+                    player.pause(!play)?;
                 }
                 MpvCommand::Play => {
                     player.play()?;

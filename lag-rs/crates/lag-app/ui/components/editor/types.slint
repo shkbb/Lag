@@ -11,6 +11,19 @@ export struct EditorClipItem {
     merge-number: int,
 }
 
+// one block of the montage strip
+export struct EditorSegmentData {
+    id: int,
+    title: string,
+    duration: string,
+    // block position and width in the strip (computed in Rust: montage::block_widths)
+    x: length,
+    w: length,
+    thumbnail: image,
+    has-thumbnail: bool,
+    selected: bool,
+}
+
 export struct EditorAudioTrackData {
     stream-index: int,
     name: string,

@@ -1,0 +1,24 @@
+# Montage in the editor (headless). Run: Lag.exe --ui-check tools\ui-check\editor-montage.txt <out-dir>
+size 1360x840
+page editor
+wait 1500
+editor-merge
+editor-merge-pick 1
+editor-merge-pick 0
+editor-merge-pick 2
+wait 300
+shot mt-picked
+editor-montage-run
+wait 4000
+shot mt-montage
+editor-segment 1
+wait 1500
+shot mt-second
+editor-scrub 0.5
+wait 300
+editor-split
+wait 800
+shot mt-split
+editor-add 3
+wait 3000
+shot mt-added

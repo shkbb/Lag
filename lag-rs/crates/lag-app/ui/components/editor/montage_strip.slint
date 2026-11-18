@@ -1,0 +1,178 @@
+// Montage strip (owner, 2026-11-18: "edit N clips at once and cut them together, with the freedom of Premiere").
+// One block per segment, width proportional to its length (at least MIN-BLOCK, the same formula as
+// montage::block_widths in Rust); click = select (the editor below edits that segment), drag = move it.
+// Toolbar: play the whole montage, razor at the playhead (S), remove (Delete), add a file. The total and the
+// montage clock on the right.
+import { Theme } from "../../theme/tokens.slint";
+import { Icons, MaterialIcon } from "../../theme/icons.slint";
+import { Tr } from "../../globals.slint";
+import { RChipButton } from "../buttons.slint";
+import { EditorSegmentData } from "types.slint";
+
+export component MontageStrip {
+    in property <[EditorSegmentData]> segments;
+    in property <string> clock;
+    in property <bool> enabled: true;
+    callback select-segment(int);
+    callback segment-dropped(int, length, length); // index, drag offset, strip width
+    callback play-all();
+    callback split();
+    callback remove();
+    callback add-file();
+    // the strip's width for the block geometry (Rust lays the blocks out)
+    callback resized(length);
+
+    property <int> drag-index: -1;
+    property <length> drag-dx: 0px;
+
+    preferred-height: lay.preferred-height;
+    vertical-stretch: 0;
+
+    Rectangle {
+        background: Theme.surface-card;
+        border-width: 1px;
+        border-color: Theme.border-card;
+        border-radius: 14px;
+    }
+
+    lay := VerticalLayout {
+        padding: 10px;
+        spacing: 8px;
+
+        HorizontalLayout {
+            spacing: 6px;
+            Text {
+                text: Tr.t("Editor_Montage", Tr.rev);
+                color: Theme.text-faintest;
+                font-family: Theme.font-mono;
+                font-size: 11px;
+                vertical-alignment: center;
+            }
+            Rectangle { width: 6px; }
+            RChipButton {
+                text: Tr.t("Editor_PlayMontage", Tr.rev);
+                has-icon: true;
+                icon: Icons.play;
+                enabled: root.enabled;
+                clicked => { root.play-all(); }
+            }
+            RChipButton {
+                text: Tr.t("Editor_Split", Tr.rev) + " (S)";
+                has-icon: true;
+                icon: Icons.content-cut;
+                enabled: root.enabled;
+                clicked => { root.split(); }
+            }
+            RChipButton {
+                text: Tr.t("Editor_RemoveSegment", Tr.rev);
+                has-icon: true;
+                icon: Icons.trash-can-outline;
+                enabled: root.enabled && root.segments.length > 1;
+                clicked => { root.remove(); }
+            }
+            RChipButton {
+                text: Tr.t("Editor_AddFile", Tr.rev);
+                has-icon: true;
+                icon: Icons.plus;
+                enabled: root.enabled;
+                clicked => { root.add-file(); }
+            }
+            Rectangle { horizontal-stretch: 1; }
+            Text {
+                text: root.clock;
+                color: Theme.text-muted;
+                font-family: Theme.font-mono;
+                font-size: 11px;
+                vertical-alignment: center;
+            }
+        }
+
+        blocks-area := Rectangle {
+            height: 52px;
+            horizontal-stretch: 1;
+            preferred-width: 100px;
+            clip: true;
+            init => { root.resized(self.width); }
+            changed width => { root.resized(self.width); }
+
+            for seg[i] in root.segments: Rectangle {
+                // the dragged block follows the pointer, above the others
+                x: root.drag-index == i ? seg.x + root.drag-dx : seg.x;
+                y: 0px;
+                width: seg.w;
+                height: 52px;
+                z: root.drag-index == i ? 10 : 0;
+                opacity: root.drag-index == i ? 0.85 : 1.0;
+                border-radius: 8px;
+                background: Theme.thumb-placeholder-bg;
+                clip: true;
+
+                if seg.has-thumbnail: Image {
+                    width: 100%;
+                    height: 100%;
+                    source: seg.thumbnail;
+                    image-fit: cover;
+                }
+                // shade for the labels
+                Rectangle {
+                    y: parent.height - 20px;
+                    height: 20px;
+                    background: #00000088;
+                }
+                HorizontalLayout {
+                    y: parent.height - 20px;
+                    height: 20px;
+                    padding-left: 6px;
+                    padding-right: 6px;
+                    spacing: 4px;
+                    Text {
+                        text: (i + 1) + "";
+                        color: #ffffff;
+                        font-family: Theme.font-ui;
+                        font-size: 10.5px;
+                        font-weight: Theme.font-weight-semibold;
+                        vertical-alignment: center;
+                    }
+                    Rectangle { horizontal-stretch: 1; }
+                    Text {
+                        text: seg.duration;
+                        color: #ffffffd0;
+                        font-family: Theme.font-mono;
+                        font-size: 10px;
+                        vertical-alignment: center;
+                    }
+                }
+                Rectangle {
+                    border-radius: 8px;
+                    border-width: seg.selected ? 2px : 1px;
+                    border-color: seg.selected ? Theme.accent-brush : #ffffff20;
+                }
+
+                ta := TouchArea {
+                    enabled: root.enabled;
+                    mouse-cursor: root.drag-index == i ? MouseCursor.grabbing : MouseCursor.pointer;
+                    property <length> press-x;
+                    pointer-event(ev) => {
+                        if (ev.kind == PointerEventKind.down && ev.button == PointerEventButton.left) {
+                            self.press-x = self.mouse-x;
+                        } else if (ev.kind == PointerEventKind.up && ev.button == PointerEventButton.left) {
+                            if (root.drag-index == i) {
+                                root.segment-dropped(i, root.drag-dx, blocks-area.width);
+                            } else {
+                                root.select-segment(i);
+                            }
+                            root.drag-index = -1;
+                            root.drag-dx = 0px;
+                        }
+                    }
+                    moved => {
+                        if (root.segments.length > 1 && abs(self.mouse-x - self.press-x) > 8px) {
+                            root.drag-index = i;
+                            root.drag-dx = self.mouse-x - self.press-x;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
