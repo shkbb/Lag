@@ -10,29 +10,6 @@ import { LagContextMenuContainer, LagMenuItem } from "../components/menu.slint";
 import { LibraryClipTile, LibraryCardData } from "../components/library/clip_card.slint";
 import { IndeterminateBar } from "../components/library/indeterminate_bar.slint";
 
-// Soft end of the chip row: the page colour under the arrow, then a plain gradient to clear, so the chips
-// fade out instead of being cut (owner, 2026-11-18: "just make them fade smoothly").
-component EdgeFade {
-    in property <bool> from-left: true;
-    property <length> solid: self.width - 42px;
-    // GTA VI: the page there is the backdrop under the veil, which comes out at about #21162B
-    property <color> edge: Theme.is-neon ? #21162B : Theme.surface-app;
-    Rectangle {
-        x: root.from-left ? 0px : root.width - root.solid;
-        width: root.solid;
-        height: root.height;
-        background: root.edge;
-    }
-    Rectangle {
-        x: root.from-left ? root.solid : 0px;
-        width: root.width - root.solid;
-        height: root.height;
-        background: root.from-left
-            ? @linear-gradient(90deg, root.edge 0%, root.edge.transparentize(1) 100%)
-            : @linear-gradient(90deg, root.edge.transparentize(1) 0%, root.edge 100%);
-    }
-}
-
 // Round scroll button at an end of the game-chip row (shown only when chips are hidden on that side).
 component LibChipArrow {
     in property <image> icon;
@@ -294,9 +271,9 @@ export component LibraryPage inherits Rectangle {
                         horizontal-stretch: 1;
                         height: 38px;
                         clip: true;
-                        // Chips run between 10px and width-12px. Where more chips hide, the row dissolves into the
-                        // page background (EdgeFade) and a round arrow sits in that fade with its own gap (owner,
-                        // 2026-11-18: no hard-cut chips, no arrows glued to the search box / Favourites).
+                        // Chips run between 10px and width-12px. Where more chips hide, they fade out towards a
+                        // round arrow that has its own gap (owner, 2026-11-18: no hard-cut chips, no arrows glued
+                        // to the search box / Favourites).
                         property <length> view-w: max(0px, self.width - 22px);
                         property <bool> can-left: chips-flick.content-x < -1px;
                         property <bool> can-right: chips-row.preferred-width + chips-flick.content-x > self.view-w + 1px;
@@ -329,32 +306,17 @@ export component LibraryPage inherits Rectangle {
                                     height: self.preferred-height;
                                     spacing: 7px;
 
+                                    // chips dissolve towards a shown arrow (they fade themselves; nothing
+                                    // is drawn over the page background)
                                     for chip in LibraryVM.game-chips: GameChipButton {
                                         text: chip.label;
                                         selected: chip.is-active;
+                                        fade-left: chips-area.can-left ? chips-area.absolute-position.x + 10px + 30px + 4px : -100000px;
+                                        fade-right: chips-area.can-right ? chips-area.absolute-position.x + 10px + chips-area.view-w - 30px - 4px : 100000px;
                                         clicked => { LibraryVM.set-game-filter(chip.filter-key); }
                                     }
                                 }
                             }
-                        }
-
-                        EdgeFade {
-                            x: 0px;
-                            width: 10px + 72px;
-                            height: parent.height;
-                            from-left: true;
-                            opacity: chips-area.can-left ? 1 : 0;
-                            visible: self.opacity > 0;
-                            animate opacity { duration: Theme.dur-fast; }
-                        }
-                        EdgeFade {
-                            x: parent.width - self.width;
-                            width: 12px + 72px;
-                            height: parent.height;
-                            from-left: false;
-                            opacity: chips-area.can-right ? 1 : 0;
-                            visible: self.opacity > 0;
-                            animate opacity { duration: Theme.dur-fast; }
                         }
 
                         // Scroll arrows, only towards hidden chips

@@ -422,16 +422,49 @@ export component GameChipButton {
     in property <image> icon;
     in property <bool> has-icon: false;
     in property <bool> selected: false;
+    // Soft edges (library chip row): window x where the chip is fully transparent, fading in over `fade-len`.
+    // The chip's own fill, border, icon and text fade - nothing is painted over the page background, so the
+    // GTA VI backdrop stays untouched (owner, 2026-11-18: "you can still see squares on the background").
+    in property <length> fade-left: -100000px;
+    in property <length> fade-right: 100000px;
+    in property <length> fade-len: 44px;
     callback clicked();
 
-    Rectangle {
+    property <color> fill-c: root.selected ? Theme.accent-dim : Theme.surface-card;
+    property <color> ink-c: root.selected ? Theme.accent-text : (ta.has-hover ? Theme.text-hi : Theme.text-muted);
+    animate fill-c { duration: Theme.dur-fast; }
+
+    // visibility (0..1) at window x
+    pure function vis(x: length) -> float {
+        min(clamp((x - root.fade-left) / root.fade-len, 0, 1), clamp((root.fade-right - x) / root.fade-len, 0, 1))
+    }
+    // `c` faded per pixel across an element that spans window x0 .. x0 + w: a linear gradient whose stops sit
+    // on the fade's corners, so it reproduces the ramp exactly
+    pure function masked(c: color, x0: length, w: length) -> brush {
+        if (root.vis(x0) >= 1 && root.vis(x0 + w) >= 1 && x0 >= root.fade-left + root.fade-len && x0 + w <= root.fade-right - root.fade-len) {
+            return c;
+        }
+        let ww = max(1px, w);
+        let t1 = clamp((root.fade-left - x0) / ww, 0, 1);
+        let t2 = clamp((root.fade-left + root.fade-len - x0) / ww, 0, 1);
+        let t3 = clamp((root.fade-right - root.fade-len - x0) / ww, 0, 1);
+        let t4 = clamp((root.fade-right - x0) / ww, 0, 1);
+        @linear-gradient(90deg,
+            c.transparentize(1 - root.vis(x0)) 0%,
+            c.transparentize(1 - root.vis(x0 + t1 * ww)) t1 * 100%,
+            c.transparentize(1 - root.vis(x0 + t2 * ww)) t2 * 100%,
+            c.transparentize(1 - root.vis(x0 + t3 * ww)) t3 * 100%,
+            c.transparentize(1 - root.vis(x0 + t4 * ww)) t4 * 100%,
+            c.transparentize(1 - root.vis(x0 + ww)) 100%)
+    }
+
+    chip-bg := Rectangle {
         width: 100%;
         height: 100%;
         border-radius: Theme.rad-input;
-        background: root.selected ? Theme.accent-dim : Theme.surface-card;
+        background: root.masked(root.fill-c, self.absolute-position.x, self.width);
         border-width: 1px;
-        border-color: root.selected ? Theme.accent-ring : Theme.border-card;
-        animate background { duration: Theme.dur-fast; }
+        border-color: root.masked(root.selected ? Theme.accent-ring : Theme.border-card, self.absolute-position.x, self.width);
 
 
         HorizontalLayout {
@@ -444,16 +477,16 @@ export component GameChipButton {
 
             if root.has-icon: VerticalLayout {
                 alignment: center;
-                MaterialIcon {
+                chip-icon := MaterialIcon {
                     source: root.icon;
                     size: 14px;
-                    tint: root.selected ? Theme.accent-text : (ta.has-hover ? Theme.text-hi : Theme.text-muted);
+                    tint: root.masked(root.ink-c, self.absolute-position.x, self.width);
                 }
             }
 
             Text {
                 text: root.text;
-                color: root.selected ? Theme.accent-text : (ta.has-hover ? Theme.text-hi : Theme.text-muted);
+                color: root.masked(root.ink-c, self.absolute-position.x, self.width);
                 font-family: Theme.font-ui;
                 font-size: Theme.font-size-sub;
                 font-weight: Theme.font-weight-medium;
