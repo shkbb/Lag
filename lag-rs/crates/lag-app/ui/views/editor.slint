@@ -175,7 +175,7 @@ export global EditorVM {
 }
 
 export component EditorPage inherits Rectangle {
-    background: Theme.surface-app;
+    background: Theme.page-bg;
 
     property <bool> active: MainVM.current-page == Page.editor;
     property <int> focus-serial: EditorVM.focus-serial;

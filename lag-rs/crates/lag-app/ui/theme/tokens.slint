@@ -23,6 +23,8 @@ export global Theme {
     out property <bool> is-dark: mode == "dark" || mode == "neon" ? true : mode == "light" ? false : (Palette.color-scheme == ColorScheme.light ? false : Palette.color-scheme == ColorScheme.dark ? true : system-is-dark);
     // "Neon" (2026-11-18): a dark theme with its own accent and violet surfaces, see neon tokens below.
     out property <bool> is-neon: mode == "neon";
+    // page backgrounds: transparent in Neon so the backdrop (sunset, skyline, palms) behind the pages shows
+    out property <color> page-bg: is-neon ? #00000000 : surface-app;
 
     // ═══════════════════════════════════════════════════════════════════════
     // Palette.axaml — Brand Accent

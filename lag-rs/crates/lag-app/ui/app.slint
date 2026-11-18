@@ -23,7 +23,7 @@ component PageLayer inherits Rectangle {
     opacity: active ? 1 : 0;
     y: active ? 0px : 16px;
     visible: self.opacity > 0;
-    background: Theme.surface-app;
+    background: Theme.page-bg;
     animate opacity, y { duration: 220ms; easing: ease-in-out; }
     @children
 }
@@ -121,6 +121,19 @@ export component AppWindow inherits Window {
             x: 0px; width: parent.width;
             y: root.bar-height; height: root.height - root.bar-height;
             background: Theme.surface-app;
+            // Neon theme backdrop (owner's pick, 2026-11-18: the palm-sunset picture, theme/neon-backdrop.jpg - one
+            // file, swap it to change the picture), under the side rail AND the pages, so there is no seam at the
+            // rail. A veil keeps text readable: dense at the top (titles, rows), thinner at the bottom (palms).
+            if Theme.is-neon && !MainVM.is-fullscreen: Image {
+                width: parent.width; height: parent.height;
+                source: @image-url("theme/neon-backdrop.jpg");
+                image-fit: cover;
+                vertical-alignment: bottom;
+            }
+            if Theme.is-neon && !MainVM.is-fullscreen: Rectangle {
+                width: parent.width; height: parent.height;
+                background: @linear-gradient(180deg, #120B1EF2 0%, #120B1ED9 45%, #120B1EB3 100%);
+            }
             Rectangle {
                 x: 0px; y: 0px; height: parent.height;
                 width: root.rail-width; visible: !MainVM.is-fullscreen;

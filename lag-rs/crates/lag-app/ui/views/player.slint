@@ -56,7 +56,7 @@ export global PlayerVM {
 }
 
 export component PlayerPage inherits Rectangle {
-    background: Theme.surface-app;
+    background: Theme.page-bg;
     property <bool> active: MainVM.current-page == Page.player;
     property <bool> fullscreen: MainVM.is-fullscreen;
     property <bool> context-open: false;

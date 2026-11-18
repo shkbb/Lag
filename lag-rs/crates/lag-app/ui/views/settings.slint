@@ -41,7 +41,7 @@ export global SettingsVM {
     in property <string> theme-mode: "dark";
 }
 export component SettingsPage inherits Rectangle {
-    background: Theme.surface-app; clip: true;
+    background: Theme.page-bg; clip: true;
     private property <string> selected-theme: SettingsVM.theme-mode;
     changed selected-theme => { Theme.mode = root.selected-theme; }
     private property <int> active-tab: SettingsVM.tab;
