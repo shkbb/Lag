@@ -182,7 +182,7 @@
   "Settings_StorageLimit": "Opslaglimiet",
   "Settings_Subtitle": "Configureer opname, audio en app-voorkeuren.",
   "Settings_Theme": "Thema",
-  "Settings_Theme_Desc": "Kies licht, donker of volg Windows",
+  "Settings_Theme_Desc": "Licht, donker, systeem of neon",
   "Settings_Threshold": "Drempel",
   "Settings_Title": "Instellingen",
   "Settings_WebcamDevice": "Webcam",
@@ -265,5 +265,6 @@
   "Editor_PlayMontage": "Alles afspelen",
   "Editor_Split": "Splitsen",
   "Editor_RemoveSegment": "Verwijderen",
-  "Editor_AddFile": "Bestand"
+  "Editor_AddFile": "Bestand",
+  "Theme_Neon": "Neon"
 }

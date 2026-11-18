@@ -310,7 +310,7 @@ export component EditorPage inherits Rectangle {
                             width: max(140px, exp-layout.preferred-width);
                             height: Theme.cta-height;
                             border-radius: Theme.rad-control;
-                            background: exp-ta.has-hover ? Theme.accent-hover-brush : Theme.accent-brush;
+                            background: exp-ta.has-hover ? Theme.cta-hover-brush : Theme.cta-brush;
                             animate background { duration: Theme.dur-base; }
 
 
@@ -568,7 +568,7 @@ export component EditorPage inherits Rectangle {
                                 property <bool> can-merge: EditorVM.merge-count >= 2 && !EditorVM.is-exporting;
                                 height: Theme.cta-height;
                                 border-radius: Theme.rad-control;
-                                background: merge-run-ta.has-hover && self.can-merge ? Theme.accent-hover-brush : Theme.accent-brush;
+                                background: merge-run-ta.has-hover && self.can-merge ? Theme.cta-hover-brush : Theme.cta-brush;
                                 opacity: self.can-merge ? 1 : 0.45;
                                 animate background { duration: Theme.dur-base; }
                                 HorizontalLayout {

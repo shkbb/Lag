@@ -179,7 +179,7 @@ pub(super) fn choose(st: &mut State, id: &str, index: usize) {
         "stats-detail" => s.stats_detail = (index as i32).clamp(0, 2),
         "webcam-mode" => s.webcam_mode = (index as i32).clamp(0, lag_core::presets::WEBCAM_MODES.len() as i32 - 1),
         "channels" => s.mic_mono = index == 0,
-        "theme" => s.theme = Some(["light", "dark", "system"].get(index).unwrap_or(&"dark").to_string()),
+        "theme" => s.theme = Some(["light", "dark", "system", "neon"].get(index).unwrap_or(&"dark").to_string()),
         "language" => s.language = Some(i18n::LANGUAGES.get(index).unwrap_or(&i18n::LANGUAGES[0]).code.into()),
         "storage" => s.max_library_size_gb = presets::STORAGE_RUNGS.get(index).copied().unwrap_or(50),
         _ => {}

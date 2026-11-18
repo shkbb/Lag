@@ -182,7 +182,7 @@
   "Settings_StorageLimit": "Storage limit",
   "Settings_Subtitle": "Configure recording, audio, and app preferences.",
   "Settings_Theme": "Theme",
-  "Settings_Theme_Desc": "Choose light, dark, or match Windows",
+  "Settings_Theme_Desc": "Light, dark, system or neon",
   "Settings_Threshold": "Threshold",
   "Settings_Title": "Settings",
   "Settings_WebcamDevice": "Webcam",
@@ -265,5 +265,6 @@
   "Editor_PlayMontage": "Play all",
   "Editor_Split": "Split",
   "Editor_RemoveSegment": "Remove",
-  "Editor_AddFile": "File"
+  "Editor_AddFile": "File",
+  "Theme_Neon": "Neon"
 }

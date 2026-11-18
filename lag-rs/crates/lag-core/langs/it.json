@@ -182,7 +182,7 @@
   "Settings_StorageLimit": "Limite archiviazione",
   "Settings_Subtitle": "Configura registrazione, audio e preferenze dell'app.",
   "Settings_Theme": "Tema",
-  "Settings_Theme_Desc": "Scegli chiaro, scuro o segui Windows",
+  "Settings_Theme_Desc": "Chiaro, scuro, di sistema o neon",
   "Settings_Threshold": "Soglia",
   "Settings_Title": "Impostazioni",
   "Settings_WebcamDevice": "Webcam",
@@ -265,5 +265,6 @@
   "Editor_PlayMontage": "Riproduci tutto",
   "Editor_Split": "Dividi",
   "Editor_RemoveSegment": "Rimuovi",
-  "Editor_AddFile": "File"
+  "Editor_AddFile": "File",
+  "Theme_Neon": "Neon"
 }

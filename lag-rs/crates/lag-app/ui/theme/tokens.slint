@@ -16,29 +16,31 @@ import "../fonts/Inter-SemiBold.ttf";
 import "../fonts/Inter-Bold.ttf";
 
 export global Theme {
-    // ── Theme mode ("dark" | "light" | "system") — matches App.SetTheme(string? mode) ──
+    // ── Theme mode ("dark" | "light" | "system" | "neon") — matches App.SetTheme(string? mode) ──
     in-out property <string> mode: "dark";
     // Optional host-driven override for "system" when platform ColorScheme is unknown.
     in-out property <bool> system-is-dark: true;
-    out property <bool> is-dark: mode == "dark" ? true : mode == "light" ? false : (Palette.color-scheme == ColorScheme.light ? false : Palette.color-scheme == ColorScheme.dark ? true : system-is-dark);
+    out property <bool> is-dark: mode == "dark" || mode == "neon" ? true : mode == "light" ? false : (Palette.color-scheme == ColorScheme.light ? false : Palette.color-scheme == ColorScheme.dark ? true : system-is-dark);
+    // "Neon" (2026-11-18): a dark theme with its own accent and violet surfaces, see neon tokens below.
+    out property <bool> is-neon: mode == "neon";
 
     // ═══════════════════════════════════════════════════════════════════════
     // Palette.axaml — Brand Accent
     // ═══════════════════════════════════════════════════════════════════════
-    out property <color> accent-color: is-dark ? #22D3EE : #A9722E;
-    out property <color> accent: is-dark ? #22D3EE : #A9722E;
-    out property <color> accent-dim: is-dark ? #22D3EE1F : #A9722E29;
-    out property <color> accent-ring: is-dark ? #22D3EE52 : #A9722E5C;
-    out property <color> accent-hover: is-dark ? #22D3EE80 : #946228;
-    out property <color> accent-text: is-dark ? #7BE7F5 : #7C5320;
-    out property <color> on-accent: is-dark ? #06222A : #FBF4E8;
+    out property <color> accent-color: is-neon ? #FF4FA3 : is-dark ? #22D3EE : #A9722E;
+    out property <color> accent: is-neon ? #FF4FA3 : is-dark ? #22D3EE : #A9722E;
+    out property <color> accent-dim: is-neon ? #FF4FA31F : is-dark ? #22D3EE1F : #A9722E29;
+    out property <color> accent-ring: is-neon ? #FF4FA352 : is-dark ? #22D3EE52 : #A9722E5C;
+    out property <color> accent-hover: is-neon ? #FF4FA380 : is-dark ? #22D3EE80 : #946228;
+    out property <color> accent-text: is-neon ? #FF9CCB : is-dark ? #7BE7F5 : #7C5320;
+    out property <color> on-accent: is-neon ? #2A0A1C : is-dark ? #06222A : #FBF4E8;
 
     // ── Surfaces ──
-    out property <color> surface-app: is-dark ? #0C0D11 : #EAE3D1;
-    out property <color> surface-card: is-dark ? #14161C : #F8F4EA;
-    out property <color> surface-input: is-dark ? #1A1D25 : #E2D6BA;
-    out property <color> surface-hover: is-dark ? #1E222B : #E2DAC4;
-    out property <color> surface-hover-2: is-dark ? #22262F : #DCD3BB;
+    out property <color> surface-app: is-neon ? #120B1E : is-dark ? #0C0D11 : #EAE3D1;
+    out property <color> surface-card: is-neon ? #1A1128 : is-dark ? #14161C : #F8F4EA;
+    out property <color> surface-input: is-neon ? #221634 : is-dark ? #1A1D25 : #E2D6BA;
+    out property <color> surface-hover: is-neon ? #281A3D : is-dark ? #1E222B : #E2DAC4;
+    out property <color> surface-hover-2: is-neon ? #2D1F45 : is-dark ? #22262F : #DCD3BB;
 
     // ── Borders ──
     out property <color> border-faint: is-dark ? #FFFFFF0E : #2A24150F;
@@ -64,95 +66,99 @@ export global Theme {
     out property <color> status-idle: is-dark ? #5D646C : #A99F88;
 
     // ── Parallel Brush Set (DarkTheme.axaml + Views) ──
-    out property <color> sidebar-brush: is-dark ? #0C0E11 : #EAE3D1;
-    out property <color> main-brush: is-dark ? #12151A : #F1EBDC;
-    out property <color> surface-brush: is-dark ? #20252D : #EBE4D2;
-    out property <color> surface-hover-brush: is-dark ? #272D36 : #E2DAC4;
-    out property <color> card-brush: is-dark ? #181C23 : #F8F4EA;
-    out property <color> card-hover-brush: is-dark ? #1C2129 : #FCF8EF;
-    out property <color> seg-sel-brush: is-dark ? #2A313B : #F8F4EA;
-    out property <color> video-brush: is-dark ? #07090C : #16140E;
-    out property <color> accent-brush: is-dark ? #22D3EE : #A9722E;
-    out property <color> accent-hover-brush: is-dark ? #4ADDF2 : #946228;
-    out property <color> on-accent-brush: is-dark ? #0A0C0F : #FBF4E8;
+    out property <color> sidebar-brush: is-neon ? #0F0918 : is-dark ? #0C0E11 : #EAE3D1;
+    out property <color> main-brush: is-neon ? #160E24 : is-dark ? #12151A : #F1EBDC;
+    out property <color> surface-brush: is-neon ? #2A1D40 : is-dark ? #20252D : #EBE4D2;
+    out property <color> surface-hover-brush: is-neon ? #33244C : is-dark ? #272D36 : #E2DAC4;
+    out property <color> card-brush: is-neon ? #1E1430 : is-dark ? #181C23 : #F8F4EA;
+    out property <color> card-hover-brush: is-neon ? #241839 : is-dark ? #1C2129 : #FCF8EF;
+    out property <color> seg-sel-brush: is-neon ? #392A55 : is-dark ? #2A313B : #F8F4EA;
+    out property <color> video-brush: is-neon ? #08050D : is-dark ? #07090C : #16140E;
+    out property <color> accent-brush: is-neon ? #FF4FA3 : is-dark ? #22D3EE : #A9722E;
+    out property <color> accent-hover-brush: is-neon ? #FF73B8 : is-dark ? #4ADDF2 : #946228;
+    out property <color> on-accent-brush: is-neon ? #2A0A1C : is-dark ? #0A0C0F : #FBF4E8;
+
+    // main call-to-action buttons: a sunset gradient in Neon, the plain accent elsewhere
+    out property <brush> cta-brush: is-neon ? @linear-gradient(90deg, #FF4FA3 0%, #FF8A4C 100%) : accent-brush;
+    out property <brush> cta-hover-brush: is-neon ? @linear-gradient(90deg, #FF73B8 0%, #FFA36B 100%) : accent-hover-brush;
     out property <color> danger-brush: is-dark ? #F0464C : #D83E44;
     out property <color> danger-hover-brush: is-dark ? #F35F64 : #C5353B;
     out property <color> fg-brush: is-dark ? #E7EAEE : #2A2820;
     out property <color> fg-2-brush: is-dark ? #9AA3AD : #6E6A5A;
     out property <color> fg-3-brush: is-dark ? #6A7380 : #A39D86;
-    out property <color> empty-icon-brush: is-dark ? #3E4754 : #C9C2AC;
+    out property <color> empty-icon-brush: is-neon ? #4A3A66 : is-dark ? #3E4754 : #C9C2AC;
     out property <color> divider-6-brush: is-dark ? #FFFFFF0F : #2A241514;
     out property <color> divider-5-brush: is-dark ? #FFFFFF0D : #2A241511;
-    out property <color> overlay-85-brush: is-dark ? #0A0C0FD9 : #0A0C0FD9;
-    out property <color> overlay-88-brush: is-dark ? #0A0C0FE0 : #0A0C0FE0;
-    out property <color> player-bar-brush: is-dark ? #0A0C0FD1 : #F8F4EAEB;
+    out property <color> overlay-85-brush: is-neon ? #08050DD9 : is-dark ? #0A0C0FD9 : #0A0C0FD9;
+    out property <color> overlay-88-brush: is-neon ? #08050DE0 : is-dark ? #0A0C0FE0 : #0A0C0FE0;
+    out property <color> player-bar-brush: is-neon ? #08050DD1 : is-dark ? #0A0C0FD1 : #F8F4EAEB;
     out property <color> hover-veil-brush: is-dark ? #FFFFFF0A : #2A24150C;
     out property <color> track-14-brush: is-dark ? #FFFFFF24 : #2A241526;
     out property <color> volume-fill-brush: is-dark ? #AEB6C0 : #8F8770;
 
     // ── Legacy Aliases ──
-    out property <color> status-ready-brush: is-dark ? #22D3EE : #A9722E;
+    out property <color> status-ready-brush: is-neon ? #2DE2C5 : is-dark ? #22D3EE : #A9722E;
     out property <color> status-recording-brush: is-dark ? #F0464C : #D83E44;
     out property <color> text-primary-brush: is-dark ? #E7EAEE : #2A2820;
     out property <color> text-secondary-brush: is-dark ? #9AA3AD : #6E6A5A;
     out property <color> text-dim-brush: is-dark ? #6A7380 : #A39D86;
-    out property <color> bg-dark-brush: is-dark ? #12151A : #F1EBDC;
-    out property <color> accent-cyan-brush: is-dark ? #22D3EE : #A9722E;
+    out property <color> bg-dark-brush: is-neon ? #160E24 : is-dark ? #12151A : #F1EBDC;
+    out property <color> accent-cyan-brush: is-neon ? #2DE2C5 : is-dark ? #22D3EE : #A9722E;
 
     // ── Tokenised Hovers / Tracks ──
-    out property <color> nav-hover-brush: is-dark ? #14181E : #E2DAC4;
-    out property <color> seg-hover-brush: is-dark ? #20262E : #E2DAC4;
+    out property <color> nav-hover-brush: is-neon ? #1B1229 : is-dark ? #14181E : #E2DAC4;
+    out property <color> seg-hover-brush: is-neon ? #2B1E42 : is-dark ? #20262E : #E2DAC4;
     out property <color> popup-border-brush: is-dark ? #FFFFFF1F : #2A241524;
-    out property <color> text-selection-brush: is-dark ? #22D3EE59 : #A9722E5C;
+    out property <color> text-selection-brush: is-neon ? #FF4FA359 : is-dark ? #22D3EE59 : #A9722E5C;
     out property <color> transport-hover-brush: is-dark ? #FFFFFF1A : #2A24151A;
     out property <color> scroll-thumb-brush: is-dark ? #FFFFFF59 : #2A241555;
     out property <color> scroll-thumb-pressed-brush: is-dark ? #FFFFFF8C : #2A241588;
 
     // ── Fluent Control Overrides (ToggleSwitch / ComboBox / MenuFlyout / ToolTip) ──
-    out property <color> toggle-switch-fill-on: is-dark ? #22D3EE : #A9722E;
-    out property <color> toggle-switch-fill-on-pointer-over: is-dark ? #4ADDF2 : #B5803A;
-    out property <color> toggle-switch-fill-on-pressed: is-dark ? #22D3EE : #A9722E;
-    out property <color> toggle-switch-stroke-on: is-dark ? #22D3EE : #A9722E;
-    out property <color> toggle-switch-stroke-on-pointer-over: is-dark ? #4ADDF2 : #B5803A;
-    out property <color> toggle-switch-stroke-on-pressed: is-dark ? #22D3EE : #A9722E;
+    out property <color> toggle-switch-fill-on: is-neon ? #FF4FA3 : is-dark ? #22D3EE : #A9722E;
+    out property <color> toggle-switch-fill-on-pointer-over: is-neon ? #FF73B8 : is-dark ? #4ADDF2 : #B5803A;
+    out property <color> toggle-switch-fill-on-pressed: is-neon ? #FF4FA3 : is-dark ? #22D3EE : #A9722E;
+    out property <color> toggle-switch-stroke-on: is-neon ? #FF4FA3 : is-dark ? #22D3EE : #A9722E;
+    out property <color> toggle-switch-stroke-on-pointer-over: is-neon ? #FF73B8 : is-dark ? #4ADDF2 : #B5803A;
+    out property <color> toggle-switch-stroke-on-pressed: is-neon ? #FF4FA3 : is-dark ? #22D3EE : #A9722E;
     out property <color> toggle-switch-knob-fill-on: #FFFFFF;
     out property <color> toggle-switch-knob-fill-on-pointer-over: #FFFFFF;
     out property <color> toggle-switch-knob-fill-on-pressed: #FFFFFF;
-    out property <color> toggle-switch-fill-off: is-dark ? #20252D : #DCD2B8;
-    out property <color> toggle-switch-fill-off-pointer-over: is-dark ? #272D36 : #D3C8AB;
-    out property <color> toggle-switch-fill-off-pressed: is-dark ? #272D36 : #D3C8AB;
-    out property <color> toggle-switch-stroke-off: is-dark ? #20252D : #C9BFA2;
-    out property <color> toggle-switch-stroke-off-pointer-over: is-dark ? #272D36 : #BFB495;
-    out property <color> toggle-switch-stroke-off-pressed: is-dark ? #272D36 : #BFB495;
+    out property <color> toggle-switch-fill-off: is-neon ? #2A1D40 : is-dark ? #20252D : #DCD2B8;
+    out property <color> toggle-switch-fill-off-pointer-over: is-neon ? #33244C : is-dark ? #272D36 : #D3C8AB;
+    out property <color> toggle-switch-fill-off-pressed: is-neon ? #33244C : is-dark ? #272D36 : #D3C8AB;
+    out property <color> toggle-switch-stroke-off: is-neon ? #2A1D40 : is-dark ? #20252D : #C9BFA2;
+    out property <color> toggle-switch-stroke-off-pointer-over: is-neon ? #33244C : is-dark ? #272D36 : #BFB495;
+    out property <color> toggle-switch-stroke-off-pressed: is-neon ? #33244C : is-dark ? #272D36 : #BFB495;
     out property <color> toggle-switch-knob-fill-off: is-dark ? #9AA3AD : #8A8068;
     out property <color> toggle-switch-knob-fill-off-pointer-over: is-dark ? #B6BEC7 : #756B54;
     out property <color> toggle-switch-knob-fill-off-pressed: is-dark ? #B6BEC7 : #756B54;
 
-    out property <color> combo-box-drop-down-background: is-dark ? #181C23 : #F8F4EA;
+    out property <color> combo-box-drop-down-background: is-neon ? #1E1430 : is-dark ? #181C23 : #F8F4EA;
     out property <color> combo-box-drop-down-border-brush: is-dark ? #FFFFFF1F : #2A241524;
     out property <color> combo-box-drop-down-glyph-foreground: is-dark ? #9AA3AD : #6E6A5A;
 
-    out property <color> menu-flyout-presenter-background: is-dark ? #181C23 : #F8F4EA;
+    out property <color> menu-flyout-presenter-background: is-neon ? #1E1430 : is-dark ? #181C23 : #F8F4EA;
     out property <color> menu-flyout-presenter-border-brush: is-dark ? #FFFFFF1F : #2A241524;
     out property <color> menu-flyout-item-background: transparent;
-    out property <color> menu-flyout-item-background-pointer-over: is-dark ? #272D36 : #E2DAC4;
-    out property <color> menu-flyout-item-background-pressed: is-dark ? #2A313B : #DCD3BB;
+    out property <color> menu-flyout-item-background-pointer-over: is-neon ? #33244C : is-dark ? #272D36 : #E2DAC4;
+    out property <color> menu-flyout-item-background-pressed: is-neon ? #392A55 : is-dark ? #2A313B : #DCD3BB;
     out property <color> menu-flyout-item-foreground: is-dark ? #E7EAEE : #2A2820;
     out property <color> menu-flyout-item-foreground-pointer-over: is-dark ? #E7EAEE : #2A2820;
     out property <color> menu-flyout-item-foreground-pressed: is-dark ? #E7EAEE : #2A2820;
     out property <color> menu-flyout-separator-background: is-dark ? #FFFFFF0F : #2A241514;
 
-    out property <color> tool-tip-background: is-dark ? #20252D : #EBE4D2;
+    out property <color> tool-tip-background: is-neon ? #2A1D40 : is-dark ? #20252D : #EBE4D2;
     out property <color> tool-tip-foreground: is-dark ? #E7EAEE : #2A2820;
     out property <color> tool-tip-border-brush: is-dark ? #FFFFFF1F : #2A241524;
 
-    out property <color> system-accent-color: is-dark ? #22D3EE : #A9722E;
-    out property <color> system-accent-color-light-1: is-dark ? #4DDDF2 : #BC8A45;
-    out property <color> system-accent-color-light-2: is-dark ? #7BE7F5 : #CDA268;
-    out property <color> system-accent-color-light-3: is-dark ? #A7F0F9 : #DDBC92;
-    out property <color> system-accent-color-dark-1: is-dark ? #18B8D6 : #946228;
-    out property <color> system-accent-color-dark-2: is-dark ? #129BB8 : #7C5320;
-    out property <color> system-accent-color-dark-3: is-dark ? #0C7E96 : #614019;
+    out property <color> system-accent-color: is-neon ? #FF4FA3 : is-dark ? #22D3EE : #A9722E;
+    out property <color> system-accent-color-light-1: is-neon ? #FF73B8 : is-dark ? #4DDDF2 : #BC8A45;
+    out property <color> system-accent-color-light-2: is-neon ? #FF9CCB : is-dark ? #7BE7F5 : #CDA268;
+    out property <color> system-accent-color-light-3: is-neon ? #FFC4E0 : is-dark ? #A7F0F9 : #DDBC92;
+    out property <color> system-accent-color-dark-1: is-neon ? #E0388A : is-dark ? #18B8D6 : #946228;
+    out property <color> system-accent-color-dark-2: is-neon ? #C02A74 : is-dark ? #129BB8 : #7C5320;
+    out property <color> system-accent-color-dark-3: is-neon ? #9A1F5D : is-dark ? #0C7E96 : #614019;
 
     // ═══════════════════════════════════════════════════════════════════════
     // App.axaml Slider Overrides & View-Level Semantic / Fixed Colours
@@ -161,7 +167,7 @@ export global Theme {
     out property <color> slider-thumb-background-pointer-over: #FFFFFF;
     out property <color> slider-thumb-background-pressed: #FFFFFF;
     out property <color> slider-thumb-background-disabled: #FFFFFF;
-    out property <color> slider-track-value-fill-disabled: is-dark ? #22D3EE59 : #A9722E59;
+    out property <color> slider-track-value-fill-disabled: is-neon ? #FF4FA359 : is-dark ? #22D3EE59 : #A9722E59;
     out property <color> slider-track-fill-disabled: #FFFFFF24;
 
     // UiConverters.cs IntensityToBrushConverter + SettingsView
@@ -179,30 +185,30 @@ export global Theme {
     // Overlay scrims, thumbnails, HUD, Toast, TrimRangeBar
     out property <color> stats-hud-bg: #0E1116D1;
     out property <color> stats-hud-border: #FFFFFF33;
-    out property <color> toast-bg: is-dark ? #181C23F0 : #F8F4EAF0;
+    out property <color> toast-bg: is-neon ? #1E1430F0 : is-dark ? #181C23F0 : #F8F4EAF0;
     out property <color> modal-scrim: #000000B0;
     out property <color> crop-shade: #00000099;
-    out property <color> timeline-bg: is-dark ? #10151B : #D6CBB2;
-    out property <color> timeline-shade: is-dark ? #0A0C0FB3 : #EAE3D1C7;
-    out property <color> thumb-placeholder-bg: is-dark ? #16181E : #DCD3BB;
+    out property <color> timeline-bg: is-neon ? #150D22 : is-dark ? #10151B : #D6CBB2;
+    out property <color> timeline-shade: is-neon ? #08050DB3 : is-dark ? #0A0C0FB3 : #EAE3D1C7;
+    out property <color> thumb-placeholder-bg: is-neon ? #1C1229 : is-dark ? #16181E : #DCD3BB;
     // light theme: cream glass chips over the thumbnail (were dark chips with dark text, owner 2026-11-17)
-    out property <color> card-badge-bg: is-dark ? #0C0D11B3 : #F8F4EAD9;
-    out property <color> card-badge-hover-bg: is-dark ? #0C0D11C7 : #F8F4EAF0;
+    out property <color> card-badge-bg: is-neon ? #120B1EB3 : is-dark ? #0C0D11B3 : #F8F4EAD9;
+    out property <color> card-badge-hover-bg: is-neon ? #120B1EC7 : is-dark ? #0C0D11C7 : #F8F4EAF0;
     out property <color> card-badge-fg: is-dark ? #FFFFFF : #2A2820;
-    out property <color> card-ov-bg: is-dark ? #1A1D25EB : #F8F4EAEB;
+    out property <color> card-ov-bg: is-neon ? #221634EB : is-dark ? #1A1D25EB : #F8F4EAEB;
     out property <color> play-overlay-bg: #0000008C;
-    out property <color> filter-hover-bg: is-dark ? #20262E : #E2DAC4;
-    out property <color> trim-body: is-dark ? #232C36 : #E2D6BA;
-    out property <color> trim-body-muted: is-dark ? #1A1F27 : #ECE6D6;
-    out property <color> trim-wave: is-dark ? #415061 : #B9A784;
-    out property <color> trim-wave-muted: is-dark ? #2A313B : #D9CFB8;
-    out property <color> trim-handle: is-dark ? #22D3EE : #A9722E; // accent: bronze handles on the light theme
+    out property <color> filter-hover-bg: is-neon ? #2B1E42 : is-dark ? #20262E : #E2DAC4;
+    out property <color> trim-body: is-neon ? #2E1F47 : is-dark ? #232C36 : #E2D6BA;
+    out property <color> trim-body-muted: is-neon ? #22173A : is-dark ? #1A1F27 : #ECE6D6;
+    out property <color> trim-wave: is-neon ? #6A4A8E : is-dark ? #415061 : #B9A784;
+    out property <color> trim-wave-muted: is-neon ? #392A55 : is-dark ? #2A313B : #D9CFB8;
+    out property <color> trim-handle: is-neon ? #FF4FA3 : is-dark ? #22D3EE : #A9722E; // accent: bronze handles on the light theme
     out property <color> trim-handle-muted: is-dark ? #FFFFFF55 : #2A241540;
     // audio lane chips (name + mute, volume) floating over the lane
-    out property <color> lane-chip-bg: is-dark ? #0A0C0FD9 : #F8F4EAE6;
+    out property <color> lane-chip-bg: is-neon ? #08050DD9 : is-dark ? #0A0C0FD9 : #F8F4EAE6;
     out property <color> lane-chip-fg: is-dark ? #E7EAEE : #2A2820;
     out property <color> lane-chip-fg-2: is-dark ? #9AA3AD : #6E6A5A;
-    out property <color> trim-notch: is-dark ? #0A0C0FA6 : #FBF4E8D9;
+    out property <color> trim-notch: is-neon ? #08050DA6 : is-dark ? #0A0C0FA6 : #FBF4E8D9;
 
     // ── Gradients (LibraryView.axaml:376-380) ──
     // Avalonia StartPoint="0%,100%" EndPoint="0%,0%" (bottom to top) = 0deg in Slint.

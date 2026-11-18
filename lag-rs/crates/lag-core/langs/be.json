@@ -182,7 +182,7 @@
   "Settings_StorageLimit": "Ліміт сховішча",
   "Settings_Subtitle": "Наладзьце запіс, аўдыя і параметры праграмы.",
   "Settings_Theme": "Тэма",
-  "Settings_Theme_Desc": "Светлая, цёмная або як у Windows",
+  "Settings_Theme_Desc": "Светлая, цёмная, сістэмная або неонавая",
   "Settings_Threshold": "Парог",
   "Settings_Title": "Налады",
   "Settings_WebcamDevice": "Вэб-камера",
@@ -265,5 +265,6 @@
   "Editor_PlayMontage": "Увесь мантаж",
   "Editor_Split": "Разрэзаць",
   "Editor_RemoveSegment": "Прыбраць",
-  "Editor_AddFile": "Файл"
+  "Editor_AddFile": "Файл",
+  "Theme_Neon": "Неон"
 }

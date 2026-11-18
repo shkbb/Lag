@@ -426,8 +426,8 @@ impl State {
                     "theme",
                     "Settings_Theme",
                     1,
-                    simple_options(&["Theme_Light", "Theme_Dark", "Theme_System"]),
-                    pos(&["light", "dark", "system"], &text(&s.theme)),
+                    simple_options(&["Theme_Light", "Theme_Dark", "Theme_System", "Theme_Neon"]),
+                    pos(&["light", "dark", "system", "neon"], &text(&s.theme)),
                 );
                 theme.description = "Settings_Theme_Desc".into();
                 vec![

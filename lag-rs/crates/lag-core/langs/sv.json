@@ -182,7 +182,7 @@
   "Settings_StorageLimit": "Lagringsgräns",
   "Settings_Subtitle": "Konfigurera inspelning, ljud och appinställningar.",
   "Settings_Theme": "Tema",
-  "Settings_Theme_Desc": "Välj ljust, mörkt eller följ Windows",
+  "Settings_Theme_Desc": "Ljus, mörk, system eller neon",
   "Settings_Threshold": "Tröskel",
   "Settings_Title": "Inställningar",
   "Settings_WebcamDevice": "Webbkamera",
@@ -265,5 +265,6 @@
   "Editor_PlayMontage": "Spela allt",
   "Editor_Split": "Dela",
   "Editor_RemoveSegment": "Ta bort",
-  "Editor_AddFile": "Fil"
+  "Editor_AddFile": "Fil",
+  "Theme_Neon": "Neon"
 }

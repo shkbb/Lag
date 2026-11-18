@@ -182,7 +182,7 @@
   "Settings_StorageLimit": "Krātuves limits",
   "Settings_Subtitle": "Konfigurējiet ierakstīšanu, audio un programmas preferences.",
   "Settings_Theme": "Tēma",
-  "Settings_Theme_Desc": "Izvēlieties gaišu, tumšu vai pielāgotu Windows",
+  "Settings_Theme_Desc": "Gaiša, tumša, sistēmas vai neona",
   "Settings_Threshold": "Slieksnis",
   "Settings_Title": "Iestatījumi",
   "Settings_WebcamDevice": "Tīmekļa kamera",
@@ -265,5 +265,6 @@
   "Editor_PlayMontage": "Atskaņot visu",
   "Editor_Split": "Sadalīt",
   "Editor_RemoveSegment": "Noņemt",
-  "Editor_AddFile": "Fails"
+  "Editor_AddFile": "Fails",
+  "Theme_Neon": "Neons"
 }

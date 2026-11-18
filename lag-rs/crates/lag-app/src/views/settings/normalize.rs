@@ -93,7 +93,7 @@ pub(super) fn normalize(s: &mut SettingsData, h: &Hardware) {
     if !i18n::LANGUAGES.iter().any(|l| l.code == text(&s.language)) {
         s.language = Some("en".into());
     }
-    if !["dark", "light", "system"].contains(&text(&s.theme)) {
+    if !["dark", "light", "system", "neon"].contains(&text(&s.theme)) {
         s.theme = Some("dark".into());
     }
     if !presets::STORAGE_RUNGS.contains(&s.max_library_size_gb) {

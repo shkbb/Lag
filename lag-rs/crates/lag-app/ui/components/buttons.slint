@@ -21,7 +21,7 @@ export component TbarAccentButton {
         border-radius: Theme.rad-button;
         background: root.recording
             ? (root.hovered ? Theme.danger-hover-brush : Theme.danger-brush)
-            : (root.hovered ? Theme.accent-hover-brush : Theme.accent);
+            : (root.hovered ? Theme.cta-hover-brush : Theme.cta-brush);
         animate background { duration: Theme.dur-base; }
 
 
@@ -234,7 +234,7 @@ export component CtaButton {
         border-radius: Theme.rad-control;
         background: root.recording
             ? (root.hovered ? Theme.danger-hover-brush : Theme.danger-brush)
-            : (root.hovered ? Theme.accent-hover-brush : Theme.accent-brush);
+            : (root.hovered ? Theme.cta-hover-brush : Theme.cta-brush);
         animate background { duration: Theme.dur-base; }
 
 

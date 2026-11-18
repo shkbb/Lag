@@ -182,7 +182,7 @@
   "Settings_StorageLimit": "Limite de stockage",
   "Settings_Subtitle": "Configurez l'enregistrement, l'audio et les préférences de l'app.",
   "Settings_Theme": "Thème",
-  "Settings_Theme_Desc": "Choisir clair, sombre ou suivre Windows",
+  "Settings_Theme_Desc": "Clair, sombre, système ou néon",
   "Settings_Threshold": "Seuil",
   "Settings_Title": "Paramètres",
   "Settings_WebcamDevice": "Webcam",
@@ -265,5 +265,6 @@
   "Editor_PlayMontage": "Tout lire",
   "Editor_Split": "Couper",
   "Editor_RemoveSegment": "Retirer",
-  "Editor_AddFile": "Fichier"
+  "Editor_AddFile": "Fichier",
+  "Theme_Neon": "Néon"
 }

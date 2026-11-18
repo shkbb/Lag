@@ -1,0 +1,23 @@
+# The "Neon" theme on the main pages (headless). Run with a settings copy whose Theme is "neon".
+size 1360x840
+page library
+wait 1500
+shot n-library
+page settings
+wait 400
+tab 0
+wait 300
+shot n-settings
+page editor
+wait 800
+editor-merge
+editor-merge-pick 1
+editor-merge-pick 0
+editor-merge-pick 2
+wait 200
+editor-montage-run
+wait 3500
+shot n-editor
+page player
+wait 600
+shot n-player
