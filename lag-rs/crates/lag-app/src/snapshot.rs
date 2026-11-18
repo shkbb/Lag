@@ -192,6 +192,9 @@ impl Snapshot {
                 "tab" => ui.global::<crate::SettingsVM>().invoke_select_tab(num(&a, 0) as i32),
                 "fullscreen" => ui.global::<crate::MainVM>().set_is_fullscreen(a.first() == Some(&"1")),
                 "recording" => ui.global::<crate::MainVM>().set_is_recording(a.first() == Some(&"1")),
+                // the record / save buttons while their action is under way
+                "starting" => ui.global::<crate::MainVM>().set_is_starting(a.first() == Some(&"1")),
+                "saving" => ui.global::<crate::MainVM>().set_is_saving(a.first() == Some(&"1")),
                 // open the N-th clip of the editor's clip list (probe, filmstrip, audio lanes; no video headless)
                 "editor-clip" => {
                     use slint::Model;

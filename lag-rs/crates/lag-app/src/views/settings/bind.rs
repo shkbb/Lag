@@ -172,7 +172,13 @@ pub(super) fn bind_controls(ui: &AppWindow, ctx: &Rc<AppCtx>, state: &Rc<RefCell
     let (st, weak) = (state.clone(), ui.as_weak());
     ui.global::<SettingsVM>().on_update_status(move |key| {
         if let Some(ui) = weak.upgrade() {
-            st.borrow_mut().update_status = if key.is_empty() { String::new() } else { tr(&key) };
+            // "Update failed: {0}" has a slot for the C# exception text; there is none here, so it is dropped
+            // (2.0.0 showed the "{0}" itself).
+            st.borrow_mut().update_status = if key.is_empty() {
+                String::new()
+            } else {
+                tr(&key).replace("{0}", "").trim_end_matches([':', ' ', '\u{a0}']).to_string()
+            };
             st.borrow().refresh(&ui);
         }
     });

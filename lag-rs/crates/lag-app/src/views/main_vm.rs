@@ -159,6 +159,7 @@ impl Runtime {
             self.with_recorder(RecorderService::stop);
         } else {
             self.starting.set(true);
+            vm.set_is_starting(true);
             self.status("Status_Starting");
             // Commands are serialized: an in-flight Stop always finishes before the next Start.
             self.with_recorder(|r| r.start(ctx.settings()));
@@ -172,6 +173,7 @@ impl Runtime {
         match event {
             Event::Started(result) => {
                 self.starting.set(false);
+                vm.set_is_starting(false);
                 match result {
                     Ok(total) => {
                         vm.set_is_recording(true);

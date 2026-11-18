@@ -81,14 +81,23 @@ pub(super) fn save(
     id: &str,
     edit: impl FnOnce(&mut State),
 ) {
-    let next = {
+    let (next, changed) = {
         let mut st = state.borrow_mut();
+        let before = st.settings.clone();
         edit(&mut st);
-        if restart_required(id) && ui.global::<MainVM>().get_is_recording() {
+        let changed = st.settings != before;
+        if changed && restart_required(id) && ui.global::<MainVM>().get_is_recording() {
             st.pending = true;
         }
-        st.settings.clone()
+        (st.settings.clone(), changed)
     };
+    // Clicking the option that is already on (owner, 2026-11-18: "165 fps is set, I click 165 again and get
+    // 'changes take effect after...'") changes nothing: no save, no listeners (the engine would restart its
+    // capture), no restart notice. Only what the click did to the page itself (e.g. the custom-fps field).
+    if !changed {
+        state.borrow().refresh(ui);
+        return;
+    }
     ctx.update_settings(|s| *s = next);
     if matches!(id, "fps" | "resolution" | "bitrate" | "monitor") {
         state.borrow().maybe_warn(ui);

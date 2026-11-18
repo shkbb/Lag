@@ -25,6 +25,8 @@ export global Theme {
     out property <bool> is-neon: mode == "neon";
     // page backgrounds: transparent in Neon so the backdrop (sunset, skyline, palms) behind the pages shows
     out property <color> page-bg: is-neon ? #00000000 : surface-app;
+    // pressed-button veil on neutral surfaces: light on dark themes (dark on dark barely shows), dark on light
+    out property <color> press-veil: is-dark ? #FFFFFF1F : #00000021;
 
     // ═══════════════════════════════════════════════════════════════════════
     // Palette.axaml — Brand Accent

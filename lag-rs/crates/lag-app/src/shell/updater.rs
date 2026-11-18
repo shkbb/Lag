@@ -283,18 +283,33 @@ pub fn download_and_install(update: &UpdateInfo) -> bool {
         true
     }
 }
+/// Installers this updater downloaded earlier (`%TEMP%\Lag-Setup-<version>.exe`, ~127 MB each) are not needed
+/// once the app runs again; 2.0.0/2.0.1 left every one behind. One still in use stays until the next launch.
+fn remove_old_installers() {
+    let Ok(entries) = std::fs::read_dir(std::env::temp_dir()) else { return };
+    for entry in entries.flatten() {
+        let name = entry.file_name().to_string_lossy().to_ascii_lowercase();
+        if name.starts_with("lag-setup-") && name.ends_with(".exe") && std::fs::remove_file(entry.path()).is_ok() {
+            log::info!("[AppUpdate] removed old installer {name}");
+        }
+    }
+}
 /// Invoke from Settings or a startup timer. No network until this API is called.
 /// `finished` is delivered on Slint's event loop, including a localized status resource key.
 pub fn check_for_updates(silent: bool, finished: impl FnOnce(Option<&'static str>) + Send + 'static) {
     use std::sync::atomic::{AtomicBool, Ordering};
     // One check at a time: 2.0.0 started two at launch (shell + settings page), and both downloaded and
-    // launched the installer. A check that finds one already running reports nothing.
+    // launched the installer. A manual check during the automatic one says the update is on its way (a friend's
+    // 1.x showed "Update failed: download" there, while the automatic update finished fine a minute later).
     static RUNNING: AtomicBool = AtomicBool::new(false);
     if RUNNING.swap(true, Ordering::SeqCst) {
-        let _ = slint::invoke_from_event_loop(move || finished(None));
+        let _ = slint::invoke_from_event_loop(move || finished(if silent { None } else { Some("Update_Downloading") }));
         return;
     }
     std::thread::spawn(move || {
+        if silent {
+            remove_old_installers();
+        }
         let kind = detect_install();
         let result = if kind == InstallKind::DevOrPortable {
             Some("Update_DevMode")

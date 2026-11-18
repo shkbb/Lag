@@ -83,13 +83,15 @@ export component AppWindow inherits Window {
                 VerticalLayout { alignment: center; horizontal-stretch: 0;
                     TbarAccentButton {
                         recording: MainVM.is-recording;
-                        text: Tr.t(MainVM.is-recording ? "Btn_StopRecording" : "Btn_StartRecording", Tr.rev);
+                        busy: MainVM.is-starting;
+                        text: MainVM.is-starting ? Tr.t("Splash_Starting", Tr.rev) : Tr.t(MainVM.is-recording ? "Btn_StopRecording" : "Btn_StartRecording", Tr.rev);
                         clicked => { MainVM.toggle-recording(); }
                     }
                 }
                 Rectangle { width: 10px; }
                 VerticalLayout { alignment: center; horizontal-stretch: 0;
                     TbarButton { text: Tr.t("Btn_SaveReplay", Tr.rev); has-icon: true; icon: Icons.tray-arrow-down;
+                        busy: MainVM.is-saving;
                         enabled: MainVM.is-recording; clicked => { MainVM.save-replay(); }
                     }
                 }

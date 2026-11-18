@@ -2,7 +2,7 @@
 import { Theme } from "../theme/tokens.slint";
 import { Icons, MaterialIcon, LagLogoMark } from "../theme/icons.slint";
 import { Tr } from "../globals.slint";
-import { RChipButton, GameChipButton } from "../components/buttons.slint";
+import { RChipButton, GameChipButton, PressFx } from "../components/buttons.slint";
 import { LagSearchBox } from "../components/text_input.slint";
 import { RKbdChip } from "../components/badges.slint";
 import { LagScrollView } from "../components/scrollbar.slint";
@@ -16,7 +16,13 @@ component LibChipArrow {
     callback clicked();
     width: 30px;
     height: 30px;
+    fx := PressFx { down: ta.pressed; }
     Rectangle {
+        x: fx.inset;
+        y: fx.inset;
+        width: parent.width - 2 * fx.inset;
+        height: parent.height - 2 * fx.inset;
+        animate x, y, width, height { duration: 90ms; easing: ease-out; }
         border-radius: self.height / 2;
         background: ta.has-hover ? Theme.surface-hover-brush : Theme.surface-card;
         border-width: 1px;
@@ -30,6 +36,12 @@ component LibChipArrow {
             source: root.icon;
             size: 18px;
             tint: ta.has-hover ? Theme.text-hi : Theme.text-muted;
+        }
+        Rectangle {
+            border-radius: parent.border-radius;
+            background: Theme.press-veil;
+            opacity: fx.active ? 1 : 0;
+            animate opacity { duration: 90ms; }
         }
     }
     ta := TouchArea {
@@ -276,6 +288,23 @@ export component LibraryPage inherits Rectangle {
                         // to the search box / Favourites).
                         property <length> view-w: max(0px, self.width - 22px);
                         property <bool> can-left: chips-flick.content-x < -1px;
+                        // Smooth scrolling (owner, 2026-11-18: "the game list should move smoothly, not jerk"):
+                        // the wheel and the arrows move `target`, `scroll-x` glides to it, the row follows.
+                        // Fast wheel turns add up on `target`, so they become one longer glide.
+                        property <length> max-x: max(0px, chips-row.preferred-width - self.view-w);
+                        property <length> target: 0px;
+                        property <length> scroll-x: 0px;
+                        animate scroll-x { duration: 260ms; easing: cubic-bezier(0.22, 0.8, 0.3, 1); }
+                        function scroll-to(x: length) {
+                            self.target = clamp(x, -self.max-x, 0px);
+                            self.scroll-x = self.target;
+                        }
+                        // fewer games / a wider window: keep the row inside its new range
+                        changed max-x => {
+                            if (self.target < -self.max-x) {
+                                self.scroll-to(self.target);
+                            }
+                        }
                         property <bool> can-right: chips-row.preferred-width + chips-flick.content-x > self.view-w + 1px;
 
                         TouchArea {
@@ -283,9 +312,8 @@ export component LibraryPage inherits Rectangle {
                             height: 100%;
                             scroll-event(ev) => {
                                 let delta = ev.delta-x != 0px ? ev.delta-x : ev.delta-y;
-                                let max-x = max(0px, chips-row.preferred-width - chips-area.view-w);
-                                if (delta != 0px && max-x > 0px) {
-                                    chips-flick.content-x = clamp(chips-flick.content-x + delta, -max-x, 0px);
+                                if (delta != 0px && chips-area.max-x > 0px) {
+                                    chips-area.scroll-to(chips-area.target + delta);
                                     return accept;
                                 }
                                 reject
@@ -296,7 +324,9 @@ export component LibraryPage inherits Rectangle {
                                 y: 0px;
                                 width: chips-area.view-w;
                                 height: 38px;
-                                interactive: true;
+                                // moved only by the wheel and the arrows (a drag would fight the glide)
+                                interactive: false;
+                                content-x: chips-area.scroll-x;
                                 content-width: chips-row.preferred-width;
                                 content-height: 38px;
 
@@ -325,7 +355,7 @@ export component LibraryPage inherits Rectangle {
                             y: (parent.height - self.height) / 2;
                             icon: Icons.chevron-left;
                             clicked => {
-                                chips-flick.content-x = min(0px, chips-flick.content-x + chips-area.view-w * 0.7);
+                                chips-area.scroll-to(chips-area.target + chips-area.view-w * 0.7);
                             }
                         }
                         if chips-area.can-right: LibChipArrow {
@@ -333,7 +363,7 @@ export component LibraryPage inherits Rectangle {
                             y: (parent.height - self.height) / 2;
                             icon: Icons.chevron-right;
                             clicked => {
-                                chips-flick.content-x = max(chips-area.view-w - chips-row.preferred-width, chips-flick.content-x - chips-area.view-w * 0.7);
+                                chips-area.scroll-to(chips-area.target - chips-area.view-w * 0.7);
                             }
                         }
                     }
