@@ -61,6 +61,9 @@ ArchitecturesInstallIn64BitMode=x64compatible
 
 ; Updates install over a possibly running app: close it via Restart Manager, do not
 ; auto-restart it (we relaunch explicitly through /AUTOSTART).
+; One Setup at a time. Lag 2.0.0 can start two silent updates at once (it checked for updates twice at
+; launch); the second one finds this mutex and exits.
+SetupMutex=LagSetupMutex,Global\LagSetupMutex
 CloseApplications=yes
 RestartApplications=no
 

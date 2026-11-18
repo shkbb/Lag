@@ -23,7 +23,6 @@ pub(super) fn run(
     let (apps_send, apps_recv) = mpsc::channel();
     let mut apps_pending = false;
     let mut next_apps = Instant::now();
-    let mut startup_check = Some(Instant::now() + Duration::from_secs(3));
     let timer = Rc::new(slint::Timer::default());
     let keep_timer = timer.clone();
     let weak = ui.as_weak();
@@ -191,9 +190,5 @@ pub(super) fn run(
             st.refresh(&ui);
         }
         was_active = active && show_apps;
-        if startup_check.is_some_and(|due| Instant::now() >= due) {
-            startup_check = None;
-            crate::shell::updater::check_for_updates(true, |_| {});
-        }
     });
 }

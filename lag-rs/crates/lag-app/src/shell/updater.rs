@@ -269,6 +269,14 @@ pub fn download_and_install(update: &UpdateInfo) -> bool {
 /// Invoke from Settings or a startup timer. No network until this API is called.
 /// `finished` is delivered on Slint's event loop, including a localized status resource key.
 pub fn check_for_updates(silent: bool, finished: impl FnOnce(Option<&'static str>) + Send + 'static) {
+    use std::sync::atomic::{AtomicBool, Ordering};
+    // One check at a time: 2.0.0 started two at launch (shell + settings page), and both downloaded and
+    // launched the installer. A check that finds one already running reports nothing.
+    static RUNNING: AtomicBool = AtomicBool::new(false);
+    if RUNNING.swap(true, Ordering::SeqCst) {
+        let _ = slint::invoke_from_event_loop(move || finished(None));
+        return;
+    }
     std::thread::spawn(move || {
         let kind = detect_install();
         let result = if kind == InstallKind::DevOrPortable {
@@ -276,6 +284,7 @@ pub fn check_for_updates(silent: bool, finished: impl FnOnce(Option<&'static str
         } else if let (Some(current), Some(latest)) = (current_version(), get_latest()) {
             if update_wanted(kind, current, latest.version) {
                 if download_and_install(&latest) {
+                    // stays RUNNING: the app is exiting for the installer
                     let _ = slint::invoke_from_event_loop(super::exit);
                     return;
                 } else {
@@ -287,6 +296,7 @@ pub fn check_for_updates(silent: bool, finished: impl FnOnce(Option<&'static str
         } else {
             Some("Update_UpToDate")
         };
+        RUNNING.store(false, Ordering::SeqCst);
         let _ = slint::invoke_from_event_loop(move || finished(if silent { None } else { result }));
     });
 }
