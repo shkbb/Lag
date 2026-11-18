@@ -59,6 +59,22 @@ if ($missing) { throw "release folder is incomplete, missing: $($missing -join '
 $built = (Get-Item (Join-Path $release "Lag.exe")).LastWriteTimeUtc
 $packed = (Get-Item (Join-Path $Out "Lag.exe")).LastWriteTimeUtc
 if ($built -ne $packed) { throw "Lag.exe in the release folder is not the fresh build" }
+
+# The release profile keeps line tables (readable panic backtraces / crash-dump symbolication from
+# target\release\Lag.exe); the shipped copy drops them: ~105 MB -> ~29 MB. Code is unchanged, so the
+# unstripped exe in target\release still symbolicates dumps of the shipped one.
+$strip = @(
+    (Get-Command strip.exe -ErrorAction SilentlyContinue | ForEach-Object Source),
+    (Get-Command llvm-strip.exe -ErrorAction SilentlyContinue | ForEach-Object Source),
+    (Get-ChildItem "$env:LOCALAPPDATA\Microsoft\WinGet\Packages" -Recurse -Filter strip.exe -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty FullName)
+) | Where-Object { $_ } | Select-Object -First 1
+if ($strip) {
+    & $strip --strip-debug (Join-Path $Out "Lag.exe")
+    if ($LASTEXITCODE -ne 0) { throw "strip failed ($LASTEXITCODE)" }
+    Write-Host "stripped debug info: $([math]::Round((Get-Item (Join-Path $Out 'Lag.exe')).Length / 1MB, 1)) MB"
+} else {
+    Write-Warning "strip not found: Lag.exe ships with its debug line tables (~105 MB)"
+}
 Write-Host "release folder OK: $Out ($($required.Count) required files present)"
 
 if ($Installer) {
