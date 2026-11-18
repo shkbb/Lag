@@ -127,6 +127,9 @@ pub struct EditorHost {
     overlay: EditorOverlayWindow,
     overlay_shown: Cell<bool>,
     overlay_rect: Cell<(i32, i32, i32, i32)>,
+    /// When the editor page became current: the native video and overlay wait for the page transition (220 ms,
+    /// app.slint PageLayer) so the page slides in like the others (same as the player, owner 2026-11-18).
+    page_entered_at: Cell<Option<std::time::Instant>>,
 }
 
 impl EditorHost {
@@ -188,7 +191,14 @@ impl EditorHost {
         }
         OVERLAY.with(|o| *o.borrow_mut() = Some(overlay.as_weak()));
         log::info!("[Editor] native video surface ready (player v2 engine)");
-        Ok(Self { main_hwnd, surface, overlay, overlay_shown: Cell::new(false), overlay_rect: Cell::new((0, 0, 0, 0)) })
+        Ok(Self {
+            main_hwnd,
+            surface,
+            overlay,
+            overlay_shown: Cell::new(false),
+            overlay_rect: Cell::new((0, 0, 0, 0)),
+            page_entered_at: Cell::new(None),
+        })
     }
 
     pub fn wid(&self) -> isize {
@@ -201,7 +211,15 @@ impl EditorHost {
         let vm = ui.global::<EditorVM>();
         let (sx, sy, sw, sh) = stage;
         let minimized = ui.window().is_minimized() || unsafe { IsIconic(self.main_hwnd).as_bool() };
-        let visible = mvm.get_current_page() == Page::Editor
+        let on_page = mvm.get_current_page() == Page::Editor;
+        match (on_page, self.page_entered_at.get()) {
+            (true, None) => self.page_entered_at.set(Some(std::time::Instant::now())),
+            (false, Some(_)) => self.page_entered_at.set(None),
+            _ => {}
+        }
+        let settling = self.page_entered_at.get().is_some_and(|t| t.elapsed() < std::time::Duration::from_millis(220));
+        let visible = on_page
+            && !settling
             && ui.window().is_visible()
             && unsafe { IsWindowVisible(self.main_hwnd).as_bool() }
             && !minimized

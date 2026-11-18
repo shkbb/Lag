@@ -129,7 +129,14 @@ pub(super) struct NativeHost {
     /// Fullscreen while playing with no controls on screen: the full-screen transparent overlay window is hidden
     /// so DWM does not blend it with every 3440x1440 frame. Mouse movement over the video brings it back.
     pub(super) overlay_suppressed: Cell<bool>,
+    /// When the player page became the current page: the video and the overlay (separate native windows that
+    /// cannot take part in the page's slide/fade) wait until the page transition has finished, so the page
+    /// animates in like every other page instead of the video popping up first (owner, 2026-11-18).
+    pub(super) page_entered_at: Cell<Option<std::time::Instant>>,
 }
+
+/// The page transition in app.slint (PageLayer: opacity + slide, 220 ms).
+const PAGE_TRANSITION: std::time::Duration = std::time::Duration::from_millis(220);
 
 unsafe extern "system" fn main_host_proc(
     hwnd: HWND,
@@ -330,6 +337,7 @@ impl NativeHost {
             last_overlay_rect: Cell::new((0, 0, 0, 0)),
             overlay_shown: Cell::new(false),
             overlay_suppressed: Cell::new(false),
+            page_entered_at: Cell::new(None),
         })
     }
 
@@ -359,8 +367,16 @@ impl NativeHost {
 
         let minimized = ui.window().is_minimized() || unsafe { IsIconic(self.main_hwnd).as_bool() };
         let visible = ui.window().is_visible() && unsafe { IsWindowVisible(self.main_hwnd).as_bool() };
+        let page_is_player = mvm.get_current_page() == Page::Player;
+        match (page_is_player, self.page_entered_at.get()) {
+            (true, None) => self.page_entered_at.set(Some(std::time::Instant::now())),
+            (false, Some(_)) => self.page_entered_at.set(None),
+            _ => {}
+        }
+        // fullscreen switches happen on the player page itself: no page transition to wait for
+        let page_settling = !is_fullscreen && self.page_entered_at.get().is_some_and(|t| t.elapsed() < PAGE_TRANSITION);
         let vis = SurfaceVisibility {
-            page_is_player: mvm.get_current_page() == Page::Player,
+            page_is_player: page_is_player && !page_settling,
             window_visible: visible,
             window_minimized: minimized,
             fs_transition,

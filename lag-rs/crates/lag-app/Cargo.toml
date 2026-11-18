@@ -7,7 +7,13 @@ license.workspace = true
 # ONE [dependencies] table (Windows-only app). Packages: APPEND your crate or features inside this table;
 # never add a second [dependencies]/[target.*.dependencies] table (duplicate keys break every cargo command).
 [dependencies]
-slint = { version = "1.18.1", features = ["raw-window-handle-06", "unstable-winit-030"] }
+# Slint's default features minus "accessibility": its AccessKit layer panicked (RefCell BorrowMutError inside
+# accesskit_windows::subclass::wnd_proc) when a window was shown while an accessibility client (ShareX, Narrator,
+# UI-inspection tools) queried the main window - a hard crash on page switches (owner, 2026-11-18; minidump stack).
+slint = { version = "1.18.1", default-features = false, features = [
+    "std", "backend-default", "renderer-femtovg", "renderer-software", "compat-1-2", "system-tray",
+    "raw-window-handle-06", "unstable-winit-030",
+] }
 lag-core = { workspace = true }
 lag-capture = { workspace = true }
 lag-audio = { workspace = true }

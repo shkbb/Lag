@@ -215,7 +215,7 @@ impl Snapshot {
                 "editor-segment" => ui.global::<crate::EditorVM>().invoke_select_segment(num(&a, 0) as i32),
                 "editor-scrub" => {
                     let vm = ui.global::<crate::EditorVM>();
-                    vm.invoke_timeline_drag(3, num(&a, 0) as f32, 800.0);
+                    vm.invoke_timeline_drag(3, num(&a, 0), 800.0);
                     vm.invoke_timeline_drag_end();
                 }
                 "editor-split" => ui.global::<crate::EditorVM>().invoke_split_segment(),
