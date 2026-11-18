@@ -201,6 +201,8 @@ pub(super) fn run(
                         res.duration_sec,
                         res.audio_streams
                     );
+                    s.last_audio_streams = Some(res.audio_streams);
+                    s.probe_cache.insert(clip_path.clone(), res.clone());
                     // a re-opened montage segment already has its size, tracks and framing (and the user's edits)
                     if !s.model.is_probed() {
                         s.model.apply_probe(&res, &track_names());

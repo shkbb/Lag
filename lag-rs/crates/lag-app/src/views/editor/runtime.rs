@@ -62,6 +62,12 @@ pub(super) struct EditorRuntime {
     pub(super) reveal_gen: Rc<std::cell::Cell<u64>>,
     pub(super) stopped_by_inactive: bool,
     pub(super) sidebar_durations: HashMap<String, f64>,
+    /// ffprobe results of clips opened this session. Re-opening one fills in its size and audio lanes at once;
+    /// a clip not probed yet gets the lane count of the last probed one (or what the recorder writes), so the
+    /// timeline already has its final height and the preview stage does not jump when the probe lands (owner,
+    /// 2026-11-18: "you can see the editor's size jump at the start").
+    pub(super) probe_cache: HashMap<String, crate::services::ffmpeg::ProbeResult>,
+    pub(super) last_audio_streams: Option<usize>,
 
     // Seek coalescer (80ms)
     pub(super) pending_seek: Option<f64>,
@@ -111,6 +117,8 @@ impl EditorRuntime {
             merge: merge::MergePicks::default(),
             stopped_by_inactive: false,
             sidebar_durations: HashMap::new(),
+            probe_cache: HashMap::new(),
+            last_audio_streams: None,
             pending_seek: None,
             seek_timer: Timer::default(),
             last_mpv_pos: 0.0,
@@ -337,6 +345,7 @@ impl EditorRuntime {
     pub(super) fn open_clip(&mut self, path: &str, duration_hint: f64) {
         let default_audio = tr("Editor_TrackAudio");
         self.model.reset_for_clip(path, duration_hint, &default_audio);
+        self.predict_probe(path);
         self.montage = Montage::single(self.model.clone());
         self.play_through = false;
         if let Some(ui) = self.ui.upgrade() {
@@ -345,6 +354,25 @@ impl EditorRuntime {
             vm.set_export_progress(0);
         }
         self.load_live_edit(true);
+    }
+
+    /// Before the probe of a freshly opened clip: its cached probe (same file seen this session), else the lane
+    /// count it most likely has, so the layout is final from the first frame.
+    fn predict_probe(&mut self, path: &str) {
+        let names = super::montage_runtime::track_names();
+        if let Some(res) = self.probe_cache.get(path).cloned() {
+            self.model.apply_probe(&res, &names);
+            return;
+        }
+        let streams = self.last_audio_streams.unwrap_or_else(|| {
+            // nothing probed yet this session: what Lag records (a mix, plus system + mic when separate)
+            if self.ctx.settings().separate_audio_tracks {
+                3
+            } else {
+                1
+            }
+        });
+        self.model.set_audio_layout(streams, &names);
     }
 
     pub(super) fn refresh_localized_options(&mut self) {

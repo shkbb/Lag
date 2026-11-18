@@ -412,3 +412,26 @@ fn editable_clips_filters_images_preserving_order() {
     let filtered: Vec<&str> = editable_clips(&clips).into_iter().map(|c| c.file_path.as_str()).collect();
     assert_eq!(filtered, vec!["a.mp4", "b.mov"]);
 }
+
+#[test]
+fn predicted_audio_layout_matches_the_probe_so_the_timeline_keeps_its_height() {
+    let names = TrackNames { single: "Audio".into(), system: "System".into(), mic: "Mic".into() };
+    let mut m = EditModel::new("Native");
+    m.reset_for_clip(r"C:\clips\game.mp4", 30.0, "Audio");
+    m.set_audio_layout(3, &names); // mix + system + mic: the mix gets no lane
+    let lanes: Vec<(usize, String)> = m.audio_tracks.iter().map(|t| (t.stream_index, t.name.clone())).collect();
+    assert_eq!(lanes, vec![(1, "System".to_string()), (2, "Mic".to_string())]);
+    let probe = crate::services::ffmpeg::ProbeResult {
+        video_width: 2560,
+        video_height: 1440,
+        duration_sec: 30.0,
+        audio_streams: 3,
+        ..Default::default()
+    };
+    m.apply_probe(&probe, &names);
+    assert_eq!(m.audio_tracks.len(), lanes.len());
+    m.set_audio_layout(1, &names);
+    assert_eq!(m.audio_tracks.len(), 1);
+    m.set_audio_layout(0, &names);
+    assert!(m.audio_tracks.is_empty());
+}

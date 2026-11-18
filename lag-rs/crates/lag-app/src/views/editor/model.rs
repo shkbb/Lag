@@ -600,9 +600,15 @@ impl EditModel {
             self.trim_end_sec = self.duration_sec;
         }
         self.trim_start_sec = self.trim_start_sec.min(self.trim_end_sec);
+        self.set_audio_layout(res.audio_streams, names);
+    }
+
+    /// The audio lanes for a file with `streams` audio streams (Lag's own layouts: one mix; system + mic; or a
+    /// mix followed by system + mic, where the mix gets no lane of its own).
+    pub fn set_audio_layout(&mut self, streams: usize, names: &TrackNames) {
         let dur = self.duration_sec;
         self.audio_tracks.clear();
-        match res.audio_streams {
+        match streams {
             0 => {}
             1 => self.audio_tracks.push(AudioTrack::new(0, names.single.clone(), dur)),
             2 => {
