@@ -145,7 +145,7 @@ end;
 procedure UninstallDotNetBuild();
 var
   Cmd: string;
-  R: Integer;
+  R, I: Integer;
 begin
   if not FileExists(ExpandConstant('{app}\Lag.runtimeconfig.json')) then Exit;
   if not RegQueryStringValue(HKCU, 'Software\Microsoft\Windows\CurrentVersion\Uninstall\Lag_is1',
@@ -158,7 +158,24 @@ begin
   if not FileExists(Cmd) then Exit;
   Log('Migrating: uninstalling the .NET build in ' + ExpandConstant('{app}'));
   if not Exec(Cmd, '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART', '', SW_HIDE, ewWaitUntilTerminated, R) then
+  begin
     Log('Migrating: the .NET build uninstaller did not start');
+    Exit;
+  end;
+  { The uninstaller finishes in a second copy of itself that deletes unins000.exe last; this
+    process can return before that. Wait until it is gone, so it cannot remove files this setup
+    is about to write (Lag.exe, Assets\, ffmpeg\ and rnnoise\ have the same names in both builds).
+    Seen in the LagTest run of 2026-11-18: the new uninstaller became unins001 because unins000
+    still existed. }
+  for I := 1 to 600 do
+  begin
+    if not FileExists(Cmd) then Break;
+    Sleep(100);
+  end;
+  if FileExists(Cmd) then
+    Log('Migrating: the old uninstaller was still there after 60 s, continuing')
+  else
+    Log('Migrating: .NET build removed');
 end;
 
 procedure CurStepChanged(CurStep: TSetupStep);
