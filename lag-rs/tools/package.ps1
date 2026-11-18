@@ -7,12 +7,14 @@
 # 3. FAILS when any runtime file is missing - the app does not crash without them, it silently loses a
 #    feature (no rnnoise/std.rnnn = noise suppression quietly off; no ffmpeg\ffmpeg.exe = no editor export,
 #    thumbnails or carry-over re-encode). Settings audit 2026-11-17.
-# 4. with -Installer runs ISCC (Inno Setup 6) to produce installer\Output\Lag-win-Setup.exe.
+# 4. with -Installer runs ISCC (Inno Setup 6) to produce installer\Output\Lag-win-Setup.exe,
+# 5. with -Portable zips the folder into installer\Output\Lag-win-Portable.zip (the release's second asset).
 param(
     [Parameter(Mandatory = $true)][string]$Version,
     [string]$Out = "",
     [switch]$NoBuild,
-    [switch]$Installer
+    [switch]$Installer,
+    [switch]$Portable
 )
 $ErrorActionPreference = "Stop"
 $lagRs = Split-Path -Parent $PSScriptRoot
@@ -69,4 +71,13 @@ if ($Installer) {
     if (-not $iscc) { throw "Inno Setup 6 (ISCC.exe) not found" }
     & $iscc (Join-Path $repo "installer\Lag.iss") "/DAppVersion=$Version" "/DPublishDir=$Out"
     if ($LASTEXITCODE -ne 0) { throw "ISCC failed ($LASTEXITCODE)" }
+}
+
+if ($Portable) {
+    $outDir = Join-Path $repo "installer\Output"
+    New-Item -ItemType Directory -Force $outDir | Out-Null
+    $zip = Join-Path $outDir "Lag-win-Portable.zip"
+    if (Test-Path $zip) { Remove-Item -Force $zip }
+    Compress-Archive -Path (Join-Path $Out "*") -DestinationPath $zip -CompressionLevel Optimal
+    Write-Host "portable zip: $zip"
 }

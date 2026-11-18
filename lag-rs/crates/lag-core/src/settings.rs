@@ -257,6 +257,11 @@ pub struct SettingsData {
     pub window_height: i32,
     #[serde(default)]
     pub window_maximized: bool,
+    /// NEW in Rust 2.0: the GTA VI theme was switched on once (owner, 2026-11-18: "make the GTA theme the
+    /// automatic one after the release, people switch back if they want"). Set together with that one-time
+    /// switch, so a user who picks another theme keeps it.
+    #[serde(default)]
+    pub gta_theme_introduced: bool,
 }
 
 fn d_game_focus() -> Option<String> {
@@ -264,8 +269,15 @@ fn d_game_focus() -> Option<String> {
 }
 
 /// Keys the Rust version adds after the C# ones (written last, in this order).
-pub const RUST_ONLY_KEYS: &[&str] =
-    &["GameFocusMode", "SlowmoInterpolation", "WebcamMode", "WindowWidth", "WindowHeight", "WindowMaximized"];
+pub const RUST_ONLY_KEYS: &[&str] = &[
+    "GameFocusMode",
+    "SlowmoInterpolation",
+    "WebcamMode",
+    "WindowWidth",
+    "WindowHeight",
+    "WindowMaximized",
+    "GtaThemeIntroduced",
+];
 
 impl Default for SettingsData {
     fn default() -> Self {
@@ -284,6 +296,16 @@ fn dirs_roaming_appdata() -> Option<PathBuf> {
 }
 
 impl SettingsData {
+    /// One time only (2.0): switches to the GTA VI theme ("neon"). Returns whether it changed anything.
+    pub fn introduce_gta_theme(&mut self) -> bool {
+        if self.gta_theme_introduced {
+            return false;
+        }
+        self.gta_theme_introduced = true;
+        self.theme = Some("neon".to_owned());
+        true
+    }
+
     /// Parses settings text the way System.Text.Json does (tolerates a UTF-8 BOM).
     pub fn from_json(text: &str) -> serde_json::Result<Self> {
         serde_json::from_str(text.trim_start_matches('\u{FEFF}'))
@@ -372,7 +394,7 @@ mod tests {
         assert!(j.contains("\"KeysY\": 1,\r\n"));
         assert!(j.contains("\"WebcamScale\": 0.19130434782608696,"));
         assert!(j.starts_with("{\r\n  \"BufferSeconds\": 0,\r\n"));
-        assert!(j.ends_with("\"FileFormat\": \"mp4\",\r\n  \"GameFocusMode\": \"game\",\r\n  \"SlowmoInterpolation\": true,\r\n  \"WebcamMode\": 0,\r\n  \"WindowWidth\": 0,\r\n  \"WindowHeight\": 0,\r\n  \"WindowMaximized\": false\r\n}"));
+        assert!(j.ends_with("\"FileFormat\": \"mp4\",\r\n  \"GameFocusMode\": \"game\",\r\n  \"SlowmoInterpolation\": true,\r\n  \"WebcamMode\": 0,\r\n  \"WindowWidth\": 0,\r\n  \"WindowHeight\": 0,\r\n  \"WindowMaximized\": false,\r\n  \"GtaThemeIntroduced\": false\r\n}"));
         assert!(j.contains("\"AudioApps\": [],"));
     }
 
@@ -406,5 +428,16 @@ mod tests {
             }
             panic!("length differs: C# {} lines, Rust {} lines", a.len(), b.len());
         }
+    }
+
+    #[test]
+    fn gta_theme_is_switched_on_once_then_left_to_the_user() {
+        let mut s = SettingsData::from_json(r#"{"Theme":"light"}"#).unwrap();
+        assert!(s.introduce_gta_theme());
+        assert_eq!(s.theme.as_deref(), Some("neon"));
+        s.theme = Some("dark".to_owned()); // the user switches back
+        let mut again = SettingsData::from_json(&s.to_json()).unwrap();
+        assert!(!again.introduce_gta_theme());
+        assert_eq!(again.theme.as_deref(), Some("dark"));
     }
 }

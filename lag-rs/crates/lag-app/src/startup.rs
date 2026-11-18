@@ -41,7 +41,19 @@ pub fn acquire_single_instance() -> Option<SingleInstance> {
 }
 
 pub fn load_settings() -> SettingsData {
-    lag_core::settings::default_path().and_then(|p| SettingsData::load(&p).ok().flatten()).unwrap_or_default()
+    let path = lag_core::settings::default_path();
+    let loaded = path.as_deref().and_then(|p| SettingsData::load(p).ok().flatten());
+    let existed = loaded.is_some();
+    let mut settings = loaded.unwrap_or_default();
+    // 2.0: GTA VI becomes the theme once, for new and updating users alike; any later choice sticks
+    if settings.introduce_gta_theme() && existed {
+        if let Some(p) = path.as_deref() {
+            if let Err(e) = settings.save(p) {
+                log::warn!("[Settings] could not save the GTA VI theme switch: {e}");
+            }
+        }
+    }
+    settings
 }
 
 /// Startup splash (ui/splash.slint), centred on the monitor under the cursor. None if it cannot be created.

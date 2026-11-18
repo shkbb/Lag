@@ -137,10 +137,37 @@ begin
     'Software\Microsoft\Windows\CurrentVersion\Uninstall\Lag');
 end;
 
+{ One-time migration off the .NET build (1.x, Inno-installed): its self-contained runtime
+  (~1100 files, ~480 MB) would otherwise stay next to the Rust build, since [Files] only
+  adds and overwrites. Its own uninstaller removes exactly the files it installed (nothing
+  else in a folder the user picked); settings in %AppData%\Lag, clips and logs live
+  elsewhere and are not touched. Marker: the .NET host's Lag.runtimeconfig.json. }
+procedure UninstallDotNetBuild();
+var
+  Cmd: string;
+  R: Integer;
+begin
+  if not FileExists(ExpandConstant('{app}\Lag.runtimeconfig.json')) then Exit;
+  if not RegQueryStringValue(HKCU, 'Software\Microsoft\Windows\CurrentVersion\Uninstall\Lag_is1',
+       'UninstallString', Cmd) then
+    if not RegQueryStringValue(HKLM, 'Software\Microsoft\Windows\CurrentVersion\Uninstall\Lag_is1',
+         'UninstallString', Cmd) then Exit;
+  Cmd := RemoveQuotes(Cmd);
+  { only an uninstaller that sits in the folder we are installing into }
+  if CompareText(ExtractFilePath(Cmd), AddBackslash(ExpandConstant('{app}'))) <> 0 then Exit;
+  if not FileExists(Cmd) then Exit;
+  Log('Migrating: uninstalling the .NET build in ' + ExpandConstant('{app}'));
+  if not Exec(Cmd, '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART', '', SW_HIDE, ewWaitUntilTerminated, R) then
+    Log('Migrating: the .NET build uninstaller did not start');
+end;
+
 procedure CurStepChanged(CurStep: TSetupStep);
 var
   R: Integer;
 begin
+  if CurStep = ssInstall then
+    UninstallDotNetBuild();
+
   if CurStep = ssPostInstall then
   begin
     CleanupLegacyVelopack();
