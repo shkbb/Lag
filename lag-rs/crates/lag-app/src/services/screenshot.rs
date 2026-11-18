@@ -95,14 +95,16 @@ fn capture_inner(device: Option<String>, output_dir: String) -> Result<PathBuf, 
         SelectObject(g.memory, g.previous);
     }
     g.previous = HGDIOBJ::default();
-    let mut info = BITMAPINFO::default();
-    info.bmiHeader = BITMAPINFOHEADER {
-        biSize: size_of::<BITMAPINFOHEADER>() as u32,
-        biWidth: w,
-        biHeight: -h,
-        biPlanes: 1,
-        biBitCount: 32,
-        biCompression: BI_RGB.0,
+    let mut info = BITMAPINFO {
+        bmiHeader: BITMAPINFOHEADER {
+            biSize: size_of::<BITMAPINFOHEADER>() as u32,
+            biWidth: w,
+            biHeight: -h,
+            biPlanes: 1,
+            biBitCount: 32,
+            biCompression: BI_RGB.0,
+            ..Default::default()
+        },
         ..Default::default()
     };
     let bytes = (w as usize).checked_mul(h as usize).and_then(|n| n.checked_mul(4)).ok_or("Screenshot too large")?;
@@ -113,7 +115,7 @@ fn capture_inner(device: Option<String>, output_dir: String) -> Result<PathBuf, 
     {
         return Err("GetDIBits failed".into());
     }
-    for pixel in pixels.chunks_exact_mut(4) {
+    for pixel in pixels.as_chunks_mut::<4>().0 {
         pixel.swap(0, 2);
         pixel[3] = 255;
     }

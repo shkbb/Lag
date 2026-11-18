@@ -2,6 +2,7 @@
 
 use super::tr;
 
+/// Video file types the editor imports (everything FFmpeg/mpv here decodes that people actually have).
 pub(super) const IMPORT_PATTERN: &str = "*.mp4;*.mkv;*.mov;*.webm;*.avi;*.m4v;*.wmv;*.flv;*.ts;*.mts;*.m2ts";
 
 /// System "Open" dialog for one video file, modal to `owner` (HWND as isize, 0 = none). None = cancelled.

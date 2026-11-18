@@ -24,7 +24,6 @@ thread_local! { static PLAYBACK: RefCell<Vec<PlaybackListener>> = RefCell::defau
 /// TODO(player/editor packages): subscribe through ctx.on_stop_playback; false stops Player,
 /// true stops both Player and Editor (hide-to-tray). Never perform mpv calls on the UI thread.
 pub trait AppCtxPlaybackExt {
-    #[allow(dead_code)]
     fn on_stop_playback(self: &Rc<Self>, listener: impl Fn(bool) + 'static);
     fn stop_playback(&self, include_editor: bool);
 }

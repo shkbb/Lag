@@ -444,7 +444,7 @@ fn install_resize_border(ui: &AppWindow) -> bool {
     unsafe { windows::Win32::UI::Shell::SetWindowSubclass(hwnd, Some(resize_border_proc), 0x4c4152, 0).as_bool() }
 }
 
-thread_local! { static RUNTIME: RefCell<std::rc::Weak<Runtime>> = RefCell::new(std::rc::Weak::new()); }
+thread_local! { static RUNTIME: RefCell<std::rc::Weak<Runtime>> = const { RefCell::new(std::rc::Weak::new()) }; }
 /// Called by main after the event loop ends: stop recording before the process goes away.
 pub fn shutdown_recorder() {
     let runtime = RUNTIME.with(|r| r.borrow().upgrade());
@@ -734,6 +734,36 @@ pub fn init(ui: &AppWindow, ctx: &Rc<AppCtx>) {
     }
 }
 
+/// Owner, 2026-11-17: "a smooth transition between themes, not a flash over half the screen". The current frame
+/// is captured, laid over the window, the theme switches underneath, and the snapshot fades out (380 ms).
+/// Headless/minimized/no snapshot -> the theme just switches.
+fn theme_crossfade(ui: &AppWindow) {
+    if !ui.window().is_visible() || ui.window().is_minimized() {
+        return;
+    }
+    let Ok(shot) = ui.window().take_snapshot() else { return };
+    let vm = ui.global::<MainVM>();
+    vm.set_theme_fade_image(slint::Image::from_rgba8(shot));
+    vm.set_theme_fade_shown(true);
+    vm.set_theme_fade_active(true);
+    let weak = ui.as_weak();
+    // next frame: start fading (the overlay must be drawn once at full opacity over the new theme first)
+    Timer::single_shot(Duration::from_millis(34), move || {
+        let Some(ui) = weak.upgrade() else { return };
+        ui.global::<MainVM>().set_theme_fade_shown(false);
+        let weak = ui.as_weak();
+        Timer::single_shot(Duration::from_millis(420), move || {
+            if let Some(ui) = weak.upgrade() {
+                let vm = ui.global::<MainVM>();
+                if !vm.get_theme_fade_shown() {
+                    vm.set_theme_fade_active(false);
+                    vm.set_theme_fade_image(slint::Image::default());
+                }
+            }
+        });
+    });
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -784,34 +814,4 @@ mod tests {
         last = None;
         assert!(!target_toast(&mut last, (true, "Game B".into()), false));
     }
-}
-
-/// Owner, 2026-11-17: "a smooth transition between themes, not a flash over half the screen". The current frame
-/// is captured, laid over the window, the theme switches underneath, and the snapshot fades out (380 ms).
-/// Headless/minimized/no snapshot -> the theme just switches.
-fn theme_crossfade(ui: &AppWindow) {
-    if !ui.window().is_visible() || ui.window().is_minimized() {
-        return;
-    }
-    let Ok(shot) = ui.window().take_snapshot() else { return };
-    let vm = ui.global::<MainVM>();
-    vm.set_theme_fade_image(slint::Image::from_rgba8(shot));
-    vm.set_theme_fade_shown(true);
-    vm.set_theme_fade_active(true);
-    let weak = ui.as_weak();
-    // next frame: start fading (the overlay must be drawn once at full opacity over the new theme first)
-    Timer::single_shot(Duration::from_millis(34), move || {
-        let Some(ui) = weak.upgrade() else { return };
-        ui.global::<MainVM>().set_theme_fade_shown(false);
-        let weak = ui.as_weak();
-        Timer::single_shot(Duration::from_millis(420), move || {
-            if let Some(ui) = weak.upgrade() {
-                let vm = ui.global::<MainVM>();
-                if !vm.get_theme_fade_shown() {
-                    vm.set_theme_fade_active(false);
-                    vm.set_theme_fade_image(slint::Image::default());
-                }
-            }
-        });
-    });
 }

@@ -182,16 +182,17 @@ pub fn build_video_filter_chain(model: &EditModel, speed: f64, text_file_paths: 
     vparts
 }
 
+/// `span` = (start, duration) of the source to export, in seconds.
 pub fn build_export_args(
     model: &EditModel,
     clip_path: &str,
     out_path: &str,
-    start: f64,
-    duration: f64,
+    span: (f64, f64),
     speed: f64,
     use_nvenc: bool,
     text_file_paths: &[(&TextItem, &Path)],
 ) -> Vec<String> {
+    let (start, duration) = span;
     let speed_changed = (speed - 1.0).abs() > 0.001;
     let mut args = vec![
         "-y".to_string(),
@@ -307,8 +308,6 @@ pub fn build_concat_args(list_file: &str, out_path: &str, faststart: bool) -> Ve
     args
 }
 
-/// Video file types the editor imports (everything FFmpeg/mpv here decodes that people actually have).
-
 pub fn build_output_path(clip_path: &str, ext: &str) -> PathBuf {
     ffmpeg::unique_sibling_path(clip_path, "edit", ext)
 }
@@ -337,8 +336,13 @@ pub(super) fn spawn_export(
         }
 
         let out_str = out_path.to_string_lossy().into_owned();
-        let result =
-            export_segments(export_gen, &model, &clip_path, &out_str, &segments, speed, &cancel, &active_child, &tx);
+        let result = export_segments(
+            &ExportJob { model: &model, clip_path: &clip_path, speed, cancel: &cancel, active_child: &active_child },
+            export_gen,
+            &out_str,
+            &segments,
+            &tx,
+        );
 
         match result {
             Ok(0) if out_path.exists() => {
@@ -365,22 +369,28 @@ pub(super) fn spawn_export(
     });
 }
 
-#[allow(clippy::too_many_arguments)]
+/// One export run: the edit, the source clip, the playback speed, and how the run is stopped.
+pub(super) struct ExportJob<'a> {
+    pub model: &'a EditModel,
+    pub clip_path: &'a str,
+    pub speed: f64,
+    pub cancel: &'a AtomicBool,
+    /// The running FFmpeg process (killed by Cancel).
+    pub active_child: &'a Arc<Mutex<Option<Child>>>,
+}
+
 pub(super) fn export_segments(
+    job: &ExportJob,
     export_gen: u64,
-    model: &EditModel,
-    clip_path: &str,
     out_path: &str,
     segments: &[(f64, f64)],
-    speed: f64,
-    cancel: &AtomicBool,
-    active_child: &Arc<Mutex<Option<Child>>>,
     tx: &mpsc::Sender<UiMessage>,
 ) -> Result<i32, String> {
+    let ExportJob { cancel, active_child, .. } = *job;
     if segments.len() == 1 {
         let (s, e) = segments[0];
         let seg_dur = (e - s).max(0.05);
-        return run_one_segment(model, clip_path, out_path, s, seg_dur, speed, cancel, active_child, &|p| {
+        return run_one_segment(job, out_path, s, seg_dur, &|p| {
             let _ = tx.send(UiMessage::ExportProgress(export_gen, p.clamp(0.0, 100.0) as i32));
         });
     }
@@ -397,7 +407,7 @@ pub(super) fn export_segments(
             temps.push(tmp);
             let seg_dur = (e - s).max(0.05);
             let total_segs = segments.len() as f64;
-            let code = run_one_segment(model, clip_path, &tmp_str, s, seg_dur, speed, cancel, active_child, &|p| {
+            let code = run_one_segment(job, &tmp_str, s, seg_dur, &|p| {
                 let overall = (i as f64 * 100.0 + p.clamp(0.0, 100.0)) / total_segs;
                 let _ = tx.send(UiMessage::ExportProgress(export_gen, overall as i32));
             })?;
@@ -427,18 +437,14 @@ pub(super) fn export_segments(
     res
 }
 
-#[allow(clippy::too_many_arguments)]
 pub(super) fn run_one_segment(
-    model: &EditModel,
-    clip_path: &str,
+    job: &ExportJob,
     out_path: &str,
     start: f64,
     duration: f64,
-    speed: f64,
-    cancel: &AtomicBool,
-    active_child: &Arc<Mutex<Option<Child>>>,
     on_progress: &dyn Fn(f64),
 ) -> Result<i32, String> {
+    let ExportJob { model, clip_path, speed, cancel, active_child } = *job;
     let eff_dur = duration / speed;
     let run_with_codec = |use_nvenc: bool| -> Result<i32, String> {
         let mut temp_text_paths: Vec<(TextItem, PathBuf)> = Vec::new();
@@ -451,7 +457,7 @@ pub(super) fn run_one_segment(
             temp_text_paths.push((item.clone(), tf));
         }
         let pairs: Vec<(&TextItem, &Path)> = temp_text_paths.iter().map(|(it, p)| (it, p.as_path())).collect();
-        let args = build_export_args(model, clip_path, out_path, start, duration, speed, use_nvenc, &pairs);
+        let args = build_export_args(model, clip_path, out_path, (start, duration), speed, use_nvenc, &pairs);
         let res = ffmpeg::run_with_progress(&args, cancel, Some(active_child), eff_dur, Some(on_progress));
         for (_, p) in temp_text_paths {
             let _ = std::fs::remove_file(p);

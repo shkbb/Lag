@@ -336,7 +336,7 @@ pub(super) fn bind_view(ui: &AppWindow, page: &PlayerPage) {
         let fade_in_pending = fade_in_pending.clone();
         let applied_at = cover_applied_at.clone();
         let weak = ui.as_weak();
-        let fade: Rc<dyn Fn(Box<dyn FnOnce()>)> = Rc::new(move |apply: Box<dyn FnOnce()>| {
+        let fade: FullscreenFade = Rc::new(move |apply: Box<dyn FnOnce()>| {
             let main = weak.upgrade().and_then(|ui| {
                 if ui.window().is_visible() && !ui.window().is_minimized() {
                     nofocus::hwnd(ui.window())

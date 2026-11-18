@@ -28,7 +28,7 @@ pub fn build_game_chips(
             }
         }
     }
-    games.sort_by(|a, b| a.to_lowercase().cmp(&b.to_lowercase()));
+    games.sort_by_key(|g| g.to_lowercase());
     let desktop_present = clips.iter().any(|c| !c.has_game());
 
     if let Some(ref current) = *active_filter {
@@ -77,11 +77,8 @@ pub fn filter_clips<'a>(
                         return false;
                     }
                 }
-                Some(game) => {
-                    if !c.game.as_deref().is_some_and(|g| eq_ignore_case(g, game)) {
-                        return false;
-                    }
-                }
+                Some(game) if !c.game.as_deref().is_some_and(|g| eq_ignore_case(g, game)) => return false,
+                Some(_) => {}
                 None => {}
             }
             if !q.is_empty() {

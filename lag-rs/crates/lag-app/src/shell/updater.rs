@@ -268,7 +268,6 @@ pub fn download_and_install(update: &UpdateInfo) -> bool {
 }
 /// Invoke from Settings or a startup timer. No network until this API is called.
 /// `finished` is delivered on Slint's event loop, including a localized status resource key.
-#[allow(dead_code)]
 pub fn check_for_updates(silent: bool, finished: impl FnOnce(Option<&'static str>) + Send + 'static) {
     std::thread::spawn(move || {
         let kind = detect_install();

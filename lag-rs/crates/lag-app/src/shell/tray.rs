@@ -9,7 +9,7 @@ use std::{
 };
 use tray_icon::{MouseButton, MouseButtonState, TrayIcon, TrayIconBuilder, TrayIconEvent};
 
-thread_local! { static CONTEXT: RefCell<Weak<AppCtx>> = RefCell::new(Weak::new()); }
+thread_local! { static CONTEXT: RefCell<Weak<AppCtx>> = const { RefCell::new(Weak::new()) }; }
 pub(super) fn flush_settings() {
     CONTEXT.with(|c| {
         if let Some(ctx) = c.borrow().upgrade() {
@@ -105,7 +105,7 @@ fn hicon_from_rgba(rgba: &[u8], w: u32, h: u32) -> Option<windows::Win32::UI::Wi
             return None;
         }
         let dst = std::slice::from_raw_parts_mut(bits as *mut u8, (w * h * 4) as usize);
-        for (d, s) in dst.chunks_exact_mut(4).zip(rgba.chunks_exact(4)) {
+        for (d, s) in dst.as_chunks_mut::<4>().0.iter_mut().zip(rgba.as_chunks::<4>().0) {
             d[0] = s[2];
             d[1] = s[1];
             d[2] = s[0];

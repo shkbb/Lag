@@ -607,16 +607,18 @@ impl LibraryState {
 
                 if let Some((tasks, run_housekeeping)) = tasks_and_hk {
                     start_phase2_hydration(
-                        my_gen,
-                        refresh_gen,
-                        library_dir,
-                        thumb_cache_dir,
-                        meta_store,
-                        auto_cleanup,
-                        max_gb,
-                        run_housekeeping,
-                        mem_cache,
-                        tasks,
+                        HydrationJob {
+                            my_gen,
+                            refresh_gen,
+                            library_dir,
+                            thumb_cache_dir,
+                            meta_store,
+                            auto_cleanup,
+                            max_gb,
+                            run_housekeeping,
+                            mem_cache,
+                            tasks,
+                        },
                         ui_weak,
                         st_rc,
                     );

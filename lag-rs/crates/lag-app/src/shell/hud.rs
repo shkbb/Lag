@@ -21,8 +21,7 @@ use markup::StatsHud;
 
 static ENGINE_FRAMES: AtomicU64 = AtomicU64::new(0);
 thread_local! {static FRAMES: RefCell<Box<dyn Fn() -> u64>> = RefCell::new(Box::new(||ENGINE_FRAMES.load(Ordering::Acquire)));}
-/// Alternative to a getter: shell-A can publish each Event::Status's frames_captured here.
-#[allow(dead_code)]
+/// The engine's frame count from its last status event (used until `set_frame_counter` installs the live one).
 pub fn update_frames(frames: u64) {
     ENGINE_FRAMES.store(frames, Ordering::Release);
 }

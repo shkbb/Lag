@@ -171,9 +171,9 @@ pub(super) fn run(
             let saved = st.settings.audio_apps.clone().unwrap_or_default();
             for (exe, _, png) in &apps {
                 let key = exe.to_lowercase();
-                if !st.app_icons.contains_key(&key) {
+                if let std::collections::hash_map::Entry::Vacant(slot) = st.app_icons.entry(key) {
                     if let Some(img) = png.as_deref().and_then(decode_icon) {
-                        st.app_icons.insert(key, img);
+                        slot.insert(img);
                     }
                 }
             }

@@ -201,20 +201,39 @@ pub(super) fn hydrate_single_clip(
     Some((buffer, duration_ticks))
 }
 
+/// Phase 2 of one library refresh: what to hydrate and where, plus the housekeeping that runs first.
+pub(super) struct HydrationJob {
+    /// This refresh's generation; a newer refresh (`refresh_gen` moved on) cancels the job.
+    pub my_gen: u64,
+    pub refresh_gen: Arc<AtomicU64>,
+    pub library_dir: PathBuf,
+    pub thumb_cache_dir: PathBuf,
+    pub meta_store: Option<ClipMetadataStore>,
+    /// Storage limit (oldest clips removed first) and whether to apply it before hydrating.
+    pub auto_cleanup: bool,
+    pub max_gb: i32,
+    pub run_housekeeping: bool,
+    pub mem_cache: Arc<Mutex<ThumbnailMemCache>>,
+    pub tasks: Vec<HydrateTask>,
+}
+
 pub(super) fn start_phase2_hydration(
-    my_gen: u64,
-    refresh_gen: Arc<AtomicU64>,
-    library_dir: PathBuf,
-    thumb_cache_dir: PathBuf,
-    meta_store: Option<ClipMetadataStore>,
-    auto_cleanup: bool,
-    max_gb: i32,
-    run_housekeeping: bool,
-    mem_cache: Arc<Mutex<ThumbnailMemCache>>,
-    tasks: Vec<HydrateTask>,
+    job: HydrationJob,
     ui_weak: slint::Weak<crate::AppWindow>,
     state: Rc<RefCell<LibraryState>>,
 ) {
+    let HydrationJob {
+        my_gen,
+        refresh_gen,
+        library_dir,
+        thumb_cache_dir,
+        meta_store,
+        auto_cleanup,
+        max_gb,
+        run_housekeeping,
+        mem_cache,
+        tasks,
+    } = job;
     // Keep a thread-safe bridge for batched UI posting via invoke_from_event_loop.
     // LibraryState lives on the UI thread inside Rc<RefCell<_>>, so we pass a Weak
     // token via a UI-thread-only handle or look it up via a thread_local? Wait:

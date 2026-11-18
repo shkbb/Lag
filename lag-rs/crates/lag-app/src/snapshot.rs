@@ -5,7 +5,7 @@
 //! window is created, nothing takes focus: safe to run while the user is in a game. Used to check layout
 //! and styling during development. Tray, hotkeys and the recording engine are NOT started in this mode.
 
-use slint::platform::software_renderer::{MinimalSoftwareWindow, RepaintBufferType, Rgb565Pixel, TargetPixel};
+use slint::platform::software_renderer::{MinimalSoftwareWindow, RepaintBufferType, TargetPixel};
 use slint::platform::{Platform, WindowAdapter};
 use slint::PhysicalSize;
 use std::rc::Rc;
@@ -58,10 +58,6 @@ impl TargetPixel for Rgba {
         Rgba([r, g, b, 255])
     }
 }
-
-// Keep the Rgb565 import used (it documents the alternative cheaper format).
-#[allow(dead_code)]
-fn _rgb565(_: Rgb565Pixel) {}
 
 pub struct Snapshot {
     pub out: String,

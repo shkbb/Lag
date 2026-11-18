@@ -47,7 +47,7 @@ fn encode_ring_mux_probe() {
     for i in 0..(8 * 144) {
         t_us += 6_944 + ((i * 7919) % 2000) as i64 - 1000;
         let Some(pts) = grid.snap(t_us) else { continue };
-        for (k, p) in px.chunks_exact_mut(4).enumerate() {
+        for (k, p) in px.as_chunks_mut::<4>().0.iter_mut().enumerate() {
             p[0] = (k as i64 + i as i64 * 5) as u8;
             p[1] = (k / 1280) as u8;
             p[2] = (i * 2) as u8;

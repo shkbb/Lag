@@ -14,12 +14,15 @@ use windows::Win32::{
     UI::WindowsAndMessaging::{GetCursorPos, WM_NCDESTROY},
 };
 
+/// Runs a fullscreen switch (the boxed closure) behind a fade to black.
+pub(super) type FullscreenFade = Rc<dyn Fn(Box<dyn FnOnce()>)>;
+
 thread_local! {
     pub(super) static HOST_SYNC: RefCell<Option<Rc<dyn Fn()>>> = const { RefCell::new(None) };
     /// Visible main-window UI floating over the video area (window coords, logical px).
     pub(super) static OCCLUDER: Cell<Option<(f32, f32, f32, f32)>> = const { Cell::new(None) };
     /// Set by `init`: runs a fullscreen toggle behind a fade to black when video is on screen.
-    pub(super) static FULLSCREEN_FADE: RefCell<Option<Rc<dyn Fn(Box<dyn FnOnce()>)>>> = const { RefCell::new(None) };
+    pub(super) static FULLSCREEN_FADE: RefCell<Option<FullscreenFade>> = const { RefCell::new(None) };
     /// Screen position of the cursor at the last pointer event the player UI saw (see `synthetic_pointer_move`).
     pub(super) static LAST_POINTER: Cell<(i32, i32)> = const { Cell::new((i32::MIN, i32::MIN)) };
     /// `--ui-check` / `--gpu-check` feed pointer events without moving the OS cursor: every one is real.

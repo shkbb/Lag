@@ -178,8 +178,7 @@ fn ffmpeg_video_filter_order_and_audio_mix_args() {
         &m,
         "C:\\clips\\game.mp4",
         "C:\\clips\\game-edit.mp4",
-        2.0,
-        18.0,
+        (2.0, 18.0),
         4.0,
         true,
         &[(&txt, txt_path.as_path())],
@@ -224,7 +223,7 @@ fn ffmpeg_video_filter_order_and_audio_mix_args() {
 fn gif_export_args_and_progress_parsing() {
     let mut m = EditModel::new("Native");
     m.export_as_gif = true;
-    let args = build_export_args(&m, "in.mp4", "out.gif", 1.5, 4.0, 1.0, true, &[]);
+    let args = build_export_args(&m, "in.mp4", "out.gif", (1.5, 4.0), 1.0, true, &[]);
     let fc_idx = args.iter().position(|a| a == "-filter_complex").unwrap();
     assert_eq!(
         args[fc_idx + 1],

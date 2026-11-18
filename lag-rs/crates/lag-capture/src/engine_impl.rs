@@ -276,9 +276,12 @@ struct StatsWindow {
     captured0: u64,
 }
 
+/// The timer-resolution thread and its stop flag (flag + condvar to wake it).
+type TimerThread = (JoinHandle<()>, Arc<(Mutex<bool>, Condvar)>);
+
 pub(crate) struct Engine {
     shared: Arc<Shared>,
-    timer: Mutex<Option<(JoinHandle<()>, Arc<(Mutex<bool>, Condvar)>)>>,
+    timer: Mutex<Option<TimerThread>>,
 }
 
 impl Engine {
@@ -830,15 +833,16 @@ fn lock_onto_window(shared: &Arc<Shared>, hwnd: isize, pid: u32, exe: &str, game
     let name = game_name.filter(|n| !n.trim().is_empty()).unwrap_or(exe).to_string();
     start_session(
         shared,
-        CaptureTarget::Window(hwnd),
-        ow,
-        oh,
-        LockKind::Game,
-        hwnd,
-        pid,
-        &format!("game {exe}"),
-        name,
-        Some(exe.to_string()),
+        SessionTarget {
+            capture: CaptureTarget::Window(hwnd),
+            out: (ow, oh),
+            kind: LockKind::Game,
+            hwnd,
+            pid,
+            label: format!("game {exe}"),
+            name,
+            exe: Some(exe.to_string()),
+        },
     );
 }
 
@@ -855,31 +859,47 @@ fn lock_onto_monitor(shared: &Arc<Shared>, device: Option<&str>) {
     let (ow, oh) = output_dims(th, w, h);
     start_session(
         shared,
-        CaptureTarget::Monitor(hmon),
-        ow,
-        oh,
-        LockKind::Desktop,
-        0,
-        0,
-        &format!("desktop {name} ({w}x{h})"),
-        String::new(),
-        None,
+        SessionTarget {
+            capture: CaptureTarget::Monitor(hmon),
+            out: (ow, oh),
+            kind: LockKind::Desktop,
+            hwnd: 0,
+            pid: 0,
+            label: format!("desktop {name} ({w}x{h})"),
+            name: String::new(),
+            exe: None,
+        },
     );
 }
 
-#[allow(clippy::too_many_arguments)]
-fn start_session(
-    shared: &Arc<Shared>,
-    target: CaptureTarget,
-    out_w: i32,
-    out_h: i32,
+/// What a capture session records: the source, the encoded size, and what it is (game window or desktop).
+struct SessionTarget {
+    capture: CaptureTarget,
+    /// Encoded frame size (even).
+    out: (i32, i32),
     kind: LockKind,
+    /// The game window and its process (0 for the desktop).
     hwnd: isize,
     pid: u32,
-    label: &str,
-    target_name: String,
-    target_exe: Option<String>,
-) {
+    /// For the log: "game cs2.exe" / "desktop \\.\DISPLAY1 (3440x1440)".
+    label: String,
+    /// Game name and exe shown in the UI and written to the clip's metadata.
+    name: String,
+    exe: Option<String>,
+}
+
+fn start_session(shared: &Arc<Shared>, session: SessionTarget) {
+    let SessionTarget {
+        capture: target,
+        out: (out_w, out_h),
+        kind,
+        hwnd,
+        pid,
+        label,
+        name: target_name,
+        exe: target_exe,
+    } = session;
+    let label = label.as_str();
     let result = (|| -> Result<(), String> {
         let (d3d, choice, opts) = {
             let st = lock(&shared.state);
@@ -1023,15 +1043,12 @@ fn on_frame(
         overlay_us = o0.elapsed().as_micros() as i64;
         let frame = composed.as_ref().unwrap_or(tex);
         let t0 = p.encoder.timings;
-        match p.encoder.encode(frame, pts) {
-            Ok(packets) => {
-                if let Some(ring) = lock(&shared.state).ring.clone() {
-                    for pk in packets {
-                        ring.add(pk);
-                    }
+        if let Ok(packets) = p.encoder.encode(frame, pts) {
+            if let Some(ring) = lock(&shared.state).ring.clone() {
+                for pk in packets {
+                    ring.add(pk);
                 }
             }
-            Err(_) => {}
         }
         let t1 = p.encoder.timings;
         convert_us = t1.convert_us - t0.convert_us;
@@ -1357,15 +1374,13 @@ fn save_replay(shared: &Arc<Shared>) -> Option<String> {
                         let enc_name = choice.as_ref().map_or("libx264", |c| c.ffmpeg_name);
                         let ok = carry::transcode_stitch(
                             &path,
-                            &carry.video_spec,
-                            &head_video,
-                            &head_audio,
-                            live,
-                            &live_video,
-                            &live_audio,
-                            opts.bitrate_kbps,
-                            opts.preset,
-                            enc_name,
+                            carry::StitchPart { spec: &carry.video_spec, video: &head_video, audio: &head_audio },
+                            carry::StitchPart { spec: live, video: &live_video, audio: &live_audio },
+                            carry::StitchEncoder {
+                                bitrate_kbps: opts.bitrate_kbps,
+                                preset: opts.preset,
+                                video_encoder: enc_name,
+                            },
                         );
                         if ok {
                             true

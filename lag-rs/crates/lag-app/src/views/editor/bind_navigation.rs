@@ -93,7 +93,7 @@ pub(super) fn bind_navigation(ui: &AppWindow, state: &Rc<RefCell<EditorRuntime>>
 /// App-wide events: the library changed, settings (language) changed, "Edit" pressed elsewhere, playback stop.
 pub(super) fn bind_app_events(ctx: &Rc<AppCtx>, state: &Rc<RefCell<EditorRuntime>>) {
     {
-        let st = Rc::downgrade(&state);
+        let st = Rc::downgrade(state);
         ctx.on_clips_changed(move |clips| {
             if let Some(st) = st.upgrade() {
                 if let Ok(mut s) = st.try_borrow_mut() {
@@ -103,7 +103,7 @@ pub(super) fn bind_app_events(ctx: &Rc<AppCtx>, state: &Rc<RefCell<EditorRuntime
         });
     }
     {
-        let st = Rc::downgrade(&state);
+        let st = Rc::downgrade(state);
         ctx.on_settings_changed(move |_| {
             if let Some(st) = st.upgrade() {
                 if let Ok(mut s) = st.try_borrow_mut() {
@@ -113,7 +113,7 @@ pub(super) fn bind_app_events(ctx: &Rc<AppCtx>, state: &Rc<RefCell<EditorRuntime
         });
     }
     {
-        let st = Rc::downgrade(&state);
+        let st = Rc::downgrade(state);
         ctx.on_edit_clip(move |path| {
             if let Some(st) = st.upgrade() {
                 let mut s = st.borrow_mut();
@@ -123,7 +123,7 @@ pub(super) fn bind_app_events(ctx: &Rc<AppCtx>, state: &Rc<RefCell<EditorRuntime
         });
     }
     {
-        let st = Rc::downgrade(&state);
+        let st = Rc::downgrade(state);
         ctx.on_stop_playback(move |include_editor| {
             if include_editor {
                 if let Some(st) = st.upgrade() {

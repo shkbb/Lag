@@ -173,7 +173,8 @@ vec4 hook() {
 }
 "#;
 
-#[allow(dead_code)] // the full CPU chain: kept as the reference the GPU look mirrors (tests)
+/// The full CPU filter chain: the reference the GPU look (`build_preview_look`) is tested against.
+#[cfg(test)]
 pub fn build_mpv_vf(model: &EditModel) -> String {
     let mut parts = Vec::new();
     if let Some(graph) = model.selected_filter().graph {

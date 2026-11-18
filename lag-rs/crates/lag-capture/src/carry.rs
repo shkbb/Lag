@@ -205,48 +205,36 @@ fn ffmpeg_exe() -> std::path::PathBuf {
 
 /// Re-encodes both halves into one file when they cannot be concatenated directly (different size or
 /// codec config). `video_encoder` is the FFmpeg name of the encoder the engine records with.
-#[allow(clippy::too_many_arguments)]
-pub fn transcode_stitch(
-    out_path: &str,
-    head_spec: &StreamSpec,
-    head_video: &[EncodedPacket],
-    head_audio: &[OwnedAudioTrack],
-    live_spec: &StreamSpec,
-    live_video: &[EncodedPacket],
-    live_audio: &[OwnedAudioTrack],
-    bitrate_kbps: i32,
-    preset: i32,
-    video_encoder: &str,
-) -> bool {
-    transcode_stitch_with(
-        &ffmpeg_exe(),
-        out_path,
-        head_spec,
-        head_video,
-        head_audio,
-        live_spec,
-        live_video,
-        live_audio,
-        bitrate_kbps,
-        preset,
-        video_encoder,
-    )
+/// One half of a stitched clip: its video stream format, packets and audio tracks.
+#[derive(Clone, Copy)]
+pub struct StitchPart<'a> {
+    pub spec: &'a StreamSpec,
+    pub video: &'a [EncodedPacket],
+    pub audio: &'a [OwnedAudioTrack],
 }
 
-#[allow(clippy::too_many_arguments)]
+/// Encoder settings for the re-encode: bitrate, quality preset and the FFmpeg encoder the engine records with.
+#[derive(Clone, Copy)]
+pub struct StitchEncoder<'a> {
+    pub bitrate_kbps: i32,
+    pub preset: i32,
+    pub video_encoder: &'a str,
+}
+
+pub fn transcode_stitch(out_path: &str, head: StitchPart, live: StitchPart, encoder: StitchEncoder) -> bool {
+    transcode_stitch_with(&ffmpeg_exe(), out_path, head, live, encoder)
+}
+
 pub fn transcode_stitch_with(
     ffmpeg: &Path,
     out_path: &str,
-    head_spec: &StreamSpec,
-    head_video: &[EncodedPacket],
-    head_audio: &[OwnedAudioTrack],
-    live_spec: &StreamSpec,
-    live_video: &[EncodedPacket],
-    live_audio: &[OwnedAudioTrack],
-    bitrate_kbps: i32,
-    preset: i32,
-    video_encoder: &str,
+    head: StitchPart,
+    live: StitchPart,
+    encoder: StitchEncoder,
 ) -> bool {
+    let StitchPart { spec: head_spec, video: head_video, audio: head_audio } = head;
+    let StitchPart { spec: live_spec, video: live_video, audio: live_audio } = live;
+    let StitchEncoder { bitrate_kbps, preset, video_encoder } = encoder;
     if !ffmpeg.exists() {
         log::info!("[Stitch] bundled ffmpeg.exe missing ({}) \u{2014} cannot re-encode.", ffmpeg.display());
         return false;

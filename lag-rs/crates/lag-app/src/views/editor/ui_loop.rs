@@ -23,7 +23,7 @@ pub(super) fn run(
     let stage_rect = Rc::new(Cell::new((0.0f32, 0.0f32, 0.0f32, 0.0f32)));
     let resync: Rc<dyn Fn()> = {
         let host = Rc::downgrade(&host);
-        let st = Rc::downgrade(&state);
+        let st = Rc::downgrade(state);
         let stage_rect = stage_rect.clone();
         let weak = ui.as_weak();
         Rc::new(move || {

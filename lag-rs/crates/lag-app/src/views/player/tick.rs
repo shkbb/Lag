@@ -15,7 +15,6 @@ pub(super) fn run(ui: &AppWindow, page: PlayerPage, events: mpsc::Receiver<Messa
         fade_in_pending,
         cover_applied_at,
         ensure_native_host,
-        load: _,
         ..
     } = page;
     let weak = ui.as_weak();

@@ -186,7 +186,7 @@ fn step(weak: slint::Weak<AppWindow>, queue: Rc<RefCell<VecDeque<String>>>, dir:
             }
         }
         "type" => {
-            for ch in line.splitn(2, ' ').nth(1).unwrap_or("").chars() {
+            for ch in line.split_once(' ').map_or("", |(_, rest)| rest).chars() {
                 let t: slint::SharedString = ch.to_string().into();
                 win.dispatch_event(WindowEvent::KeyPressed { text: t.clone() });
                 win.dispatch_event(WindowEvent::KeyReleased { text: t });
@@ -342,7 +342,7 @@ fn screen_grab(hwnd: windows::Win32::Foundation::HWND) -> Option<(u32, u32, Vec<
         if !ok || lines == 0 {
             return None;
         }
-        for c in px.chunks_exact_mut(4) {
+        for c in px.as_chunks_mut::<4>().0 {
             c.swap(0, 2); // BGRA -> RGBA
             c[3] = 255;
         }
