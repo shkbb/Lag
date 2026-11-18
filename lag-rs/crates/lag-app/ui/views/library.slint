@@ -10,6 +10,29 @@ import { LagContextMenuContainer, LagMenuItem } from "../components/menu.slint";
 import { LibraryClipTile, LibraryCardData } from "../components/library/clip_card.slint";
 import { IndeterminateBar } from "../components/library/indeterminate_bar.slint";
 
+// Soft end of the chip row: the page colour under the arrow, then a plain gradient to clear, so the chips
+// fade out instead of being cut (owner, 2026-11-18: "just make them fade smoothly").
+component EdgeFade {
+    in property <bool> from-left: true;
+    property <length> solid: self.width - 42px;
+    // GTA VI: the page there is the backdrop under the veil, which comes out at about #21162B
+    property <color> edge: Theme.is-neon ? #21162B : Theme.surface-app;
+    Rectangle {
+        x: root.from-left ? 0px : root.width - root.solid;
+        width: root.solid;
+        height: root.height;
+        background: root.edge;
+    }
+    Rectangle {
+        x: root.from-left ? root.solid : 0px;
+        width: root.width - root.solid;
+        height: root.height;
+        background: root.from-left
+            ? @linear-gradient(90deg, root.edge 0%, root.edge.transparentize(1) 100%)
+            : @linear-gradient(90deg, root.edge.transparentize(1) 0%, root.edge 100%);
+    }
+}
+
 // Round scroll button at an end of the game-chip row (shown only when chips are hidden on that side).
 component LibChipArrow {
     in property <image> icon;
@@ -267,17 +290,23 @@ export component LibraryPage inherits Rectangle {
                     }
 
                     // Horizontally scrollable game chips; vertical mouse wheel translates to horizontal scroll
-                    Rectangle {
+                    chips-area := Rectangle {
                         horizontal-stretch: 1;
                         height: 38px;
                         clip: true;
+                        // Chips run between 10px and width-12px. Where more chips hide, the row dissolves into the
+                        // page background (EdgeFade) and a round arrow sits in that fade with its own gap (owner,
+                        // 2026-11-18: no hard-cut chips, no arrows glued to the search box / Favourites).
+                        property <length> view-w: max(0px, self.width - 22px);
+                        property <bool> can-left: chips-flick.content-x < -1px;
+                        property <bool> can-right: chips-row.preferred-width + chips-flick.content-x > self.view-w + 1px;
 
                         TouchArea {
                             width: 100%;
                             height: 100%;
                             scroll-event(ev) => {
                                 let delta = ev.delta-x != 0px ? ev.delta-x : ev.delta-y;
-                                let max-x = max(0px, chips-row.preferred-width - chips-flick.width);
+                                let max-x = max(0px, chips-row.preferred-width - chips-area.view-w);
                                 if (delta != 0px && max-x > 0px) {
                                     chips-flick.content-x = clamp(chips-flick.content-x + delta, -max-x, 0px);
                                     return accept;
@@ -288,7 +317,7 @@ export component LibraryPage inherits Rectangle {
                             chips-flick := Flickable {
                                 x: 10px;
                                 y: 0px;
-                                width: max(0px, parent.width - 22px);
+                                width: chips-area.view-w;
                                 height: 38px;
                                 interactive: true;
                                 content-width: chips-row.preferred-width;
@@ -300,35 +329,49 @@ export component LibraryPage inherits Rectangle {
                                     height: self.preferred-height;
                                     spacing: 7px;
 
-                                    // A chip running past an edge fades out the further it is cut, so the row
-                                    // dissolves at its ends instead of slicing a chip in half (owner, 2026-11-18:
-                                    // "do something about the cut-off game categories"). No colour overlay: the
-                                    // GTA VI backdrop shows through, nothing to match.
                                     for chip in LibraryVM.game-chips: GameChipButton {
                                         text: chip.label;
                                         selected: chip.is-active;
-                                        opacity: max(0.12, 1 - (max(0px, -(self.x + chips-flick.content-x)) + max(0px, self.x + chips-flick.content-x + self.width - chips-flick.width)) / max(1px, min(self.width, 90px)) * 0.88);
                                         clicked => { LibraryVM.set-game-filter(chip.filter-key); }
                                     }
                                 }
                             }
                         }
 
-                        // Scroll arrows, only towards hidden chips
-                        if chips-flick.content-x < -1px: LibChipArrow {
+                        EdgeFade {
                             x: 0px;
+                            width: 10px + 72px;
+                            height: parent.height;
+                            from-left: true;
+                            opacity: chips-area.can-left ? 1 : 0;
+                            visible: self.opacity > 0;
+                            animate opacity { duration: Theme.dur-fast; }
+                        }
+                        EdgeFade {
+                            x: parent.width - self.width;
+                            width: 12px + 72px;
+                            height: parent.height;
+                            from-left: false;
+                            opacity: chips-area.can-right ? 1 : 0;
+                            visible: self.opacity > 0;
+                            animate opacity { duration: Theme.dur-fast; }
+                        }
+
+                        // Scroll arrows, only towards hidden chips
+                        if chips-area.can-left: LibChipArrow {
+                            x: 10px;
                             y: (parent.height - self.height) / 2;
                             icon: Icons.chevron-left;
                             clicked => {
-                                chips-flick.content-x = min(0px, chips-flick.content-x + chips-flick.width * 0.7);
+                                chips-flick.content-x = min(0px, chips-flick.content-x + chips-area.view-w * 0.7);
                             }
                         }
-                        if chips-row.preferred-width + chips-flick.content-x > chips-flick.width + 1px: LibChipArrow {
-                            x: parent.width - self.width;
+                        if chips-area.can-right: LibChipArrow {
+                            x: 10px + chips-area.view-w - self.width;
                             y: (parent.height - self.height) / 2;
                             icon: Icons.chevron-right;
                             clicked => {
-                                chips-flick.content-x = max(chips-flick.width - chips-row.preferred-width, chips-flick.content-x - chips-flick.width * 0.7);
+                                chips-flick.content-x = max(chips-area.view-w - chips-row.preferred-width, chips-flick.content-x - chips-area.view-w * 0.7);
                             }
                         }
                     }
