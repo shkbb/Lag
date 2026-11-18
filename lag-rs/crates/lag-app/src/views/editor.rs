@@ -24,6 +24,8 @@ mod geometry;
 mod import;
 mod merge;
 mod model;
+mod montage;
+mod montage_export;
 mod native;
 mod preview;
 mod runtime;

@@ -182,6 +182,38 @@ pub fn build_video_filter_chain(model: &EditModel, speed: f64, text_file_paths: 
     vparts
 }
 
+/// Audio of one exported span of input `input`: one filter per audible track (its volume, silence outside the
+/// track's own range, tempo for the speed) and the output labels `[a{tag}{stream}]`. Tracks that are muted or
+/// lie outside the span are left out.
+pub fn audio_track_filters(
+    model: &EditModel,
+    input: usize,
+    tag: &str,
+    span: (f64, f64),
+    speed: f64,
+) -> (Vec<String>, Vec<String>) {
+    let (start, duration) = span;
+    let (mut filters, mut labels) = (Vec::new(), Vec::new());
+    for track in model.audio_tracks.iter().filter(|t| !t.is_muted && t.volume > 0) {
+        let a = (track.start_sec - start).max(0.0);
+        let b = (track.end_sec - start).min(duration);
+        if b <= 0.01 || a >= duration - 0.01 {
+            continue;
+        }
+        let mut aparts = vec![format!("volume={}", fmt_dec(track.volume as f64 / 100.0, 3))];
+        if a > 0.01 || b < duration - 0.01 {
+            aparts.push(format!("volume=0:enable='lt(t\\,{})+gt(t\\,{})'", fmt_dec(a, 3), fmt_dec(b, 3)));
+        }
+        if (speed - 1.0).abs() > 0.001 {
+            aparts.push(build_atempo_chain(speed));
+        }
+        let label = format!("[a{tag}{}]", track.stream_index);
+        filters.push(format!("[{input}:a:{}]{}{label}", track.stream_index, aparts.join(",")));
+        labels.push(label);
+    }
+    (filters, labels)
+}
+
 /// `span` = (start, duration) of the source to export, in seconds.
 pub fn build_export_args(
     model: &EditModel,
@@ -193,7 +225,6 @@ pub fn build_export_args(
     text_file_paths: &[(&TextItem, &Path)],
 ) -> Vec<String> {
     let (start, duration) = span;
-    let speed_changed = (speed - 1.0).abs() > 0.001;
     let mut args = vec![
         "-y".to_string(),
         "-ss".to_string(),
@@ -236,24 +267,8 @@ pub fn build_export_args(
         maps.push("0:v:0".to_string());
     }
 
-    let mut audio_labels = Vec::new();
-    for track in model.audio_tracks.iter().filter(|t| !t.is_muted && t.volume > 0) {
-        let a = (track.start_sec - start).max(0.0);
-        let b = (track.end_sec - start).min(duration);
-        if b <= 0.01 || a >= duration - 0.01 {
-            continue;
-        }
-        let mut aparts = vec![format!("volume={}", fmt_dec(track.volume as f64 / 100.0, 3))];
-        let gated = a > 0.01 || b < duration - 0.01;
-        if gated {
-            aparts.push(format!("volume=0:enable='lt(t\\,{})+gt(t\\,{})'", fmt_dec(a, 3), fmt_dec(b, 3)));
-        }
-        if speed_changed {
-            aparts.push(build_atempo_chain(speed));
-        }
-        filters.push(format!("[0:a:{}]{}[a{}]", track.stream_index, aparts.join(","), track.stream_index));
-        audio_labels.push(format!("[a{}]", track.stream_index));
-    }
+    let (audio_filters, audio_labels) = audio_track_filters(model, 0, "", span, speed);
+    filters.extend(audio_filters);
 
     let has_audio = !audio_labels.is_empty();
     if audio_labels.len() == 1 {
