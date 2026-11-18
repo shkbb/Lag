@@ -8,6 +8,19 @@ use windows::{
 
 const API_LATEST: &str = "https://api.github.com/repos/shkbb/Lag/releases/latest";
 const SETUP_ASSET: &str = "Lag-win-Setup.exe";
+/// The installer's uninstall key (installer/Lag.iss AppId=Lag).
+const UNINSTALL_KEY: &str = "Lag_is1";
+
+/// Test hooks for a real end-to-end update run against a local server and an isolated install
+/// (scratchpad "LagTest" installers): `LAG_UPDATE_FEED` replaces the GitHub "latest release" URL and
+/// `LAG_UPDATE_KEY` the uninstall key name. Unset = the real ones.
+fn feed_url() -> String {
+    std::env::var("LAG_UPDATE_FEED").ok().filter(|s| !s.is_empty()).unwrap_or_else(|| API_LATEST.into())
+}
+fn uninstall_subkey() -> Vec<u16> {
+    let key = std::env::var("LAG_UPDATE_KEY").ok().filter(|s| !s.is_empty()).unwrap_or_else(|| UNINSTALL_KEY.into());
+    format!("Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{key}").encode_utf16().chain(Some(0)).collect()
+}
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum InstallKind {
     DevOrPortable,
@@ -64,11 +77,12 @@ pub fn detect_install() -> InstallKind {
     {
         return InstallKind::LegacyVelopack;
     }
+    let subkey_text = uninstall_subkey();
     for root in [HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE] {
         // Read only, both per-user and per-machine Inno installations.
         let mut len = 0;
         unsafe {
-            let subkey = w!("Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Lag_is1");
+            let subkey = PCWSTR(subkey_text.as_ptr());
             if RegGetValueW(root, subkey, w!("InstallLocation"), RRF_RT_REG_SZ, None, None, Some(&mut len)).is_err() {
                 continue;
             }
@@ -199,8 +213,11 @@ fn download(url: &str, output: &mut impl std::io::Write) -> Result<(), Box<dyn s
         }
         let mut buffer = [0u8; 65536];
         loop {
-            if started.elapsed() > Duration::from_secs(300) {
-                return Err("request timed out".into());
+            // A stalled connection is caught by the 300 s WinHTTP receive timeout above; this cap only stops a
+            // crawl. 2.0.0 capped the whole download at 300 s, so a 127 MB installer never finished below
+            // ~3.5 Mbit/s and the update was retried (and lost) on every launch.
+            if started.elapsed() > Duration::from_secs(3600) {
+                return Err("download took over an hour".into());
             }
             let mut read = 0;
             WinHttpReadData(request.0, buffer.as_mut_ptr().cast(), buffer.len() as u32, &mut read)?;
@@ -217,7 +234,7 @@ pub fn get_latest() -> Option<UpdateInfo> {
         return None;
     }
     let mut json = Vec::new();
-    match download(API_LATEST, &mut json) {
+    match download(&feed_url(), &mut json) {
         Ok(()) => parse_release(&String::from_utf8_lossy(&json)),
         Err(e) => {
             log::info!("[AppUpdate] release lookup failed: {e}");
