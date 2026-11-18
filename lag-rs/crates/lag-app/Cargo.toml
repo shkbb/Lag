@@ -1,0 +1,44 @@
+[package]
+name = "lag-app"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+# ONE [dependencies] table (Windows-only app). Packages: APPEND your crate or features inside this table;
+# never add a second [dependencies]/[target.*.dependencies] table (duplicate keys break every cargo command).
+[dependencies]
+slint = { version = "1.18.1", features = ["raw-window-handle-06", "unstable-winit-030"] }
+lag-core = { workspace = true }
+lag-capture = { workspace = true }
+lag-audio = { workspace = true }
+log = { workspace = true }
+serde_json = { workspace = true }
+crossbeam-channel = { workspace = true }
+windows = { workspace = true, features = [
+    "Win32_Foundation", "Win32_Media", "Win32_Media_Audio", "Win32_System_Threading", "Win32_Security",
+    "Win32_UI_WindowsAndMessaging", "Win32_Storage_FileSystem", "Win32_Globalization", "Win32_UI_Shell",
+    "Win32_System_Com", "Win32_Graphics_Gdi", "Win32_UI_Input_KeyboardAndMouse", "Win32_System_SystemInformation",
+    "Win32_System_Registry", "Win32_System_LibraryLoader", "Win32_UI_HiDpi", "Win32_Graphics_Dwm",
+    "Win32_Networking_WinHttp", "Win32_UI_Input", "Win32_UI_Shell_Common",
+] }
+raw-window-handle = "0.6"
+chrono = "0.4.45"
+image = { version = "0.25.10", default-features = false, features = ["jpeg", "png"] }
+# shell-B: GNU-compatible tray, embedded ICO decoding, on-demand HTTP (worker threads only)
+tray-icon = { version = "0.26.1", default-features = false }
+muda = { version = "0.21.2", default-features = false }
+ico = "0.6"
+
+# player: libmpv rendering, GNU-compatible OpenGL bindings.
+lag-player = { workspace = true }
+
+[build-dependencies]
+slint-build = "1.18.1"
+
+[dev-dependencies]
+slint-interpreter = "1.18.1"
+spin_on = "0.1"
+
+[[bin]]
+name = "Lag"
+path = "src/main.rs"

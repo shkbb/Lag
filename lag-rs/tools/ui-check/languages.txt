@@ -1,0 +1,364 @@
+# Every language: editor filter names + settings video/general tops (text fit check).
+size 1360x840
+page editor
+wait 600
+click 1188 166
+wait 300
+lang en
+page editor
+wait 300
+shot lang-en-filters
+page settings
+tab 0
+wait 300
+shot lang-en-video
+tab 3
+wait 300
+shot lang-en-general
+tab 1
+wait 300
+shot lang-en-audio
+page library
+wait 300
+shot lang-en-library
+scroll 700 500 -800
+wait 400
+shot lang-en-library-scrolled
+scroll 700 500 5000
+lang uk
+page editor
+wait 300
+shot lang-uk-filters
+page settings
+tab 0
+wait 300
+shot lang-uk-video
+tab 3
+wait 300
+shot lang-uk-general
+tab 1
+wait 300
+shot lang-uk-audio
+page library
+wait 300
+shot lang-uk-library
+scroll 700 500 -800
+wait 400
+shot lang-uk-library-scrolled
+scroll 700 500 5000
+lang de
+page editor
+wait 300
+shot lang-de-filters
+page settings
+tab 0
+wait 300
+shot lang-de-video
+tab 3
+wait 300
+shot lang-de-general
+tab 1
+wait 300
+shot lang-de-audio
+page library
+wait 300
+shot lang-de-library
+scroll 700 500 -800
+wait 400
+shot lang-de-library-scrolled
+scroll 700 500 5000
+lang fr
+page editor
+wait 300
+shot lang-fr-filters
+page settings
+tab 0
+wait 300
+shot lang-fr-video
+tab 3
+wait 300
+shot lang-fr-general
+tab 1
+wait 300
+shot lang-fr-audio
+page library
+wait 300
+shot lang-fr-library
+scroll 700 500 -800
+wait 400
+shot lang-fr-library-scrolled
+scroll 700 500 5000
+lang be
+page editor
+wait 300
+shot lang-be-filters
+page settings
+tab 0
+wait 300
+shot lang-be-video
+tab 3
+wait 300
+shot lang-be-general
+tab 1
+wait 300
+shot lang-be-audio
+page library
+wait 300
+shot lang-be-library
+scroll 700 500 -800
+wait 400
+shot lang-be-library-scrolled
+scroll 700 500 5000
+lang lt
+page editor
+wait 300
+shot lang-lt-filters
+page settings
+tab 0
+wait 300
+shot lang-lt-video
+tab 3
+wait 300
+shot lang-lt-general
+tab 1
+wait 300
+shot lang-lt-audio
+page library
+wait 300
+shot lang-lt-library
+scroll 700 500 -800
+wait 400
+shot lang-lt-library-scrolled
+scroll 700 500 5000
+lang et
+page editor
+wait 300
+shot lang-et-filters
+page settings
+tab 0
+wait 300
+shot lang-et-video
+tab 3
+wait 300
+shot lang-et-general
+tab 1
+wait 300
+shot lang-et-audio
+page library
+wait 300
+shot lang-et-library
+scroll 700 500 -800
+wait 400
+shot lang-et-library-scrolled
+scroll 700 500 5000
+lang lv
+page editor
+wait 300
+shot lang-lv-filters
+page settings
+tab 0
+wait 300
+shot lang-lv-video
+tab 3
+wait 300
+shot lang-lv-general
+tab 1
+wait 300
+shot lang-lv-audio
+page library
+wait 300
+shot lang-lv-library
+scroll 700 500 -800
+wait 400
+shot lang-lv-library-scrolled
+scroll 700 500 5000
+lang fi
+page editor
+wait 300
+shot lang-fi-filters
+page settings
+tab 0
+wait 300
+shot lang-fi-video
+tab 3
+wait 300
+shot lang-fi-general
+tab 1
+wait 300
+shot lang-fi-audio
+page library
+wait 300
+shot lang-fi-library
+scroll 700 500 -800
+wait 400
+shot lang-fi-library-scrolled
+scroll 700 500 5000
+lang sv
+page editor
+wait 300
+shot lang-sv-filters
+page settings
+tab 0
+wait 300
+shot lang-sv-video
+tab 3
+wait 300
+shot lang-sv-general
+tab 1
+wait 300
+shot lang-sv-audio
+page library
+wait 300
+shot lang-sv-library
+scroll 700 500 -800
+wait 400
+shot lang-sv-library-scrolled
+scroll 700 500 5000
+lang no
+page editor
+wait 300
+shot lang-no-filters
+page settings
+tab 0
+wait 300
+shot lang-no-video
+tab 3
+wait 300
+shot lang-no-general
+tab 1
+wait 300
+shot lang-no-audio
+page library
+wait 300
+shot lang-no-library
+scroll 700 500 -800
+wait 400
+shot lang-no-library-scrolled
+scroll 700 500 5000
+lang da
+page editor
+wait 300
+shot lang-da-filters
+page settings
+tab 0
+wait 300
+shot lang-da-video
+tab 3
+wait 300
+shot lang-da-general
+tab 1
+wait 300
+shot lang-da-audio
+page library
+wait 300
+shot lang-da-library
+scroll 700 500 -800
+wait 400
+shot lang-da-library-scrolled
+scroll 700 500 5000
+lang nl
+page editor
+wait 300
+shot lang-nl-filters
+page settings
+tab 0
+wait 300
+shot lang-nl-video
+tab 3
+wait 300
+shot lang-nl-general
+tab 1
+wait 300
+shot lang-nl-audio
+page library
+wait 300
+shot lang-nl-library
+scroll 700 500 -800
+wait 400
+shot lang-nl-library-scrolled
+scroll 700 500 5000
+lang it
+page editor
+wait 300
+shot lang-it-filters
+page settings
+tab 0
+wait 300
+shot lang-it-video
+tab 3
+wait 300
+shot lang-it-general
+tab 1
+wait 300
+shot lang-it-audio
+page library
+wait 300
+shot lang-it-library
+scroll 700 500 -800
+wait 400
+shot lang-it-library-scrolled
+scroll 700 500 5000
+lang es
+page editor
+wait 300
+shot lang-es-filters
+page settings
+tab 0
+wait 300
+shot lang-es-video
+tab 3
+wait 300
+shot lang-es-general
+tab 1
+wait 300
+shot lang-es-audio
+page library
+wait 300
+shot lang-es-library
+scroll 700 500 -800
+wait 400
+shot lang-es-library-scrolled
+scroll 700 500 5000
+lang pt
+page editor
+wait 300
+shot lang-pt-filters
+page settings
+tab 0
+wait 300
+shot lang-pt-video
+tab 3
+wait 300
+shot lang-pt-general
+tab 1
+wait 300
+shot lang-pt-audio
+page library
+wait 300
+shot lang-pt-library
+scroll 700 500 -800
+wait 400
+shot lang-pt-library-scrolled
+scroll 700 500 5000
+lang ja
+page editor
+wait 300
+shot lang-ja-filters
+page settings
+tab 0
+wait 300
+shot lang-ja-video
+tab 3
+wait 300
+shot lang-ja-general
+tab 1
+wait 300
+shot lang-ja-audio
+page library
+wait 300
+shot lang-ja-library
+scroll 700 500 -800
+wait 400
+shot lang-ja-library-scrolled
+scroll 700 500 5000
+lang uk

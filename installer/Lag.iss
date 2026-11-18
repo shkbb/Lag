@@ -6,6 +6,10 @@
 ;       --self-contained -p:Version=<ver> -o release-publish
 ;   ISCC installer\Lag.iss /DAppVersion=<ver> /DPublishDir=..\release-publish
 ;
+; Rust build (lag-rs): lag-rs\tools\package.ps1 -Version <ver> -Installer assembles the folder
+; (exe, FFmpeg/libmpv DLLs, ffmpeg\, rnnoise\std.rnnn, Assets\), refuses to continue when any
+; runtime file is missing, then runs ISCC on this script.
+;
 ; The app's updater (AppUpdateService) downloads this installer from GitHub Releases and
 ; runs it with /VERYSILENT /AUTOSTART — silent in-place update + relaunch. On its first
 ; run over a legacy Velopack install it also removes the old %LocalAppData%\Lag layout.

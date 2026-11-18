@@ -1,0 +1,71 @@
+import { Theme } from "../theme/tokens.slint";
+
+// Ported from DarkTheme.axaml:703-742 (ScrollViewer + custom slim 10px vertical ScrollBar)
+export component LagScrollView {
+    in-out property <length> content-y <=> flick.content-y;
+    in property <length> content-height <=> flick.content-height;
+
+    property <bool> scrollable: flick.content-height > flick.height;
+    property <length> max-scroll: max(1px, flick.content-height - flick.height);
+    property <length> track-h: max(1px, root.height);
+    property <length> thumb-h: clamp(
+        (flick.height / max(1px, flick.content-height)) * track-h,
+        Theme.scrollbar-thumb-min-height,
+        track-h
+    );
+    property <length> thumb-y: clamp(
+        (-flick.content-y / max-scroll) * (track-h - thumb-h),
+        0px,
+        max(0px, track-h - thumb-h)
+    );
+
+    flick := Flickable {
+        width: parent.width;
+        height: parent.height;
+        interactive: true;
+
+        @children
+    }
+
+    // Slim 10px scrollbar overlay on the right edge; 6px thumb invisible at rest,
+    // fades in on hover (150ms) and brightens when pressed.
+    if root.scrollable: Rectangle {
+        x: parent.width - Theme.scrollbar-width;
+        y: 0px;
+        width: Theme.scrollbar-width;
+        height: parent.height;
+        background: transparent;
+
+        property <length> drag-start-mouse-y: 0px;
+        property <length> drag-start-scroll-y: 0px;
+
+        Rectangle {
+            x: (parent.width - self.width) / 2;
+            y: root.thumb-y;
+            width: Theme.scrollbar-thumb-width;
+            height: root.thumb-h;
+            border-radius: Theme.rad-scroll-thumb;
+            background: sb-ta.pressed
+                ? Theme.scroll-thumb-pressed-brush
+                : (sb-ta.has-hover ? Theme.scroll-thumb-brush : transparent);
+            animate background { duration: Theme.dur-base; }
+        }
+
+        sb-ta := TouchArea {
+            mouse-cursor: pointer;
+            pointer-event(ev) => {
+                if (ev.kind == PointerEventKind.down && ev.button == PointerEventButton.left) {
+                    parent.drag-start-mouse-y = self.mouse-y;
+                    parent.drag-start-scroll-y = flick.content-y;
+                }
+            }
+            moved => {
+                if (self.pressed && root.track-h > root.thumb-h) {
+                    let dy = self.mouse-y - parent.drag-start-mouse-y;
+                    let scroll-delta = (dy / (root.track-h - root.thumb-h)) * root.max-scroll;
+                    flick.content-y = clamp(parent.drag-start-scroll-y - scroll-delta, -root.max-scroll, 0px);
+                }
+            }
+        }
+    }
+}

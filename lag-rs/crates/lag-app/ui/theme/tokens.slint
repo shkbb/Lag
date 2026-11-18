@@ -1,0 +1,347 @@
+// Ported from E:\project\InstantReplay\InstantReplay\Themes\Tokens.axaml, Palette.axaml,
+// App.axaml, Components.axaml, DarkTheme.axaml, Core\UiConverters.cs, Core\FxAnimations.cs,
+// Controls\SegmentedListBox.cs, Controls\TrimRangeBar.cs, Services\ToastService.cs,
+// Views\MainWindow.axaml, Views\SettingsView.axaml, Views\LibraryView.axaml,
+// Views\PlayerView.axaml, Views\EditorView.axaml, Views\StatsHudWindow.cs.
+
+import { Palette } from "std-widgets.slint";
+
+// Bundled Inter font family extracted from Avalonia.Fonts.Inter (NuGet 11.2.3).
+import "../fonts/Inter-Thin.ttf";
+import "../fonts/Inter-ExtraLight.ttf";
+import "../fonts/Inter-Light.ttf";
+import "../fonts/Inter-Regular.ttf";
+import "../fonts/Inter-Medium.ttf";
+import "../fonts/Inter-SemiBold.ttf";
+import "../fonts/Inter-Bold.ttf";
+
+export global Theme {
+    // ── Theme mode ("dark" | "light" | "system") — matches App.SetTheme(string? mode) ──
+    in-out property <string> mode: "dark";
+    // Optional host-driven override for "system" when platform ColorScheme is unknown.
+    in-out property <bool> system-is-dark: true;
+    out property <bool> is-dark: mode == "dark" ? true : mode == "light" ? false : (Palette.color-scheme == ColorScheme.light ? false : Palette.color-scheme == ColorScheme.dark ? true : system-is-dark);
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Palette.axaml — Brand Accent
+    // ═══════════════════════════════════════════════════════════════════════
+    out property <color> accent-color: is-dark ? #22D3EE : #A9722E;
+    out property <color> accent: is-dark ? #22D3EE : #A9722E;
+    out property <color> accent-dim: is-dark ? #22D3EE1F : #A9722E29;
+    out property <color> accent-ring: is-dark ? #22D3EE52 : #A9722E5C;
+    out property <color> accent-hover: is-dark ? #22D3EE80 : #946228;
+    out property <color> accent-text: is-dark ? #7BE7F5 : #7C5320;
+    out property <color> on-accent: is-dark ? #06222A : #FBF4E8;
+
+    // ── Surfaces ──
+    out property <color> surface-app: is-dark ? #0C0D11 : #EAE3D1;
+    out property <color> surface-card: is-dark ? #14161C : #F8F4EA;
+    out property <color> surface-input: is-dark ? #1A1D25 : #E2D6BA;
+    out property <color> surface-hover: is-dark ? #1E222B : #E2DAC4;
+    out property <color> surface-hover-2: is-dark ? #22262F : #DCD3BB;
+
+    // ── Borders ──
+    out property <color> border-faint: is-dark ? #FFFFFF0E : #2A24150F;
+    out property <color> border-card: is-dark ? #FFFFFF12 : #2A241518;
+    out property <color> border-input: is-dark ? #FFFFFF17 : #2A241524;
+    out property <color> border-strong: is-dark ? #FFFFFF1A : #2A241530;
+
+    // ── Text ──
+    out property <color> text-hi: is-dark ? #ECEDEF : #2A2820;
+    out property <color> text-row: is-dark ? #DDE0E4 : #36332A;
+    out property <color> text-btn: is-dark ? #D7DADE : #3D3A30;
+    out property <color> text-kbd: is-dark ? #C4C8CE : #4A4638;
+    out property <color> text-mid: is-dark ? #9AA0AA : #6E6A5A;
+    out property <color> text-muted: is-dark ? #8B919C : #807B69;
+    out property <color> text-faint: is-dark ? #7C828D : #928D78;
+    out property <color> text-faintest: is-dark ? #6A707B : #A39D86;
+    out property <color> dot-divider: is-dark ? #4A505B : #B7AF98;
+
+    // ── Danger / Status ──
+    out property <color> danger-close: is-dark ? #E5484D : #D23A40;
+    out property <color> danger-stop: is-dark ? #EF4D62 : #D93B50;
+    out property <color> rec-dot: is-dark ? #FF5C5C : #E5484D;
+    out property <color> status-idle: is-dark ? #5D646C : #A99F88;
+
+    // ── Parallel Brush Set (DarkTheme.axaml + Views) ──
+    out property <color> sidebar-brush: is-dark ? #0C0E11 : #EAE3D1;
+    out property <color> main-brush: is-dark ? #12151A : #F1EBDC;
+    out property <color> surface-brush: is-dark ? #20252D : #EBE4D2;
+    out property <color> surface-hover-brush: is-dark ? #272D36 : #E2DAC4;
+    out property <color> card-brush: is-dark ? #181C23 : #F8F4EA;
+    out property <color> card-hover-brush: is-dark ? #1C2129 : #FCF8EF;
+    out property <color> seg-sel-brush: is-dark ? #2A313B : #F8F4EA;
+    out property <color> video-brush: is-dark ? #07090C : #16140E;
+    out property <color> accent-brush: is-dark ? #22D3EE : #A9722E;
+    out property <color> accent-hover-brush: is-dark ? #4ADDF2 : #946228;
+    out property <color> on-accent-brush: is-dark ? #0A0C0F : #FBF4E8;
+    out property <color> danger-brush: is-dark ? #F0464C : #D83E44;
+    out property <color> danger-hover-brush: is-dark ? #F35F64 : #C5353B;
+    out property <color> fg-brush: is-dark ? #E7EAEE : #2A2820;
+    out property <color> fg-2-brush: is-dark ? #9AA3AD : #6E6A5A;
+    out property <color> fg-3-brush: is-dark ? #6A7380 : #A39D86;
+    out property <color> empty-icon-brush: is-dark ? #3E4754 : #C9C2AC;
+    out property <color> divider-6-brush: is-dark ? #FFFFFF0F : #2A241514;
+    out property <color> divider-5-brush: is-dark ? #FFFFFF0D : #2A241511;
+    out property <color> overlay-85-brush: is-dark ? #0A0C0FD9 : #0A0C0FD9;
+    out property <color> overlay-88-brush: is-dark ? #0A0C0FE0 : #0A0C0FE0;
+    out property <color> player-bar-brush: is-dark ? #0A0C0FD1 : #F8F4EAEB;
+    out property <color> hover-veil-brush: is-dark ? #FFFFFF0A : #2A24150C;
+    out property <color> track-14-brush: is-dark ? #FFFFFF24 : #2A241526;
+    out property <color> volume-fill-brush: is-dark ? #AEB6C0 : #8F8770;
+
+    // ── Legacy Aliases ──
+    out property <color> status-ready-brush: is-dark ? #22D3EE : #A9722E;
+    out property <color> status-recording-brush: is-dark ? #F0464C : #D83E44;
+    out property <color> text-primary-brush: is-dark ? #E7EAEE : #2A2820;
+    out property <color> text-secondary-brush: is-dark ? #9AA3AD : #6E6A5A;
+    out property <color> text-dim-brush: is-dark ? #6A7380 : #A39D86;
+    out property <color> bg-dark-brush: is-dark ? #12151A : #F1EBDC;
+    out property <color> accent-cyan-brush: is-dark ? #22D3EE : #A9722E;
+
+    // ── Tokenised Hovers / Tracks ──
+    out property <color> nav-hover-brush: is-dark ? #14181E : #E2DAC4;
+    out property <color> seg-hover-brush: is-dark ? #20262E : #E2DAC4;
+    out property <color> popup-border-brush: is-dark ? #FFFFFF1F : #2A241524;
+    out property <color> text-selection-brush: is-dark ? #22D3EE59 : #A9722E5C;
+    out property <color> transport-hover-brush: is-dark ? #FFFFFF1A : #2A24151A;
+    out property <color> scroll-thumb-brush: is-dark ? #FFFFFF59 : #2A241555;
+    out property <color> scroll-thumb-pressed-brush: is-dark ? #FFFFFF8C : #2A241588;
+
+    // ── Fluent Control Overrides (ToggleSwitch / ComboBox / MenuFlyout / ToolTip) ──
+    out property <color> toggle-switch-fill-on: is-dark ? #22D3EE : #A9722E;
+    out property <color> toggle-switch-fill-on-pointer-over: is-dark ? #4ADDF2 : #B5803A;
+    out property <color> toggle-switch-fill-on-pressed: is-dark ? #22D3EE : #A9722E;
+    out property <color> toggle-switch-stroke-on: is-dark ? #22D3EE : #A9722E;
+    out property <color> toggle-switch-stroke-on-pointer-over: is-dark ? #4ADDF2 : #B5803A;
+    out property <color> toggle-switch-stroke-on-pressed: is-dark ? #22D3EE : #A9722E;
+    out property <color> toggle-switch-knob-fill-on: #FFFFFF;
+    out property <color> toggle-switch-knob-fill-on-pointer-over: #FFFFFF;
+    out property <color> toggle-switch-knob-fill-on-pressed: #FFFFFF;
+    out property <color> toggle-switch-fill-off: is-dark ? #20252D : #DCD2B8;
+    out property <color> toggle-switch-fill-off-pointer-over: is-dark ? #272D36 : #D3C8AB;
+    out property <color> toggle-switch-fill-off-pressed: is-dark ? #272D36 : #D3C8AB;
+    out property <color> toggle-switch-stroke-off: is-dark ? #20252D : #C9BFA2;
+    out property <color> toggle-switch-stroke-off-pointer-over: is-dark ? #272D36 : #BFB495;
+    out property <color> toggle-switch-stroke-off-pressed: is-dark ? #272D36 : #BFB495;
+    out property <color> toggle-switch-knob-fill-off: is-dark ? #9AA3AD : #8A8068;
+    out property <color> toggle-switch-knob-fill-off-pointer-over: is-dark ? #B6BEC7 : #756B54;
+    out property <color> toggle-switch-knob-fill-off-pressed: is-dark ? #B6BEC7 : #756B54;
+
+    out property <color> combo-box-drop-down-background: is-dark ? #181C23 : #F8F4EA;
+    out property <color> combo-box-drop-down-border-brush: is-dark ? #FFFFFF1F : #2A241524;
+    out property <color> combo-box-drop-down-glyph-foreground: is-dark ? #9AA3AD : #6E6A5A;
+
+    out property <color> menu-flyout-presenter-background: is-dark ? #181C23 : #F8F4EA;
+    out property <color> menu-flyout-presenter-border-brush: is-dark ? #FFFFFF1F : #2A241524;
+    out property <color> menu-flyout-item-background: transparent;
+    out property <color> menu-flyout-item-background-pointer-over: is-dark ? #272D36 : #E2DAC4;
+    out property <color> menu-flyout-item-background-pressed: is-dark ? #2A313B : #DCD3BB;
+    out property <color> menu-flyout-item-foreground: is-dark ? #E7EAEE : #2A2820;
+    out property <color> menu-flyout-item-foreground-pointer-over: is-dark ? #E7EAEE : #2A2820;
+    out property <color> menu-flyout-item-foreground-pressed: is-dark ? #E7EAEE : #2A2820;
+    out property <color> menu-flyout-separator-background: is-dark ? #FFFFFF0F : #2A241514;
+
+    out property <color> tool-tip-background: is-dark ? #20252D : #EBE4D2;
+    out property <color> tool-tip-foreground: is-dark ? #E7EAEE : #2A2820;
+    out property <color> tool-tip-border-brush: is-dark ? #FFFFFF1F : #2A241524;
+
+    out property <color> system-accent-color: is-dark ? #22D3EE : #A9722E;
+    out property <color> system-accent-color-light-1: is-dark ? #4DDDF2 : #BC8A45;
+    out property <color> system-accent-color-light-2: is-dark ? #7BE7F5 : #CDA268;
+    out property <color> system-accent-color-light-3: is-dark ? #A7F0F9 : #DDBC92;
+    out property <color> system-accent-color-dark-1: is-dark ? #18B8D6 : #946228;
+    out property <color> system-accent-color-dark-2: is-dark ? #129BB8 : #7C5320;
+    out property <color> system-accent-color-dark-3: is-dark ? #0C7E96 : #614019;
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // App.axaml Slider Overrides & View-Level Semantic / Fixed Colours
+    // ═══════════════════════════════════════════════════════════════════════
+    out property <color> slider-thumb-background: #FFFFFF;
+    out property <color> slider-thumb-background-pointer-over: #FFFFFF;
+    out property <color> slider-thumb-background-pressed: #FFFFFF;
+    out property <color> slider-thumb-background-disabled: #FFFFFF;
+    out property <color> slider-track-value-fill-disabled: is-dark ? #22D3EE59 : #A9722E59;
+    out property <color> slider-track-fill-disabled: #FFFFFF24;
+
+    // UiConverters.cs IntensityToBrushConverter + SettingsView
+    out property <color> intensity-caution: is-dark ? #E5B84C : #A8770F; // darker on cream (was unreadable)
+    out property <color> intensity-extreme: is-dark ? #E0564C : #C2412F;
+    out property <color> pending-warning: #F0B45A;
+
+    // Audio level meter & noise gate bar (SettingsView.axaml)
+    out property <color> meter-fill: #43B581;
+    out property <color> meter-fill-gated: #5A6472;
+    out property <color> meter-pass-dim: #43B58133;
+    out property <color> meter-cut-dim: #CB843833;
+    out property <color> meter-cut: #CB8438;
+
+    // Overlay scrims, thumbnails, HUD, Toast, TrimRangeBar
+    out property <color> stats-hud-bg: #0E1116D1;
+    out property <color> stats-hud-border: #FFFFFF33;
+    out property <color> toast-bg: is-dark ? #181C23F0 : #F8F4EAF0;
+    out property <color> modal-scrim: #000000B0;
+    out property <color> crop-shade: #00000099;
+    out property <color> timeline-bg: is-dark ? #10151B : #D6CBB2;
+    out property <color> timeline-shade: is-dark ? #0A0C0FB3 : #EAE3D1C7;
+    out property <color> thumb-placeholder-bg: is-dark ? #16181E : #DCD3BB;
+    // light theme: cream glass chips over the thumbnail (were dark chips with dark text, owner 2026-11-17)
+    out property <color> card-badge-bg: is-dark ? #0C0D11B3 : #F8F4EAD9;
+    out property <color> card-badge-hover-bg: is-dark ? #0C0D11C7 : #F8F4EAF0;
+    out property <color> card-badge-fg: is-dark ? #FFFFFF : #2A2820;
+    out property <color> card-ov-bg: is-dark ? #1A1D25EB : #F8F4EAEB;
+    out property <color> play-overlay-bg: #0000008C;
+    out property <color> filter-hover-bg: is-dark ? #20262E : #E2DAC4;
+    out property <color> trim-body: is-dark ? #232C36 : #E2D6BA;
+    out property <color> trim-body-muted: is-dark ? #1A1F27 : #ECE6D6;
+    out property <color> trim-wave: is-dark ? #415061 : #B9A784;
+    out property <color> trim-wave-muted: is-dark ? #2A313B : #D9CFB8;
+    out property <color> trim-handle: is-dark ? #22D3EE : #A9722E; // accent: bronze handles on the light theme
+    out property <color> trim-handle-muted: is-dark ? #FFFFFF55 : #2A241540;
+    // audio lane chips (name + mute, volume) floating over the lane
+    out property <color> lane-chip-bg: is-dark ? #0A0C0FD9 : #F8F4EAE6;
+    out property <color> lane-chip-fg: is-dark ? #E7EAEE : #2A2820;
+    out property <color> lane-chip-fg-2: is-dark ? #9AA3AD : #6E6A5A;
+    out property <color> trim-notch: is-dark ? #0A0C0FA6 : #FBF4E8D9;
+
+    // ── Gradients (LibraryView.axaml:376-380) ──
+    // Avalonia StartPoint="0%,100%" EndPoint="0%,0%" (bottom to top) = 0deg in Slint.
+    out property <brush> card-overlay-gradient: @linear-gradient(0deg, #08090CD1 0%, #08090C1A 55%, #08090C1A 100%);
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Typography (Tokens.axaml + DarkTheme.axaml + Components.axaml + Views)
+    // ═══════════════════════════════════════════════════════════════════════
+    out property <string> font-ui: "Inter";
+    out property <string> font-display: "Inter";
+    out property <string> font-mono: "Cascadia Code";
+
+    out property <length> font-size-page-title: 32px;
+    out property <length> font-size-section-title: 22px;
+    out property <length> font-size-brand: 18px;
+    out property <length> font-size-modal-title: 18px;
+    out property <length> font-size-preset-title: 15.5px;
+    out property <length> font-size-row: 14px;
+    out property <length> font-size-cta: 13.5px;
+    out property <length> font-size-body: 13px;
+    out property <length> font-size-sub: 12.5px;
+    out property <length> font-size-sm: 12px;
+    out property <length> font-size-xs: 11.5px;
+    out property <length> font-size-group: 11px;
+    out property <length> font-size-badge: 10px;
+    out property <length> font-size-rail: 9.5px;
+    out property <length> font-size-badge-mono: 9px;
+
+    out property <int> font-weight-normal: 400;
+    out property <int> font-weight-medium: 500;
+    out property <int> font-weight-semibold: 600;
+    out property <int> font-weight-bold: 700;
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Corner Radii (Tokens.axaml + App.axaml + DarkTheme.axaml + Views)
+    // ═══════════════════════════════════════════════════════════════════════
+    out property <length> rad-card: 15px;
+    out property <length> rad-modal: 14px;
+    out property <length> rad-general: 13px;
+    out property <length> rad-preset: 12px;
+    out property <length> rad-toast: 12px;
+    out property <length> rad-pill: 11px;
+    out property <length> rad-button: 10px;
+    out property <length> rad-overlay: 10px;
+    out property <length> rad-input: 9px;
+    out property <length> rad-control: 8px;
+    out property <length> rad-seg: 7px;
+    out property <length> rad-kbd: 6px;
+    out property <length> rad-slider-thumb: 6px;
+    out property <length> rad-badge-sm: 5px;
+    out property <length> rad-checkbox: 4px;
+    out property <length> rad-trim: 4px;
+    out property <length> rad-meter: 4px;
+    out property <length> rad-scroll-thumb: 3px;
+    out property <length> rad-progress: 2px;
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Spacing & Sizing (App.axaml + MainWindow + Components + DarkTheme)
+    // ═══════════════════════════════════════════════════════════════════════
+    out property <length> topbar-height: 58px;
+    out property <length> rail-width: 78px;
+    out property <length> rail-item-width: 62px;
+    out property <length> rail-item-height: 56px;
+    out property <length> wctl-width: 42px;
+    out property <length> wctl-height: 58px;
+    out property <length> winctl-width: 34px;
+    out property <length> winctl-height: 26px;
+    out property <length> tbar-height: 38px;
+    out property <length> cta-height: 36px;
+    out property <length> surface-btn-height: 34px;
+    out property <length> nav-height: 32px;
+    out property <length> control-min-height: 30px;
+
+    out property <length> toggle-width: 40px;
+    out property <length> toggle-height: 22px;
+    out property <length> toggle-knob-size: 16px;
+    out property <length> toggle-knob-travel: 18px;
+    out property <length> checkbox-size: 16px;
+
+    out property <length> slider-horizontal-height: 20px;
+    out property <length> slider-horizontal-thumb-width: 12px;
+    out property <length> slider-horizontal-thumb-height: 12px;
+    out property <length> slider-track-theme-height: 4px;
+    out property <length> slider-pre-content-margin: 4px;
+    out property <length> slider-post-content-margin: 4px;
+
+    out property <length> scrollbar-width: 10px;
+    out property <length> scrollbar-thumb-width: 6px;
+    out property <length> scrollbar-thumb-min-height: 28px;
+
+    out property <length> combo-box-dropdown-border-padding: 4px;
+    out property <length> menu-flyout-presenter-theme-padding: 4px;
+    out property <length> flyout-padding: 8px;
+
+    out property <length> row-pad-x: 18px;
+    out property <length> row-pad-y: 15px;
+    out property <length> seg-track-pad: 3px;
+    out property <length> seg-item-gap: 2px;
+
+    out property <length> space-xs: 4px;
+    out property <length> space-sm: 8px;
+    out property <length> space-md: 12px;
+    out property <length> space-lg: 16px;
+    out property <length> space-xl: 24px;
+    out property <length> space-2xl: 26px;
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Shadows (MainWindow.axaml:401, SettingsView.axaml:812)
+    // ═══════════════════════════════════════════════════════════════════════
+    out property <length> shadow-flyout-x: 0px;
+    out property <length> shadow-flyout-y: 8px;
+    out property <length> shadow-flyout-blur: 24px;
+    out property <color> shadow-flyout-color: #00000066;
+
+    out property <length> shadow-modal-x: 0px;
+    out property <length> shadow-modal-y: 12px;
+    out property <length> shadow-modal-blur: 40px;
+    out property <color> shadow-modal-color: #00000080;
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Animation Durations (App.axaml, Components.axaml, DarkTheme.axaml, Views)
+    // ═══════════════════════════════════════════════════════════════════════
+    out property <duration> dur-press: 80ms;
+    out property <duration> dur-fast: 120ms;
+    out property <duration> dur-chip: 140ms;
+    out property <duration> dur-base: 150ms;
+    out property <duration> dur-toggle: 160ms;
+    out property <duration> dur-flyout: 180ms;
+    out property <duration> dur-tabline: 200ms;
+    out property <duration> dur-pill: 220ms;
+    out property <duration> dur-slide-fade: 240ms;
+    out property <duration> dur-panel: 250ms;
+    out property <duration> dur-toast-out: 260ms;
+    out property <duration> dur-theme-fade: 280ms;
+    out property <duration> dur-overlay-fade: 300ms;
+    out property <duration> dur-buffer: 450ms;
+    out property <duration> dur-kbd-pulse: 1000ms;
+    out property <duration> dur-rec-blink: 1100ms;
+    out property <duration> dur-rec-dot: 1400ms;
+    out property <duration> dur-capture-pulse: 1800ms;
+    out property <duration> dur-toast-visible: 2400ms;
+}

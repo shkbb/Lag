@@ -1,0 +1,10 @@
+# Settings audit A: record with the current settings, save, stop (engine stopped cleanly at exit).
+size 1360x840
+page settings
+wait 3000
+rec
+wait 12000
+save
+wait 8000
+rec
+wait 3000

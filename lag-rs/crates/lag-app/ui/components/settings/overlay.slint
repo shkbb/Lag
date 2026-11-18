@@ -1,0 +1,84 @@
+﻿// Mirrors SettingsView.axaml.cs:90-255. Stage coordinates stay 736 x 414.
+import { Theme } from "../../theme/tokens.slint";
+import { Icons, MaterialIcon } from "../../theme/icons.slint";
+export struct OverlayBoxData { xf: float, yf: float, scale: float, shown: bool }
+component DesignerBox inherits Rectangle {
+    in property <OverlayBoxData> data;
+    in property <float> aspect;
+    in property <float> min-scale;
+    in property <float> max-scale;
+    in property <image> icon;
+    callback commit(float, float, float);
+    property <float> left: data.xf * max(0, 736 - box-h * aspect);
+    property <float> top: data.yf * max(0, 414 - box-h);
+    property <float> box-h: data.scale * 414;
+    property <float> start-x;
+    property <float> start-y;
+    property <float> start-left;
+    property <float> start-top;
+    property <float> start-h;
+    property <bool> edge-l;
+    property <bool> edge-r;
+    property <bool> edge-t;
+    property <bool> edge-b;
+    property <float> zone: min(10, min(self.width / 1px, self.height / 1px) / 5);
+    x: left * 1px; y: top * 1px;
+    width: box-h * aspect * 1px; height: box-h * 1px;
+    background: Theme.accent-dim; border-color: Theme.accent; border-width: 1px; border-radius: 6px;
+    MaterialIcon { x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; source: root.icon; size: min(24px, parent.height - 4px); tint: Theme.text-mid; }
+    function save() {
+        root.commit(736 - root.box-h * root.aspect > 1 ? root.left / (736 - root.box-h * root.aspect) : 0,
+            414 - root.box-h > 1 ? root.top / (414 - root.box-h) : 0, root.box-h / 414);
+    }
+    ta := TouchArea {
+        mouse-cursor: move;
+        pointer-event(e) => {
+            if e.kind == PointerEventKind.down && e.button == PointerEventButton.left {
+                root.start-x = self.mouse-x / 1px + root.left; root.start-y = self.mouse-y / 1px + root.top;
+                root.start-left = root.left; root.start-top = root.top; root.start-h = root.box-h;
+                root.edge-l = min(root.width, root.height) >= 45px && self.mouse-x / 1px <= root.zone;
+                root.edge-r = min(root.width, root.height) >= 45px && self.mouse-x / 1px >= root.width / 1px - root.zone;
+                root.edge-t = min(root.width, root.height) >= 45px && self.mouse-y / 1px <= root.zone;
+                root.edge-b = min(root.width, root.height) >= 45px && self.mouse-y / 1px >= root.height / 1px - root.zone;
+            }
+            if e.kind == PointerEventKind.up { root.save(); }
+        }
+        moved => {
+            if self.pressed {
+                let dx = self.mouse-x / 1px + root.left - root.start-x;
+                let dy = self.mouse-y / 1px + root.top - root.start-y;
+                if root.edge-l || root.edge-r || root.edge-t || root.edge-b {
+                    let w = root.start-h * root.aspect + (root.edge-r ? dx : root.edge-l ? -dx : 0);
+                    let h = root.start-h + (root.edge-b ? dy : root.edge-t ? -dy : 0);
+                    let new-h = (root.edge-l || root.edge-r) && !(root.edge-t || root.edge-b) ? w / root.aspect :
+                        (root.edge-t || root.edge-b) && !(root.edge-l || root.edge-r) ? h : max(w / root.aspect, h);
+                    root.box-h = min(clamp(new-h, root.min-scale * 414, root.max-scale * 414),
+                        (root.edge-l ? root.start-left + root.start-h * root.aspect : 736 - root.start-left) / root.aspect,
+                        root.edge-t ? root.start-top + root.start-h : 414 - root.start-top);
+                    root.left = root.edge-l ? root.start-left + root.start-h * root.aspect - root.box-h * root.aspect : root.start-left;
+                    root.top = root.edge-t ? root.start-top + root.start-h - root.box-h : root.start-top;
+                } else {
+                    root.left = clamp(root.start-left + dx, 0, max(0, 736 - root.box-h * root.aspect));
+                    root.top = clamp(root.start-top + dy, 0, max(0, 414 - root.box-h));
+                }
+            }
+        }
+        scroll-event(e) => {
+            root.box-h = min(clamp(root.box-h * (e.delta-y > 0px ? 1.08 : 0.92), root.min-scale * 414, root.max-scale * 414),
+                (736 - root.left) / root.aspect, 414 - root.top);
+            root.save(); return accept;
+        }
+    }
+}
+export component OverlayStage inherits Rectangle {
+    in property <[OverlayBoxData]> boxes;
+    callback commit(int, float, float, float);
+    background: Theme.video-brush; border-radius: 8px; clip: true;
+    for box[i] in boxes: DesignerBox {
+        visible: box.shown;
+        data: box; aspect: i == 0 ? 4 / 3 : i == 1 ? 1.84 : 7.5;
+        min-scale: i == 2 ? 0.02 : 0.06; max-scale: i == 0 ? 0.45 : i == 1 ? 0.42 : 0.10;
+        icon: i == 0 ? Icons.webcam : i == 1 ? Icons.keyboard-outline : Icons.speedometer;
+        commit(x, y, s) => { root.commit(i, x, y, s); }
+    }
+}

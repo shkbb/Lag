@@ -1,0 +1,613 @@
+// Library page (Views/LibraryView.axaml). Owned by the library work package (docs/AGENTS.md, docs/WORKPACKAGES.md).
+import { Theme } from "../theme/tokens.slint";
+import { Icons, MaterialIcon, LagLogoMark } from "../theme/icons.slint";
+import { Tr } from "../globals.slint";
+import { RChipButton, GameChipButton } from "../components/buttons.slint";
+import { LagSearchBox } from "../components/text_input.slint";
+import { RKbdChip } from "../components/badges.slint";
+import { LagScrollView } from "../components/scrollbar.slint";
+import { LagContextMenuContainer, LagMenuItem } from "../components/menu.slint";
+import { LibraryClipTile, LibraryCardData } from "../components/library/clip_card.slint";
+import { IndeterminateBar } from "../components/library/indeterminate_bar.slint";
+
+export struct GameChipData {
+    label: string,
+    filter-key: string,
+    is-active: bool,
+}
+
+export struct LibraryRowData {
+    kind: int, // 0 = group header, 1 = card row
+    y: float,
+    height: float,
+    header-label: string,
+    header-sub: string,
+    header-count: string,
+    cards: [LibraryCardData],
+}
+
+export global LibraryVM {
+    in property <bool> is-loading: false;
+    in property <string> clip-count-label: "0 CLIPS";
+    in property <string> used-space-display: "—";
+    in property <float> used-space-bar-width: 0;
+    in property <bool> has-clips: false;
+    in property <bool> has-no-results: false;
+    in property <bool> has-selection: false;
+    in property <string> delete-selected-label: "";
+    in-out property <string> search-text: "";
+    in property <bool> favorites-only: false;
+    in property <[GameChipData]> game-chips: [];
+    in property <[string]> hotkey-parts: [];
+    in property <float> total-content-height: 0;
+    in property <[LibraryRowData]> visible-rows: [];
+
+    callback search-changed(string);
+    callback set-game-filter(string);
+    callback toggle-favorites-only();
+    callback open-library-folder();
+    callback delete-selected();
+    callback clear-selection();
+    callback select-all();
+    callback card-pressed(int /* clip-index */, bool /* shift */, bool /* ctrl */);
+    callback card-play(int /* clip-index */);
+    callback card-favorite(int /* clip-index */);
+    callback card-edit(int /* clip-index */);
+    callback card-select-circle(int /* clip-index */);
+    callback context-edit(string /* file-path */);
+    callback context-show-in-folder(string /* file-path */);
+    callback context-delete(string /* file-path */);
+    callback viewport-changed(float /* scroll-y */, float /* width */, float /* height */);
+}
+
+export component LibraryPage inherits Rectangle {
+    background: Theme.surface-app;
+
+    // Context menu overlay state
+    property <bool> context-menu-open: false;
+    property <string> context-clip-path: "";
+    property <length> context-menu-x: 0px;
+    property <length> context-menu-y: 0px;
+
+    // LibraryView.axaml.cs:25-33: keep body hidden for 240ms on attach, then SlideFadeIn(+12 -> 0, 220ms).
+    property <bool> body-shown: false;
+    property <bool> body-anim: false;
+
+    attach-delay-timer := Timer {
+        interval: 240ms;
+        running: !root.body-shown;
+        triggered => {
+            self.running = false;
+            root.body-shown = true;
+            anim-kick-timer.running = true;
+        }
+    }
+
+    anim-kick-timer := Timer {
+        interval: 16ms;
+        running: false;
+        triggered => {
+            self.running = false;
+            root.body-anim = true;
+        }
+    }
+
+    function open-context-menu(file-path: string, abs-x: length, abs-y: length) {
+        let local-x = abs-x - root.absolute-position.x;
+        let local-y = abs-y - root.absolute-position.y;
+        let menu-w = 190px;
+        let menu-h = 114px;
+        root.context-clip-path = file-path;
+        root.context-menu-x = clamp(local-x, 8px, max(8px, root.width - menu-w - 8px));
+        root.context-menu-y = clamp(local-y, 8px, max(8px, root.height - menu-h - 8px));
+        root.context-menu-open = true;
+    }
+
+    body-focus := FocusScope {
+        width: 100%;
+        height: 100%;
+
+        key-pressed(ev) => {
+            if (ev.text == Key.Escape) {
+                if (root.context-menu-open) {
+                    root.context-menu-open = false;
+                } else {
+                    LibraryVM.clear-selection();
+                }
+                return accept;
+            }
+            if ((ev.text == "a" || ev.text == "A") && ev.modifiers.control) {
+                LibraryVM.select-all();
+                return accept;
+            }
+            reject
+        }
+
+        VerticalLayout {
+            width: 100%;
+            height: 100%;
+
+            // ════════════════ Header ════════════════
+            VerticalLayout {
+                padding-left: 38px;
+                padding-right: 38px;
+                padding-top: 30px;
+
+                HorizontalLayout {
+                    // Title + storage stats
+                    VerticalLayout {
+                        horizontal-stretch: 1;
+
+                        Text {
+                            text: Tr.t("Library_Title", Tr.rev);
+                            font-family: Theme.font-display;
+                            font-size: Theme.font-size-page-title;
+                            font-weight: Theme.font-weight-bold;
+                            color: Theme.text-hi;
+                        }
+
+                        HorizontalLayout {
+                            padding-top: 8px;
+                            spacing: 16px;
+                            alignment: start;
+
+                            Text {
+                                text: LibraryVM.clip-count-label;
+                                font-family: Theme.font-mono;
+                                font-size: Theme.font-size-sm;
+                                color: Theme.text-muted;
+                                vertical-alignment: center;
+                            }
+
+                            Text {
+                                text: LibraryVM.used-space-display;
+                                font-family: Theme.font-mono;
+                                font-size: Theme.font-size-sm;
+                                color: Theme.text-muted;
+                                vertical-alignment: center;
+                            }
+
+                            VerticalLayout {
+                                alignment: center;
+                                Rectangle {
+                                    width: 120px;
+                                    height: 5px;
+                                    border-radius: 3px;
+                                    background: Theme.border-strong;
+                                    clip: true;
+
+                                    Rectangle {
+                                        x: 0px;
+                                        y: 0px;
+                                        height: 5px;
+                                        width: clamp(LibraryVM.used-space-bar-width, 0, 120) * 1px;
+                                        border-radius: 3px;
+                                        background: Theme.accent;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Right-aligned bottom-anchored actions
+                    VerticalLayout {
+                        alignment: end;
+
+                        HorizontalLayout {
+                            spacing: 8px;
+
+                            if LibraryVM.has-selection: RChipButton {
+                                danger: true;
+                                has-icon: true;
+                                icon: Icons.trash-can-outline;
+                                icon-size: 15px;
+                                text: LibraryVM.delete-selected-label;
+                                clicked => { LibraryVM.delete-selected(); }
+                            }
+
+                            if LibraryVM.has-selection: RChipButton {
+                                has-icon: true;
+                                icon: Icons.close-circle-outline;
+                                icon-size: 15px;
+                                text: Tr.t("Library_ClearSelection", Tr.rev);
+                                clicked => { LibraryVM.clear-selection(); }
+                            }
+
+                            RChipButton {
+                                has-icon: true;
+                                icon: Icons.folder-outline;
+                                icon-size: 15px;
+                                text: Tr.t("Library_OpenFolder", Tr.rev);
+                                clicked => { LibraryVM.open-library-folder(); }
+                            }
+                        }
+                    }
+                }
+
+                // Filter row: Search + Game chips + Favorites toggle
+                if LibraryVM.has-clips: HorizontalLayout {
+                    padding-top: 24px;
+                    padding-bottom: 4px;
+                    spacing: 0px;
+
+                    LagSearchBox {
+                        width: 320px;
+                        height: 38px;
+                        placeholder: Tr.t("Library_Search", Tr.rev);
+                        text <=> LibraryVM.search-text;
+                        edited(s) => { LibraryVM.search-changed(s); }
+                    }
+
+                    // Horizontally scrollable game chips; vertical mouse wheel translates to horizontal scroll
+                    Rectangle {
+                        horizontal-stretch: 1;
+                        height: 38px;
+                        clip: true;
+
+                        TouchArea {
+                            width: 100%;
+                            height: 100%;
+                            scroll-event(ev) => {
+                                let delta = ev.delta-x != 0px ? ev.delta-x : ev.delta-y;
+                                let max-x = max(0px, chips-row.preferred-width - chips-flick.width);
+                                if (delta != 0px && max-x > 0px) {
+                                    chips-flick.content-x = clamp(chips-flick.content-x + delta, -max-x, 0px);
+                                    return accept;
+                                }
+                                reject
+                            }
+
+                            chips-flick := Flickable {
+                                x: 10px;
+                                y: 0px;
+                                width: max(0px, parent.width - 22px);
+                                height: 38px;
+                                interactive: true;
+                                content-width: chips-row.preferred-width;
+                                content-height: 38px;
+
+                                chips-row := HorizontalLayout {
+                                    x: 0px;
+                                    y: (38px - self.preferred-height) / 2;
+                                    height: self.preferred-height;
+                                    spacing: 7px;
+
+                                    for chip in LibraryVM.game-chips: GameChipButton {
+                                        text: chip.label;
+                                        selected: chip.is-active;
+                                        clicked => { LibraryVM.set-game-filter(chip.filter-key); }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    VerticalLayout {
+                        alignment: center;
+                        GameChipButton {
+                            text: Tr.t("Library_Favorites", Tr.rev);
+                            has-icon: true;
+                            icon: LibraryVM.favorites-only ? Icons.star : Icons.star-outline;
+                            selected: LibraryVM.favorites-only;
+                            clicked => { LibraryVM.toggle-favorites-only(); }
+                        }
+                    }
+                }
+            }
+
+            // ════════════════ Body ════════════════
+            Rectangle {
+                vertical-stretch: 1;
+                clip: true;
+
+                // Dual indeterminate loading bars (full-width 3px + inset 2px per LibraryView.axaml:281-283, 499-501)
+                IndeterminateBar {
+                    x: 0px;
+                    y: 0px;
+                    width: parent.width;
+                    height: 3px;
+                    active: LibraryVM.is-loading;
+                }
+
+                IndeterminateBar {
+                    x: 38px;
+                    y: 0px;
+                    width: max(0px, parent.width - 76px);
+                    height: 2px;
+                    active: LibraryVM.is-loading;
+                }
+
+                // Body container with 240ms attach delay + SlideFadeIn (+12px -> 0, 220ms)
+                Rectangle {
+                    x: 0px;
+                    y: root.body-anim ? 0px : 12px;
+                    width: 100%;
+                    height: 100%;
+                    visible: root.body-shown;
+                    opacity: root.body-anim ? 1.0 : 0.0;
+                    animate opacity, y {
+                        duration: Theme.dur-pill;
+                        easing: cubic-bezier(0.215, 0.61, 0.355, 1);
+                    }
+
+                    scroll-area := LagScrollView {
+                        width: 100%;
+                        height: 100%;
+                        content-height: max(self.height, LibraryVM.total-content-height * 1px);
+
+                        init => {
+                            LibraryVM.viewport-changed(
+                                -self.content-y / 1px,
+                                self.width / 1px,
+                                self.height / 1px
+                            );
+                        }
+
+                        changed content-y => {
+                            LibraryVM.viewport-changed(
+                                -self.content-y / 1px,
+                                self.width / 1px,
+                                self.height / 1px
+                            );
+                        }
+
+                        changed width => {
+                            LibraryVM.viewport-changed(
+                                -self.content-y / 1px,
+                                self.width / 1px,
+                                self.height / 1px
+                            );
+                        }
+
+                        changed height => {
+                            LibraryVM.viewport-changed(
+                                -self.content-y / 1px,
+                                self.width / 1px,
+                                self.height / 1px
+                            );
+                        }
+
+                        Rectangle {
+                            width: scroll-area.width;
+                            height: max(scroll-area.height, LibraryVM.total-content-height * 1px);
+                            background: transparent;
+
+                            // Empty-space click clears selection (LibraryView.axaml.cs:86-95)
+                            TouchArea {
+                                width: 100%;
+                                height: 100%;
+                                clicked => {
+                                    body-focus.focus();
+                                    LibraryVM.clear-selection();
+                                }
+                            }
+
+                            // Virtualized day-group headers + card rows
+                            for row in LibraryVM.visible-rows: Rectangle {
+                                x: 38px;
+                                y: row.y * 1px;
+                                width: max(0px, parent.width - 76px);
+                                height: row.height * 1px;
+                                background: transparent;
+
+                                // Group header (kind == 0)
+                                if row.kind == 0: HorizontalLayout {
+                                    x: 0px;
+                                    y: 0px;
+                                    width: parent.width;
+                                    height: 22px;
+
+                                    Text {
+                                        text: row.header-label;
+                                        font-family: Theme.font-display;
+                                        font-size: 15px;
+                                        font-weight: Theme.font-weight-semibold;
+                                        color: Theme.text-hi;
+                                        vertical-alignment: center;
+                                    }
+
+                                    Rectangle { width: 13px; }
+
+                                    Text {
+                                        text: row.header-sub;
+                                        font-family: Theme.font-mono;
+                                        font-size: Theme.font-size-group;
+                                        color: Theme.text-faintest;
+                                        vertical-alignment: center;
+                                    }
+
+                                    Rectangle {
+                                        horizontal-stretch: 1;
+                                        height: 22px;
+
+                                        Rectangle {
+                                            x: 13px;
+                                            y: (parent.height - 1px) / 2;
+                                            width: max(0px, parent.width - 26px);
+                                            height: 1px;
+                                            background: Theme.border-faint;
+                                        }
+                                    }
+
+                                    Text {
+                                        text: row.header-count;
+                                        font-family: Theme.font-mono;
+                                        font-size: Theme.font-size-group;
+                                        color: Theme.text-faintest;
+                                        vertical-alignment: center;
+                                    }
+                                }
+
+                                // Card row (kind == 1)
+                                if row.kind == 1: Rectangle {
+                                    x: 0px;
+                                    y: 0px;
+                                    width: parent.width;
+                                    height: parent.height;
+                                    background: transparent;
+
+                                    for card[col] in row.cards: LibraryClipTile {
+                                        x: col * 268px;
+                                        y: 0px;
+                                        data: card;
+                                        is-selecting: LibraryVM.has-selection;
+                                        card-pressed(shift, ctrl) => {
+                                            body-focus.focus();
+                                            LibraryVM.card-pressed(card.clip-index, shift, ctrl);
+                                        }
+                                        play-clicked => {
+                                            body-focus.focus();
+                                            LibraryVM.card-play(card.clip-index);
+                                        }
+                                        favorite-clicked => {
+                                            body-focus.focus();
+                                            LibraryVM.card-favorite(card.clip-index);
+                                        }
+                                        edit-clicked => {
+                                            body-focus.focus();
+                                            LibraryVM.card-edit(card.clip-index);
+                                        }
+                                        select-circle-clicked => {
+                                            body-focus.focus();
+                                            LibraryVM.card-select-circle(card.clip-index);
+                                        }
+                                        context-menu-requested(ax, ay) => {
+                                            body-focus.focus();
+                                            root.open-context-menu(card.file-path, ax, ay);
+                                        }
+                                    }
+                                }
+                            }
+
+                            // No-results state (clips exist, filter hides all)
+                            if LibraryVM.has-no-results: Text {
+                                x: 0px;
+                                y: 60px;
+                                width: parent.width;
+                                text: Tr.t("Library_NoResults", Tr.rev);
+                                horizontal-alignment: center;
+                                color: Theme.text-faintest;
+                                font-family: Theme.font-ui;
+                                font-size: 13.5px;
+                            }
+
+                            // Empty library state
+                            if !LibraryVM.has-clips: VerticalLayout {
+                                x: 0px;
+                                y: max(40px, (scroll-area.height - self.preferred-height) / 2 + 35px);
+                                width: parent.width;
+                                height: self.preferred-height;
+                                spacing: 14px;
+                                alignment: center;
+
+                                HorizontalLayout {
+                                    alignment: center;
+                                    LagLogoMark {
+                                        size: 44px;
+                                        stroke: Theme.empty-icon-brush;
+                                    }
+                                }
+
+                                Text {
+                                    text: Tr.t("Library_EmptyTitle", Tr.rev);
+                                    font-family: Theme.font-ui;
+                                    font-size: 16px;
+                                    font-weight: Theme.font-weight-medium;
+                                    color: Theme.text-hi;
+                                    horizontal-alignment: center;
+                                }
+
+                                HorizontalLayout {
+                                    alignment: center;
+                                    Text {
+                                        width: min(430px, max(120px, scroll-area.width - 76px));
+                                        text: Tr.t("Library_Empty", Tr.rev);
+                                        font-family: Theme.font-ui;
+                                        font-size: Theme.font-size-body;
+                                        color: Theme.text-muted;
+                                        wrap: word-wrap;
+                                        horizontal-alignment: center;
+                                    }
+                                }
+
+                                HorizontalLayout {
+                                    padding-top: 2px;
+                                    alignment: center;
+                                    spacing: 6px;
+
+                                    for part in LibraryVM.hotkey-parts: RKbdChip {
+                                        text: part;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Context menu overlay (right-click on card)
+    if root.context-menu-open: Rectangle {
+        width: 100%;
+        height: 100%;
+        background: transparent;
+
+        TouchArea {
+            width: 100%;
+            height: 100%;
+            pointer-event(ev) => {
+                if (ev.kind == PointerEventKind.down) {
+                    root.context-menu-open = false;
+                }
+            }
+        }
+
+        LagContextMenuContainer {
+            x: root.context-menu-x;
+            y: root.context-menu-y;
+            width: 190px;
+            height: ctx-layout.preferred-height;
+            drop-shadow-offset-x: Theme.shadow-flyout-x;
+            drop-shadow-offset-y: Theme.shadow-flyout-y;
+            drop-shadow-blur: Theme.shadow-flyout-blur;
+            drop-shadow-color: Theme.shadow-flyout-color;
+
+            ctx-layout := VerticalLayout {
+                width: 100%;
+                padding: Theme.menu-flyout-presenter-theme-padding;
+                spacing: 2px;
+
+                LagMenuItem {
+                    text: Tr.t("Editor_Edit", Tr.rev);
+                    has-icon: true;
+                    icon: Icons.movie-edit-outline;
+                    clicked => {
+                        root.context-menu-open = false;
+                        LibraryVM.context-edit(root.context-clip-path);
+                    }
+                }
+
+                LagMenuItem {
+                    text: Tr.t("Library_ShowInFolder", Tr.rev);
+                    has-icon: true;
+                    icon: Icons.folder-search-outline;
+                    clicked => {
+                        root.context-menu-open = false;
+                        LibraryVM.context-show-in-folder(root.context-clip-path);
+                    }
+                }
+
+                LagMenuItem {
+                    text: Tr.t("Library_Delete", Tr.rev);
+                    has-icon: true;
+                    icon: Icons.trash-can-outline;
+                    clicked => {
+                        root.context-menu-open = false;
+                        LibraryVM.context-delete(root.context-clip-path);
+                    }
+                }
+            }
+        }
+    }
+}

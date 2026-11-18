@@ -1,0 +1,54 @@
+// Global bridges between Rust and the UI (see docs/ARCHITECTURE.md).
+
+// Localisation. Markup: Tr.t("Btn_SaveReplay", Tr.rev). Rust implements `t` with lag_core::i18n and bumps
+// `rev` on a language change so every bound string re-evaluates. Keys = the C# resource keys.
+export global Tr {
+    in property <int> rev: 0;
+    pure callback t(string, int) -> string;
+}
+
+// MainViewModel (ViewModels/MainViewModel.cs, spec shell.md §4.2). Rust owns the logic.
+export enum Page { settings, library, player, editor }
+
+export global MainVM {
+    in-out property <Page> current-page: Page.settings;
+    // theme switch cross-fade: a snapshot of the old look fades out over the new one (owner, 2026-11-17)
+    in property <image> theme-fade-image;
+    in property <bool> theme-fade-active: false;
+    in property <bool> theme-fade-shown: false;
+    in property <bool> is-recording: false;
+    in property <bool> is-paused: false;
+    in property <bool> is-saving: false;
+    in property <string> status-text: "";
+    in property <string> buffer-status: "0:00";
+    in property <float> buffer-fill-percent: 0;   // 0..100
+    in-out property <bool> is-fullscreen: false;
+    in property <bool> has-capture-target: false;
+    in property <bool> capture-target-is-game: false;
+    in property <string> capture-target-name: "";
+
+    callback toggle-recording();
+    callback save-replay();
+    callback toggle-pause-recording();
+    callback navigate(Page);
+    callback toggle-fullscreen();
+    callback take-screenshot();
+    callback push-to-talk(bool);        // true = key down (mic open), false = released
+    callback show-main-window();        // tray "Open", second-instance activation
+
+    // window chrome
+    callback minimize-window();
+    callback maximize-window();
+    callback close-window();
+    callback begin-move-drag();
+    // Main-window UI that can float over the player's native video surface (window coords, logical px).
+    // The video gets that rectangle cut out so the UI stays visible (airspace).
+    callback occluder-changed(bool, float, float, float, float);
+}
+
+// Current main-window size, kept up to date by AppWindow. Used by full-window popups (dropdowns) that
+// handle outside clicks themselves.
+export global WindowMetrics {
+    in-out property <length> width: 1360px;
+    in-out property <length> height: 840px;
+}

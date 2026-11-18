@@ -1,0 +1,34 @@
+// Port of Views/StatsHudWindow.cs: transparent, content-sized stats pill.
+export component StatsHud inherits Window {
+    title: "Lag Stats";
+    no-frame: true;
+    always-on-top: true;
+    background: transparent;
+    in property <string> stats-text: "-- FPS";
+    in property <float> stats-font-size: 15;
+    preferred-width: label.preferred-width + 26px;
+    preferred-height: label.preferred-height + 12px;
+    min-width: self.preferred-width;
+    max-width: self.preferred-width;
+    min-height: self.preferred-height;
+    max-height: self.preferred-height;
+    Rectangle {
+        background: #0E1116D1;
+        border-color: #FFFFFF33;
+        border-width: 1px;
+        border-radius: 8px;
+        label := Text {
+            x: 13px;
+            y: 6px;
+            width: parent.width - 26px;
+            height: parent.height - 12px;
+            text: root.stats-text;
+            color: white;
+            font-family: "Segoe UI";
+            font-weight: 600;
+            font-size: root.stats-font-size * 1px;
+            vertical-alignment: center;
+            wrap: no-wrap;
+        }
+    }
+}

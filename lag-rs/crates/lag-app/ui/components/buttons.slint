@@ -1,0 +1,618 @@
+import { Theme } from "../theme/tokens.slint";
+import { MaterialIcon } from "../theme/icons.slint";
+
+// Ported from MainWindow.axaml (Button.tbar-accent)
+export component TbarAccentButton {
+    in property <string> text;
+    in property <bool> recording: false;
+    in property <bool> enabled: true;
+    callback clicked();
+
+    height: Theme.tbar-height;
+    min-width: 120px;
+    opacity: enabled ? 1.0 : 0.45;
+
+    property <bool> pressed: ta.pressed && enabled;
+    property <bool> hovered: ta.has-hover && enabled;
+
+    Rectangle {
+        width: 100%;
+        height: 100%;
+        border-radius: Theme.rad-button;
+        background: root.recording
+            ? (root.hovered ? Theme.danger-hover-brush : Theme.danger-brush)
+            : (root.hovered ? Theme.accent-hover-brush : Theme.accent);
+        animate background { duration: Theme.dur-base; }
+
+
+        HorizontalLayout {
+            padding-left: 16px;
+            padding-right: 16px;
+            spacing: 9px;
+            alignment: center;
+
+            // Idle dot (9x9 circle) vs Recording stop square (10x10 r2 blinking)
+            VerticalLayout {
+                alignment: center;
+                if !root.recording: Rectangle {
+                    width: 9px;
+                    height: 9px;
+                    border-radius: 4.5px;
+                    background: Theme.on-accent;
+                }
+                if root.recording: Rectangle {
+                    width: 10px;
+                    height: 10px;
+                    border-radius: 2px;
+                    background: #FFFFFF;
+                    opacity: root.recording ? (0.35 + 0.65 * (0.5 + 0.5 * cos(360deg * mod(animation-tick() / Theme.dur-rec-blink, 1)))) : 1.0;
+                }
+            }
+
+            Text {
+                text: root.text;
+                color: root.recording ? #FFFFFF : Theme.on-accent;
+                font-family: Theme.font-ui;
+                font-size: Theme.font-size-cta;
+                font-weight: Theme.font-weight-semibold;
+                vertical-alignment: center;
+            }
+        }
+    }
+
+    ta := TouchArea {
+        enabled: root.enabled;
+        mouse-cursor: root.enabled ? pointer : default;
+        clicked => { root.clicked(); }
+    }
+}
+
+// Ported from MainWindow.axaml (Button.tbar)
+export component TbarButton {
+    in property <string> text;
+    in property <image> icon;
+    in property <bool> has-icon: false;
+    in property <length> icon-size: 15px;
+    in property <bool> enabled: true;
+    callback clicked();
+
+    height: Theme.tbar-height;
+    opacity: enabled ? 1.0 : 0.45;
+
+    property <bool> pressed: ta.pressed && enabled;
+    property <bool> hovered: ta.has-hover && enabled;
+
+    Rectangle {
+        width: 100%;
+        height: 100%;
+        border-radius: Theme.rad-button;
+        background: root.hovered ? Theme.surface-hover : Theme.surface-input;
+        border-width: 1px;
+        border-color: Theme.border-strong;
+        animate background { duration: Theme.dur-base; }
+
+
+        HorizontalLayout {
+            padding-left: 15px;
+            padding-right: 15px;
+            spacing: 8px;
+            alignment: center;
+
+            if root.has-icon: VerticalLayout {
+                alignment: center;
+                MaterialIcon {
+                    source: root.icon;
+                    size: root.icon-size;
+                    tint: Theme.text-btn;
+                }
+            }
+
+            Text {
+                text: root.text;
+                color: Theme.text-btn;
+                font-family: Theme.font-ui;
+                font-size: Theme.font-size-body;
+                font-weight: Theme.font-weight-semibold;
+                vertical-alignment: center;
+            }
+        }
+    }
+
+    ta := TouchArea {
+        enabled: root.enabled;
+        mouse-cursor: root.enabled ? pointer : default;
+        clicked => { root.clicked(); }
+    }
+}
+
+// Ported from MainWindow.axaml (Button.wctl & Button.wctl.close)
+export component WindowCtlButton {
+    in property <image> icon;
+    in property <length> icon-size: 14px;
+    in property <bool> is-close: false;
+    callback clicked();
+
+    width: Theme.wctl-width;
+    height: Theme.wctl-height;
+
+    Rectangle {
+        width: 100%;
+        height: 100%;
+        background: ta.has-hover
+            ? (root.is-close ? Theme.danger-close : Theme.border-faint)
+            : transparent;
+        animate background { duration: Theme.dur-fast; }
+
+        MaterialIcon {
+            x: (parent.width - self.width) / 2;
+            y: (parent.height - self.height) / 2;
+            source: root.icon;
+            size: root.icon-size;
+            tint: (root.is-close && ta.has-hover) ? #FFFFFF : Theme.text-faint;
+        }
+    }
+
+    ta := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+    }
+}
+
+// Ported from MainWindow.axaml (Button.railitem & .active)
+export component RailItemButton {
+    in property <string> label;
+    in property <image> icon;
+    in property <bool> active: false;
+    callback clicked();
+
+    width: Theme.rail-item-width;
+    height: Theme.rail-item-height;
+
+    Rectangle {
+        width: 100%;
+        height: 100%;
+        border-radius: Theme.rad-pill;
+        background: root.active
+            ? Theme.accent-dim
+            : (ta.has-hover ? Theme.border-faint : transparent);
+        animate background { duration: Theme.dur-chip; }
+
+        VerticalLayout {
+            alignment: center;
+            spacing: 4px;
+
+            HorizontalLayout {
+                alignment: center;
+                MaterialIcon {
+                    source: root.icon;
+                    size: 20px;
+                    tint: root.active ? Theme.accent : Theme.text-mid;
+                }
+            }
+
+            HorizontalLayout {
+                alignment: center;
+                Text {
+                    text: root.label;
+                    max-width: 56px;
+                    max-height: 22px;
+                    color: root.active ? Theme.text-hi : Theme.text-mid;
+                    font-family: Theme.font-ui;
+                    font-size: Theme.font-size-rail;
+                    font-weight: Theme.font-weight-medium;
+                    horizontal-alignment: center;
+                    wrap: no-wrap;
+                    overflow: elide;
+                }
+            }
+        }
+    }
+
+    ta := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+    }
+}
+
+// Ported from DarkTheme.axaml (Button.cta & .rec)
+export component CtaButton {
+    in property <string> text;
+    in property <bool> recording: false;
+    in property <bool> enabled: true;
+    callback clicked();
+
+    height: Theme.cta-height;
+    min-width: 100px;
+    opacity: enabled ? 1.0 : 0.45;
+
+    property <bool> pressed: ta.pressed && enabled;
+    property <bool> hovered: ta.has-hover && enabled;
+
+    Rectangle {
+        width: 100%;
+        height: 100%;
+        border-radius: Theme.rad-control;
+        background: root.recording
+            ? (root.hovered ? Theme.danger-hover-brush : Theme.danger-brush)
+            : (root.hovered ? Theme.accent-hover-brush : Theme.accent-brush);
+        animate background { duration: Theme.dur-base; }
+
+
+        HorizontalLayout {
+            padding-left: 14px;
+            padding-right: 14px;
+            alignment: center;
+
+            Text {
+                text: root.text;
+                color: root.recording ? #FFFFFF : Theme.on-accent-brush;
+                font-family: Theme.font-ui;
+                font-size: Theme.font-size-body;
+                font-weight: Theme.font-weight-medium;
+                vertical-alignment: center;
+            }
+        }
+    }
+
+    ta := TouchArea {
+        enabled: root.enabled;
+        mouse-cursor: root.enabled ? pointer : default;
+        clicked => { root.clicked(); }
+    }
+}
+
+// Ported from DarkTheme.axaml (Button.surface)
+export component SurfaceButton {
+    in property <string> text;
+    in property <bool> enabled: true;
+    callback clicked();
+
+    height: Theme.surface-btn-height;
+    min-width: 90px;
+    opacity: enabled ? 1.0 : 0.45;
+
+    property <bool> pressed: ta.pressed && enabled;
+    property <bool> hovered: ta.has-hover && enabled;
+
+    Rectangle {
+        width: 100%;
+        height: 100%;
+        border-radius: Theme.rad-control;
+        background: root.hovered ? Theme.surface-hover-brush : Theme.surface-brush;
+        animate background { duration: Theme.dur-base; }
+
+
+        HorizontalLayout {
+            padding-left: 14px;
+            padding-right: 14px;
+            alignment: center;
+
+            Text {
+                text: root.text;
+                color: Theme.fg-brush;
+                font-family: Theme.font-ui;
+                font-size: Theme.font-size-body;
+                font-weight: Theme.font-weight-medium;
+                vertical-alignment: center;
+            }
+        }
+    }
+
+    ta := TouchArea {
+        enabled: root.enabled;
+        mouse-cursor: root.enabled ? pointer : default;
+        clicked => { root.clicked(); }
+    }
+}
+
+// Ported from DarkTheme.axaml (Button.chip & .danger)
+export component ChipButton {
+    in property <string> text;
+    in property <bool> danger: false;
+    in property <bool> enabled: true;
+    callback clicked();
+
+    min-height: 30px;
+    opacity: enabled ? 1.0 : 0.45;
+
+    property <bool> pressed: ta.pressed && enabled;
+    property <bool> hovered: ta.has-hover && enabled;
+
+    Rectangle {
+        width: 100%;
+        height: 100%;
+        border-radius: Theme.rad-control;
+        background: root.danger
+            ? (root.hovered ? Theme.danger-hover-brush : Theme.danger-brush)
+            : (root.hovered ? Theme.surface-hover-brush : Theme.surface-brush);
+        animate background { duration: Theme.dur-base; }
+
+
+        HorizontalLayout {
+            padding-left: 12px;
+            padding-right: 12px;
+            padding-top: 7px;
+            padding-bottom: 7px;
+            alignment: center;
+
+            Text {
+                text: root.text;
+                color: root.danger ? #FFFFFF : Theme.fg-brush;
+                font-family: Theme.font-ui;
+                font-size: Theme.font-size-body;
+                vertical-alignment: center;
+            }
+        }
+    }
+
+    ta := TouchArea {
+        enabled: root.enabled;
+        mouse-cursor: root.enabled ? pointer : default;
+        clicked => { root.clicked(); }
+    }
+}
+
+// Ported from Components.axaml (Button.rchip) + SettingsView.axaml (.active) + LibraryView.axaml (danger tint)
+export component RChipButton {
+    in property <string> text;
+    in property <image> icon;
+    in property <bool> has-icon: false;
+    in property <length> icon-size: 15px;
+    in property <bool> active: false;
+    in property <bool> danger: false;
+    in property <bool> enabled: true;
+    callback clicked();
+
+    min-height: 32px;
+    opacity: enabled ? 1.0 : 0.45;
+
+    property <bool> pressed: ta.pressed && enabled;
+    property <bool> hovered: ta.has-hover && enabled;
+
+    Rectangle {
+        width: 100%;
+        height: 100%;
+        border-radius: Theme.rad-input;
+        background: root.active
+            ? Theme.accent
+            : (root.hovered ? Theme.surface-hover-2 : Theme.surface-input);
+        border-width: 1px;
+        border-color: root.active ? Theme.accent : Theme.border-strong;
+        animate background { duration: Theme.dur-chip; }
+
+
+        HorizontalLayout {
+            padding-left: 15px;
+            padding-right: 15px;
+            padding-top: 8px;
+            padding-bottom: 8px;
+            spacing: 7px;
+            alignment: center;
+
+            if root.has-icon: VerticalLayout {
+                alignment: center;
+                MaterialIcon {
+                    source: root.icon;
+                    size: root.icon-size;
+                    tint: root.active ? #FFFFFF : (root.danger ? Theme.danger-stop : Theme.text-hi);
+                }
+            }
+
+            Text {
+                text: root.text;
+                color: root.active ? #FFFFFF : (root.danger ? Theme.danger-stop : Theme.text-hi);
+                font-family: Theme.font-ui;
+                font-size: Theme.font-size-sub;
+                font-weight: Theme.font-weight-semibold;
+                vertical-alignment: center;
+            }
+        }
+    }
+
+    ta := TouchArea {
+        enabled: root.enabled;
+        mouse-cursor: root.enabled ? pointer : default;
+        clicked => { root.clicked(); }
+    }
+}
+
+// Ported from LibraryView.axaml (Button.gamechip & .sel)
+export component GameChipButton {
+    in property <string> text;
+    in property <image> icon;
+    in property <bool> has-icon: false;
+    in property <bool> selected: false;
+    callback clicked();
+
+    Rectangle {
+        width: 100%;
+        height: 100%;
+        border-radius: Theme.rad-input;
+        background: root.selected ? Theme.accent-dim : Theme.surface-card;
+        border-width: 1px;
+        border-color: root.selected ? Theme.accent-ring : Theme.border-card;
+        animate background { duration: Theme.dur-fast; }
+
+
+        HorizontalLayout {
+            padding-left: 12px;
+            padding-right: 12px;
+            padding-top: 7px;
+            padding-bottom: 7px;
+            spacing: 6px;
+            alignment: center;
+
+            if root.has-icon: VerticalLayout {
+                alignment: center;
+                MaterialIcon {
+                    source: root.icon;
+                    size: 14px;
+                    tint: root.selected ? Theme.accent-text : (ta.has-hover ? Theme.text-hi : Theme.text-muted);
+                }
+            }
+
+            Text {
+                text: root.text;
+                color: root.selected ? Theme.accent-text : (ta.has-hover ? Theme.text-hi : Theme.text-muted);
+                font-family: Theme.font-ui;
+                font-size: Theme.font-size-sub;
+                font-weight: Theme.font-weight-medium;
+                vertical-alignment: center;
+            }
+        }
+    }
+
+    ta := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+    }
+}
+
+// Ported from PlayerView.axaml (Button.pbtn)
+export component PlayerIconButton {
+    in property <image> icon;
+    in property <length> icon-size: 18px;
+    in property <bool> enabled: true;
+    callback clicked();
+
+    width: 38px;
+    height: 38px;
+    opacity: enabled ? 1.0 : 0.45;
+
+    Rectangle {
+        width: 100%;
+        height: 100%;
+        border-radius: Theme.rad-button;
+        background: (ta.has-hover && root.enabled) ? Theme.border-faint : transparent;
+        animate background { duration: Theme.dur-fast; }
+
+
+        MaterialIcon {
+            x: (parent.width - self.width) / 2;
+            y: (parent.height - self.height) / 2;
+            source: root.icon;
+            size: root.icon-size;
+            tint: (ta.has-hover && root.enabled) ? Theme.text-hi : Theme.text-mid;
+        }
+    }
+
+    ta := TouchArea {
+        enabled: root.enabled;
+        mouse-cursor: root.enabled ? pointer : default;
+        clicked => { root.clicked(); }
+    }
+}
+
+// Ported from DarkTheme.axaml (Button.transport)
+export component TransportButton {
+    in property <image> icon;
+    in property <length> icon-size: 16px;
+    callback clicked();
+
+    width: icon-size + 8px;
+    height: icon-size + 8px;
+
+    Rectangle {
+        width: 100%;
+        height: 100%;
+        border-radius: Theme.rad-kbd;
+        background: ta.has-hover ? Theme.transport-hover-brush : transparent;
+        animate background { duration: Theme.dur-fast; }
+
+        MaterialIcon {
+            x: (parent.width - self.width) / 2;
+            y: (parent.height - self.height) / 2;
+            source: root.icon;
+            size: root.icon-size;
+            tint: Theme.fg-brush;
+        }
+    }
+
+    ta := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+    }
+}
+
+// Ported from PlayerView.axaml (Button.playbtn) & LibraryView.axaml (Button.ovplay)
+export component PlayCircleButton {
+    in property <image> icon;
+    in property <length> button-size: 48px;
+    in property <length> icon-size: 24px;
+    out property <bool> has-hover: ta.has-hover;
+    callback clicked();
+
+    width: button-size;
+    height: button-size;
+
+    Rectangle {
+        width: 100%;
+        height: 100%;
+        border-radius: root.button-size / 2;
+        background: ta.has-hover ? Theme.accent-hover-brush : Theme.accent;
+        animate background { duration: Theme.dur-fast; }
+
+
+        MaterialIcon {
+            x: (parent.width - self.width) / 2;
+            y: (parent.height - self.height) / 2;
+            source: root.icon;
+            size: root.icon-size;
+            tint: Theme.on-accent;
+        }
+    }
+
+    ta := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+    }
+}
+
+// Ported from DarkTheme.axaml:131-185 (Button.nav & Button.nav-active)
+export component NavButton {
+    in property <string> label;
+    in property <image> icon;
+    in property <bool> active: false;
+    callback clicked();
+
+    height: Theme.nav-height;
+
+    Rectangle {
+        width: 100%;
+        height: 100%;
+        border-radius: Theme.rad-control;
+        background: root.active
+            ? Theme.card-brush
+            : (ta.has-hover ? Theme.nav-hover-brush : transparent);
+        animate background { duration: Theme.dur-base; }
+
+        HorizontalLayout {
+            padding-left: 10px;
+            padding-right: 10px;
+            spacing: 10px;
+
+            VerticalLayout {
+                alignment: center;
+                MaterialIcon {
+                    source: root.icon;
+                    size: 16px;
+                    tint: root.active ? Theme.accent-brush : Theme.fg-2-brush;
+                }
+            }
+
+            Text {
+                text: root.label;
+                color: root.active ? Theme.fg-brush : Theme.fg-2-brush;
+                font-family: Theme.font-ui;
+                font-size: Theme.font-size-body;
+                font-weight: root.active ? Theme.font-weight-medium : Theme.font-weight-normal;
+                vertical-alignment: center;
+            }
+        }
+    }
+
+    ta := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+    }
+}

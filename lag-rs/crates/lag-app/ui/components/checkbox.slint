@@ -1,0 +1,67 @@
+import { Theme } from "../theme/tokens.slint";
+
+// Ported from DarkTheme.axaml:310-319, 506-543 (CheckBox.app)
+export component LagCheckBox {
+    in-out property <bool> checked: false;
+    in property <string> label: "";
+    in property <bool> has-label: label != "";
+    in property <bool> enabled: true;
+    callback toggled(bool);
+
+    min-height: Theme.checkbox-size;
+    opacity: enabled ? 1.0 : 0.45;
+
+    HorizontalLayout {
+        spacing: root.has-label ? 10px : 0px;
+        alignment: start;
+
+        VerticalLayout {
+            alignment: center;
+            Rectangle {
+                width: Theme.checkbox-size;
+                height: Theme.checkbox-size;
+                border-radius: Theme.rad-checkbox;
+                background: root.checked ? Theme.accent-brush : Theme.surface-brush;
+                animate background { duration: Theme.dur-base; }
+
+                // Checkmark path M2 5.5 L4.2 8 L8.5 2.5 in 10x10 space
+                Path {
+                    x: (parent.width - self.width) / 2;
+                    y: (parent.height - self.height) / 2;
+                    width: 10px;
+                    height: 10px;
+                    viewbox-x: 0;
+                    viewbox-y: 0;
+                    viewbox-width: 10;
+                    viewbox-height: 10;
+                    commands: "M2 5.5 L4.2 8 L8.5 2.5";
+                    stroke: Theme.on-accent-brush;
+                    stroke-width: 1.8px;
+                    stroke-line-cap: round;
+                    stroke-line-join: round;
+                    fill: transparent;
+                    opacity: root.checked ? 1.0 : 0.0;
+                    animate opacity { duration: Theme.dur-fast; }
+                }
+            }
+        }
+
+        if root.has-label: Text {
+            text: root.label;
+            font-family: Theme.font-ui;
+            font-size: Theme.font-size-body;
+            color: root.checked ? Theme.fg-brush : Theme.fg-2-brush;
+            vertical-alignment: center;
+            animate color { duration: Theme.dur-base; }
+        }
+    }
+
+    ta := TouchArea {
+        enabled: root.enabled;
+        mouse-cursor: root.enabled ? pointer : default;
+        clicked => {
+            root.checked = !root.checked;
+            root.toggled(root.checked);
+        }
+    }
+}

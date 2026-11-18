@@ -1,0 +1,599 @@
+import { Theme } from "theme/tokens.slint";
+import { Icons, MaterialIcon, LagLogoMark } from "theme/icons.slint";
+import {
+    TbarAccentButton, TbarButton, WindowCtlButton, RailItemButton,
+    CtaButton, SurfaceButton, ChipButton, RChipButton, GameChipButton,
+    PlayerIconButton, TransportButton, PlayCircleButton, NavButton
+} from "components/buttons.slint";
+import { LagToggleSwitch } from "components/toggle_switch.slint";
+import { LagCheckBox } from "components/checkbox.slint";
+import { LagSlider } from "components/slider.slint";
+import { LagComboBox, ComboBoxItemData, RPillTrigger } from "components/combobox.slint";
+import { SegmentedControl, SegmentedOption, RSegControl } from "components/segmented_control.slint";
+import { LagTextInput, LagSearchBox } from "components/text_input.slint";
+import {
+    RCard, RDivider, Divider, RGroupLabel, SectionLabel, RRowText, RSubText, RMonoText,
+    PresetCard, HintBanner, CaptureFlyoutCard, ModalCard, ToastCard, StatsHudPill, StatusPill
+} from "components/cards.slint";
+import {
+    RecommendedBadge, EditedBadge, DurationBadge, RKbdChip, KbdChipButton
+} from "components/badges.slint";
+import { LagTooltip } from "components/tooltip.slint";
+import { LagScrollView } from "components/scrollbar.slint";
+import {
+    LagContextMenuContainer, LagFlyoutPresenter, LagMenuItem, LagMenuSeparator
+} from "components/menu.slint";
+import { LagTabHeader } from "components/tab_header.slint";
+import {
+    BufferProgressBar, LevelMeterBar, NoiseGateBar, TrimRangeBar
+} from "components/meters_and_bars.slint";
+import {
+    ReplayListItem, SpeedListItem, FilterCardItem, ClipPickerItem,
+    TimelineTrackRow, CropHandle, OverlayPreviewBox, LibraryClipCard
+} from "components/list_items.slint";
+
+export { Theme, Icons }
+
+component Swatch inherits Rectangle {
+    in property <string> name;
+    in property <brush> swatch;
+
+    height: 44px;
+    border-radius: Theme.rad-kbd;
+    background: Theme.surface-card;
+    border-width: 1px;
+    border-color: Theme.border-card;
+
+    HorizontalLayout {
+        padding: 8px;
+        spacing: 10px;
+
+        Rectangle {
+            width: 28px;
+            height: 28px;
+            border-radius: Theme.rad-checkbox;
+            background: root.swatch;
+            border-width: 1px;
+            border-color: Theme.border-strong;
+        }
+
+        Text {
+            text: root.name;
+            color: Theme.text-row;
+            font-family: Theme.font-mono;
+            font-size: Theme.font-size-xs;
+            vertical-alignment: center;
+            overflow: elide;
+        }
+    }
+}
+
+component IconCell inherits Rectangle {
+    in property <string> name;
+    in property <image> icon;
+
+    width: 120px;
+    height: 64px;
+    border-radius: Theme.rad-control;
+    background: Theme.surface-card;
+    border-width: 1px;
+    border-color: Theme.border-card;
+
+    VerticalLayout {
+        padding: 8px;
+        spacing: 6px;
+        alignment: center;
+
+        HorizontalLayout {
+            alignment: center;
+            MaterialIcon {
+                source: root.icon;
+                size: 20px;
+                tint: Theme.text-hi;
+            }
+        }
+
+        Text {
+            text: root.name;
+            color: Theme.text-faint;
+            font-family: Theme.font-mono;
+            font-size: 9.5px;
+            horizontal-alignment: center;
+            overflow: elide;
+        }
+    }
+}
+
+export component GalleryWindow inherits Window {
+    title: "Lag Design System Gallery";
+    preferred-width: 1280px;
+    preferred-height: 900px;
+    background: Theme.surface-app;
+    default-font-family: Theme.font-ui;
+
+    property <bool> demo-recording: false;
+    property <bool> demo-toggle-a: true;
+    property <bool> demo-toggle-b: false;
+    property <bool> demo-check-a: true;
+    property <bool> demo-check-b: false;
+    property <float> demo-slider: 65;
+    property <float> demo-vol-slider: 80;
+    property <int> demo-seg: 1;
+    property <int> demo-rseg: 0;
+    property <int> demo-tab: 0;
+    property <int> demo-combo: 0;
+    property <int> demo-preset: 1;
+    property <float> demo-gate-thresh: 28;
+    property <float> demo-trim-start: 10;
+    property <float> demo-trim-end: 46;
+    property <string> demo-input: "144";
+    property <string> demo-search: "";
+
+    LagScrollView {
+        width: 100%;
+        height: 100%;
+
+        VerticalLayout {
+            padding: 28px;
+            spacing: 24px;
+
+            // ── Header + Theme Switcher ──
+            HorizontalLayout {
+                spacing: 16px;
+
+                Rectangle {
+                    width: 36px;
+                    height: 36px;
+                    border-radius: Theme.rad-button;
+                    background: Theme.accent;
+
+                    LagLogoMark {
+                        x: (parent.width - self.width) / 2;
+                        y: (parent.height - self.height) / 2;
+                        stroke: Theme.on-accent;
+                        size: 22px;
+                    }
+                }
+
+                VerticalLayout {
+                    horizontal-stretch: 1;
+                    spacing: 2px;
+
+                    Text {
+                        text: "Lag Design System Gallery";
+                        color: Theme.text-hi;
+                        font-family: Theme.font-display;
+                        font-size: Theme.font-size-section-title;
+                        font-weight: Theme.font-weight-bold;
+                    }
+
+                    RSubText {
+                        text: "1:1 Avalonia -> Slint token, icon, and component reference";
+                    }
+                }
+
+                SegmentedControl {
+                    options: [
+                        { text: "Dark", tier: 0 },
+                        { text: "Light (Cream)", tier: 0 },
+                        { text: "System", tier: 0 },
+                    ];
+                    selected-index: 0;
+                    selected(idx) => {
+                        Theme.mode = idx == 0 ? "dark" : idx == 1 ? "light" : "system";
+                    }
+                }
+            }
+
+            RDivider { }
+
+            // ── 1. Palette Swatches ──
+            RGroupLabel { text: "PALETTE TOKENS"; }
+            GridLayout {
+                spacing: 8px;
+                Row {
+                    Swatch { name: "accent"; swatch: Theme.accent; }
+                    Swatch { name: "accent-dim"; swatch: Theme.accent-dim; }
+                    Swatch { name: "accent-ring"; swatch: Theme.accent-ring; }
+                    Swatch { name: "accent-text"; swatch: Theme.accent-text; }
+                    Swatch { name: "on-accent"; swatch: Theme.on-accent; }
+                }
+                Row {
+                    Swatch { name: "surface-app"; swatch: Theme.surface-app; }
+                    Swatch { name: "surface-card"; swatch: Theme.surface-card; }
+                    Swatch { name: "surface-input"; swatch: Theme.surface-input; }
+                    Swatch { name: "surface-hover"; swatch: Theme.surface-hover; }
+                    Swatch { name: "surface-hover-2"; swatch: Theme.surface-hover-2; }
+                }
+                Row {
+                    Swatch { name: "text-hi"; swatch: Theme.text-hi; }
+                    Swatch { name: "text-row"; swatch: Theme.text-row; }
+                    Swatch { name: "text-mid"; swatch: Theme.text-mid; }
+                    Swatch { name: "text-muted"; swatch: Theme.text-muted; }
+                    Swatch { name: "text-faintest"; swatch: Theme.text-faintest; }
+                }
+                Row {
+                    Swatch { name: "danger-brush"; swatch: Theme.danger-brush; }
+                    Swatch { name: "danger-close"; swatch: Theme.danger-close; }
+                    Swatch { name: "intensity-caution"; swatch: Theme.intensity-caution; }
+                    Swatch { name: "intensity-extreme"; swatch: Theme.intensity-extreme; }
+                    Swatch { name: "card-overlay-gradient"; swatch: Theme.card-overlay-gradient; }
+                }
+            }
+
+            // ── 2. Buttons ──
+            RGroupLabel { text: "BUTTONS"; }
+            RCard {
+                VerticalLayout {
+                    padding: 18px;
+                    spacing: 14px;
+
+                    HorizontalLayout {
+                        spacing: 10px;
+                        TbarAccentButton {
+                            text: root.demo-recording ? "Stop Recording" : "Start Recording";
+                            recording: root.demo-recording;
+                            clicked => { root.demo-recording = !root.demo-recording; }
+                        }
+                        TbarButton { text: "Save Replay"; has-icon: true; icon: Icons.tray-arrow-down; }
+                        TbarButton { text: "Disabled"; has-icon: true; icon: Icons.pause; enabled: false; }
+                        CtaButton { text: "Export"; }
+                        CtaButton { text: "Danger CTA"; recording: true; }
+                        SurfaceButton { text: "Surface"; }
+                        ChipButton { text: "Chip"; }
+                        ChipButton { text: "Delete"; danger: true; }
+                    }
+
+                    HorizontalLayout {
+                        spacing: 10px;
+                        RChipButton { text: "Change"; }
+                        RChipButton { text: "Hear yourself"; active: true; }
+                        RChipButton { text: "Delete Selected"; danger: true; has-icon: true; icon: Icons.trash-can-outline; }
+                        GameChipButton { text: "All Games"; selected: true; }
+                        GameChipButton { text: "Favorites"; has-icon: true; icon: Icons.star; }
+                        NavButton { label: "Library"; icon: Icons.view-grid-outline; active: true; }
+                        NavButton { label: "Settings"; icon: Icons.tune; active: false; }
+                    }
+
+                    HorizontalLayout {
+                        spacing: 12px;
+                        RailItemButton { label: "Library"; icon: Icons.view-grid-outline; active: true; }
+                        RailItemButton { label: "Player"; icon: Icons.play; active: false; }
+                        RailItemButton { label: "Editor"; icon: Icons.pencil-outline; active: false; }
+                        RailItemButton { label: "Settings"; icon: Icons.tune; active: false; }
+                        WindowCtlButton { icon: Icons.window-minimize; }
+                        WindowCtlButton { icon: Icons.square-rounded-outline; icon-size: 11px; }
+                        WindowCtlButton { icon: Icons.window-close; is-close: true; }
+                        PlayerIconButton { icon: Icons.fullscreen; }
+                        TransportButton { icon: Icons.volume-high; }
+                        PlayCircleButton { icon: Icons.play; }
+                    }
+                }
+            }
+
+            // ── 3. Selection, Inputs & Controls ──
+            RGroupLabel { text: "TOGGLES, CHECKBOXES, SLIDERS, INPUTS, COMBO & SEGMENTED"; }
+            RCard {
+                VerticalLayout {
+                    padding: 18px;
+                    spacing: 16px;
+
+                    HorizontalLayout {
+                        spacing: 18px;
+                        LagToggleSwitch { checked <=> root.demo-toggle-a; }
+                        LagToggleSwitch { checked <=> root.demo-toggle-b; }
+                        LagToggleSwitch { checked: true; enabled: false; }
+                        LagCheckBox { checked <=> root.demo-check-a; label: "System sound"; }
+                        LagCheckBox { checked <=> root.demo-check-b; label: "Game sound"; }
+                        LagCheckBox { checked: false; enabled: false; label: "Disabled"; }
+                    }
+
+                    HorizontalLayout {
+                        spacing: 18px;
+                        LagSlider { width: 180px; value <=> root.demo-slider; }
+                        LagSlider { width: 160px; value <=> root.demo-vol-slider; volume: true; }
+                        LagSlider { width: 120px; value: 40; enabled: false; }
+                        LagTextInput { width: 80px; text <=> root.demo-input; placeholder: "FPS"; }
+                        LagTextInput { width: 100px; text: ""; placeholder: "Custom..."; }
+                        LagSearchBox { width: 220px; text <=> root.demo-search; }
+                    }
+
+                    HorizontalLayout {
+                        spacing: 14px;
+                        LagComboBox {
+                            width: 180px;
+                            items: [
+                                { text: "1080p (Native)", tier: 0 },
+                                { text: "1440p (High)", tier: 1 },
+                                { text: "4K (Extreme)", tier: 2 },
+                            ];
+                            selected-index <=> root.demo-combo;
+                        }
+                        LagComboBox {
+                            width: 140px;
+                            enabled: false;
+                            items: [{ text: "Disabled", tier: 0 }];
+                        }
+                        RPillTrigger { width: 150px; text: "English"; }
+                        SegmentedControl {
+                            options: [
+                                { text: "Video", tier: 0 },
+                                { text: "Audio", tier: 0 },
+                                { text: "Overlay", tier: 0 },
+                                { text: "General", tier: 0 },
+                            ];
+                            selected-index <=> root.demo-seg;
+                        }
+                        RSegControl {
+                            options: ["Mono", "Stereo"];
+                            selected-index <=> root.demo-rseg;
+                        }
+                    }
+
+                    HorizontalLayout {
+                        spacing: 20px;
+                        LagTabHeader { text: "Trim"; selected: root.demo-tab == 0; clicked => { root.demo-tab = 0; } }
+                        LagTabHeader { text: "Crop"; selected: root.demo-tab == 1; clicked => { root.demo-tab = 1; } }
+                        LagTabHeader { text: "Filters"; selected: root.demo-tab == 2; clicked => { root.demo-tab = 2; } }
+                        SectionLabel { text: "SECTION"; }
+                        RRowText { text: "Row label"; }
+                        RMonoText { text: "00:12.4"; }
+                    }
+                }
+            }
+
+            Divider { }
+
+            // ── 4. Badges, Kbd, Tooltips, Status, Meters & TrimRangeBar ──
+            RGroupLabel { text: "BADGES, METERS, TRIM BAR & OVERLAY SURFACES"; }
+            RCard {
+                VerticalLayout {
+                    padding: 18px;
+                    spacing: 16px;
+
+                    HorizontalLayout {
+                        spacing: 10px;
+                        RecommendedBadge { }
+                        EditedBadge { }
+                        DurationBadge { text: "01:42"; }
+                        RKbdChip { text: "Alt + F10"; }
+                        KbdChipButton { text: "Press a key..."; listening: true; }
+                        KbdChipButton { text: "Disabled"; enabled: false; }
+                        LagTooltip { text: "Replay saved to library"; }
+                        StatusPill {
+                            recording: root.demo-recording;
+                            status-text: root.demo-recording ? "Recording" : "Ready";
+                            BufferProgressBar { value: 64; }
+                        }
+                    }
+
+                    HorizontalLayout {
+                        spacing: 16px;
+                        LevelMeterBar { level: 0.72; show-marker: true; marker-position: 0.35; }
+                        LevelMeterBar { level: 0.25; gated: true; }
+                    }
+
+                    NoiseGateBar {
+                        auto-mode: false;
+                        mic-level: 0.58;
+                        threshold <=> root.demo-gate-thresh;
+                    }
+                    NoiseGateBar {
+                        auto-mode: true;
+                        mic-level: 0.44;
+                    }
+
+                    TimelineTrackRow {
+                        selected: true;
+                        TrimRangeBar {
+                            width: 600px;
+                            height: 32px;
+                            duration: 60.0;
+                            range-start <=> root.demo-trim-start;
+                            range-end <=> root.demo-trim-end;
+                        }
+                    }
+                    TimelineTrackRow {
+                        selected: false;
+                        TrimRangeBar {
+                            width: 600px;
+                            height: 24px;
+                            duration: 60.0;
+                            range-start: 12.0;
+                            range-end: 42.0;
+                            enabled: false;
+                        }
+                    }
+                }
+            }
+
+            // ── 5. Cards, Menus, List Items, Clip Card ──
+            RGroupLabel { text: "PRESETS, FLYOUTS, MENUS, LISTS & CLIP CARD"; }
+            HorizontalLayout {
+                spacing: 16px;
+
+                VerticalLayout {
+                    horizontal-stretch: 1;
+                    spacing: 12px;
+
+                    HorizontalLayout {
+                        spacing: 10px;
+                        PresetCard {
+                            horizontal-stretch: 1;
+                            title: "Performance";
+                            description: "Lowest CPU/GPU impact";
+                            subtitle: "1080p • 60 fps • H.264";
+                            active: root.demo-preset == 0;
+                            clicked => { root.demo-preset = 0; }
+                        }
+                        PresetCard {
+                            horizontal-stretch: 1;
+                            title: "Balanced";
+                            description: "Best quality per GB";
+                            subtitle: "1440p • 60 fps • HEVC";
+                            recommended: true;
+                            active: root.demo-preset == 1;
+                            clicked => { root.demo-preset = 1; }
+                        }
+                        PresetCard {
+                            horizontal-stretch: 1;
+                            title: "Quality";
+                            description: "Crisp high-bitrate capture";
+                            subtitle: "1440p • 120 fps • AV1";
+                            active: root.demo-preset == 2;
+                            clicked => { root.demo-preset = 2; }
+                        }
+                    }
+
+                    HintBanner { text: "Low free disk space — enable auto-cleanup in General settings."; }
+
+                    HorizontalLayout {
+                        spacing: 12px;
+                        CaptureFlyoutCard { icon: Icons.controller; target-name: "Counter-Strike 2"; }
+                        ToastCard { icon: Icons.check-circle; title: "Replay Saved"; subtitle: "CS2_2026-11-16_01-14.mp4"; }
+                        StatsHudPill { text: "165 FPS · GPU 42% · RAM 14.2 GB"; }
+                    }
+
+                    ModalCard {
+                        title: "High resource settings";
+                        summary: "1440p @ 120 fps exceeds Balanced preset";
+                        body: "These encoding settings may drop frames on heavy scenes.";
+                        HorizontalLayout {
+                            alignment: end;
+                            RChipButton { text: "Understood"; }
+                        }
+                    }
+                }
+
+                VerticalLayout {
+                    width: 280px;
+                    spacing: 12px;
+
+                    LagContextMenuContainer {
+                        VerticalLayout {
+                            padding: Theme.menu-flyout-presenter-theme-padding;
+                            spacing: 2px;
+                            LagMenuItem { text: "Edit clip"; has-icon: true; icon: Icons.movie-edit-outline; selected: true; }
+                            LagMenuItem { text: "Show in folder"; has-icon: true; icon: Icons.folder-search-outline; }
+                            LagMenuSeparator { }
+                            LagMenuItem { text: "Delete"; has-icon: true; icon: Icons.trash-can-outline; }
+                        }
+                    }
+
+                    LagFlyoutPresenter {
+                        VerticalLayout {
+                            padding: Theme.flyout-padding;
+                            spacing: 2px;
+                            SpeedListItem { text: "0.5x"; }
+                            SpeedListItem { text: "1.0x"; selected: true; }
+                            SpeedListItem { text: "2.0x"; }
+                        }
+                    }
+
+                    ReplayListItem {
+                        selected: true;
+                        Text { text: "Replay_001.mp4"; color: Theme.text-hi; font-size: Theme.font-size-body; }
+                    }
+                    FilterCardItem {
+                        label: "Vivid";
+                        selected: true;
+                        Rectangle { width: 48px; height: 28px; border-radius: 6px; background: Theme.surface-input; }
+                    }
+                    ClipPickerItem {
+                        Text { text: "Clip_002.mp4"; color: Theme.fg-brush; font-size: Theme.font-size-sm; }
+                    }
+                    HorizontalLayout {
+                        spacing: 8px;
+                        CropHandle { }
+                        OverlayPreviewBox { width: 80px; height: 32px; }
+                    }
+
+                    LibraryClipCard {
+                        title: "Clutch 1v4 Mirage";
+                        time-text: "01:14";
+                        game-name: "Counter-Strike 2";
+                        duration-text: "0:45";
+                        is-favorite: true;
+                        is-edited: true;
+                    }
+                }
+            }
+
+            // ── 6. All 49 Material Icons ──
+            RGroupLabel { text: "MATERIAL ICONS (49)"; }
+            VerticalLayout {
+                spacing: 8px;
+                HorizontalLayout {
+                    spacing: 8px;
+                    IconCell { name: "arrow-collapse-left"; icon: Icons.arrow-collapse-left; }
+                    IconCell { name: "arrow-collapse-right"; icon: Icons.arrow-collapse-right; }
+                    IconCell { name: "check-circle"; icon: Icons.check-circle; }
+                    IconCell { name: "checkbox-blank-circle"; icon: Icons.checkbox-blank-circle-outline; }
+                    IconCell { name: "chevron-down"; icon: Icons.chevron-down; }
+                    IconCell { name: "close"; icon: Icons.close; }
+                    IconCell { name: "close-circle-outline"; icon: Icons.close-circle-outline; }
+                }
+                HorizontalLayout {
+                    spacing: 8px;
+                    IconCell { name: "content-cut"; icon: Icons.content-cut; }
+                    IconCell { name: "content-save"; icon: Icons.content-save; }
+                    IconCell { name: "controller"; icon: Icons.controller; }
+                    IconCell { name: "crop"; icon: Icons.crop; }
+                    IconCell { name: "delete-outline"; icon: Icons.delete-outline; }
+                    IconCell { name: "flip-horizontal"; icon: Icons.flip-horizontal; }
+                    IconCell { name: "flip-vertical"; icon: Icons.flip-vertical; }
+                }
+                HorizontalLayout {
+                    spacing: 8px;
+                    IconCell { name: "folder-outline"; icon: Icons.folder-outline; }
+                    IconCell { name: "folder-search"; icon: Icons.folder-search-outline; }
+                    IconCell { name: "fullscreen"; icon: Icons.fullscreen; }
+                    IconCell { name: "gamepad"; icon: Icons.gamepad; }
+                    IconCell { name: "keyboard-outline"; icon: Icons.keyboard-outline; }
+                    IconCell { name: "magnify"; icon: Icons.magnify; }
+                    IconCell { name: "microphone"; icon: Icons.microphone; }
+                }
+                HorizontalLayout {
+                    spacing: 8px;
+                    IconCell { name: "monitor"; icon: Icons.monitor; }
+                    IconCell { name: "mouse-outline"; icon: Icons.mouse-outline; }
+                    IconCell { name: "movie-check-outline"; icon: Icons.movie-check-outline; }
+                    IconCell { name: "movie-edit-outline"; icon: Icons.movie-edit-outline; }
+                    IconCell { name: "pause"; icon: Icons.pause; }
+                    IconCell { name: "pencil-outline"; icon: Icons.pencil-outline; }
+                    IconCell { name: "play"; icon: Icons.play; }
+                }
+                HorizontalLayout {
+                    spacing: 8px;
+                    IconCell { name: "plus"; icon: Icons.plus; }
+                    IconCell { name: "record-circle"; icon: Icons.record-circle; }
+                    IconCell { name: "restore"; icon: Icons.restore; }
+                    IconCell { name: "rotate-left"; icon: Icons.rotate-left; }
+                    IconCell { name: "rotate-right"; icon: Icons.rotate-right; }
+                    IconCell { name: "skip-next"; icon: Icons.skip-next; }
+                    IconCell { name: "speedometer"; icon: Icons.speedometer; }
+                }
+                HorizontalLayout {
+                    spacing: 8px;
+                    IconCell { name: "square-rounded"; icon: Icons.square-rounded-outline; }
+                    IconCell { name: "star"; icon: Icons.star; }
+                    IconCell { name: "star-outline"; icon: Icons.star-outline; }
+                    IconCell { name: "stop"; icon: Icons.stop; }
+                    IconCell { name: "stop-circle"; icon: Icons.stop-circle; }
+                    IconCell { name: "trash-can-outline"; icon: Icons.trash-can-outline; }
+                    IconCell { name: "tray-arrow-down"; icon: Icons.tray-arrow-down; }
+                }
+                HorizontalLayout {
+                    spacing: 8px;
+                    IconCell { name: "tune"; icon: Icons.tune; }
+                    IconCell { name: "view-grid-outline"; icon: Icons.view-grid-outline; }
+                    IconCell { name: "volume-high"; icon: Icons.volume-high; }
+                    IconCell { name: "volume-off"; icon: Icons.volume-off; }
+                    IconCell { name: "webcam"; icon: Icons.webcam; }
+                    IconCell { name: "window-close"; icon: Icons.window-close; }
+                    IconCell { name: "window-minimize"; icon: Icons.window-minimize; }
+                }
+            }
+        }
+    }
+}

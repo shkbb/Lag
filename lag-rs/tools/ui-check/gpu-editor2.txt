@@ -1,0 +1,56 @@
+# REAL window: play after re-picking a clip, captions (add 3, drag, double-click edit + type), crop -> text.
+size 1360x880
+page editor
+wait 800
+editor-clip 0
+wait 2500
+editor-play
+wait 600
+editor-clip 1
+wait 2500
+screen t1-repicked
+editor-play
+wait 800
+editor-play
+wait 800
+screen t2-after-plays
+editor-addtext
+wait 300
+editor-addtext
+wait 300
+editor-addtext
+wait 800
+screen t3-three-texts
+editor-crop
+wait 500
+ov-click 340 128
+wait 600
+screen t4-text-after-crop
+ov-down 340 128
+ov-move 360 140
+ov-move 420 200
+ov-move 480 260
+ov-up 480 260
+wait 600
+screen t5-dragged
+ov-dbl 480 260
+wait 600
+type Привіт
+wait 600
+screen t6-typing
+key enter
+wait 600
+screen t7-done
+# theme cross-fade (light -> dark), frames during the fade
+page library
+wait 800
+theme 0
+wait 900
+screen f0-light
+theme 1
+wait 120
+screen f1-fade-early
+wait 150
+screen f2-fade-late
+wait 600
+screen f3-dark

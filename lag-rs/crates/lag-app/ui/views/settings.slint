@@ -1,0 +1,155 @@
+// Mirrors Views/SettingsView.axaml(.cs), SettingsViewModel.cs and Controls/SegmentedListBox.cs.
+import { Theme } from "../theme/tokens.slint";
+import { Tr, MainVM } from "../globals.slint";
+import { SegmentedControl } from "../components/segmented_control.slint";
+import { RCard, RGroupLabel, PresetCard, HintBanner, RDivider } from "../components/cards.slint";
+import { RChipButton } from "../components/buttons.slint";
+import { LagScrollView } from "../components/scrollbar.slint";
+import { SettingsGroup, SettingsRow, PresetData } from "../components/settings/row.slint";
+import { OverlayStage, OverlayBoxData } from "../components/settings/overlay.slint";
+export global SettingsVM {
+    in-out property <int> tab: 0;
+    in property <[SettingsGroup]> groups;
+    in property <[PresetData]> presets;
+    in property <bool> pending: false;
+    in property <bool> cleanup-hint: false;
+    in property <string> cleanup-text;
+    in-out property <bool> warning: false;
+    in property <string> warning-summary;
+    in property <[OverlayBoxData]> overlay-boxes;
+    in property <bool> overlay-enabled: false;
+    in property <float> mic-level: 0;
+    in property <float> output-level: 0;
+    in property <float> gate-threshold: 0.08;
+    in property <bool> gate-open: false;
+    in property <bool> hear-yourself: false;
+    in property <string> capture-id;
+    in property <bool> hotkeys-suppressed: false;
+    in property <[image]> language-flags;
+    callback select-tab(int);
+    callback choose(string, int);
+    callback toggle(string, bool);
+    callback number(string, float);
+    callback text(string, string);
+    callback action(string);
+    callback apply-preset(int);
+    callback commit-overlay(int, float, float, float);
+    callback acknowledge();
+    // Shell hook seam uses C# KeyCode and ModifierMask names. Escape clears the binding.
+    callback captured(string, string);
+    callback update-status(string);
+    in property <string> theme-mode: "dark";
+}
+export component SettingsPage inherits Rectangle {
+    background: Theme.surface-app; clip: true;
+    private property <string> selected-theme: SettingsVM.theme-mode;
+    changed selected-theme => { Theme.mode = root.selected-theme; }
+    private property <int> active-tab: SettingsVM.tab;
+    private property <duration> tab-start;
+    private property <float> tab-phase: clamp((animation-tick() - root.tab-start) / 240ms, 0, 1);
+    private property <float> tab-progress: 1 - pow(1 - root.tab-phase, 3);
+    changed active-tab => { scroll.content-y = 0px; root.tab-start = animation-tick(); }
+    scroll := LagScrollView {
+        width: parent.width; height: parent.height;
+        content-height: column.preferred-height + 34px;
+        column := VerticalLayout {
+            x: (scroll.width - 800px) / 2; y: 34px; width: 800px; height: self.preferred-height;
+            padding-bottom: 64px; spacing: 0px;
+            HorizontalLayout {
+                VerticalLayout {
+                    spacing: 4px;
+                    Text { text: Tr.t("Settings_Title", Tr.rev); font-size: 32px; font-weight: 700; color: Theme.text-hi; }
+                    Text { text: Tr.t("Settings_Subtitle", Tr.rev); font-size: 13.5px; color: Theme.text-muted; }
+                }
+                if SettingsVM.pending && MainVM.is-recording: Text {
+                    max-width: 280px; text: Tr.t("Settings_PendingChanges", Tr.rev);
+                    color: #F0B45A; font-size: 11px; wrap: word-wrap; horizontal-alignment: right; vertical-alignment: bottom;
+                }
+            }
+            Rectangle { height: 26px; }
+            HorizontalLayout {
+                alignment: start;
+                SegmentedControl {
+                    options: [{text: Tr.t("Tab_Video", Tr.rev), tier: 0}, {text: Tr.t("Tab_Audio", Tr.rev), tier: 0},
+                        {text: Tr.t("Settings_Group_Overlay", Tr.rev), tier: 0}, {text: Tr.t("Tab_General", Tr.rev), tier: 0}];
+                    selected-index: SettingsVM.tab;
+                    selected(i) => { scroll.content-y = 0px; SettingsVM.select-tab(i); }
+                }
+            }
+            Rectangle { height: 28px; }
+            Rectangle {
+                height: tab-content.preferred-height;
+                opacity: root.tab-progress;
+                tab-content := VerticalLayout {
+                y: (1 - root.tab-progress) * 16px;
+                width: parent.width;
+                spacing: 26px;
+                if SettingsVM.tab == 0: VerticalLayout {
+                    spacing: 12px;
+                    RGroupLabel { text: Tr.t("Preset_SectionTitle", Tr.rev); }
+                    Text { text: Tr.t("Preset_Subtitle", Tr.rev); color: Theme.text-faint; font-size: 12.5px; }
+                    HorizontalLayout {
+                        spacing: 8px;
+                        for p[i] in SettingsVM.presets: PresetCard {
+                            title: Tr.t(p.title, Tr.rev); description: Tr.t(p.description, Tr.rev);
+                            subtitle: p.summary; active: p.active; recommended: i == 1;
+                            recommended-text: Tr.t("Preset_RecommendedBadge", Tr.rev);
+                            clicked => { SettingsVM.apply-preset(i); }
+                        }
+                    }
+                    if SettingsVM.cleanup-hint: HintBanner { text: SettingsVM.cleanup-text; }
+                }
+                for group in SettingsVM.groups: VerticalLayout {
+                    spacing: 11px;
+                    if group.title != "": RGroupLabel { text: Tr.t(group.title, Tr.rev); }
+                    RCard {
+                        VerticalLayout {
+                            spacing: 0px;
+                            for row[i] in group.rows: VerticalLayout {
+                                if i > 0 && row.divider && row.visible: RDivider { }
+                                if row.visible: SettingsRow {
+                                    data: row; mic-level: SettingsVM.mic-level; output-level: SettingsVM.output-level;
+                                    listening: SettingsVM.capture-id == row.id; hear-yourself: SettingsVM.hear-yourself;
+                                    language-flags: SettingsVM.language-flags;
+                                    choose(id, v) => { SettingsVM.choose(id, v); }
+                                    toggle(id, v) => { SettingsVM.toggle(id, v); }
+                                    number(id, v) => { SettingsVM.number(id, v); }
+                                    text(id, v) => { SettingsVM.text(id, v); }
+                                    action(id) => { SettingsVM.action(id); }
+                                }
+                                if row.id == "overlay" && SettingsVM.overlay-enabled: VerticalLayout {
+                                    padding-left: 18px; padding-right: 18px; padding-bottom: 15px; spacing: 8px;
+                                    Rectangle {
+                                        height: 434px; background: Theme.surface-input; border-radius: 10px;
+                                        OverlayStage { x: 14px; y: 10px; width: 736px; height: 414px;
+                                            boxes: SettingsVM.overlay-boxes;
+                                            commit(i, x, y, s) => { SettingsVM.commit-overlay(i, x, y, s); }
+                                        }
+                                    }
+                                    Text { text: Tr.t("Overlay_WheelHint", Tr.rev); color: Theme.text-faint; font-size: 11px; horizontal-alignment: center; }
+                                }
+                            }
+                        }
+                    }
+                }
+                }
+            }
+        }
+    }
+    if SettingsVM.warning: Rectangle {
+        background: #000000B0; TouchArea { }
+        Rectangle {
+            width: 560px; height: warning-layout.preferred-height;
+            x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2;
+            background: Theme.surface-card; border-radius: 14px; border-width: 1px; border-color: Theme.border-strong;
+            drop-shadow-offset-y: 12px; drop-shadow-blur: 40px; drop-shadow-color: #00000080;
+            warning-layout := VerticalLayout {
+                padding: 28px; spacing: 14px;
+                Text { text: Tr.t("Settings_IntensiveTitle", Tr.rev); font-size: 18px; font-weight: 700; color: Theme.text-hi; wrap: word-wrap; }
+                Text { text: SettingsVM.warning-summary; font-size: 13px; color: #E5B84C; wrap: word-wrap; }
+                Text { text: Tr.t("Settings_IntensiveBody", Tr.rev); font-size: 13px; color: Theme.text-mid; wrap: word-wrap; }
+                HorizontalLayout { alignment: end; RChipButton { text: Tr.t("Settings_IntensiveOk", Tr.rev); clicked => { SettingsVM.acknowledge(); } } }
+            }
+        }
+    }
+}

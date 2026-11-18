@@ -1,0 +1,20 @@
+# Editor stage: click = no selection, drag = selects + moves, click outside the box = deselect; no frame outline.
+size 1360x880
+page editor
+wait 500
+editor-clip 0
+wait 3500
+shot c0-loaded
+click 700 350
+wait 300
+shot c1-after-click
+down 700 350
+move 705 352
+move 730 370
+move 760 390
+up 760 390
+wait 300
+shot c2-after-drag
+click 380 160
+wait 300
+shot c3-click-outside

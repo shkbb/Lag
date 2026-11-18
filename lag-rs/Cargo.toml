@@ -1,0 +1,28 @@
+[workspace]
+resolver = "2"
+members = ["crates/*", "tools/quiet"]
+
+[workspace.package]
+version = "2.0.0-alpha.0"
+edition = "2021"
+license = "GPL-3.0-only"
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+debug = "line-tables-only"
+
+[workspace.dependencies]
+lag-ffi = { path = "crates/lag-ffi" }
+lag-core = { path = "crates/lag-core" }
+lag-audio = { path = "crates/lag-audio" }
+lag-capture = { path = "crates/lag-capture" }
+lag-player = { path = "crates/lag-player" }
+# Crates add their own Win32 feature lists on top: `windows = { workspace = true, features = [...] }`.
+windows = "0.62.2"
+windows-core = "0.62.2"
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["float_roundtrip"] }
+crossbeam-channel = "0.5"
+log = "0.4"

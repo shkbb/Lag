@@ -1,0 +1,17 @@
+# Theme cross-fade: mid-fade frame + settled frame, both directions.
+size 1360x840
+choose theme 1
+wait 900
+page library
+wait 600
+shot tf-0-dark
+choose theme 0
+wait 200
+shot tf-1-mid
+wait 700
+shot tf-2-light
+choose theme 1
+wait 200
+shot tf-3-mid
+wait 700
+shot tf-4-dark

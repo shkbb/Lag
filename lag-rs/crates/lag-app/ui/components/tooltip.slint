@@ -1,0 +1,28 @@
+import { Theme } from "../theme/tokens.slint";
+
+// Ported from DarkTheme.axaml:464-472 + Palette.axaml:140-142, 273-275 (ToolTip)
+export component LagTooltip {
+    in property <string> text;
+
+    Rectangle {
+        border-radius: Theme.rad-control;
+        background: Theme.tool-tip-background;
+        border-width: 1px;
+        border-color: Theme.tool-tip-border-brush;
+
+        HorizontalLayout {
+            padding-left: 10px;
+            padding-right: 10px;
+            padding-top: 6px;
+            padding-bottom: 6px;
+
+            Text {
+                text: root.text;
+                color: Theme.tool-tip-foreground;
+                font-family: Theme.font-ui;
+                font-size: Theme.font-size-sm;
+                vertical-alignment: center;
+            }
+        }
+    }
+}

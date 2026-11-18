@@ -1,0 +1,337 @@
+import { Theme } from "../theme/tokens.slint";
+
+// Ported from DarkTheme.axaml:745-755 + MainWindow.axaml:300-301 (ProgressBar.buffer)
+export component BufferProgressBar {
+    in property <float> value: 0; // 0..100
+    in property <float> maximum: 100;
+
+    width: 74px;
+    height: 5px;
+
+    property <float> ratio: clamp(value / max(0.0001, maximum), 0.0, 1.0);
+
+    Rectangle {
+        width: 100%;
+        height: 100%;
+        border-radius: Theme.rad-progress;
+        background: Theme.surface-brush;
+        clip: true;
+
+        Rectangle {
+            x: 0px;
+            y: 0px;
+            height: parent.height;
+            width: parent.width * root.ratio;
+            border-radius: parent.border-radius;
+            background: Theme.accent-brush;
+            animate width {
+                duration: Theme.dur-buffer;
+                easing: cubic-bezier(0.215, 0.61, 0.355, 1);
+            }
+        }
+    }
+}
+
+// Ported from SettingsView.axaml:63-83, 495-498 (Border.meter / Border.meterfill / Border.metermarker)
+export component LevelMeterBar {
+    in property <float> level: 0.0; // 0..1
+    in property <bool> gated: false;
+    in property <bool> show-marker: false;
+    in property <float> marker-position: 0.0; // 0..1
+
+    width: 240px;
+    height: 8px;
+
+    Rectangle {
+        width: 100%;
+        height: 100%;
+        border-radius: Theme.rad-meter;
+        background: Theme.surface-input;
+        clip: true;
+
+        Rectangle {
+            x: 0px;
+            y: 0px;
+            width: parent.width * clamp(root.level, 0.0, 1.0);
+            height: parent.height;
+            border-radius: Theme.rad-meter;
+            background: root.gated ? Theme.meter-fill-gated : Theme.meter-fill;
+        }
+
+        if root.show-marker: Rectangle {
+            x: clamp(parent.width * clamp(root.marker-position, 0.0, 1.0) - 1px, 0px, parent.width - 2px);
+            y: 0px;
+            width: 2px;
+            height: parent.height;
+            background: Theme.text-hi;
+        }
+    }
+}
+
+// Ported from SettingsView.axaml:86-98, 524-555 (Border.gatebar + Border.gatehandle)
+export component NoiseGateBar {
+    in property <bool> auto-mode: false;
+    in property <float> mic-level: 0.0; // 0..1
+    in-out property <float> threshold: 25.0; // 0..100
+    callback threshold-changed(float);
+
+    width: 480px;
+    height: 12px;
+
+    property <float> thresh-ratio: clamp(threshold / 100.0, 0.0, 1.0);
+    property <float> level-ratio: clamp(mic-level, 0.0, 1.0);
+
+    function update-threshold(px: length) {
+        let pct = clamp(px / max(1px, root.width), 0.0, 1.0) * 100.0;
+        root.threshold = pct;
+        root.threshold-changed(pct);
+    }
+
+    Rectangle {
+        width: 100%;
+        height: 100%;
+        border-radius: Theme.rad-kbd;
+        background: Theme.surface-input;
+        clip: true;
+
+        // Auto mode: single green fill bar
+        if root.auto-mode: Rectangle {
+            x: 0px;
+            y: 0px;
+            width: parent.width * root.level-ratio;
+            height: parent.height;
+            border-radius: Theme.rad-kbd;
+            background: Theme.meter-fill;
+        }
+
+        // Manual mode: layered pass/cut zones + clipped bright live level + white 4px handle
+        if !root.auto-mode: Rectangle {
+            width: 100%;
+            height: 100%;
+
+            // Background pass zone
+            Rectangle {
+                width: 100%;
+                height: 100%;
+                border-radius: Theme.rad-kbd;
+                background: Theme.meter-pass-dim;
+            }
+
+            // Background cut zone (left of threshold)
+            Rectangle {
+                x: 0px;
+                y: 0px;
+                width: parent.width * root.thresh-ratio;
+                height: parent.height;
+                background: Theme.meter-cut-dim;
+            }
+
+            // Live level clip container
+            Rectangle {
+                x: 0px;
+                y: 0px;
+                width: parent.width * root.level-ratio;
+                height: parent.height;
+                clip: true;
+
+                // Full-width bright pass
+                Rectangle {
+                    x: 0px;
+                    y: 0px;
+                    width: root.width;
+                    height: parent.height;
+                    border-radius: Theme.rad-kbd;
+                    background: Theme.meter-fill;
+                }
+
+                // Bright cut zone (left of threshold)
+                Rectangle {
+                    x: 0px;
+                    y: 0px;
+                    width: root.width * root.thresh-ratio;
+                    height: parent.height;
+                    background: Theme.meter-cut;
+                }
+            }
+
+            // Draggable 4px white handle
+            Rectangle {
+                x: clamp(parent.width * root.thresh-ratio - 2px, 0px, parent.width - 4px);
+                y: 0px;
+                width: 4px;
+                height: parent.height;
+                border-radius: 2px;
+                background: #FFFFFF;
+            }
+        }
+    }
+
+    if !root.auto-mode: TouchArea {
+        mouse-cursor: pointer;
+        pointer-event(ev) => {
+            if (ev.kind == PointerEventKind.down && ev.button == PointerEventButton.left) {
+                root.update-threshold(self.mouse-x);
+            }
+        }
+        moved => {
+            if (self.pressed) {
+                root.update-threshold(self.mouse-x);
+            }
+        }
+    }
+}
+
+// Ported from Controls/TrimRangeBar.cs:17-200
+export component TrimRangeBar {
+    in property <float> duration: 60.0;
+    in-out property <float> range-start: 6.0;
+    in-out property <float> range-end: 48.0;
+    in property <float> snap-a: -1.0; // < 0 = disabled
+    in property <float> snap-b: -1.0;
+    in property <bool> enabled: true;
+    callback range-changed(float, float);
+
+    min-height: 24px;
+    preferred-height: 32px;
+
+    property <float> safe-dur: max(0.0001, duration);
+    property <float> start-ratio: clamp(range-start / safe-dur, 0.0, 1.0);
+    property <float> end-ratio: clamp(range-end / safe-dur, 0.0, 1.0);
+    property <length> sx: start-ratio * root.width;
+    property <length> ex: end-ratio * root.width;
+    property <length> handle-w: 10px;
+    property <length> hsx: clamp(sx, 0px, root.width) - (sx <= 5px ? 0px : 5px);
+    property <length> hex: clamp(ex, 0px, root.width) - (ex >= root.width - 5px ? handle-w : 5px);
+    property <int> drag-target: 0; // 0 = none, 1 = start, 2 = end
+
+    function apply-drag(px: length) {
+        let sec0 = clamp(px / max(1px, root.width), 0.0, 1.0) * root.safe-dur;
+        let threshold = 10.0 / max(1.0, root.width / 1px) * root.safe-dur;
+        let sec1 = (root.snap-a >= 0 && abs(sec0 - root.snap-a) <= threshold) ? root.snap-a
+                 : (root.snap-b >= 0 && abs(sec0 - root.snap-b) <= threshold) ? root.snap-b
+                 : sec0;
+
+        if (root.drag-target == 1) {
+            root.range-start = clamp(sec1, 0.0, max(0.0, root.range-end - 0.1));
+            root.range-changed(root.range-start, root.range-end);
+        } else if (root.drag-target == 2) {
+            root.range-end = clamp(sec1, min(root.safe-dur, root.range-start + 0.1), root.safe-dur);
+            root.range-changed(root.range-start, root.range-end);
+        }
+    }
+
+    Rectangle {
+        width: 100%;
+        height: 100%;
+        border-radius: Theme.rad-trim;
+        background: root.enabled ? Theme.trim-body : Theme.trim-body-muted;
+        clip: true;
+
+        // Faux waveform: deterministic bars around centerline matching TrimRangeBar.cs:110-117
+        for i in 160: Rectangle {
+            property <length> bar-x: 3px + i * 4px;
+            property <float> t: (self.bar-x / 1px) * 0.55;
+            property <float> amp: (sin(1rad * t) * 0.5 + sin(1rad * (t * 0.31 + 1.7)) * 0.32 + sin(1rad * (t * 0.071 + 0.4)) * 0.18) * 0.5 + 0.5;
+            property <length> bar-h: max(2px, self.amp * max(2px, parent.height - 10px));
+
+            visible: self.bar-x < parent.width - 3px;
+            x: self.bar-x;
+            y: (parent.height - self.bar-h) / 2;
+            width: 2px;
+            height: self.bar-h;
+            background: root.enabled ? Theme.trim-wave : Theme.trim-wave-muted;
+        }
+
+        // Shade outside audible [range-start, range-end]
+        if root.sx > 0px: Rectangle {
+            x: 0px;
+            y: 0px;
+            width: root.sx;
+            height: parent.height;
+            background: Theme.timeline-shade;
+        }
+        if root.ex < parent.width: Rectangle {
+            x: root.ex;
+            y: 0px;
+            width: max(0px, parent.width - root.ex);
+            height: parent.height;
+            background: Theme.timeline-shade;
+        }
+
+        // Start handle (left outer corners 3px rounded, inner edge square)
+        Rectangle {
+            x: root.hsx;
+            y: 0px;
+            width: root.handle-w;
+            height: parent.height;
+            border-radius: 3px;
+            background: root.enabled ? Theme.trim-handle : Theme.trim-handle-muted;
+
+            // Square off right inner edge
+            Rectangle {
+                x: parent.width - 3px;
+                y: 0px;
+                width: 3px;
+                height: parent.height;
+                background: parent.background;
+            }
+
+            // Inner grip notch
+            Rectangle {
+                x: (parent.width - self.width) / 2;
+                y: (parent.height - self.height) / 2;
+                width: 2px;
+                height: max(8px, parent.height * 0.45);
+                border-radius: 1px;
+                background: Theme.trim-notch;
+            }
+        }
+
+        // End handle (right outer corners 3px rounded, inner edge square)
+        Rectangle {
+            x: root.hex;
+            y: 0px;
+            width: root.handle-w;
+            height: parent.height;
+            border-radius: 3px;
+            background: root.enabled ? Theme.trim-handle : Theme.trim-handle-muted;
+
+            // Square off left inner edge
+            Rectangle {
+                x: 0px;
+                y: 0px;
+                width: 3px;
+                height: parent.height;
+                background: parent.background;
+            }
+
+            // Inner grip notch
+            Rectangle {
+                x: (parent.width - self.width) / 2;
+                y: (parent.height - self.height) / 2;
+                width: 2px;
+                height: max(8px, parent.height * 0.45);
+                border-radius: 1px;
+                background: Theme.trim-notch;
+            }
+        }
+    }
+
+    ta := TouchArea {
+        enabled: root.enabled;
+        mouse-cursor: root.enabled ? pointer : default;
+        pointer-event(ev) => {
+            if (ev.kind == PointerEventKind.down && ev.button == PointerEventButton.left) {
+                root.drag-target = abs(self.mouse-x - root.sx) <= abs(self.mouse-x - root.ex) ? 1 : 2;
+                root.apply-drag(self.mouse-x);
+            } else if (ev.kind == PointerEventKind.up) {
+                root.drag-target = 0;
+            }
+        }
+        moved => {
+            if (self.pressed && root.drag-target != 0) {
+                root.apply-drag(self.mouse-x);
+            }
+        }
+    }
+}

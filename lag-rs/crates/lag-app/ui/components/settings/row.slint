@@ -1,0 +1,154 @@
+﻿// Mirrors SettingsView.axaml row margins, control ordering and theme resources.
+import { Theme } from "../../theme/tokens.slint";
+import { Tr } from "../../globals.slint";
+import { LagComboBox, ComboBoxItemData } from "../combobox.slint";
+import { SegmentedControl, SegmentedOption } from "../segmented_control.slint";
+import { LagToggleSwitch } from "../toggle_switch.slint";
+import { LagCheckBox } from "../checkbox.slint";
+import { LagSlider } from "../slider.slint";
+import { LagTextInput } from "../text_input.slint";
+import { KbdChipButton } from "../badges.slint";
+import { RChipButton } from "../buttons.slint";
+import { NoiseGateBar, LevelMeterBar } from "../meters_and_bars.slint";
+import { LanguagePicker } from "language.slint";
+import { MaterialIcon, Icons } from "../../theme/icons.slint";
+export struct SettingsRowData {
+    id: string, label: string, description: string, kind: int,
+    options: [ComboBoxItemData], segments: [SegmentedOption], selected: int,
+    checked: bool, value: float, maximum: float, display: string,
+    enabled: bool, visible: bool, divider: bool, custom: bool, auto-mode: bool,
+    with-toggle: bool, toggle-id: string, parts: [string],
+    icon: image, // audio app rows (kind 4): the app's own icon (C# AppAudioItem.Icon)
+}
+export struct SettingsGroup { title: string, rows: [SettingsRowData] }
+export struct PresetData { title: string, description: string, summary: string, active: bool }
+export component SettingsRow {
+    in property <SettingsRowData> data;
+    in property <float> mic-level;
+    in property <float> output-level;
+    in property <bool> listening;
+    in property <bool> hear-yourself;
+    in property <[image]> language-flags;
+    callback choose(string, int);
+    callback toggle(string, bool);
+    callback number(string, float);
+    callback text(string, string);
+    callback action(string);
+    // a row with its own on/off switch stays readable when off: only its dropdown is disabled (owner, 2026-11-17:
+    // "webcam" and "stats" looked greyed out while "keyboard & mouse" did not)
+    opacity: data.enabled || data.with-toggle ? 1 : 0.45;
+    VerticalLayout {
+        padding-left: 18px; padding-right: 18px;
+        padding-top: root.data.kind == 14 ? 2px : root.data.kind == 4 ? 11px : 15px;
+        padding-bottom: root.data.kind == 14 ? 12px : root.data.kind == 4 ? 11px : 15px; spacing: 10px;
+        HorizontalLayout {
+            spacing: 12px;
+            if root.data.kind == 4: LagCheckBox { horizontal-stretch: 0; checked: root.data.checked; toggled(v) => { root.toggle(root.data.id, v); } }
+            if root.data.kind == 4: VerticalLayout {
+                alignment: center; horizontal-stretch: 0;
+                Rectangle {
+                    width: 20px; height: 20px;
+                    if root.data.id == "system-volume": MaterialIcon { x: 0; y: 0; source: Icons.volume-high; size: 20px; tint: Theme.text-faint; }
+                    if root.data.id == "mic-volume": MaterialIcon { x: 0; y: 0; source: Icons.microphone; size: 20px; tint: Theme.text-faint; }
+                    if root.data.id == "game-volume": MaterialIcon { x: 0; y: 0; source: Icons.gamepad; size: 20px; tint: Theme.text-faint; }
+                    if root.data.id != "system-volume" && root.data.id != "mic-volume" && root.data.id != "game-volume":
+                        Image { x: 0; y: 0; width: 20px; height: 20px; source: root.data.icon; image-fit: contain; }
+                }
+            }
+            if root.data.kind == 14: Text { text: Tr.t(root.data.label, Tr.rev); color: Theme.text-faintest; font-size: 11.5px; wrap: word-wrap; }
+            if root.data.label != "" && root.data.kind != 14: VerticalLayout {
+                horizontal-stretch: 1; alignment: center; spacing: 2px;
+                Text { text: Tr.t(root.data.label, Tr.rev); color: Theme.text-row; font-size: 14px; font-weight: root.data.kind == 4 ? 400 : 500; overflow: elide; }
+                if root.data.description != "": Text { text: Tr.t(root.data.description, Tr.rev); color: Theme.text-faint; font-size: 12.5px; wrap: word-wrap; }
+            }
+            if root.data.kind == 0: HorizontalLayout {
+                horizontal-stretch: 0;
+                spacing: 12px;
+                if root.data.id == "language": LanguagePicker {
+                    items: root.data.options; flags: root.language-flags; selected-index: root.data.selected;
+                    selected(i) => { root.choose(root.data.id, i); }
+                }
+                if root.data.id != "language": LagComboBox {
+                    max-width: root.data.id == "output" ? 240px : 460px;
+                    min-width: root.data.id == "bitrate" ? 120px : 0px;
+                    items: root.data.options;
+                    selected-index: root.data.selected; enabled: root.data.enabled;
+                    selected(i) => { root.choose(root.data.id, i); }
+                }
+                if root.data.id == "bitrate" && root.data.custom: HorizontalLayout {
+                    spacing: 4px;
+                    LagSlider { width: 120px; minimum: 3; maximum: 100; value: root.data.value; changed(v) => { root.number(root.data.id, v); } }
+                    Text { text: round(root.data.value) + " " + Tr.t("Settings_Bitrate_CustomSuffix", Tr.rev); color: Theme.text-hi; font-size: 13px; vertical-alignment: center; }
+                }
+                // centred on the dropdown (a fixed-height item in a HorizontalLayout sticks to the top)
+                if root.data.with-toggle: VerticalLayout {
+                    alignment: center;
+                    LagToggleSwitch {
+                        checked: root.data.checked; toggled(v) => { root.toggle(root.data.toggle-id, v); }
+                    }
+                }
+            }
+            if root.data.kind == 1: HorizontalLayout {
+                horizontal-stretch: 0; spacing: 8px;
+                if root.data.custom: LagTextInput { width: 56px; text: root.data.display; edited(t) => { root.text(root.data.id, t); } }
+                VerticalLayout { alignment: center; SegmentedControl { options: root.data.segments; selected-index: root.data.selected; enabled: root.data.enabled;
+                    selected(i) => { root.choose(root.data.id, i); }
+                } }
+            }
+            if root.data.kind == 2 || root.data.kind == 12: HorizontalLayout {
+                horizontal-stretch: 0; spacing: root.data.id == "sensitivity" ? 9px : 12px; // C# Spacing 9 / 12
+                if root.data.id == "sensitivity": Text { text: Tr.t("Settings_Auto", Tr.rev); color: Theme.text-faint; font-size: 12.5px; vertical-alignment: center; }
+                if root.data.kind == 12: VerticalLayout {
+                    alignment: center; horizontal-stretch: 0; // chip keeps its own height (C# kbd), not the row's
+                    KbdChipButton { text: root.listening ? "..." : root.data.display;
+                        enabled: root.data.checked; listening: root.listening; clicked => { root.action(root.data.id); }
+                    }
+                }
+                VerticalLayout {
+                    alignment: center; spacing: 3px;
+                    LagToggleSwitch { checked: root.data.checked; toggled(v) => { root.toggle(root.data.id, v); } }
+                    if root.data.id == "denoise": Text { text: Tr.t("Settings_RNNoise", Tr.rev); color: Theme.text-faint; font-size: 10.5px; }
+                }
+            }
+            if root.data.kind == 3: HorizontalLayout {
+                horizontal-stretch: 0; spacing: 6px;
+                if root.listening: KbdChipButton { text: Tr.t("Settings_Hotkey_Listening", Tr.rev); listening: true; clicked => { root.action(root.data.id); } }
+                if !root.listening: HorizontalLayout {
+                    spacing: 6px;
+                    for part in root.data.parts: KbdChipButton { text: part; clicked => { root.action(root.data.id); } }
+                }
+            }
+            if root.data.kind == 4: HorizontalLayout {
+                horizontal-stretch: 0; spacing: 8px;
+                LagSlider { width: 120px; maximum: root.data.maximum; value: root.data.value; enabled: root.data.checked;
+                    changed(v) => { root.number(root.data.id, v); }
+                }
+                Text { width: 42px; text: round(root.data.value) + "%"; font-family: Theme.font-mono; font-size: 11px;
+                    color: root.data.value > 100 ? Theme.intensity-caution : Theme.text-faint; horizontal-alignment: right; vertical-alignment: center;
+                }
+            }
+            if root.data.kind == 6: RChipButton { text: Tr.t(root.hear-yourself ? "Settings_Stop" : "Settings_Listen", Tr.rev);
+                active: root.hear-yourself; clicked => { root.action(root.data.id); }
+            }
+            if root.data.kind == 7: HorizontalLayout {
+                horizontal-stretch: 0; spacing: 10px;
+                Text { max-width: 300px; text: root.data.display; color: Theme.text-faint; font-family: Theme.font-mono; font-size: 11.5px; overflow: elide; vertical-alignment: center; }
+                RChipButton { text: Tr.t("Settings_Hotkey_Change", Tr.rev); clicked => { root.action(root.data.id); } }
+            }
+            if root.data.kind == 8: RChipButton { text: Tr.t("About_CheckUpdates", Tr.rev); enabled: root.data.enabled; clicked => { root.action(root.data.id); } }
+            if root.data.kind == 9: HorizontalLayout {
+                horizontal-stretch: 0; spacing: 6px;
+                RChipButton { text: Tr.t("Settings_OpenLogs", Tr.rev); clicked => { root.action("logs"); } }
+                RChipButton { text: Tr.t("Settings_SaveDiagnostics", Tr.rev); clicked => { root.action("diagnostics"); } }
+            }
+            if root.data.kind == 13: LevelMeterBar { level: root.output-level; }
+        }
+        if root.data.kind == 5: HorizontalLayout {
+            NoiseGateBar { auto-mode: root.data.auto-mode; mic-level: root.mic-level; threshold: root.data.value;
+                threshold-changed(v) => { root.number(root.data.id, v); }
+            }
+            if !root.data.auto-mode: Text { text: round(root.data.value - 100) + " dB"; color: Theme.text-faint; font-family: Theme.font-mono; font-size: 11px; vertical-alignment: center; }
+        }
+        if root.data.kind == 8: Text { text: root.data.display; color: Theme.text-faint; font-size: 12.5px; }
+    }
+}

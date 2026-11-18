@@ -1,0 +1,556 @@
+// Ported from Views/EditorView.axaml:444-644
+import { Theme } from "../../theme/tokens.slint";
+import { Icons, MaterialIcon } from "../../theme/icons.slint";
+import { Tr } from "../../globals.slint";
+import { CtaButton, ChipButton, TransportButton } from "../buttons.slint";
+import { LagComboBox, ComboBoxItemData } from "../combobox.slint";
+import { SegmentedControl, SegmentedOption } from "../segmented_control.slint";
+import { LagTextInput } from "../text_input.slint";
+import { LagSlider } from "../slider.slint";
+import { LagScrollView } from "../scrollbar.slint";
+import { FilterCardItem } from "../list_items.slint";
+import { EditorFilterData, EditorColorSwatch } from "types.slint";
+
+export component EditorToolsPanel {
+    in-out property <int> selected-tab: 0;
+    in property <[ComboBoxItemData]> aspect-options;
+    in-out property <int> selected-aspect-index: 0;
+    in property <bool> crop-tool-active: false;
+    in property <[SegmentedOption]> speed-options;
+    in-out property <int> selected-speed-index: 1;
+    in-out property <string> speed-text: "1";
+
+    in property <[EditorFilterData]> filter-options;
+    in-out property <int> selected-filter-index: 0;
+    in-out property <int> color-brightness: 100;
+    in-out property <int> color-contrast: 100;
+    in-out property <int> color-saturation: 100;
+
+    in property <bool> has-texts: false;
+    in property <bool> has-selected-text: false;
+    in-out property <string> selected-text-content: "";
+    in-out property <int> selected-text-font-percent: 8;
+    in-out property <int> editing-text-index: -1;
+    in property <int> text-focus-serial: 0;
+    in property <[EditorColorSwatch]> text-colors;
+
+    callback interaction-started();
+    callback focus-keys();
+    callback select-aspect(int);
+    callback toggle-crop-tool();
+    callback rotate-left();
+    callback rotate-right();
+    callback toggle-flip-h();
+    callback toggle-flip-v();
+    callback select-speed-preset(int);
+    callback speed-text-edited(string);
+    callback select-filter(int);
+    callback color-changed(int, int, int);
+    callback reset-color();
+    callback add-text();
+    callback update-selected-text(string);
+    callback update-selected-text-size(int);
+    callback set-text-color(string);
+    callback remove-selected-text();
+
+    Rectangle {
+        width: 100%;
+        height: 100%;
+        background: Theme.surface-card;
+        border-width: 1px;
+        border-color: Theme.border-card;
+        border-radius: 14px;
+
+        VerticalLayout {
+            padding-left: 16px;
+            padding-right: 16px;
+            padding-top: 14px;
+            padding-bottom: 14px;
+            spacing: 16px;
+
+            // 3-tab segmented switcher (rsegtrack + 3 equal rseg buttons)
+            Rectangle {
+                height: 36px;
+                border-radius: Theme.rad-input;
+                background: Theme.surface-input;
+
+                HorizontalLayout {
+                    padding: 3px;
+                    spacing: 2px;
+
+                    for label[idx] in [
+                        Tr.t("Editor_TabClip", Tr.rev),
+                        Tr.t("Editor_TabFilters", Tr.rev),
+                        Tr.t("Editor_TabText", Tr.rev),
+                    ]: tab-btn := Rectangle {
+                        horizontal-stretch: 1;
+                        property <bool> is-sel: idx == root.selected-tab;
+                        border-radius: Theme.rad-seg;
+                        border-width: 1px;
+                        border-color: self.is-sel ? Theme.accent-ring : transparent;
+                        background: self.is-sel ? Theme.accent-dim : transparent;
+                        animate background { duration: Theme.dur-fast; }
+
+                        Text {
+                            text: label;
+                            color: tab-btn.is-sel ? Theme.accent-text : (tab-ta.has-hover ? Theme.text-hi : Theme.text-mid);
+                            font-family: Theme.font-ui;
+                            font-size: Theme.font-size-sub;
+                            font-weight: Theme.font-weight-medium;
+                            horizontal-alignment: center;
+                            vertical-alignment: center;
+                        }
+
+                        tab-ta := TouchArea {
+                            mouse-cursor: pointer;
+                            clicked => {
+                                root.interaction-started();
+                                root.selected-tab = idx;
+                                root.focus-keys();
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Tab content area
+            Rectangle {
+                vertical-stretch: 1;
+
+                // TAB 0 · CLIP
+                if root.selected-tab == 0: LagScrollView {
+                    width: parent.width; height: parent.height;
+                    content-height: tab0-col.preferred-height;
+                    tab0-col := VerticalLayout {
+                        width: parent.width;
+                        spacing: 14px;
+
+                        // Format
+                        VerticalLayout {
+                            spacing: 6px;
+                            Text {
+                                text: Tr.t("Editor_Format", Tr.rev);
+                                color: Theme.fg-2-brush;
+                                font-family: Theme.font-ui;
+                                font-size: 12px;
+                            }
+                            LagComboBox {
+                                items: root.aspect-options;
+                                selected-index <=> root.selected-aspect-index;
+                                selected(idx) => {
+                                    root.interaction-started();
+                                    root.select-aspect(idx);
+                                    root.focus-keys();
+                                }
+                            }
+                        }
+
+                        // Crop toggle button
+                        Rectangle {
+                            height: 34px;
+                            border-radius: Theme.rad-control;
+                            background: root.crop-tool-active
+                                ? Theme.accent-brush
+                                : (crop-ta.has-hover ? Theme.surface-hover-brush : Theme.surface-brush);
+                            animate background { duration: Theme.dur-base; }
+
+                            HorizontalLayout {
+                                alignment: center;
+                                spacing: 6px;
+                                VerticalLayout {
+                                    alignment: center;
+                                    MaterialIcon {
+                                        source: Icons.crop;
+                                        size: 15px;
+                                        tint: root.crop-tool-active ? Theme.on-accent-brush : Theme.fg-brush;
+                                    }
+                                }
+                                Text {
+                                    text: Tr.t("Editor_Crop", Tr.rev);
+                                    color: root.crop-tool-active ? Theme.on-accent-brush : Theme.fg-brush;
+                                    font-family: Theme.font-ui;
+                                    font-size: Theme.font-size-body;
+                                    font-weight: Theme.font-weight-medium;
+                                    vertical-alignment: center;
+                                }
+                            }
+
+                            crop-ta := TouchArea {
+                                mouse-cursor: pointer;
+                                clicked => {
+                                    root.interaction-started();
+                                    root.toggle-crop-tool();
+                                    root.focus-keys();
+                                }
+                            }
+                        }
+
+                        // Rotate / Flip row
+                        HorizontalLayout {
+                            spacing: 8px;
+                            alignment: start;
+
+                            TransportButton {
+                                icon: Icons.rotate-left;
+                                icon-size: 16px;
+                                clicked => { root.interaction-started(); root.rotate-left(); root.focus-keys(); }
+                            }
+                            TransportButton {
+                                icon: Icons.rotate-right;
+                                icon-size: 16px;
+                                clicked => { root.interaction-started(); root.rotate-right(); root.focus-keys(); }
+                            }
+                            TransportButton {
+                                icon: Icons.flip-horizontal;
+                                icon-size: 16px;
+                                clicked => { root.interaction-started(); root.toggle-flip-h(); root.focus-keys(); }
+                            }
+                            TransportButton {
+                                icon: Icons.flip-vertical;
+                                icon-size: 16px;
+                                clicked => { root.interaction-started(); root.toggle-flip-v(); root.focus-keys(); }
+                            }
+                        }
+
+                        // Speed presets + manual input
+                        VerticalLayout {
+                            spacing: 6px;
+                            Text {
+                                text: Tr.t("Editor_Speed", Tr.rev);
+                                color: Theme.fg-2-brush;
+                                font-family: Theme.font-ui;
+                                font-size: 12px;
+                            }
+                            HorizontalLayout {
+                                spacing: 8px;
+
+                                VerticalLayout {
+                                    alignment: center;
+                                    SegmentedControl {
+                                        options: root.speed-options;
+                                        selected-index <=> root.selected-speed-index;
+                                        selected(idx) => {
+                                            root.interaction-started();
+                                            root.select-speed-preset(idx);
+                                            root.focus-keys();
+                                        }
+                                    }
+                                }
+
+                                LagTextInput {
+                                    width: 52px;
+                                    text <=> root.speed-text;
+                                    edited(s) => { root.speed-text-edited(s); }
+                                    accepted(s) => { root.speed-text-edited(s); root.focus-keys(); }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // TAB 1 · FILTERS
+                if root.selected-tab == 1: LagScrollView {
+                    width: parent.width; height: parent.height;
+                    content-height: tab1-col.preferred-height;
+                    tab1-col := VerticalLayout {
+                        width: parent.width;
+                        spacing: 14px;
+
+                        // Filter preset wrap grid (3 columns x 84px pitch)
+                        Rectangle {
+                            height: ceil(root.filter-options.length / 3) * 74px;
+
+                            for filter[idx] in root.filter-options: FilterCardItem {
+                                x: mod(idx, 3) * 84px;
+                                y: floor(idx / 3) * 74px;
+                                width: 82px;
+                                height: 70px;
+                                label: Tr.t("Filter_" + filter.name, Tr.rev); // name = stable English id
+                                selected: idx == root.selected-filter-index;
+                                clicked => {
+                                    root.interaction-started();
+                                    root.select-filter(idx);
+                                    root.focus-keys();
+                                }
+
+                                HorizontalLayout {
+                                    alignment: center;
+                                    Rectangle {
+                                        width: 70px;
+                                        height: 40px;
+                                        border-radius: 8px;
+                                        background: Theme.timeline-bg;
+                                        clip: true;
+
+                                        if filter.has-preview: Image {
+                                            width: 100%;
+                                            height: 100%;
+                                            source: filter.preview;
+                                            image-fit: cover;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // Divider
+                        Rectangle {
+                            height: 1px;
+                            background: Theme.divider-6-brush;
+                        }
+
+                        // Manual colour sliders
+                        VerticalLayout {
+                            spacing: 10px;
+
+                            HorizontalLayout {
+                                Text {
+                                    horizontal-stretch: 1;
+                                    text: Tr.t("Editor_Color", Tr.rev);
+                                    color: Theme.fg-2-brush;
+                                    font-family: Theme.font-ui;
+                                    font-size: 12px;
+                                    vertical-alignment: center;
+                                }
+                                TransportButton {
+                                    icon: Icons.restore;
+                                    icon-size: 14px;
+                                    clicked => { root.interaction-started(); root.reset-color(); root.focus-keys(); }
+                                }
+                            }
+
+                            // Brightness
+                            VerticalLayout {
+                                spacing: 2px;
+                                HorizontalLayout {
+                                    Text {
+                                        horizontal-stretch: 1;
+                                        text: Tr.t("Editor_Brightness", Tr.rev);
+                                        color: Theme.fg-3-brush;
+                                        font-family: Theme.font-ui;
+                                        font-size: 11px;
+                                    }
+                                    Text {
+                                        text: "\{root.color-brightness}%";
+                                        color: Theme.fg-3-brush;
+                                        font-family: Theme.font-ui;
+                                        font-size: 11px;
+                                    }
+                                }
+                                LagSlider {
+                                    minimum: 0;
+                                    maximum: 200;
+                                    step: 1;
+                                    value: root.color-brightness;
+                                    changed(v) => {
+                                        root.color-changed(round(v), root.color-contrast, root.color-saturation);
+                                    }
+                                }
+                            }
+
+                            // Contrast
+                            VerticalLayout {
+                                spacing: 2px;
+                                HorizontalLayout {
+                                    Text {
+                                        horizontal-stretch: 1;
+                                        text: Tr.t("Editor_Contrast", Tr.rev);
+                                        color: Theme.fg-3-brush;
+                                        font-family: Theme.font-ui;
+                                        font-size: 11px;
+                                    }
+                                    Text {
+                                        text: "\{root.color-contrast}%";
+                                        color: Theme.fg-3-brush;
+                                        font-family: Theme.font-ui;
+                                        font-size: 11px;
+                                    }
+                                }
+                                LagSlider {
+                                    minimum: 0;
+                                    maximum: 200;
+                                    step: 1;
+                                    value: root.color-contrast;
+                                    changed(v) => {
+                                        root.color-changed(root.color-brightness, round(v), root.color-saturation);
+                                    }
+                                }
+                            }
+
+                            // Saturation
+                            VerticalLayout {
+                                spacing: 2px;
+                                HorizontalLayout {
+                                    Text {
+                                        horizontal-stretch: 1;
+                                        text: Tr.t("Editor_Saturation", Tr.rev);
+                                        color: Theme.fg-3-brush;
+                                        font-family: Theme.font-ui;
+                                        font-size: 11px;
+                                    }
+                                    Text {
+                                        text: "\{root.color-saturation}%";
+                                        color: Theme.fg-3-brush;
+                                        font-family: Theme.font-ui;
+                                        font-size: 11px;
+                                    }
+                                }
+                                LagSlider {
+                                    minimum: 0;
+                                    maximum: 200;
+                                    step: 1;
+                                    value: root.color-saturation;
+                                    changed(v) => {
+                                        root.color-changed(root.color-brightness, root.color-contrast, round(v));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // TAB 2 · TEXT
+                if root.selected-tab == 2: LagScrollView {
+                    width: parent.width; height: parent.height;
+                    content-height: tab2-col.preferred-height;
+                    tab2-col := VerticalLayout {
+                        width: parent.width;
+                        spacing: 14px;
+
+                        // Add Text CTA
+                        Rectangle {
+                            height: Theme.cta-height;
+                            border-radius: Theme.rad-control;
+                            background: add-ta.has-hover ? Theme.accent-hover-brush : Theme.accent-brush;
+                            animate background { duration: Theme.dur-base; }
+
+
+                            HorizontalLayout {
+                                alignment: center;
+                                spacing: 6px;
+                                VerticalLayout {
+                                    alignment: center;
+                                    MaterialIcon { source: Icons.plus; size: 15px; tint: Theme.on-accent-brush; }
+                                }
+                                Text {
+                                    text: Tr.t("Editor_AddText", Tr.rev);
+                                    color: Theme.on-accent-brush;
+                                    font-family: Theme.font-ui;
+                                    font-size: Theme.font-size-body;
+                                    font-weight: Theme.font-weight-medium;
+                                    vertical-alignment: center;
+                                }
+                            }
+
+                            add-ta := TouchArea {
+                                mouse-cursor: pointer;
+                                clicked => { root.interaction-started(); root.add-text(); root.focus-keys(); }
+                            }
+                        }
+
+                        // Selected caption editor
+                        if root.has-selected-text: VerticalLayout {
+                            spacing: 10px;
+                            // double-click on a caption: this field takes the keyboard, the video shows the text live
+                            property <int> serial: root.text-focus-serial;
+                            changed serial => { text-field.focus-all(); }
+                            init => { if (root.editing-text-index >= 0) { text-field.focus-all(); } }
+
+                            text-field := LagTextInput {
+                                text <=> root.selected-text-content;
+                                edited(s) => { root.update-selected-text(s); }
+                                accepted(s) => {
+                                    root.update-selected-text(s);
+                                    root.editing-text-index = -1;
+                                    root.focus-keys();
+                                }
+                                focus-changed(f) => { if (!f) { root.editing-text-index = -1; } }
+                            }
+
+                            VerticalLayout {
+                                spacing: 2px;
+                                Text {
+                                    text: Tr.t("Editor_TextSize", Tr.rev);
+                                    color: Theme.fg-3-brush;
+                                    font-family: Theme.font-ui;
+                                    font-size: 11px;
+                                }
+                                LagSlider {
+                                    minimum: 3;
+                                    maximum: 25;
+                                    step: 1;
+                                    value: root.selected-text-font-percent;
+                                    changed(v) => { root.update-selected-text-size(round(v)); }
+                                }
+                            }
+
+                            // 6 colour swatches
+                            HorizontalLayout {
+                                spacing: 6px;
+                                alignment: start;
+
+                                for sw in root.text-colors: Rectangle {
+                                    width: 26px;
+                                    height: 26px;
+                                    border-radius: 13px;
+                                    background: sw.swatch;
+                                    border-width: 1px;
+                                    border-color: #FFFFFF50;
+
+                                    TouchArea {
+                                        mouse-cursor: pointer;
+                                        clicked => { root.set-text-color(sw.hex); root.focus-keys(); }
+                                    }
+                                }
+                            }
+
+                            // Delete caption chip
+                            HorizontalLayout {
+                                alignment: start;
+                                Rectangle {
+                                    height: 30px;
+                                    width: del-layout.preferred-width;
+                                    border-radius: Theme.rad-control;
+                                    background: del-ta.has-hover ? Theme.surface-hover-brush : Theme.surface-brush;
+                                    animate background { duration: Theme.dur-base; }
+
+                                    del-layout := HorizontalLayout {
+                                        padding-left: 12px;
+                                        padding-right: 12px;
+                                        spacing: 6px;
+                                        alignment: center;
+                                        VerticalLayout {
+                                            alignment: center;
+                                            MaterialIcon { source: Icons.delete-outline; size: 14px; tint: Theme.fg-brush; }
+                                        }
+                                        Text {
+                                            text: Tr.t("Editor_DeleteText", Tr.rev);
+                                            color: Theme.fg-brush;
+                                            font-family: Theme.font-ui;
+                                            font-size: Theme.font-size-body;
+                                            vertical-alignment: center;
+                                        }
+                                    }
+
+                                    del-ta := TouchArea {
+                                        mouse-cursor: pointer;
+                                        clicked => { root.remove-selected-text(); root.focus-keys(); }
+                                    }
+                                }
+                            }
+                        }
+
+                        // Empty hint
+                        if !root.has-texts: Text {
+                            text: Tr.t("Editor_TextHint", Tr.rev);
+                            color: Theme.fg-3-brush;
+                            font-family: Theme.font-ui;
+                            font-size: 11px;
+                            wrap: word-wrap;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

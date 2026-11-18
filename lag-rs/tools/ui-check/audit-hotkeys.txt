@@ -1,0 +1,60 @@
+# Settings audit F: global hotkeys end to end. Capture new keys through the Settings buttons with REAL key
+# presses (F13-F24 only, nothing else reacts to them), then drive the recorder with them.
+size 1360x840
+page settings
+wait 2500
+hotkeys
+hookprobe
+wait 800
+toggle webcam-shown 1
+# save = Ctrl+F21 (with a modifier), screenshot = F22, pause = F23, record = F24, push-to-talk = F20
+action save-key
+wait 400
+sendkey LCTRL down
+sendkey F21 tap
+sendkey LCTRL up
+wait 900
+action screenshot-key
+wait 400
+sendkey F22 tap
+wait 900
+action pause-key
+wait 400
+sendkey F23 tap
+wait 900
+action record-key
+wait 400
+sendkey F24 tap
+wait 900
+action ptt
+wait 400
+sendkey F20 tap
+wait 900
+toggle ptt 1
+wait 1500
+# record via hotkey
+sendkey F24 tap
+wait 6000
+# push-to-talk: hold 2 s
+sendkey F20 down
+wait 2000
+sendkey F20 up
+wait 1000
+# pause / resume
+sendkey F23 tap
+wait 1500
+sendkey F23 tap
+wait 1500
+# screenshot
+sendkey F22 tap
+wait 2000
+# save WITHOUT the modifier must NOT save, with it must
+sendkey F21 tap
+wait 1500
+sendkey LCTRL down
+sendkey F21 tap
+sendkey LCTRL up
+wait 6000
+# stop via hotkey
+sendkey F24 tap
+wait 3000

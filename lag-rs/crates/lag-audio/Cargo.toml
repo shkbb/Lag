@@ -1,0 +1,13 @@
+[package]
+name = "lag-audio"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+lag-ffi.workspace = true
+log.workspace = true
+crossbeam-channel.workspace = true
+windows-core.workspace = true
+windows = { workspace = true, features = ["Win32_UI_Shell", "Win32_System_WinRT", "Win32_Media_Audio", "Win32_Media_KernelStreaming", "Win32_Media_Multimedia", "Win32_System_Com", "Win32_System_Com_StructuredStorage", "Win32_System_Variant", "Win32_System_Threading", "Win32_System_Performance", "Win32_Security", "Win32_UI_Shell_PropertiesSystem", "Win32_UI_WindowsAndMessaging", "Win32_System_Diagnostics_ToolHelp", "Win32_Storage_FileSystem", "Win32_Graphics_Gdi", "Win32_Graphics_Imaging", "Foundation", "Media_Core", "Media_Playback", "Media_MediaProperties", "Storage_Streams"] }
+

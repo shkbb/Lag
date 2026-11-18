@@ -1,0 +1,414 @@
+import { Theme } from "../theme/tokens.slint";
+import { MaterialIcon } from "../theme/icons.slint";
+import { RecommendedBadge } from "badges.slint";
+
+// Ported from Components.axaml:12-18 (Border.rcard)
+export component RCard inherits Rectangle {
+    background: Theme.surface-card;
+    border-color: Theme.border-card;
+    border-width: 1px;
+    border-radius: Theme.rad-card;
+    clip: true;
+}
+
+// Ported from Components.axaml:21-24 (Border.rdivider)
+export component RDivider inherits Rectangle {
+    height: 1px;
+    background: Theme.border-faint;
+}
+
+// Ported from DarkTheme.axaml:29-33 (Border.divider)
+export component Divider inherits Rectangle {
+    height: 1px;
+    background: Theme.divider-5-brush;
+}
+
+// Ported from Components.axaml:27-32 (TextBlock.rgroup)
+export component RGroupLabel inherits Text {
+    font-family: Theme.font-mono;
+    font-size: Theme.font-size-group;
+    color: Theme.text-faintest;
+}
+
+// Ported from DarkTheme.axaml:21-26 (TextBlock.section)
+export component SectionLabel inherits Text {
+    font-family: Theme.font-ui;
+    font-size: Theme.font-size-group;
+    font-weight: Theme.font-weight-medium;
+    color: Theme.fg-3-brush;
+    letter-spacing: 0.7px;
+}
+
+// Ported from Components.axaml:35-39 (TextBlock.rrow)
+export component RRowText inherits Text {
+    font-family: Theme.font-ui;
+    font-size: Theme.font-size-row;
+    font-weight: Theme.font-weight-medium;
+    color: Theme.text-row;
+}
+
+// Ported from Components.axaml:42-46 (TextBlock.rsub)
+export component RSubText inherits Text {
+    font-family: Theme.font-ui;
+    font-size: Theme.font-size-sub;
+    color: Theme.text-faint;
+    wrap: word-wrap;
+}
+
+// Ported from Components.axaml:49-52 (TextBlock.rmono)
+export component RMonoText inherits Text {
+    font-family: Theme.font-mono;
+    color: Theme.text-faint;
+}
+
+// Ported from SettingsView.axaml:25-45, 179-203 (Border.presetcard + .active)
+export component PresetCard {
+    in property <string> title;
+    in property <string> description;
+    in property <string> subtitle;
+    in property <bool> active: false;
+    in property <bool> recommended: false;
+    in property <string> recommended-text: "Recommended";
+    callback clicked();
+
+    Rectangle {
+        width: 100%;
+        height: 100%;
+        border-radius: Theme.rad-preset;
+        border-width: 1.5px;
+        background: ta.has-hover ? Theme.surface-hover : Theme.surface-card;
+        border-color: root.active
+            ? Theme.accent
+            : (ta.has-hover ? Theme.border-strong : Theme.border-card);
+        animate background, border-color { duration: Theme.dur-fast; }
+
+        VerticalLayout {
+            padding-left: 15px;
+            padding-right: 15px;
+            padding-top: 13px;
+            padding-bottom: 13px;
+            spacing: 4px;
+
+            HorizontalLayout {
+                spacing: 8px;
+
+                Text {
+                    horizontal-stretch: 1;
+                    text: root.title;
+                    color: Theme.text-hi;
+                    font-family: Theme.font-ui;
+                    font-size: Theme.font-size-preset-title;
+                    font-weight: Theme.font-weight-semibold;
+                    vertical-alignment: center;
+                }
+
+                if root.recommended: VerticalLayout {
+                    alignment: start;
+                    RecommendedBadge { text: root.recommended-text; }
+                }
+            }
+
+            Text {
+                text: root.description;
+                color: Theme.text-muted;
+                font-family: Theme.font-ui;
+                font-size: Theme.font-size-sm;
+                wrap: word-wrap;
+            }
+
+            if root.subtitle != "": Text {
+                text: root.subtitle;
+                color: Theme.accent;
+                font-family: Theme.font-ui;
+                font-size: Theme.font-size-xs;
+                wrap: word-wrap;
+            }
+        }
+    }
+
+    ta := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+    }
+}
+
+// Ported from SettingsView.axaml:56-60, 206-214 (Border.hint)
+export component HintBanner {
+    in property <string> icon-text: "💡";
+    in property <string> text;
+
+    Rectangle {
+        width: 100%;
+        border-radius: Theme.rad-input;
+        background: Theme.surface-input;
+
+        HorizontalLayout {
+            padding-left: 14px;
+            padding-right: 14px;
+            padding-top: 11px;
+            padding-bottom: 11px;
+            spacing: 9px;
+
+            Text {
+                text: root.icon-text;
+                font-size: Theme.font-size-row;
+                vertical-alignment: center;
+            }
+
+            Text {
+                horizontal-stretch: 1;
+                text: root.text;
+                color: Theme.text-hi;
+                font-family: Theme.font-ui;
+                font-size: Theme.font-size-sub;
+                wrap: word-wrap;
+                vertical-alignment: center;
+            }
+        }
+    }
+}
+
+// Ported from MainWindow.axaml:178-191, 396-411 (Border.captureflyout)
+export component CaptureFlyoutCard {
+    in property <image> icon;
+    in property <string> target-name;
+    in property <bool> shown: true;
+
+    opacity: shown ? 1.0 : 0.0;
+    animate opacity {
+        duration: Theme.dur-flyout;
+        easing: cubic-bezier(0.215, 0.61, 0.355, 1);
+    }
+
+    Rectangle {
+        border-radius: Theme.rad-preset;
+        background: Theme.surface-card;
+        border-width: 1px;
+        border-color: Theme.border-card;
+        drop-shadow-offset-x: Theme.shadow-flyout-x;
+        drop-shadow-offset-y: Theme.shadow-flyout-y;
+        drop-shadow-blur: Theme.shadow-flyout-blur;
+        drop-shadow-color: Theme.shadow-flyout-color;
+
+        HorizontalLayout {
+            padding-left: 14px;
+            padding-right: 14px;
+            padding-top: 11px;
+            padding-bottom: 11px;
+            spacing: 11px;
+
+            VerticalLayout {
+                alignment: center;
+                MaterialIcon {
+                    source: root.icon;
+                    size: 20px;
+                    tint: Theme.accent;
+                }
+            }
+
+            Text {
+                max-width: 220px;
+                text: root.target-name;
+                color: Theme.text-hi;
+                font-family: Theme.font-ui;
+                font-size: Theme.font-size-cta;
+                font-weight: Theme.font-weight-semibold;
+                overflow: elide;
+                vertical-alignment: center;
+            }
+        }
+    }
+}
+
+// Ported from SettingsView.axaml:809-821 (Intensive-quality modal card)
+export component ModalCard {
+    in property <string> title;
+    in property <string> summary;
+    in property <string> body;
+
+    width: 560px;
+
+    Rectangle {
+        width: 100%;
+        border-radius: Theme.rad-modal;
+        background: Theme.surface-card;
+        border-width: 1px;
+        border-color: Theme.border-strong;
+        drop-shadow-offset-x: Theme.shadow-modal-x;
+        drop-shadow-offset-y: Theme.shadow-modal-y;
+        drop-shadow-blur: Theme.shadow-modal-blur;
+        drop-shadow-color: Theme.shadow-modal-color;
+
+        VerticalLayout {
+            padding: 28px;
+            spacing: 14px;
+
+            Text {
+                text: root.title;
+                color: Theme.text-hi;
+                font-family: Theme.font-display;
+                font-size: Theme.font-size-modal-title;
+                font-weight: Theme.font-weight-bold;
+                wrap: word-wrap;
+            }
+
+            if root.summary != "": Text {
+                text: root.summary;
+                color: Theme.intensity-caution;
+                font-family: Theme.font-ui;
+                font-size: Theme.font-size-body;
+                font-weight: Theme.font-weight-medium;
+                wrap: word-wrap;
+            }
+
+            Text {
+                text: root.body;
+                color: Theme.text-mid;
+                font-family: Theme.font-ui;
+                font-size: Theme.font-size-body;
+                wrap: word-wrap;
+            }
+
+            @children
+        }
+    }
+}
+
+// Ported from Services/ToastService.cs:77-121
+export component ToastCard {
+    in property <image> icon;
+    in property <color> icon-tint: Theme.accent;
+    in property <string> title;
+    in property <string> subtitle: "";
+
+    Rectangle {
+        border-radius: Theme.rad-toast;
+        background: Theme.toast-bg;
+        border-width: 1px;
+        border-color: Theme.popup-border-brush;
+
+        HorizontalLayout {
+            padding-left: 16px;
+            padding-right: 16px;
+            padding-top: 11px;
+            padding-bottom: 11px;
+            spacing: 10px;
+
+            VerticalLayout {
+                alignment: center;
+                MaterialIcon {
+                    source: root.icon;
+                    size: 20px;
+                    tint: root.icon-tint;
+                }
+            }
+
+            VerticalLayout {
+                alignment: center;
+                spacing: 2px;
+
+                Text {
+                    text: root.title;
+                    color: Theme.fg-brush;
+                    font-family: Theme.font-ui;
+                    font-size: Theme.font-size-body;
+                    font-weight: Theme.font-weight-medium;
+                }
+
+                if root.subtitle != "": Text {
+                    max-width: 260px;
+                    text: root.subtitle;
+                    color: Theme.fg-2-brush;
+                    font-family: Theme.font-ui;
+                    font-size: Theme.font-size-group;
+                    overflow: elide;
+                }
+            }
+        }
+    }
+}
+
+// Ported from Views/StatsHudWindow.cs:45-60
+export component StatsHudPill {
+    in property <string> text;
+    in property <length> font-size: 16.3px;
+
+    Rectangle {
+        border-radius: Theme.rad-control;
+        background: Theme.stats-hud-bg;
+        border-width: 1px;
+        border-color: Theme.stats-hud-border;
+
+        HorizontalLayout {
+            padding-left: 12px;
+            padding-right: 12px;
+            padding-top: 5px;
+            padding-bottom: 5px;
+
+            Text {
+                text: root.text;
+                color: #FFFFFF;
+                font-family: Theme.font-ui;
+                font-size: root.font-size;
+                font-weight: Theme.font-weight-semibold;
+                vertical-alignment: center;
+            }
+        }
+    }
+}
+
+// Ported from MainWindow.axaml:289-305 (top-bar status pill)
+export component StatusPill {
+    in property <bool> recording: false;
+    in property <string> status-text: "Ready";
+    in property <float> buffer-percent: 0;
+    in property <string> buffer-text: "0:00 / 2:00";
+
+    Rectangle {
+        border-radius: Theme.rad-pill;
+        background: Theme.surface-card;
+        border-width: 1px;
+        border-color: Theme.border-card;
+
+        HorizontalLayout {
+            padding-left: 14px;
+            padding-right: 14px;
+            padding-top: 7px;
+            padding-bottom: 7px;
+            spacing: 11px;
+
+            VerticalLayout {
+                alignment: center;
+                Rectangle {
+                    width: 8px;
+                    height: 8px;
+                    border-radius: 4px;
+                    background: root.recording ? Theme.rec-dot : Theme.status-idle;
+                    opacity: root.recording ? (0.3 + 0.7 * (0.5 + 0.5 * cos(360deg * mod(animation-tick() / Theme.dur-rec-dot, 1)))) : 1.0;
+                }
+            }
+
+            Text {
+                min-width: 62px;
+                max-width: 160px;
+                text: root.status-text;
+                color: Theme.text-kbd;
+                font-family: Theme.font-ui;
+                font-size: Theme.font-size-sub;
+                font-weight: Theme.font-weight-semibold;
+                overflow: elide;
+                vertical-alignment: center;
+            }
+
+            @children
+
+            Text {
+                text: root.buffer-text;
+                color: Theme.text-muted;
+                font-family: Theme.font-mono;
+                font-size: Theme.font-size-group;
+                vertical-alignment: center;
+            }
+        }
+    }
+}

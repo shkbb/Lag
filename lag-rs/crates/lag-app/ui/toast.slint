@@ -1,0 +1,30 @@
+// Mirrors Services/ToastService.cs:77-170. Native activation is prevented by shell/nofocus.rs.
+import { Theme } from "theme/tokens.slint";
+import { Icons } from "theme/icons.slint";
+import { ToastCard } from "components/cards.slint";
+export component ToastWindow inherits Window {
+    title: "Lag notification";
+    no-frame: true;
+    always-on-top: true;
+    background: transparent;
+    // sized to the card (max 350 px) so the card sits exactly 24 px from the screen edge; a fixed 350 px window
+    // centred the shorter card inside it (owner, 2026-11-17: "notifications are not at the screen edge")
+    preferred-width: min(350px, card.preferred-width);
+    preferred-height: root.subtitle == "" ? 44px : 60px;
+    in property <string> heading;
+    in property <string> subtitle;
+    in property <string> glyph: "check-circle";
+    in property <string> accent: "Accent";
+    in property <string> theme-mode: "dark";
+    changed theme-mode => { Theme.mode = root.theme-mode; }
+    in property <bool> shown: false;
+    in property <bool> fading-out: false;
+    card := ToastCard {
+        x: 0; y: 0; width: parent.width; height: parent.height;
+        opacity: root.shown ? 1 : 0;
+        animate opacity { duration: root.fading-out ? 260ms : 220ms; }
+        title: root.heading; subtitle: root.subtitle;
+        icon-tint: root.accent == "RecDot" ? Theme.rec-dot : root.accent == "Fg2Brush" ? Theme.fg-2-brush : Theme.accent;
+        icon: root.glyph == "record-circle" ? Icons.record-circle : root.glyph == "stop-circle" ? Icons.stop-circle : root.glyph == "content-save" ? Icons.content-save : root.glyph == "controller" ? Icons.controller : root.glyph == "monitor" ? Icons.monitor : Icons.check-circle;
+    }
+}

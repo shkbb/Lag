@@ -1,0 +1,7 @@
+# windows-gnu: the `windows` crate links through raw-dylib, for which rustc generates import libraries with
+# dlltool. rustc prefers `x86_64-w64-mingw32-dlltool`, which on this PC only exists in llvm-mingw, and that one
+# produces import tables whose IAT slots are never bound: binaries crash at startup (GetLastError ->
+# STATUS_ACCESS_VIOLATION, 2026-11-16). GNU binutils' dlltool (WinLibs) is correct, so pin it.
+# Machine-specific path: change it if WinLibs lives elsewhere.
+[target.x86_64-pc-windows-gnu]
+rustflags = ["-C", "dlltool=C:/Users/dound/AppData/Local/Microsoft/WinGet/Packages/BrechtSanders.WinLibs.POSIX.UCRT_Microsoft.Winget.Source_8wekyb3d8bbwe/mingw64/bin/dlltool.exe"]

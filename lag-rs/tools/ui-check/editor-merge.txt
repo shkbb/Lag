@@ -1,0 +1,19 @@
+# Clip merging in the editor sidebar (headless). Run: Lag.exe --ui-check tools\ui-check\editor-merge.txt <out-dir>
+size 1360x840
+page editor
+wait 1500
+shot m-start
+editor-merge
+wait 300
+shot m-mode
+editor-merge-pick 2
+editor-merge-pick 0
+wait 300
+shot m-picked-two
+editor-merge-pick 1
+editor-merge-pick 2
+wait 300
+shot m-reordered
+editor-merge
+wait 300
+shot m-cancelled

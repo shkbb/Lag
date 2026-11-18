@@ -1,0 +1,16 @@
+[package]
+name = "lag-player"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+lag-ffi = { workspace = true }
+log = { workspace = true }
+glow = "0.16"
+windows = { workspace = true, features = [
+    "Win32_Foundation",
+    "Win32_Graphics_Gdi",
+    "Win32_System_LibraryLoader",
+    "Win32_UI_WindowsAndMessaging",
+] }

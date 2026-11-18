@@ -1,0 +1,350 @@
+// Ported from Views/EditorView.axaml:335-441 & EditorView.axaml.cs:644-820
+import { Theme } from "../../theme/tokens.slint";
+import { Tr } from "../../globals.slint";
+import { Icons, MaterialIcon } from "../../theme/icons.slint";
+import { TimelineTrackRow } from "../list_items.slint";
+import { EditorAudioTrackData, EditorCutBand } from "types.slint";
+import { EditorAudioLane } from "audio_lane.slint";
+
+export component EditorTimeline {
+    in property <string> trim-start-display;
+    in property <string> trim-duration-display;
+    in property <string> trim-end-display;
+    in property <bool> is-video-selected;
+    in property <[image]> timeline-thumbs;
+    in property <[EditorCutBand]> cut-bands;
+    in property <float> duration-sec: 1.0;
+    in property <float> trim-start-sec: 0.0;
+    in property <float> trim-end-sec: 1.0;
+    in property <float> playhead-fraction: 0.0; // 0..1 interpolated by Rust
+    in property <[EditorAudioTrackData]> audio-tracks;
+    in property <bool> audio-follows-video: true;
+    callback toggle-audio-link();
+
+    callback interaction-started(); // used to clear reframe selection on timeline click
+    callback toggle-video-selected();
+    callback push-undo();
+    callback timeline-drag(int /* mode: 1=start, 2=end, 3=scrub */, float /* frac */, float /* width-px */);
+    callback timeline-drag-end();
+    callback remove-cut-at(float /* frac */);
+    callback toggle-audio-selected(int);
+    callback set-audio-muted(int, bool);
+    callback set-audio-volume(int, int);
+    callback set-audio-range(int, float, float);
+
+    property <float> safe-dur: max(0.0001, duration-sec);
+    property <length> strip-w: strip.width;
+    property <length> sx: clamp(trim-start-sec / safe-dur, 0.0, 1.0) * strip-w;
+    property <length> ex: clamp(trim-end-sec / safe-dur, 0.0, 1.0) * strip-w;
+    property <length> px: clamp(clamp(playhead-fraction, 0.0, 1.0) * strip-w, sx, ex);
+    property <int> drag-mode: 0; // 0=none, 1=trim-start, 2=trim-end, 3=scrub
+    property <MouseCursor> hover-cursor: default;
+
+    function update-hover-cursor(mx: length) {
+        if (abs(mx - root.sx) <= 12px || abs(mx - root.ex) <= 12px) {
+            root.hover-cursor = MouseCursor.ew-resize;
+        } else {
+            root.hover-cursor = MouseCursor.default;
+        }
+    }
+
+    // Height = content (C#: Grid row Auto). Without these the timeline took half of the centre column and the
+    // video preview shrank to a strip (owner, 2026-11-17: "fix the layout").
+    min-height: lay.preferred-height;
+    max-height: lay.preferred-height;
+    preferred-height: lay.preferred-height;
+    vertical-stretch: 0;
+
+    Rectangle {
+        width: 100%;
+        height: 100%;
+        background: Theme.surface-card;
+        border-width: 1px;
+        border-color: Theme.border-card;
+        border-radius: 14px;
+
+        lay := VerticalLayout {
+            padding-left: 10px;
+            padding-right: 10px;
+            padding-top: 8px;
+            padding-bottom: 10px;
+            spacing: 4px;
+
+            // Time readout header
+            HorizontalLayout {
+                padding-left: 4px;
+                padding-right: 4px;
+                padding-bottom: 2px;
+
+                Text {
+                    text: root.trim-start-display;
+                    color: Theme.fg-3-brush;
+                    font-family: Theme.font-ui;
+                    font-size: 11px;
+                    horizontal-alignment: left;
+                }
+
+                Text {
+                    horizontal-stretch: 1;
+                    text: root.trim-duration-display;
+                    color: Theme.accent-brush;
+                    font-family: Theme.font-ui;
+                    font-size: 11px;
+                    font-weight: Theme.font-weight-medium;
+                    horizontal-alignment: center;
+                }
+
+                // "Audio follows video" toggle (owner, 2026-11-17): on = the lanes take the video trim
+                if root.audio-tracks.length > 0: VerticalLayout {
+                    alignment: center;
+                    link-chip := Rectangle {
+                        height: 20px;
+                        width: link-row.preferred-width;
+                        border-radius: 6px;
+                        background: root.audio-follows-video ? Theme.accent-dim : (link-ta.has-hover ? Theme.surface-hover-brush : transparent);
+                        border-width: 1px;
+                        border-color: root.audio-follows-video ? Theme.accent-ring : Theme.border-input;
+                        animate background { duration: Theme.dur-fast; }
+                        link-row := HorizontalLayout {
+                            padding-left: 7px;
+                            padding-right: 8px;
+                            spacing: 5px;
+                            VerticalLayout {
+                                alignment: center;
+                                MaterialIcon {
+                                    source: Icons.link-variant;
+                                    size: 12px;
+                                    tint: root.audio-follows-video ? Theme.accent-text : Theme.fg-3-brush;
+                                }
+                            }
+                            Text {
+                                text: Tr.t("Editor_AudioFollowsVideo", Tr.rev);
+                                color: root.audio-follows-video ? Theme.accent-text : Theme.fg-3-brush;
+                                font-family: Theme.font-ui;
+                                font-size: 10.5px;
+                                vertical-alignment: center;
+                            }
+                        }
+                        link-ta := TouchArea {
+                            mouse-cursor: pointer;
+                            clicked => { root.interaction-started(); root.toggle-audio-link(); }
+                        }
+                    }
+                }
+                if root.audio-tracks.length > 0: Rectangle { width: 10px; }
+
+                Text {
+                    text: root.trim-end-display;
+                    color: Theme.fg-3-brush;
+                    font-family: Theme.font-ui;
+                    font-size: 11px;
+                    horizontal-alignment: right;
+                }
+            }
+
+            // Video strip row
+            TimelineTrackRow {
+                selected: root.is-video-selected;
+
+                strip := Rectangle {
+                    height: 56px;
+                    background: Theme.timeline-bg;
+                    clip: true;
+
+                    // 10 evenly spaced filmstrip frames
+                    for thumb[idx] in root.timeline-thumbs: Image {
+                        property <int> n: max(1, root.timeline-thumbs.length);
+                        x: idx * parent.width / self.n;
+                        y: 0px;
+                        width: parent.width / self.n + 1px;
+                        height: 56px;
+                        source: thumb;
+                        image-fit: cover;
+                    }
+
+                    // Cut bands (behind shades, handles, playhead)
+                    for band in root.cut-bands: Rectangle {
+                        property <float> f0: clamp(band.start-sec / root.safe-dur, 0.0, 1.0);
+                        property <float> f1: clamp(band.end-sec / root.safe-dur, 0.0, 1.0);
+                        x: self.f0 * parent.width;
+                        y: 0px;
+                        width: max(0px, (self.f1 - self.f0) * parent.width);
+                        height: 56px;
+                        background: band.is-pending ? #F0484866 : #2A0E12CC;
+
+                        // 1px left and right borders (#F04848)
+                        if self.width >= 1px: Rectangle {
+                            x: 0px; y: 0px; width: 1px; height: 100%; background: #F04848;
+                        }
+                        if self.width >= 2px: Rectangle {
+                            x: parent.width - 1px; y: 0px; width: 1px; height: 100%; background: #F04848;
+                        }
+                    }
+
+                    // Left & right trim shades
+                    if root.sx > 0px: Rectangle {
+                        x: 0px;
+                        y: 0px;
+                        width: root.sx;
+                        height: 56px;
+                        background: Theme.timeline-shade;
+                    }
+                    if root.ex < parent.width: Rectangle {
+                        x: root.ex;
+                        y: 0px;
+                        width: max(0px, parent.width - root.ex);
+                        height: 56px;
+                        background: Theme.timeline-shade;
+                    }
+
+                    // Playhead (2px white, 0.9 opacity)
+                    Rectangle {
+                        x: clamp(root.px - 1px, 0px, max(0px, parent.width - 2px));
+                        y: 0px;
+                        width: 2px;
+                        height: 56px;
+                        background: #FFFFFF;
+                        opacity: 0.9;
+                    }
+
+                    // Start trim handle (10px cyan, left 3px rounded, 2x18 notch)
+                    Rectangle {
+                        x: clamp(root.sx, 0px, parent.width) - (root.sx <= 5px ? 0px : 5px);
+                        y: 0px;
+                        width: 10px;
+                        height: 56px;
+                        border-radius: 3px;
+                        background: Theme.accent-brush;
+
+                        Rectangle {
+                            x: parent.width - 3px;
+                            y: 0px;
+                            width: 3px;
+                            height: 100%;
+                            background: parent.background;
+                        }
+
+                        Rectangle {
+                            x: (parent.width - self.width) / 2;
+                            y: (parent.height - self.height) / 2;
+                            width: 2px;
+                            height: 18px;
+                            border-radius: 1px;
+                            background: Theme.on-accent-brush;
+                            opacity: 0.65;
+                        }
+                    }
+
+                    // End trim handle (10px cyan, right 3px rounded, 2x18 notch)
+                    Rectangle {
+                        x: clamp(root.ex, 0px, parent.width) - (root.ex >= parent.width - 5px ? 10px : 5px);
+                        y: 0px;
+                        width: 10px;
+                        height: 56px;
+                        border-radius: 3px;
+                        background: Theme.accent-brush;
+
+                        Rectangle {
+                            x: 0px;
+                            y: 0px;
+                            width: 3px;
+                            height: 100%;
+                            background: parent.background;
+                        }
+
+                        Rectangle {
+                            x: (parent.width - self.width) / 2;
+                            y: (parent.height - self.height) / 2;
+                            width: 2px;
+                            height: 18px;
+                            border-radius: 1px;
+                            background: Theme.on-accent-brush;
+                            opacity: 0.65;
+                        }
+                    }
+
+                    // Right-click areas per committed cut band (behind main left-drag TouchArea? No, checked in main TouchArea!)
+                    strip-ta := TouchArea {
+                        mouse-cursor: root.hover-cursor;
+                        pointer-event(ev) => {
+                            if (ev.kind == PointerEventKind.down) {
+                                root.interaction-started();
+                                if (ev.button == PointerEventButton.right) {
+                                    root.remove-cut-at(clamp(self.mouse-x / max(1px, root.strip-w), 0.0, 1.0));
+                                    return;
+                                }
+                                if (ev.button != PointerEventButton.left) { return; }
+
+                                if (ev.modifiers.shift) {
+                                    root.toggle-video-selected();
+                                    return;
+                                }
+
+                                if (root.strip-w <= 0px) { return; }
+
+                                let x = self.mouse-x;
+                                let d-start = abs(x - root.sx);
+                                let d-end = abs(x - root.ex);
+
+                                if (d-start <= 12px && d-start <= d-end) {
+                                    root.drag-mode = 1;
+                                } else if (d-end <= 12px) {
+                                    root.drag-mode = 2;
+                                } else {
+                                    root.drag-mode = 3;
+                                }
+
+                                if (root.drag-mode == 1 || root.drag-mode == 2) {
+                                    root.push-undo();
+                                }
+
+                                root.timeline-drag(
+                                    root.drag-mode,
+                                    clamp(x / max(1px, root.strip-w), 0.0, 1.0),
+                                    root.strip-w / 1px
+                                );
+                            } else if (ev.kind == PointerEventKind.up || ev.kind == PointerEventKind.cancel) {
+                                if (root.drag-mode != 0) {
+                                    root.drag-mode = 0;
+                                    root.timeline-drag-end();
+                                }
+                            }
+                        }
+                        moved => {
+                            root.update-hover-cursor(self.mouse-x);
+                            if (self.pressed && root.drag-mode != 0 && root.strip-w > 0px) {
+                                root.timeline-drag(
+                                    root.drag-mode,
+                                    clamp(self.mouse-x / max(1px, root.strip-w), 0.0, 1.0),
+                                    root.strip-w / 1px
+                                );
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Audio track lanes
+            for track[idx] in root.audio-tracks: EditorAudioLane {
+                track: track;
+                snap-a: root.trim-start-sec;
+                snap-b: root.trim-end-sec;
+                shift-clicked => {
+                    root.interaction-started();
+                    root.toggle-audio-selected(idx);
+                }
+                muted-toggled(m) => {
+                    root.interaction-started();
+                    root.set-audio-muted(idx, m);
+                }
+                volume-changed(v) => {
+                    root.interaction-started();
+                    root.set-audio-volume(idx, v);
+                }
+                range-changed(s, e) => {
+                    root.set-audio-range(idx, s, e);
+                }
+            }
+        }
+    }
+}

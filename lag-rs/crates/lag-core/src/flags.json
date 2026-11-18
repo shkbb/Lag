@@ -1,0 +1,359 @@
+{
+    "en":  [
+               {
+                   "fill":  "#012169",
+                   "geometry":  "M0,0 H30 V20 H0 Z",
+                   "ellipse":  null,
+                   "stroke":  null
+               },
+               {
+                   "fill":  null,
+                   "geometry":  "M0,0 L30,20 M30,0 L0,20",
+                   "ellipse":  null,
+                   "stroke":  {
+                                  "color":  "White",
+                                  "thickness":  4.5
+                              }
+               },
+               {
+                   "fill":  null,
+                   "geometry":  "M0,0 L30,20 M30,0 L0,20",
+                   "ellipse":  null,
+                   "stroke":  {
+                                  "color":  "#C8102E",
+                                  "thickness":  1.8
+                              }
+               },
+               {
+                   "fill":  null,
+                   "geometry":  "M15,0 V20 M0,10 H30",
+                   "ellipse":  null,
+                   "stroke":  {
+                                  "color":  "White",
+                                  "thickness":  6
+                              }
+               },
+               {
+                   "fill":  null,
+                   "geometry":  "M15,0 V20 M0,10 H30",
+                   "ellipse":  null,
+                   "stroke":  {
+                                  "color":  "#C8102E",
+                                  "thickness":  3.4
+                              }
+               }
+           ],
+    "uk":  [
+               {
+                   "fill":  "#0057B7",
+                   "geometry":  "M0,0 H30 V10 H0 Z",
+                   "ellipse":  null,
+                   "stroke":  null
+               },
+               {
+                   "fill":  "#FFD700",
+                   "geometry":  "M0,10 H30 V20 H0 Z",
+                   "ellipse":  null,
+                   "stroke":  null
+               }
+           ],
+    "de":  [
+               {
+                   "fill":  "#000000",
+                   "geometry":  "M0,0 H30 V6.67 H0 Z",
+                   "ellipse":  null,
+                   "stroke":  null
+               },
+               {
+                   "fill":  "#DD0000",
+                   "geometry":  "M0,6.67 H30 V13.33 H0 Z",
+                   "ellipse":  null,
+                   "stroke":  null
+               },
+               {
+                   "fill":  "#FFCE00",
+                   "geometry":  "M0,13.33 H30 V20 H0 Z",
+                   "ellipse":  null,
+                   "stroke":  null
+               }
+           ],
+    "fr":  [
+               {
+                   "fill":  "#002395",
+                   "geometry":  "M0,0 H10 V20 H0 Z",
+                   "ellipse":  null,
+                   "stroke":  null
+               },
+               {
+                   "fill":  "#FFFFFF",
+                   "geometry":  "M10,0 H20 V20 H10 Z",
+                   "ellipse":  null,
+                   "stroke":  null
+               },
+               {
+                   "fill":  "#ED2939",
+                   "geometry":  "M20,0 H30 V20 H20 Z",
+                   "ellipse":  null,
+                   "stroke":  null
+               }
+           ],
+    "be":  [
+               {
+                   "fill":  "#FFFFFF",
+                   "geometry":  "M0,0 H30 V6.67 H0 Z",
+                   "ellipse":  null,
+                   "stroke":  null
+               },
+               {
+                   "fill":  "#E10000",
+                   "geometry":  "M0,6.67 H30 V13.33 H0 Z",
+                   "ellipse":  null,
+                   "stroke":  null
+               },
+               {
+                   "fill":  "#FFFFFF",
+                   "geometry":  "M0,13.33 H30 V20 H0 Z",
+                   "ellipse":  null,
+                   "stroke":  null
+               }
+           ],
+    "lt":  [
+               {
+                   "fill":  "#FDB913",
+                   "geometry":  "M0,0 H30 V6.67 H0 Z",
+                   "ellipse":  null,
+                   "stroke":  null
+               },
+               {
+                   "fill":  "#006A44",
+                   "geometry":  "M0,6.67 H30 V13.33 H0 Z",
+                   "ellipse":  null,
+                   "stroke":  null
+               },
+               {
+                   "fill":  "#C1272D",
+                   "geometry":  "M0,13.33 H30 V20 H0 Z",
+                   "ellipse":  null,
+                   "stroke":  null
+               }
+           ],
+    "et":  [
+               {
+                   "fill":  "#0072CE",
+                   "geometry":  "M0,0 H30 V6.67 H0 Z",
+                   "ellipse":  null,
+                   "stroke":  null
+               },
+               {
+                   "fill":  "#000000",
+                   "geometry":  "M0,6.67 H30 V13.33 H0 Z",
+                   "ellipse":  null,
+                   "stroke":  null
+               },
+               {
+                   "fill":  "#FFFFFF",
+                   "geometry":  "M0,13.33 H30 V20 H0 Z",
+                   "ellipse":  null,
+                   "stroke":  null
+               }
+           ],
+    "lv":  [
+               {
+                   "fill":  "#9E3039",
+                   "geometry":  "M0,0 H30 V8 H0 Z",
+                   "ellipse":  null,
+                   "stroke":  null
+               },
+               {
+                   "fill":  "#FFFFFF",
+                   "geometry":  "M0,8 H30 V12 H0 Z",
+                   "ellipse":  null,
+                   "stroke":  null
+               },
+               {
+                   "fill":  "#9E3039",
+                   "geometry":  "M0,12 H30 V20 H0 Z",
+                   "ellipse":  null,
+                   "stroke":  null
+               }
+           ],
+    "fi":  [
+               {
+                   "fill":  "#FFFFFF",
+                   "geometry":  "M0,0 H30 V20 H0 Z",
+                   "ellipse":  null,
+                   "stroke":  null
+               },
+               {
+                   "fill":  null,
+                   "geometry":  "M11,0 V20 M0,10 H30",
+                   "ellipse":  null,
+                   "stroke":  {
+                                  "color":  "#002F6C",
+                                  "thickness":  5
+                              }
+               }
+           ],
+    "sv":  [
+               {
+                   "fill":  "#006AA7",
+                   "geometry":  "M0,0 H30 V20 H0 Z",
+                   "ellipse":  null,
+                   "stroke":  null
+               },
+               {
+                   "fill":  null,
+                   "geometry":  "M11,0 V20 M0,10 H30",
+                   "ellipse":  null,
+                   "stroke":  {
+                                  "color":  "#FECC00",
+                                  "thickness":  4
+                              }
+               }
+           ],
+    "no":  [
+               {
+                   "fill":  "#BA0C2F",
+                   "geometry":  "M0,0 H30 V20 H0 Z",
+                   "ellipse":  null,
+                   "stroke":  null
+               },
+               {
+                   "fill":  null,
+                   "geometry":  "M11,0 V20 M0,10 H30",
+                   "ellipse":  null,
+                   "stroke":  {
+                                  "color":  "#FFFFFF",
+                                  "thickness":  5.5
+                              }
+               },
+               {
+                   "fill":  null,
+                   "geometry":  "M11,0 V20 M0,10 H30",
+                   "ellipse":  null,
+                   "stroke":  {
+                                  "color":  "#00205B",
+                                  "thickness":  2.6
+                              }
+               }
+           ],
+    "da":  [
+               {
+                   "fill":  "#C8102E",
+                   "geometry":  "M0,0 H30 V20 H0 Z",
+                   "ellipse":  null,
+                   "stroke":  null
+               },
+               {
+                   "fill":  null,
+                   "geometry":  "M11,0 V20 M0,10 H30",
+                   "ellipse":  null,
+                   "stroke":  {
+                                  "color":  "#FFFFFF",
+                                  "thickness":  4
+                              }
+               }
+           ],
+    "nl":  [
+               {
+                   "fill":  "#AE1C28",
+                   "geometry":  "M0,0 H30 V6.67 H0 Z",
+                   "ellipse":  null,
+                   "stroke":  null
+               },
+               {
+                   "fill":  "#FFFFFF",
+                   "geometry":  "M0,6.67 H30 V13.33 H0 Z",
+                   "ellipse":  null,
+                   "stroke":  null
+               },
+               {
+                   "fill":  "#21468B",
+                   "geometry":  "M0,13.33 H30 V20 H0 Z",
+                   "ellipse":  null,
+                   "stroke":  null
+               }
+           ],
+    "it":  [
+               {
+                   "fill":  "#008C45",
+                   "geometry":  "M0,0 H10 V20 H0 Z",
+                   "ellipse":  null,
+                   "stroke":  null
+               },
+               {
+                   "fill":  "#FFFFFF",
+                   "geometry":  "M10,0 H20 V20 H10 Z",
+                   "ellipse":  null,
+                   "stroke":  null
+               },
+               {
+                   "fill":  "#CD212A",
+                   "geometry":  "M20,0 H30 V20 H20 Z",
+                   "ellipse":  null,
+                   "stroke":  null
+               }
+           ],
+    "es":  [
+               {
+                   "fill":  "#AA151B",
+                   "geometry":  "M0,0 H30 V5 H0 Z",
+                   "ellipse":  null,
+                   "stroke":  null
+               },
+               {
+                   "fill":  "#F1BF00",
+                   "geometry":  "M0,5 H30 V15 H0 Z",
+                   "ellipse":  null,
+                   "stroke":  null
+               },
+               {
+                   "fill":  "#AA151B",
+                   "geometry":  "M0,15 H30 V20 H0 Z",
+                   "ellipse":  null,
+                   "stroke":  null
+               }
+           ],
+    "pt":  [
+               {
+                   "fill":  "#006600",
+                   "geometry":  "M0,0 H12 V20 H0 Z",
+                   "ellipse":  null,
+                   "stroke":  null
+               },
+               {
+                   "fill":  "#FF0000",
+                   "geometry":  "M12,0 H30 V20 H12 Z",
+                   "ellipse":  null,
+                   "stroke":  null
+               },
+               {
+                   "fill":  "#FFE900",
+                   "geometry":  null,
+                   "ellipse":  {
+                                   "center":  "12,10",
+                                   "radius_x":  3.6,
+                                   "radius_y":  3.6
+                               },
+                   "stroke":  null
+               }
+           ],
+    "ja":  [
+               {
+                   "fill":  "#FFFFFF",
+                   "geometry":  "M0,0 H30 V20 H0 Z",
+                   "ellipse":  null,
+                   "stroke":  null
+               },
+               {
+                   "fill":  "#BC002D",
+                   "geometry":  null,
+                   "ellipse":  {
+                                   "center":  "15,10",
+                                   "radius_x":  6,
+                                   "radius_y":  6
+                               },
+                   "stroke":  null
+               }
+           ]
+}

@@ -1,0 +1,148 @@
+import { Theme } from "../theme/tokens.slint";
+import { Icons, MaterialIcon } from "../theme/icons.slint";
+
+// Ported from DarkTheme.axaml:475-503 (TextBox)
+export component LagTextInput {
+    in-out property <string> text;
+    in property <string> placeholder: "";
+    in property <bool> enabled: true;
+    in property <TextHorizontalAlignment> horizontal-alignment: left;
+    callback edited(string);
+    callback accepted(string);
+    callback focus-changed(bool);
+    public function focus-all() {
+        input.focus();
+        input.select-all();
+    }
+
+    min-height: Theme.control-min-height;
+    min-width: 56px;
+    opacity: enabled ? 1.0 : 0.45;
+
+    Rectangle {
+        width: 100%;
+        height: 100%;
+        border-radius: Theme.rad-control;
+        border-width: 1px;
+        background: input.has-focus
+            ? Theme.surface-brush
+            : (ta.has-hover && root.enabled ? Theme.surface-hover-brush : Theme.surface-brush);
+        border-color: input.has-focus ? Theme.accent-brush : transparent;
+        animate background, border-color { duration: Theme.dur-base; }
+
+        ta := TouchArea {
+            enabled: false; // hover probe only; TextInput owns pointer events
+        }
+
+        HorizontalLayout {
+            padding-left: 9px;
+            padding-right: 9px;
+            padding-top: 4px;
+            padding-bottom: 4px;
+
+            // Placeholder + TextInput overlay
+            Rectangle {
+                horizontal-stretch: 1;
+                if root.text == "" && root.placeholder != "": Text {
+                    x: 0px;
+                    width: parent.width;
+                    height: parent.height;
+                    text: root.placeholder;
+                    color: Theme.text-faint;
+                    font-family: Theme.font-ui;
+                    font-size: Theme.font-size-body;
+                    vertical-alignment: center;
+                    horizontal-alignment: root.horizontal-alignment;
+                }
+
+                input := TextInput {
+                    width: 100%;
+                    height: 100%;
+                    text <=> root.text;
+                    enabled: root.enabled;
+                    color: Theme.fg-brush;
+                    font-family: Theme.font-ui;
+                    font-size: Theme.font-size-body;
+                    selection-background-color: Theme.text-selection-brush;
+                    selection-foreground-color: Theme.fg-brush;
+                    vertical-alignment: center;
+                    horizontal-alignment: root.horizontal-alignment;
+                    single-line: true;
+                    edited => { root.edited(self.text); }
+                    accepted => { root.accepted(self.text); }
+                    changed has-focus => { root.focus-changed(self.has-focus); }
+                }
+            }
+        }
+    }
+}
+
+// Ported from LibraryView.axaml:37-57, 236-243 (Border.searchbox + borderless TextBox)
+export component LagSearchBox {
+    in-out property <string> text;
+    in property <string> placeholder: "Search...";
+    callback edited(string);
+    callback accepted(string);
+
+    min-height: 36px;
+    min-width: 180px;
+
+    Rectangle {
+        width: 100%;
+        height: 100%;
+        border-radius: Theme.rad-pill;
+        background: Theme.surface-card;
+        border-width: 1px;
+        border-color: input.has-focus
+            ? Theme.accent
+            : (ta.has-hover ? Theme.border-input : Theme.border-card);
+        animate border-color { duration: Theme.dur-fast; }
+
+        ta := TouchArea {
+            enabled: false;
+        }
+
+        HorizontalLayout {
+            padding-left: 12px;
+            padding-right: 12px;
+            spacing: 8px;
+
+            VerticalLayout {
+                alignment: center;
+                MaterialIcon {
+                    source: Icons.magnify;
+                    size: 15px;
+                    tint: Theme.text-muted;
+                }
+            }
+
+            Rectangle {
+                horizontal-stretch: 1;
+                if root.text == "" && root.placeholder != "": Text {
+                    width: parent.width;
+                    height: parent.height;
+                    text: root.placeholder;
+                    color: Theme.text-faint;
+                    font-family: Theme.font-ui;
+                    font-size: Theme.font-size-body;
+                    vertical-alignment: center;
+                }
+
+                input := TextInput {
+                    width: 100%;
+                    height: 100%;
+                    text <=> root.text;
+                    color: Theme.text-hi;
+                    font-family: Theme.font-ui;
+                    font-size: Theme.font-size-body;
+                    selection-background-color: Theme.text-selection-brush;
+                    selection-foreground-color: Theme.text-hi;
+                    vertical-alignment: center;
+                    single-line: true;
+                    edited => { root.edited(self.text); }
+                    accepted => { root.accepted(self.text); }
+                }
+            }
+        }
+    }
+}

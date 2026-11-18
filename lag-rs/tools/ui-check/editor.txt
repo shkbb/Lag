@@ -1,0 +1,32 @@
+# Editor with a clip loaded (probe + filmstrip + audio lanes; the video itself needs a GPU window).
+size 1360x880
+choose theme 1
+page editor
+wait 500
+shot ed-empty
+editor-clip 0
+wait 5000
+shot ed-clip
+tab 0
+click 1188 166
+wait 300
+shot ed-tab-filters
+click 1277 166
+wait 300
+shot ed-tab-text
+click 1104 166
+wait 300
+size 1080x640
+wait 400
+shot ed-small
+size 1920x1080
+wait 400
+shot ed-1080
+size 3440x1440
+wait 400
+shot ed-big
+size 1360x880
+choose theme 0
+wait 400
+shot ed-light
+choose theme 1

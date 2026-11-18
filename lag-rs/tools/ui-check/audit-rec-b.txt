@@ -1,0 +1,19 @@
+# Settings audit B: change settings through the Settings paths, record 38 s with a 30 s buffer, save.
+size 1360x840
+page settings
+wait 3000
+choose format 2
+choose resolution 3
+choose fps 2
+choose codec 2
+choose bitrate 4
+choose buffer 0
+toggle tracks 0
+toggle mic-volume 0
+wait 1500
+rec
+wait 38000
+save
+wait 8000
+rec
+wait 3000

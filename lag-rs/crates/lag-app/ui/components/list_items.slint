@@ -1,0 +1,431 @@
+import { Theme } from "../theme/tokens.slint";
+import { Icons, MaterialIcon } from "../theme/icons.slint";
+import { EditedBadge, DurationBadge } from "badges.slint";
+import { PlayCircleButton } from "buttons.slint";
+
+// Ported from PlayerView.axaml:54-73 (ListBox.replays ListBoxItem)
+export component ReplayListItem {
+    in property <bool> selected: false;
+    in property <bool> touch-enabled: true;
+    callback clicked();
+    callback moved(length, length);
+    callback right-clicked(length, length);
+
+    Rectangle {
+        width: 100%;
+        height: 100%;
+        border-radius: Theme.rad-input;
+        background: root.selected
+            ? Theme.accent-dim
+            : (ta.has-hover ? Theme.surface-card : transparent);
+        animate background { duration: Theme.dur-fast; }
+
+        HorizontalLayout {
+            padding: 8px;
+            @children
+        }
+    }
+
+    ta := TouchArea {
+        enabled: root.touch-enabled;
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+        // `moved` only fires while a button is held; hover needs pointer-event kind=move.
+        pointer-event(e) => {
+            if (e.kind == PointerEventKind.move) { root.moved(self.mouse-x, self.mouse-y); }
+            if (e.button == PointerEventButton.right && e.kind == PointerEventKind.down) {
+                root.right-clicked(self.mouse-x, self.mouse-y);
+            }
+        }
+    }
+}
+
+// Ported from PlayerView.axaml:75-99 (ListBox.speedlist ListBoxItem)
+export component SpeedListItem {
+    in property <string> text;
+    in property <bool> selected: false;
+    callback clicked();
+
+    Rectangle {
+        width: 100%;
+        height: 100%;
+        border-radius: Theme.rad-seg;
+        background: root.selected
+            ? Theme.accent-dim
+            : (ta.has-hover ? Theme.surface-input : transparent);
+        animate background { duration: Theme.dur-fast; }
+
+        HorizontalLayout {
+            padding-left: 10px;
+            padding-right: 10px;
+            padding-top: 7px;
+            padding-bottom: 7px;
+
+            Text {
+                text: root.text;
+                color: root.selected ? Theme.accent-text : Theme.text-mid;
+                font-family: Theme.font-ui;
+                font-size: Theme.font-size-body;
+                font-weight: root.selected ? Theme.font-weight-semibold : Theme.font-weight-normal;
+                vertical-alignment: center;
+            }
+        }
+    }
+
+    ta := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+    }
+}
+
+// Ported from EditorView.axaml:49-85 (ListBox.filters ListBoxItem)
+export component FilterCardItem {
+    in property <string> label;
+    in property <bool> selected: false;
+    callback clicked();
+
+    Rectangle {
+        width: 100%;
+        height: 100%;
+        border-radius: Theme.rad-button;
+        background: root.selected
+            ? Theme.accent-brush
+            : (ta.has-hover ? Theme.filter-hover-bg : transparent);
+        animate background { duration: Theme.dur-fast; }
+
+        VerticalLayout {
+            padding: 6px;
+            spacing: 4px;
+
+            @children
+
+            Text {
+                text: root.label;
+                color: root.selected ? Theme.on-accent-brush : Theme.fg-2-brush;
+                font-family: Theme.font-ui;
+                font-size: Theme.font-size-xs;
+                font-weight: root.selected ? Theme.font-weight-medium : Theme.font-weight-normal;
+                horizontal-alignment: center;
+                overflow: elide;
+            }
+        }
+    }
+
+    ta := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+    }
+}
+
+// Ported from EditorView.axaml:88-101 (Button.clipitem)
+export component ClipPickerItem {
+    callback clicked();
+
+    Rectangle {
+        width: 100%;
+        height: 100%;
+        border-radius: Theme.rad-input;
+        background: ta.has-hover ? Theme.surface-input : transparent;
+        animate background { duration: Theme.dur-fast; }
+
+        HorizontalLayout {
+            padding: 6px;
+            alignment: center;
+            @children
+        }
+    }
+
+    ta := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+    }
+}
+
+// Ported from EditorView.axaml:19-35 (Border.trow & .selected)
+export component TimelineTrackRow {
+    in property <bool> selected: false;
+
+    Rectangle {
+        width: 100%;
+        height: 100%;
+        border-radius: Theme.rad-control;
+        border-width: 1px;
+        border-color: root.selected ? Theme.accent-brush : transparent;
+        background: root.selected ? Theme.accent-dim : transparent;
+        animate border-color, background { duration: Theme.dur-fast; }
+
+        VerticalLayout {
+            padding: 4px;
+            @children
+        }
+    }
+}
+
+// Ported from EditorView.axaml:38-46 (Border.chandle)
+export component CropHandle inherits Rectangle {
+    width: 12px;
+    height: 12px;
+    background: Theme.accent-brush;
+    border-color: #FFFFFF;
+    border-width: 1.5px;
+    border-radius: 3px;
+}
+
+// Ported from SettingsView.axaml:16-22 (Border.ovbox)
+export component OverlayPreviewBox inherits Rectangle {
+    background: Theme.accent-dim;
+    border-color: Theme.accent;
+    border-width: 1px;
+    border-radius: Theme.rad-kbd;
+}
+
+// Ported from LibraryView.axaml:60-162, 316-445 (Clip card chrome: lift, accent ring, gradient veil, badges)
+export component LibraryClipCard {
+    in property <string> title;
+    in property <string> time-text;
+    in property <string> game-name: "";
+    in property <string> duration-text: "";
+    in property <bool> is-image: false;
+    in property <bool> is-favorite: false;
+    in property <bool> is-edited: false;
+    in property <bool> is-selected: false;
+    in property <bool> is-selecting: false;
+    callback play-clicked();
+    callback favorite-clicked();
+    callback edit-clicked();
+    callback select-clicked();
+
+    width: 248px;
+
+    property <bool> hovered: card-ta.has-hover || play-btn.has-hover || fav-ta.has-hover || edit-ta.has-hover || sel-ta.has-hover;
+
+    VerticalLayout {
+        y: root.hovered ? -3px : 0px;
+        animate y {
+            duration: Theme.dur-toggle;
+            easing: cubic-bezier(0.215, 0.61, 0.355, 1);
+        }
+
+        // 16:9 preview box (248x140)
+        Rectangle {
+            width: 248px;
+            height: 140px;
+            border-radius: Theme.rad-general;
+            background: Theme.thumb-placeholder-bg;
+            clip: true;
+
+            card-ta := TouchArea {
+                mouse-cursor: pointer;
+                clicked => { root.play-clicked(); }
+            }
+
+            // Optional thumbnail slot
+            @children
+
+            // Accent hover/selected ring
+            Rectangle {
+                width: 100%;
+                height: 100%;
+                border-radius: Theme.rad-general;
+                border-width: 2px;
+                border-color: Theme.accent;
+                opacity: (root.hovered || root.is-selected) ? 1.0 : 0.0;
+                animate opacity { duration: Theme.dur-base; }
+            }
+
+            // Favorite star badge (top-right, at rest)
+            if root.is-favorite && !root.hovered: Rectangle {
+                x: parent.width - self.width - 9px;
+                y: 9px;
+                width: 26px;
+                height: 26px;
+                border-radius: Theme.rad-control;
+                background: Theme.card-badge-bg;
+
+                MaterialIcon {
+                    x: (parent.width - self.width) / 2;
+                    y: (parent.height - self.height) / 2;
+                    source: Icons.star;
+                    size: 14px;
+                    tint: Theme.accent;
+                }
+            }
+
+            // EDITED badge (top-left, fades on hover/selected)
+            if root.is-edited: EditedBadge {
+                x: 9px;
+                y: 9px;
+                opacity: (root.hovered || root.is-selected) ? 0.0 : 1.0;
+                animate opacity { duration: Theme.dur-fast; }
+            }
+
+            // Duration badge (bottom-right)
+            if !root.is-image && root.duration-text != "": DurationBadge {
+                x: parent.width - self.width - 9px;
+                y: parent.height - self.height - 9px;
+                text: root.duration-text;
+            }
+
+            // Hover overlay (gradient veil + play + fav + edit)
+            Rectangle {
+                visible: !root.is-selecting;
+                width: 100%;
+                height: 100%;
+                border-radius: Theme.rad-general;
+                background: Theme.card-overlay-gradient;
+                opacity: root.hovered ? 1.0 : 0.0;
+                animate opacity { duration: Theme.dur-base; }
+
+                // Play CTA
+                play-btn := PlayCircleButton {
+                    x: (parent.width - self.width) / 2;
+                    y: (parent.height - self.height) / 2;
+                    icon: Icons.play;
+                    button-size: 48px;
+                    icon-size: 24px;
+                    clicked => { root.play-clicked(); }
+                }
+
+                // Favorite toggle (top-right)
+                Rectangle {
+                    x: parent.width - self.width - 9px;
+                    y: 9px;
+                    width: 28px;
+                    height: 28px;
+                    border-radius: Theme.rad-control;
+                    background: fav-ta.has-hover ? Theme.surface-hover-2 : Theme.card-ov-bg;
+                    animate background { duration: Theme.dur-fast; }
+
+                    MaterialIcon {
+                        x: (parent.width - self.width) / 2;
+                        y: (parent.height - self.height) / 2;
+                        source: root.is-favorite ? Icons.star : Icons.star-outline;
+                        size: 15px;
+                        tint: root.is-favorite ? Theme.accent-text : Theme.text-btn;
+                    }
+
+                    fav-ta := TouchArea {
+                        enabled: !root.is-selecting;
+                        mouse-cursor: pointer;
+                        clicked => { root.favorite-clicked(); }
+                    }
+                }
+
+                // Edit pill (bottom-left)
+                Rectangle {
+                    visible: !root.is-image;
+                    x: 9px;
+                    y: parent.height - self.height - 9px;
+                    height: 28px;
+                    width: edit-layout.preferred-width;
+                    border-radius: Theme.rad-control;
+                    background: edit-ta.has-hover ? Theme.surface-hover-2 : Theme.card-ov-bg;
+                    animate background { duration: Theme.dur-fast; }
+
+                    edit-layout := HorizontalLayout {
+                        padding-left: 11px;
+                        padding-right: 11px;
+                        spacing: 6px;
+
+                        VerticalLayout {
+                            alignment: center;
+                            MaterialIcon {
+                                source: Icons.pencil-outline;
+                                size: 13px;
+                                tint: Theme.text-btn;
+                            }
+                        }
+
+                        Text {
+                            text: "Edit";
+                            color: Theme.text-btn;
+                            font-family: Theme.font-ui;
+                            font-size: Theme.font-size-sm;
+                            font-weight: Theme.font-weight-semibold;
+                            vertical-alignment: center;
+                        }
+                    }
+
+                    edit-ta := TouchArea {
+                        enabled: !root.is-selecting && !root.is-image;
+                        mouse-cursor: pointer;
+                        clicked => { root.edit-clicked(); }
+                    }
+                }
+            }
+
+            // Selection circle (top-left)
+            Rectangle {
+                x: 9px;
+                y: 9px;
+                width: 26px;
+                height: 26px;
+                border-radius: 13px;
+                background: sel-ta.has-hover ? Theme.card-badge-hover-bg : Theme.card-badge-bg;
+                opacity: (root.hovered || root.is-selected) ? 1.0 : 0.0;
+                animate opacity { duration: Theme.dur-fast; }
+
+                MaterialIcon {
+                    x: (parent.width - self.width) / 2;
+                    y: (parent.height - self.height) / 2;
+                    source: root.is-selected ? Icons.check-circle : Icons.checkbox-blank-circle-outline;
+                    size: 20px;
+                    tint: root.is-selected ? Theme.accent : Theme.card-badge-fg;
+                }
+
+                sel-ta := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => { root.select-clicked(); }
+                }
+            }
+        }
+
+        // Metadata below thumbnail
+        VerticalLayout {
+            padding-left: 2px;
+            padding-right: 2px;
+            padding-top: 10px;
+            spacing: 3px;
+
+            Text {
+                text: root.title;
+                color: Theme.text-hi;
+                font-family: Theme.font-ui;
+                font-size: Theme.font-size-body;
+                font-weight: Theme.font-weight-semibold;
+                overflow: elide;
+            }
+
+            HorizontalLayout {
+                spacing: 8px;
+
+                Text {
+                    text: root.time-text;
+                    color: Theme.text-faint;
+                    font-family: Theme.font-mono;
+                    font-size: 10.5px;
+                    vertical-alignment: center;
+                }
+
+                if root.game-name != "": VerticalLayout {
+                    alignment: center;
+                    Rectangle {
+                        width: 3px;
+                        height: 3px;
+                        border-radius: 1.5px;
+                        background: Theme.dot-divider;
+                    }
+                }
+
+                if root.game-name != "": Text {
+                    text: root.game-name;
+                    color: Theme.text-muted;
+                    font-family: Theme.font-ui;
+                    font-size: Theme.font-size-xs;
+                    overflow: elide;
+                    vertical-alignment: center;
+                }
+            }
+        }
+    }
+}

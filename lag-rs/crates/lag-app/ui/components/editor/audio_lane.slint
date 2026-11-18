@@ -1,0 +1,247 @@
+// Ported from Controls/TrimRangeBar.cs + Views/EditorView.axaml:395-439
+import { Theme } from "../../theme/tokens.slint";
+import { LagCheckBox } from "../checkbox.slint";
+import { LagSlider } from "../slider.slint";
+import { TimelineTrackRow } from "../list_items.slint";
+import { EditorAudioTrackData } from "types.slint";
+
+export component EditorAudioLane {
+    in property <EditorAudioTrackData> track;
+    in property <float> snap-a: -1.0;
+    in property <float> snap-b: -1.0;
+    callback shift-clicked();
+    callback muted-toggled(bool);
+    callback volume-changed(int);
+    callback range-changed(float, float);
+
+    property <bool> enabled: !track.is-muted;
+    property <float> safe-dur: max(0.0001, track.clip-duration-sec);
+    property <float> start-ratio: clamp(track.start-sec / safe-dur, 0.0, 1.0);
+    property <float> end-ratio: clamp(track.end-sec / safe-dur, 0.0, 1.0);
+    property <length> bar-w: lane.width;
+    property <length> sx: start-ratio * bar-w;
+    property <length> ex: end-ratio * bar-w;
+    property <length> handle-w: 10px;
+    property <length> hsx: clamp(sx, 0px, bar-w) - (sx <= 5px ? 0px : 5px);
+    property <length> hex: clamp(ex, 0px, bar-w) - (ex >= bar-w - 5px ? handle-w : 5px);
+    property <int> drag-target: 0; // 0 = none, 1 = start, 2 = end
+
+    function apply-drag(px: length) {
+        let sec0 = clamp(px / max(1px, root.bar-w), 0.0, 1.0) * root.safe-dur;
+        let threshold = 10.0 / max(1.0, root.bar-w / 1px) * root.safe-dur;
+        let sec1 = (root.snap-a >= 0 && abs(sec0 - root.snap-a) <= threshold) ? root.snap-a
+                 : (root.snap-b >= 0 && abs(sec0 - root.snap-b) <= threshold) ? root.snap-b
+                 : sec0;
+
+        if (root.drag-target == 1) {
+            let ns = clamp(sec1, 0.0, max(0.0, root.track.end-sec - 0.1));
+            root.range-changed(ns, root.track.end-sec);
+        } else if (root.drag-target == 2) {
+            let ne = clamp(sec1, min(root.safe-dur, root.track.start-sec + 0.1), root.safe-dur);
+            root.range-changed(root.track.start-sec, ne);
+        }
+    }
+
+    // explicit size: without it the row got 0x0 inside this component (the lanes took space but drew nothing)
+    preferred-height: row.preferred-height;
+    min-height: row.min-height;
+    row := TimelineTrackRow {
+        width: 100%;
+        height: 100%;
+        selected: root.track.is-selected;
+
+        lane := Rectangle {
+            height: 32px;
+            border-radius: Theme.rad-trim;
+            background: root.enabled ? Theme.trim-body : Theme.trim-body-muted;
+            clip: true;
+
+            // Faux waveform: deterministic bars around centerline matching TrimRangeBar.cs:110-117
+            for i in 260: Rectangle {
+                property <length> bar-x: 3px + i * 4px;
+                property <float> t: (self.bar-x / 1px) * 0.55;
+                property <float> amp: (sin(1rad * t) * 0.5 + sin(1rad * (t * 0.31 + 1.7)) * 0.32 + sin(1rad * (t * 0.071 + 0.4)) * 0.18) * 0.5 + 0.5;
+                property <length> bar-h: max(2px, self.amp * max(2px, parent.height - 10px));
+
+                visible: self.bar-x < parent.width - 3px;
+                x: self.bar-x;
+                y: (parent.height - self.bar-h) / 2;
+                width: 2px;
+                height: self.bar-h;
+                background: root.enabled ? Theme.trim-wave : Theme.trim-wave-muted;
+            }
+
+            // Shade outside audible [start-sec, end-sec]
+            if root.sx > 0px: Rectangle {
+                x: 0px;
+                y: 0px;
+                width: root.sx;
+                height: parent.height;
+                background: Theme.timeline-shade;
+            }
+            if root.ex < parent.width: Rectangle {
+                x: root.ex;
+                y: 0px;
+                width: max(0px, parent.width - root.ex);
+                height: parent.height;
+                background: Theme.timeline-shade;
+            }
+
+            // Start handle (left outer 3px radius, inner square, notch)
+            Rectangle {
+                x: root.hsx;
+                y: 0px;
+                width: root.handle-w;
+                height: parent.height;
+                border-radius: 3px;
+                background: root.enabled ? Theme.trim-handle : Theme.trim-handle-muted;
+
+                Rectangle {
+                    x: parent.width - 3px;
+                    y: 0px;
+                    width: 3px;
+                    height: parent.height;
+                    background: parent.background;
+                }
+
+                Rectangle {
+                    x: (parent.width - self.width) / 2;
+                    y: (parent.height - self.height) / 2;
+                    width: 2px;
+                    height: max(8px, parent.height * 0.45);
+                    border-radius: 1px;
+                    background: Theme.trim-notch;
+                }
+            }
+
+            // End handle (right outer 3px radius, inner square, notch)
+            Rectangle {
+                x: root.hex;
+                y: 0px;
+                width: root.handle-w;
+                height: parent.height;
+                border-radius: 3px;
+                background: root.enabled ? Theme.trim-handle : Theme.trim-handle-muted;
+
+                Rectangle {
+                    x: 0px;
+                    y: 0px;
+                    width: 3px;
+                    height: parent.height;
+                    background: parent.background;
+                }
+
+                Rectangle {
+                    x: (parent.width - self.width) / 2;
+                    y: (parent.height - self.height) / 2;
+                    width: 2px;
+                    height: max(8px, parent.height * 0.45);
+                    border-radius: 1px;
+                    background: Theme.trim-notch;
+                }
+            }
+
+            // Range drag + Shift+click selection target (always active for Shift+click even when muted)
+            lane-ta := TouchArea {
+                mouse-cursor: root.enabled ? pointer : default;
+                pointer-event(ev) => {
+                    if (ev.kind == PointerEventKind.down && ev.button == PointerEventButton.left) {
+                        if (ev.modifiers.shift) {
+                            root.shift-clicked();
+                            return;
+                        }
+                        if (!root.enabled || root.bar-w <= 0px || root.track.clip-duration-sec <= 0) {
+                            return;
+                        }
+                        root.drag-target = abs(self.mouse-x - root.sx) <= abs(self.mouse-x - root.ex) ? 1 : 2;
+                        root.apply-drag(self.mouse-x);
+                    } else if (ev.kind == PointerEventKind.up || ev.kind == PointerEventKind.cancel) {
+                        root.drag-target = 0;
+                    }
+                }
+                moved => {
+                    if (self.pressed && root.drag-target != 0 && root.enabled) {
+                        root.apply-drag(self.mouse-x);
+                    }
+                }
+            }
+
+            // Left floating chip: mute checkbox + track name
+            Rectangle {
+                x: 16px;
+                y: (parent.height - self.height) / 2;
+                width: left-chip-layout.preferred-width;
+                height: 24px;
+                border-radius: 6px;
+                background: Theme.lane-chip-bg;
+
+                left-chip-layout := HorizontalLayout {
+                    padding-left: 8px;
+                    padding-right: 8px;
+                    padding-top: 3px;
+                    padding-bottom: 3px;
+                    spacing: 8px;
+                    alignment: start;
+
+                    VerticalLayout {
+                        alignment: center;
+                        LagCheckBox {
+                            checked: !root.track.is-muted;
+                            toggled(checked) => { root.muted-toggled(!checked); }
+                        }
+                    }
+
+                    Text {
+                        max-width: 130px;
+                        text: root.track.name;
+                        color: Theme.lane-chip-fg;
+                        font-family: Theme.font-ui;
+                        font-size: 11px;
+                        overflow: elide;
+                        vertical-alignment: center;
+                    }
+                }
+            }
+
+            // Right floating chip: volume slider + percentage
+            Rectangle {
+                x: parent.width - self.width - 16px;
+                y: (parent.height - self.height) / 2;
+                width: right-chip-layout.preferred-width;
+                height: 24px;
+                border-radius: 6px;
+                background: Theme.lane-chip-bg;
+
+                right-chip-layout := HorizontalLayout {
+                    padding-left: 8px;
+                    padding-right: 8px;
+                    padding-top: 2px;
+                    padding-bottom: 2px;
+                    spacing: 8px;
+
+                    VerticalLayout {
+                        alignment: center;
+                        LagSlider {
+                            width: 72px;
+                            minimum: 0;
+                            maximum: 100;
+                            step: 1;
+                            value: root.track.volume;
+                            enabled: !root.track.is-muted;
+                            changed(v) => { root.volume-changed(round(v)); }
+                        }
+                    }
+
+                    Text {
+                        width: 30px;
+                        text: "\{root.track.volume}%";
+                        color: Theme.lane-chip-fg-2;
+                        font-family: Theme.font-ui;
+                        font-size: 10px;
+                        vertical-alignment: center;
+                    }
+                }
+            }
+        }
+    }
+}

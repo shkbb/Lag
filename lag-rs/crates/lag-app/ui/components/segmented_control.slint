@@ -1,0 +1,197 @@
+import { Theme } from "../theme/tokens.slint";
+
+export struct SegmentedOption {
+    text: string,
+    tier: int, // 0 = default, 1 = caution, >= 2 = extreme
+}
+
+// Ported from Controls/SegmentedListBox.cs + DarkTheme.axaml:259-307 (ListBox.segctl)
+export component SegmentedControl {
+    in property <[SegmentedOption]> options: [];
+    in-out property <int> selected-index: 0;
+    in property <bool> enabled: true;
+    callback selected(int);
+
+    opacity: enabled ? 1.0 : 0.45;
+    // Hug the items like C#'s SegmentedListBox (a StackPanel-sized control), never stretch across a row.
+    horizontal-stretch: 0;
+    preferred-width: layout.preferred-width + 2 * Theme.seg-track-pad;
+    max-width: self.preferred-width;
+    // Hug vertically too: in a taller row (label + 2-line description) the track used to stretch and leave an
+    // empty band under the items (owner, 2026-11-16).
+    height: layout.preferred-height + 2 * Theme.seg-track-pad;
+
+    property <length> pill-x: 0px;
+    property <length> pill-w: 0px;
+    property <length> pill-h: 0px;
+    property <bool> pill-ready: false;
+    // the pill follows `changed x/width` of the selected item, but a property's FIRST value fires no `changed`:
+    // an item selected from the start at x = 0 never placed the pill (seen on headless checks, both themes)
+    property <bool> pill-synced: false;
+
+    pure function seg-color(tier: int, is-sel: bool) -> color {
+        if (tier >= 2) { return Theme.intensity-extreme; }
+        if (tier == 1) { return Theme.intensity-caution; }
+        return is-sel ? Theme.fg-brush : Theme.fg-2-brush;
+    }
+
+    Rectangle {
+        border-radius: Theme.rad-control;
+        background: Theme.surface-input;
+
+        // Inner coordinate frame inside track padding (3px)
+        Rectangle {
+            x: Theme.seg-track-pad;
+            y: Theme.seg-track-pad;
+            width: layout.preferred-width;
+            height: layout.preferred-height;
+
+            // Single sliding selection pill under the items
+            if root.selected-index >= 0 && root.selected-index < root.options.length && root.pill-w > 0px: Rectangle {
+                x: root.pill-x;
+                y: 0px;
+                width: root.pill-w;
+                height: root.pill-h;
+                border-radius: Theme.rad-kbd;
+                background: Theme.seg-sel-brush;
+                animate x, width {
+                    duration: root.pill-ready ? Theme.dur-pill : 0ms;
+                    easing: cubic-bezier(0.215, 0.61, 0.355, 1);
+                }
+            }
+
+            layout := HorizontalLayout {
+                spacing: Theme.seg-item-gap;
+
+                for opt[idx] in root.options: seg := Rectangle {
+                    property <bool> is-sel: idx == root.selected-index;
+                    // one-shot placement once the first layout has given the selected item its size
+                    Timer {
+                        interval: 16ms;
+                        running: seg.is-sel && !root.pill-synced;
+                        triggered => {
+                            if (seg.width > 0px) {
+                                root.pill-x = seg.x;
+                                root.pill-w = seg.width;
+                                root.pill-h = seg.height;
+                                root.pill-synced = true;
+                            }
+                        }
+                    }
+                    border-radius: Theme.rad-kbd;
+                    background: (!self.is-sel && seg-ta.has-hover && root.enabled) ? Theme.seg-hover-brush : transparent;
+                    animate background { duration: Theme.dur-base; }
+
+
+                    changed is-sel => {
+                        if (self.is-sel && self.width > 0px) {
+                            root.pill-ready = true;
+                            root.pill-x = self.x;
+                            root.pill-w = self.width;
+                            root.pill-h = self.height;
+                        }
+                    }
+                    changed x => {
+                        if (self.is-sel && self.width > 0px) {
+                            root.pill-x = self.x;
+                            root.pill-w = self.width;
+                            root.pill-h = self.height;
+                        }
+                    }
+                    changed width => {
+                        if (self.is-sel && self.width > 0px) {
+                            root.pill-x = self.x;
+                            root.pill-w = self.width;
+                            root.pill-h = self.height;
+                        }
+                    }
+                    changed height => {
+                        if (self.is-sel && self.height > 0px) {
+                            root.pill-h = self.height;
+                        }
+                    }
+
+                    HorizontalLayout {
+                        padding-left: 10px;
+                        padding-right: 10px;
+                        padding-top: 4px;
+                        padding-bottom: 4px;
+
+                        Text {
+                            text: opt.text;
+                            color: root.seg-color(opt.tier, seg.is-sel);
+                            font-family: Theme.font-ui;
+                            font-size: Theme.font-size-sm;
+                            font-weight: seg.is-sel ? Theme.font-weight-medium : Theme.font-weight-normal;
+                            vertical-alignment: center;
+                            animate color { duration: Theme.dur-base; }
+                        }
+                    }
+
+                    seg-ta := TouchArea {
+                        enabled: root.enabled;
+                        mouse-cursor: root.enabled ? pointer : default;
+                        clicked => {
+                            root.pill-ready = true;
+                            root.selected-index = idx;
+                            root.selected(idx);
+                        }
+                    }
+                }
+            }
+        }
+
+        preferred-width: layout.preferred-width + Theme.seg-track-pad * 2;
+        preferred-height: layout.preferred-height + Theme.seg-track-pad * 2;
+    }
+}
+
+// Ported from Components.axaml:69-97 (Border.rsegtrack + Button.rseg + .sel)
+export component RSegControl {
+    in property <[string]> options: [];
+    in-out property <int> selected-index: 0;
+    callback selected(int);
+
+    Rectangle {
+        border-radius: Theme.rad-input;
+        background: Theme.surface-input;
+
+        HorizontalLayout {
+            padding: 3px;
+            spacing: 2px;
+
+            for opt[idx] in root.options: rseg-item := Rectangle {
+                property <bool> is-sel: idx == root.selected-index;
+                border-radius: Theme.rad-seg;
+                border-width: 1px;
+                border-color: rseg-item.is-sel ? Theme.accent-ring : transparent;
+                background: rseg-item.is-sel ? Theme.accent-dim : transparent;
+                animate background { duration: Theme.dur-fast; }
+
+                HorizontalLayout {
+                    padding-left: 12px;
+                    padding-right: 12px;
+                    padding-top: 6px;
+                    padding-bottom: 6px;
+
+                    Text {
+                        text: opt;
+                        color: rseg-item.is-sel ? Theme.accent-text : (item-ta.has-hover ? Theme.text-hi : Theme.text-mid);
+                        font-family: Theme.font-ui;
+                        font-size: Theme.font-size-sub;
+                        font-weight: Theme.font-weight-medium;
+                        vertical-alignment: center;
+                    }
+                }
+
+                item-ta := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => {
+                        root.selected-index = idx;
+                        root.selected(idx);
+                    }
+                }
+            }
+        }
+    }
+}

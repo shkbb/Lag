@@ -1,0 +1,82 @@
+import { Theme } from "../theme/tokens.slint";
+
+// Ported from App.axaml:232-248 + DarkTheme.axaml:553-599 (Slider & Slider.volume)
+export component LagSlider {
+    in-out property <float> value: 50;
+    in property <float> minimum: 0;
+    in property <float> maximum: 100;
+    in property <float> step: 1;
+    in property <bool> volume: false;
+    in property <bool> enabled: true;
+    callback changed(float);
+
+    height: Theme.slider-horizontal-height;
+    min-width: 60px;
+    opacity: enabled ? 1.0 : 0.45;
+
+    property <float> span: max(0.0001, maximum - minimum);
+    property <float> ratio: clamp((value - minimum) / span, 0.0, 1.0);
+    property <length> track-w: max(1px, root.width - Theme.slider-horizontal-thumb-width);
+    property <length> thumb-cx: (Theme.slider-horizontal-thumb-width / 2) + root.ratio * root.track-w;
+
+    function update-from-x(px: length) {
+        let norm = clamp((px - Theme.slider-horizontal-thumb-width / 2) / root.track-w, 0.0, 1.0);
+        let raw = root.minimum + norm * root.span;
+        let snapped = root.step > 0 ? round((raw - root.minimum) / root.step) * root.step + root.minimum : raw;
+        root.value = clamp(snapped, root.minimum, root.maximum);
+        root.changed(root.value);
+    }
+
+    // Track (4px tall, centered)
+    Rectangle {
+        x: Theme.slider-pre-content-margin;
+        y: (parent.height - self.height) / 2;
+        width: max(0px, parent.width - Theme.slider-pre-content-margin - Theme.slider-post-content-margin);
+        height: Theme.slider-track-theme-height;
+        border-radius: Theme.slider-track-theme-height / 2;
+        background: root.enabled ? Theme.track-14-brush : Theme.slider-track-fill-disabled;
+        clip: true;
+
+        // Filled portion
+        Rectangle {
+            x: 0px;
+            y: 0px;
+            height: parent.height;
+            width: clamp(root.thumb-cx - Theme.slider-pre-content-margin, 0px, parent.width);
+            border-radius: parent.border-radius;
+            background: root.enabled
+                ? (root.volume ? Theme.volume-fill-brush : Theme.accent-brush)
+                : (root.volume ? Theme.volume-fill-brush : Theme.slider-track-value-fill-disabled);
+        }
+    }
+
+    // White circular 12x12 thumb (scales 1.0 -> 1.25 on hover over 120ms CubicEaseOut)
+    Rectangle {
+        x: root.thumb-cx - self.width / 2;
+        y: (parent.height - self.height) / 2;
+        width: Theme.slider-horizontal-thumb-width * ((ta.has-hover || ta.pressed) && root.enabled ? 1.25 : 1.0);
+        height: Theme.slider-horizontal-thumb-height * ((ta.has-hover || ta.pressed) && root.enabled ? 1.25 : 1.0);
+        border-radius: self.height / 2;
+        background: Theme.slider-thumb-background;
+        // grows by size, not transform-scale (a transform made the GPU renderer re-draw the whole card shifted)
+        animate width, height {
+            duration: Theme.dur-fast;
+            easing: cubic-bezier(0.215, 0.61, 0.355, 1);
+        }
+    }
+
+    ta := TouchArea {
+        enabled: root.enabled;
+        mouse-cursor: root.enabled ? pointer : default;
+        pointer-event(ev) => {
+            if (ev.kind == PointerEventKind.down && ev.button == PointerEventButton.left) {
+                root.update-from-x(self.mouse-x);
+            }
+        }
+        moved => {
+            if (self.pressed) {
+                root.update-from-x(self.mouse-x);
+            }
+        }
+    }
+}

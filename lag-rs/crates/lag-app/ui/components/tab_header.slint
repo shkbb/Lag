@@ -1,0 +1,45 @@
+import { Theme } from "../theme/tokens.slint";
+
+// Ported from DarkTheme.axaml:218-252 (Button.tab, TextBlock.tabtxt, Border.tabline)
+export component LagTabHeader {
+    in property <string> text;
+    in property <bool> selected: false;
+    callback clicked();
+
+    VerticalLayout {
+        spacing: 7px;
+
+        label := Text {
+            text: root.text;
+            font-family: Theme.font-ui;
+            font-size: Theme.font-size-body;
+            font-weight: root.selected ? Theme.font-weight-medium : Theme.font-weight-normal;
+            color: root.selected ? Theme.fg-brush : Theme.fg-2-brush;
+            animate color { duration: Theme.dur-base; }
+        }
+
+        // Centered 2px underline scaling X from 0 -> 1 over 200ms CubicEaseOut
+        Rectangle {
+            height: 2px;
+            background: transparent;
+
+            Rectangle {
+                x: (parent.width - self.width) / 2;
+                y: 0px;
+                width: root.selected ? parent.width : 0px;
+                height: 2px;
+                border-radius: 1px;
+                background: Theme.accent-brush;
+                animate width, x {
+                    duration: Theme.dur-tabline;
+                    easing: cubic-bezier(0.215, 0.61, 0.355, 1);
+                }
+            }
+        }
+    }
+
+    ta := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+    }
+}

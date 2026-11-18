@@ -1,0 +1,126 @@
+// Material Design Icons (from Material.Icons.Avalonia 2.1.10) + Lag brand mark (Tokens.axaml).
+import { Theme } from "tokens.slint";
+
+export global Icons {
+    out property <image> arrow-collapse-left: @image-url("../icons/arrow-collapse-left.svg");
+    out property <image> link-variant: @image-url("../icons/link-variant.svg");
+    out property <image> arrow-collapse-right: @image-url("../icons/arrow-collapse-right.svg");
+    out property <image> check-circle: @image-url("../icons/check-circle.svg");
+    out property <image> checkbox-blank-circle-outline: @image-url("../icons/checkbox-blank-circle-outline.svg");
+    out property <image> chevron-down: @image-url("../icons/chevron-down.svg");
+    out property <image> close: @image-url("../icons/close.svg");
+    out property <image> close-circle-outline: @image-url("../icons/close-circle-outline.svg");
+    out property <image> content-cut: @image-url("../icons/content-cut.svg");
+    out property <image> content-save: @image-url("../icons/content-save.svg");
+    out property <image> controller: @image-url("../icons/controller.svg");
+    out property <image> crop: @image-url("../icons/crop.svg");
+    out property <image> delete-outline: @image-url("../icons/delete-outline.svg");
+    out property <image> flip-horizontal: @image-url("../icons/flip-horizontal.svg");
+    out property <image> flip-vertical: @image-url("../icons/flip-vertical.svg");
+    out property <image> folder-outline: @image-url("../icons/folder-outline.svg");
+    out property <image> folder-search-outline: @image-url("../icons/folder-search-outline.svg");
+    out property <image> fullscreen: @image-url("../icons/fullscreen.svg");
+    out property <image> gamepad: @image-url("../icons/gamepad.svg");
+    out property <image> keyboard-outline: @image-url("../icons/keyboard-outline.svg");
+    out property <image> magnify: @image-url("../icons/magnify.svg");
+    out property <image> microphone: @image-url("../icons/microphone.svg");
+    out property <image> monitor: @image-url("../icons/monitor.svg");
+    out property <image> mouse-outline: @image-url("../icons/mouse-outline.svg");
+    out property <image> movie-check-outline: @image-url("../icons/movie-check-outline.svg");
+    out property <image> movie-edit-outline: @image-url("../icons/movie-edit-outline.svg");
+    out property <image> pause: @image-url("../icons/pause.svg");
+    out property <image> pencil-outline: @image-url("../icons/pencil-outline.svg");
+    out property <image> play: @image-url("../icons/play.svg");
+    out property <image> plus: @image-url("../icons/plus.svg");
+    out property <image> record-circle: @image-url("../icons/record-circle.svg");
+    out property <image> restore: @image-url("../icons/restore.svg");
+    out property <image> rotate-left: @image-url("../icons/rotate-left.svg");
+    out property <image> rotate-right: @image-url("../icons/rotate-right.svg");
+    out property <image> skip-next: @image-url("../icons/skip-next.svg");
+    out property <image> speedometer: @image-url("../icons/speedometer.svg");
+    out property <image> square-rounded-outline: @image-url("../icons/square-rounded-outline.svg");
+    out property <image> star: @image-url("../icons/star.svg");
+    out property <image> star-outline: @image-url("../icons/star-outline.svg");
+    out property <image> stop: @image-url("../icons/stop.svg");
+    out property <image> stop-circle: @image-url("../icons/stop-circle.svg");
+    out property <image> trash-can-outline: @image-url("../icons/trash-can-outline.svg");
+    out property <image> tray-arrow-down: @image-url("../icons/tray-arrow-down.svg");
+    out property <image> tune: @image-url("../icons/tune.svg");
+    out property <image> view-grid-outline: @image-url("../icons/view-grid-outline.svg");
+    out property <image> volume-high: @image-url("../icons/volume-high.svg");
+    out property <image> volume-off: @image-url("../icons/volume-off.svg");
+    out property <image> webcam: @image-url("../icons/webcam.svg");
+    out property <image> window-close: @image-url("../icons/window-close.svg");
+    out property <image> window-minimize: @image-url("../icons/window-minimize.svg");
+}
+
+export component MaterialIcon {
+    in property <image> source;
+    in property <brush> tint: Theme.fg-brush;
+    in property <length> size: 20px;
+
+    width: size;
+    height: size;
+
+    Image {
+        width: 100%;
+        height: 100%;
+        source: root.source;
+        colorize: root.tint;
+        image-fit: contain;
+    }
+}
+
+// Rewind-clock brand mark from Tokens.axaml:28-30 (22x22 viewbox, stroked).
+export component LagLogoMark {
+    in property <brush> stroke: Theme.on-accent;
+    in property <length> size: 22px;
+
+    width: size;
+    height: size;
+
+    Path {
+        width: 100%;
+        height: 100%;
+        viewbox-x: 0;
+        viewbox-y: 0;
+        viewbox-width: 22;
+        viewbox-height: 22;
+        commands: "M2.75 11C2.75 12.6317 3.23385 14.2267 4.14038 15.5835C5.0469 16.9402 6.33537 17.9976 7.84286 18.622C9.35035 19.2464 11.0092 19.4098 12.6095 19.0915C14.2098 18.7732 15.6798 17.9874 16.8336 16.8336C17.9874 15.6798 18.7732 14.2098 19.0915 12.6095C19.4098 11.0092 19.2464 9.35035 18.622 7.84286C17.9976 6.33537 16.9402 5.0469 15.5835 4.14038C14.2267 3.23385 12.6317 2.75 11 2.75C8.69362 2.75868 6.47989 3.65862 4.82167 5.26167L2.75 7.33333";
+        stroke: root.stroke;
+        stroke-width: 2px;
+        stroke-line-cap: round;
+        stroke-line-join: round;
+        fill: transparent;
+    }
+
+    Path {
+        width: 100%;
+        height: 100%;
+        viewbox-x: 0;
+        viewbox-y: 0;
+        viewbox-width: 22;
+        viewbox-height: 22;
+        commands: "M2.75 2.75V7.33333H7.33333";
+        stroke: root.stroke;
+        stroke-width: 2px;
+        stroke-line-cap: round;
+        stroke-line-join: round;
+        fill: transparent;
+    }
+
+    Path {
+        width: 100%;
+        height: 100%;
+        viewbox-x: 0;
+        viewbox-y: 0;
+        viewbox-width: 22;
+        viewbox-height: 22;
+        commands: "M11 6.41667V11L14.6667 12.8333";
+        stroke: root.stroke;
+        stroke-width: 2px;
+        stroke-line-cap: round;
+        stroke-line-join: round;
+        fill: transparent;
+    }
+}

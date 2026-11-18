@@ -1,0 +1,292 @@
+<title>Тексти Lag</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one working column of review rows under a sticky toolbar; Lag's own palette (app tokens). */
+:root {
+  --bg: #EAE3D1; --card: #F8F4EA; --line: #2A241526; --fg: #2A2820; --mid: #6E6A5A; --muted: #807B69;
+  --accent: #A9722E; --accent-dim: #A9722E26; --ok: #2F7D4F; --ok-dim: #2F7D4F1F; --warn: #9A5B12; --warn-dim: #C9821F26;
+  --old: #8E3B2E; --input: #FFFDF7;
+  --f-ui: "Inter", "Segoe UI", system-ui, sans-serif; --f-mono: "JetBrains Mono", "Cascadia Code", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0C0D11; --card: #14161C; --line: #FFFFFF14; --fg: #ECEDEF; --mid: #9AA0AA; --muted: #8B919C;
+  --accent: #22D3EE; --accent-dim: #22D3EE1F; --ok: #4ADE80; --ok-dim: #4ADE801A; --warn: #FBBF24; --warn-dim: #FBBF241A;
+  --old: #F0907E; --input: #0F1116; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0C0D11; --card: #14161C; --line: #FFFFFF14; --fg: #ECEDEF; --mid: #9AA0AA; --muted: #8B919C;
+  --accent: #22D3EE; --accent-dim: #22D3EE1F; --ok: #4ADE80; --ok-dim: #4ADE801A; --warn: #FBBF24; --warn-dim: #FBBF241A;
+  --old: #F0907E; --input: #0F1116; color-scheme: dark }
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--fg); font: 14px/1.5 var(--f-ui); }
+.wrap { max-width: 1100px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 60px; }
+h1 { font-size: 26px; font-weight: 700; margin: 0; letter-spacing: -0.01em; text-wrap: balance }
+.lead { color: var(--mid); margin: 6px 0 0; max-width: 70ch }
+.top { display: flex; flex-wrap: wrap; gap: 16px; align-items: end; justify-content: space-between }
+.progress { display: flex; gap: 14px; flex-wrap: wrap; font-variant-numeric: tabular-nums }
+.stat { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; min-width: 110px }
+.stat b { display: block; font-size: 20px }
+.stat span { color: var(--muted); font-size: 12px }
+.bar { height: 6px; background: var(--line); border-radius: 3px; margin-top: 14px; overflow: hidden }
+.bar i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .3s }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg) }
+.tools { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); padding: 12px 0; margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; border-bottom: 1px solid var(--line) }
+.tabs, .filters { display: flex; gap: 6px; flex-wrap: wrap }
+button, select, input, textarea { font: inherit; color: inherit }
+.chip { border: 1px solid var(--line); background: var(--card); border-radius: 999px; padding: 5px 12px; cursor: pointer }
+.chip[aria-pressed="true"] { background: var(--accent-dim); border-color: var(--accent); color: var(--fg); font-weight: 600 }
+.chip:focus-visible, .btn:focus-visible, textarea:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px }
+#q { flex: 1 1 200px; min-width: 0; background: var(--input); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px }
+#section { background: var(--input); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px }
+.banner { margin-top: 12px; padding: 10px 12px; border-radius: 8px; background: var(--warn-dim); color: var(--fg); border: 1px solid var(--warn) }
+.rows { display: grid; gap: 10px; margin-top: 14px }
+.row { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: grid; gap: 10px; border-left: 3px solid transparent }
+.row[data-status="accepted"] { border-left-color: var(--ok) }
+.row[data-status="kept"] { border-left-color: var(--muted) }
+.row[data-status="edited"] { border-left-color: var(--accent) }
+.head { display: flex; gap: 10px; align-items: center; flex-wrap: wrap }
+.key { font-family: var(--f-mono); font-size: 12.5px; color: var(--mid) }
+.tag { font-size: 11px; letter-spacing: .04em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; background: var(--line); color: var(--mid) }
+.tag.changed { background: var(--warn-dim); color: var(--warn) }
+.tag.new { background: var(--accent-dim); color: var(--accent) }
+.status { margin-left: auto; font-size: 12px; color: var(--mid) }
+.status.accepted { color: var(--ok) } .status.edited { color: var(--accent) }
+.langs { display: grid; grid-template-columns: 1fr 1fr; gap: 12px }
+@media (max-width: 720px) { .langs { grid-template-columns: 1fr } }
+.lang { min-width: 0; display: grid; gap: 4px }
+.lang label { font-size: 11px; color: var(--muted); letter-spacing: .05em; text-transform: uppercase }
+.old { color: var(--old); font-size: 13px; overflow-wrap: anywhere }
+.old.same { color: var(--muted) }
+.old::before { content: "зараз: "; color: var(--muted) }
+textarea { width: 100%; resize: vertical; min-height: 38px; background: var(--input); border: 1px solid var(--line); border-radius: 8px; padding: 7px 9px; overflow-wrap: anywhere }
+.note { font-size: 12.5px; color: var(--mid) }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center }
+.btn { border: 1px solid var(--line); background: transparent; border-radius: 8px; padding: 5px 12px; cursor: pointer }
+.btn.ok { border-color: var(--ok); color: var(--ok) } .btn.ok:hover { background: var(--ok-dim) }
+.btn.keep:hover { background: var(--line) }
+.comment { flex: 1 1 220px; min-width: 0; background: var(--input); border: 1px solid var(--line); border-radius: 8px; padding: 5px 9px }
+.empty { color: var(--mid); padding: 30px 0; text-align: center }
+.gloss { margin-top: 16px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 4px 20px 20px; overflow-wrap: anywhere }
+.gloss table { border-collapse: collapse; width: 100%; font-size: 13px }
+.gloss .tw { overflow-x: auto }
+.gloss th, .gloss td { border-bottom: 1px solid var(--line); padding: 6px 8px; text-align: left; vertical-align: top }
+.gloss code { font-family: var(--f-mono); font-size: 12px }
+.gloss h1 { font-size: 20px; margin-top: 18px } .gloss h2 { font-size: 17px } .gloss h3 { font-size: 15px }
+.saved { font-size: 12px; color: var(--ok) }
+@media (prefers-reduced-motion: reduce) { .bar i { transition: none } }
+</style>
+
+<div class="wrap">
+  <div class="top">
+    <div>
+      <h1>Тексти Lag</h1>
+      <p class="lead">Кожен рядок інтерфейсу: як зараз і як пропонується. Прийміть пропозицію, залиште старий текст або впишіть свій. Рішення зберігаються, Claude потім розкотить їх на всі 17 мов.</p>
+    </div>
+    <div class="progress">
+      <div class="stat"><b id="sDone">0</b><span>переглянуто з <span id="sTotal">0</span></span></div>
+      <div class="stat"><b id="sChanged">0</b><span>змінено в пропозиції</span></div>
+      <div class="stat"><b id="sMine">0</b><span>ваших правок</span></div>
+    </div>
+  </div>
+  <div class="bar" aria-hidden="true"><i id="bar"></i></div>
+  <div id="banner" class="banner" hidden></div>
+
+  <div class="tools" role="toolbar" aria-label="Фільтри">
+    <div class="tabs">
+      <button class="chip" id="tabRows" aria-pressed="true">Рядки</button>
+      <button class="chip" id="tabGloss" aria-pressed="false">Глосарій і стиль</button>
+    </div>
+    <div class="filters" id="filters">
+      <button class="chip" data-f="todo" aria-pressed="true">Непереглянуті</button>
+      <button class="chip" data-f="changed" aria-pressed="false">Змінені</button>
+      <button class="chip" data-f="all" aria-pressed="false">Усі</button>
+      <button class="chip" data-f="done" aria-pressed="false">Переглянуті</button>
+    </div>
+    <select id="section" aria-label="Розділ"></select>
+    <input id="q" type="search" placeholder="Пошук за ключем або текстом" aria-label="Пошук">
+  </div>
+
+  <div id="rows" class="rows"></div>
+  <div id="gloss" class="gloss" hidden></div>
+</div>
+
+<script type="application/json" id="proposals">__PROPOSALS__</script>
+<script type="text/markdown" id="glossary">__GLOSSARY__</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+<script>
+(() => {
+  const P = JSON.parse(document.getElementById("proposals").textContent);
+  const byKey = new Map(P.map(p => [p.key, p]));
+  const decisions = new Map(); // key -> {status, en, uk, comment}
+  let db = null, filter = "todo", section = "", query = "";
+  const $ = id => document.getElementById(id);
+  const sectionOf = k => k.includes("_") ? k.split("_")[0] : "Інше";
+  const sections = [...new Set(P.map(p => sectionOf(p.key)))].sort();
+  $("section").innerHTML = '<option value="">Усі розділи</option>' + sections.map(s => `<option value="${s}">${s}</option>`).join("");
+  $("sTotal").textContent = P.length;
+  $("sChanged").textContent = P.filter(p => p.changed).length;
+
+  // Local draft fallback (per browser only) when the shared store is unavailable.
+  const LS = "lag-terms-draft";
+  const loadLocal = () => { try { return JSON.parse(localStorage.getItem(LS) || "{}"); } catch { return {}; } };
+  const saveLocal = () => { try { localStorage.setItem(LS, JSON.stringify(Object.fromEntries(decisions))); } catch {} };
+
+  function stats() {
+    const done = [...decisions.values()].filter(d => d.status).length;
+    const mine = [...decisions.values()].filter(d => d.status === "edited").length;
+    $("sDone").textContent = done; $("sMine").textContent = mine;
+    $("bar").style.width = (100 * done / P.length).toFixed(1) + "%";
+  }
+
+  function visible(p) {
+    const d = decisions.get(p.key);
+    if (section && sectionOf(p.key) !== section) return false;
+    if (filter === "todo" && d?.status) return false;
+    if (filter === "done" && !d?.status) return false;
+    if (filter === "changed" && !p.changed) return false;
+    if (query) {
+      const hay = [p.key, p.en_old, p.uk_old, p.en_new, p.uk_new, d?.en, d?.uk].join(" ").toLowerCase();
+      if (!hay.includes(query)) return false;
+    }
+    return true;
+  }
+
+  const esc = s => (s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const statusText = { accepted: "прийнято", kept: "залишено як було", edited: "ваш варіант" };
+
+  function rowHtml(p) {
+    const d = decisions.get(p.key) || {};
+    const en = d.status === "kept" ? p.en_old : (d.en ?? p.en_new);
+    const uk = d.status === "kept" ? p.uk_old : (d.uk ?? p.uk_new);
+    const isNew = !p.en_old && !p.uk_old;
+    const tag = isNew ? '<span class="tag new">новий</span>' : p.changed ? '<span class="tag changed">змінено</span>' : '<span class="tag">без змін</span>';
+    const oldEn = isNew ? "" : `<div class="old${p.en_old === p.en_new ? " same" : ""}">${esc(p.en_old)}</div>`;
+    const oldUk = isNew ? "" : `<div class="old${p.uk_old === p.uk_new ? " same" : ""}">${esc(p.uk_old)}</div>`;
+    return `<article class="row" data-key="${esc(p.key)}" data-status="${d.status || ""}">
+      <div class="head"><span class="key">${esc(p.key)}</span>${tag}
+        <span class="status ${d.status || ""}">${d.status ? statusText[d.status] : "не переглянуто"}</span></div>
+      <div class="langs">
+        <div class="lang"><label for="uk-${esc(p.key)}">Українська</label>${oldUk}
+          <textarea id="uk-${esc(p.key)}" data-l="uk" rows="1">${esc(uk)}</textarea></div>
+        <div class="lang"><label for="en-${esc(p.key)}">English</label>${oldEn}
+          <textarea id="en-${esc(p.key)}" data-l="en" rows="1">${esc(en)}</textarea></div>
+      </div>
+      ${p.note ? `<div class="note">${esc(p.note)}</div>` : ""}
+      <div class="actions">
+        <button class="btn ok" data-a="accept">Прийняти</button>
+        ${isNew ? "" : '<button class="btn keep" data-a="keep">Залишити як було</button>'}
+        <input class="comment" id="c-${esc(p.key)}" placeholder="Коментар (необов'язково)" value="${esc(d.comment || "")}" aria-label="Коментар">
+        <span class="saved" hidden>збережено</span>
+      </div>
+    </article>`;
+  }
+
+  function render() {
+    const list = P.filter(visible);
+    $("rows").innerHTML = list.length ? list.map(rowHtml).join("") : '<p class="empty">Тут порожньо. Змініть фільтр або пошук.</p>';
+    $("rows").querySelectorAll("textarea").forEach(autosize);
+    stats();
+  }
+  function autosize(t) { t.style.height = "auto"; t.style.height = t.scrollHeight + 2 + "px"; }
+
+  async function persist(key, patch, rowEl) {
+    const prev = decisions.get(key) || {};
+    const next = { ...prev, ...patch, at: new Date().toISOString() };
+    decisions.set(key, next);
+    saveLocal();
+    if (rowEl) {
+      rowEl.dataset.status = next.status || "";
+      const st = rowEl.querySelector(".status");
+      st.className = "status " + (next.status || ""); st.textContent = next.status ? statusText[next.status] : "не переглянуто";
+    }
+    stats();
+    if (!db) return;
+    try {
+      await db.doc("edits/" + key).set(next);
+      const s = rowEl?.querySelector(".saved");
+      if (s) { s.hidden = false; setTimeout(() => (s.hidden = true), 1200); }
+    } catch (e) {
+      showBanner("Не вдалося зберегти зміну (" + (e?.code || e?.message || "помилка") + "). Вона лишилась у цьому браузері.");
+    }
+  }
+
+  function showBanner(text) { const b = $("banner"); b.textContent = text; b.hidden = false; }
+
+  const timers = new Map();
+  $("rows").addEventListener("input", e => {
+    const row = e.target.closest(".row"); if (!row) return;
+    if (e.target.tagName === "TEXTAREA") autosize(e.target);
+    const key = row.dataset.key;
+    clearTimeout(timers.get(key));
+    timers.set(key, setTimeout(() => {
+      if (e.target.tagName === "TEXTAREA") {
+        const en = row.querySelector('textarea[data-l="en"]').value, uk = row.querySelector('textarea[data-l="uk"]').value;
+        const p = byKey.get(key);
+        const status = en === p.en_new && uk === p.uk_new ? "accepted" : (en === p.en_old && uk === p.uk_old ? "kept" : "edited");
+        persist(key, { status, en, uk }, row);
+      } else if (e.target.classList.contains("comment")) {
+        persist(key, { comment: e.target.value }, row);
+      }
+    }, 700));
+  });
+  $("rows").addEventListener("click", e => {
+    const btn = e.target.closest("button[data-a]"); if (!btn) return;
+    const row = btn.closest(".row"), key = row.dataset.key, p = byKey.get(key);
+    if (btn.dataset.a === "keep") {
+      row.querySelector('textarea[data-l="en"]').value = p.en_old;
+      row.querySelector('textarea[data-l="uk"]').value = p.uk_old;
+      persist(key, { status: "kept", en: p.en_old, uk: p.uk_old }, row);
+    } else {
+      const en = row.querySelector('textarea[data-l="en"]').value, uk = row.querySelector('textarea[data-l="uk"]').value;
+      persist(key, { status: en === p.en_new && uk === p.uk_new ? "accepted" : "edited", en, uk }, row);
+    }
+    row.querySelectorAll("textarea").forEach(autosize);
+  });
+
+  $("filters").addEventListener("click", e => {
+    const b = e.target.closest("button[data-f]"); if (!b) return;
+    filter = b.dataset.f;
+    $("filters").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+    render();
+  });
+  $("section").addEventListener("change", e => { section = e.target.value; render(); });
+  $("q").addEventListener("input", e => { query = e.target.value.trim().toLowerCase(); render(); });
+  const showTab = rows => {
+    $("tabRows").setAttribute("aria-pressed", String(rows)); $("tabGloss").setAttribute("aria-pressed", String(!rows));
+    $("rows").hidden = !rows; $("filters").hidden = !rows; $("section").hidden = !rows; $("q").hidden = !rows; $("gloss").hidden = rows;
+    if (!rows && !$("gloss").dataset.ready) {
+      const md = document.getElementById("glossary").textContent;
+      $("gloss").innerHTML = window.marked ? window.marked.parse(md) : "<pre>" + esc(md) + "</pre>";
+      $("gloss").querySelectorAll("table").forEach(t => { const w = document.createElement("div"); w.className = "tw"; t.replaceWith(w); w.appendChild(t); });
+      $("gloss").dataset.ready = "1";
+    }
+  };
+  $("tabRows").addEventListener("click", () => showTab(true));
+  $("tabGloss").addEventListener("click", () => showTab(false));
+
+  // First paint from the local draft, then the shared store takes over.
+  for (const [k, v] of Object.entries(loadLocal())) if (byKey.has(k)) decisions.set(k, v);
+  render();
+
+  (async () => {
+    const timer = setTimeout(() => showBanner("Сховище не відповідає. Рішення зберігаються лише в цьому браузері."), 10000);
+    try {
+      db = await window.claude?.use?.("db");
+    } catch { db = null; }
+    clearTimeout(timer);
+    if (!db) { showBanner("Спільне сховище недоступне в цьому перегляді. Рішення зберігаються лише в цьому браузері."); return; }
+    $("banner").hidden = true;
+    db.collection("edits").onSnapshot(snap => {
+      const docs = snap.docs || snap;
+      for (const d of docs) {
+        const data = typeof d.data === "function" ? d.data() : d.data;
+        const key = d.id || (d.path || "").split("/").pop();
+        if (key && byKey.has(key) && data) decisions.set(key, data);
+      }
+      saveLocal();
+      if (!document.activeElement || !document.activeElement.closest?.(".row")) render(); else stats();
+    }, err => showBanner("Помилка читання сховища: " + (err?.code || err?.message || err)));
+  })();
+})();
+</script>

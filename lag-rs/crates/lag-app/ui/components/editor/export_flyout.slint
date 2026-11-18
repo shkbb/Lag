@@ -1,0 +1,89 @@
+// Ported from Views/EditorView.axaml:135-165 (Export options flyout)
+import { Theme } from "../../theme/tokens.slint";
+import { Tr } from "../../globals.slint";
+import { CtaButton } from "../buttons.slint";
+import { LagCheckBox } from "../checkbox.slint";
+import { LagComboBox, ComboBoxItemData } from "../combobox.slint";
+import { LagFlyoutPresenter } from "../menu.slint";
+
+export component EditorExportFlyout {
+    in property <[ComboBoxItemData]> resolution-options;
+    in-out property <int> selected-resolution-index: 0;
+    in property <[ComboBoxItemData]> format-options;
+    in-out property <int> selected-format-index: 0;
+    in-out property <bool> export-as-gif: false;
+
+    callback resolution-selected(int);
+    callback format-selected(int);
+    callback gif-toggled(bool);
+    callback confirm-export();
+
+    width: 254px;
+    height: flyout-col.preferred-height + 24px;
+
+    LagFlyoutPresenter {
+        width: 100%;
+        height: 100%;
+        drop-shadow-offset-x: Theme.shadow-flyout-x;
+        drop-shadow-offset-y: Theme.shadow-flyout-y;
+        drop-shadow-blur: Theme.shadow-flyout-blur;
+        drop-shadow-color: Theme.shadow-flyout-color;
+
+        // Absorb clicks inside flyout so backdrop doesn't close it
+        TouchArea { }
+
+        flyout-col := VerticalLayout {
+            padding: 12px;
+            spacing: 14px;
+
+            Text {
+                text: Tr.t("Editor_ExportOptions", Tr.rev);
+                color: Theme.fg-brush;
+                font-family: Theme.font-ui;
+                font-size: 13px;
+                font-weight: Theme.font-weight-medium;
+            }
+
+            VerticalLayout {
+                spacing: 6px;
+                Text {
+                    text: Tr.t("Editor_ExportResolution", Tr.rev);
+                    color: Theme.fg-2-brush;
+                    font-family: Theme.font-ui;
+                    font-size: 12px;
+                }
+                LagComboBox {
+                    items: root.resolution-options;
+                    selected-index <=> root.selected-resolution-index;
+                    selected(idx) => { root.resolution-selected(idx); }
+                }
+            }
+
+            if !root.export-as-gif: VerticalLayout {
+                spacing: 6px;
+                Text {
+                    text: Tr.t("Editor_Format", Tr.rev);
+                    color: Theme.fg-2-brush;
+                    font-family: Theme.font-ui;
+                    font-size: 12px;
+                }
+                LagComboBox {
+                    items: root.format-options;
+                    selected-index <=> root.selected-format-index;
+                    selected(idx) => { root.format-selected(idx); }
+                }
+            }
+
+            LagCheckBox {
+                checked <=> root.export-as-gif;
+                label: Tr.t("Editor_ExportGif", Tr.rev);
+                toggled(v) => { root.gif-toggled(v); }
+            }
+
+            CtaButton {
+                text: Tr.t("Editor_Export", Tr.rev);
+                clicked => { root.confirm-export(); }
+            }
+        }
+    }
+}

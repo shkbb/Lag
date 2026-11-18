@@ -1,0 +1,17 @@
+# Settings audit D: PTT turned off DURING a recording must bring the mic back; MKV video track default.
+size 1360x840
+page settings
+wait 3000
+choose format 2
+toggle mic-volume 1
+toggle tracks 1
+toggle ptt 1
+wait 1500
+rec
+wait 5000
+toggle ptt 0
+wait 5000
+save
+wait 6000
+rec
+wait 3000

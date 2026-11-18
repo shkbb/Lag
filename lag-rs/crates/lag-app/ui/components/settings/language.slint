@@ -1,0 +1,65 @@
+﻿// Mirrors SettingsView.axaml language item template: 17 x 12 flags beside native language names.
+// The list is drawn by the window-level DropdownLayer (components/combobox.slint), like every dropdown.
+import { ChevronIcon } from "../chevron.slint";
+import { Theme } from "../../theme/tokens.slint";
+import { ComboBoxItemData, DropdownHost } from "../combobox.slint";
+import { Icons, MaterialIcon } from "../../theme/icons.slint";
+export component LanguagePicker {
+    in property <[ComboBoxItemData]> items;
+    in property <[image]> flags;
+    in property <int> selected-index;
+    callback selected(int);
+    min-width: 180px; height: 30px;
+
+    property <bool> dropdown-open: false;
+    property <bool> waiting: false;
+
+    Rectangle {
+        background: touch.has-hover ? Theme.surface-hover-brush : Theme.surface-brush; border-radius: 8px;
+        animate background { duration: Theme.dur-base; }
+        HorizontalLayout {
+            padding-left: 12px; padding-right: 8px; spacing: 8px;
+            // fixed-size items sit at the top of a HorizontalLayout: centre them explicitly
+            VerticalLayout { alignment: center; Image { source: root.flags[root.selected-index]; width: 17px; height: 12px; image-fit: contain; } }
+            Text { text: root.items[root.selected-index].text; color: Theme.fg-brush; font-size: 13px; vertical-alignment: center; horizontal-stretch: 1; }
+            VerticalLayout {
+                alignment: center;
+                ChevronIcon { size: 14px; tint: Theme.fg-2-brush; up: root.dropdown-open; }
+            }
+        }
+    }
+    touch := TouchArea {
+        mouse-cursor: pointer;
+        clicked => {
+            if !root.waiting && !DropdownHost.visible {
+                DropdownHost.items = root.items;
+                DropdownHost.flags = root.flags;
+                DropdownHost.show-flags = true;
+                DropdownHost.selected = root.selected-index;
+                DropdownHost.max-list-h = 360px;
+                DropdownHost.ax = root.absolute-position.x;
+                DropdownHost.ay = root.absolute-position.y;
+                DropdownHost.aw = root.width;
+                DropdownHost.ah = root.height;
+                root.waiting = true;
+                root.dropdown-open = true;
+                DropdownHost.visible = true;
+            }
+        }
+    }
+    property <int> picked: DropdownHost.picked-serial;
+    changed picked => {
+        if root.waiting {
+            root.waiting = false;
+            root.dropdown-open = false;
+            root.selected(DropdownHost.picked-index);
+        }
+    }
+    property <int> closed: DropdownHost.closing-serial;
+    changed closed => {
+        if root.waiting {
+            root.waiting = false;
+            root.dropdown-open = false;
+        }
+    }
+}

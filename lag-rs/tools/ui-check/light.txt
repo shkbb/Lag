@@ -1,0 +1,25 @@
+# Light theme: library cards (hover chips), player page, settings.
+size 1360x880
+choose theme 0
+page library
+wait 800
+shot light-library
+move 240 340
+wait 400
+shot light-hover-card
+move 520 340
+wait 400
+shot light-hover-card2
+page player
+wait 600
+shot light-player
+page settings
+wait 400
+shot light-settings
+choose theme 1
+wait 300
+page library
+wait 600
+move 240 340
+wait 400
+shot dark-hover-card

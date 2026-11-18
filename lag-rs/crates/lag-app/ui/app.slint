@@ -1,0 +1,178 @@
+// Mirrors Views/MainWindow.axaml(.cs): custom chrome and one page component per Page.
+import { DropdownLayer } from "components/combobox.slint";
+import { Theme } from "theme/tokens.slint";
+import { Icons, MaterialIcon, LagLogoMark } from "theme/icons.slint";
+import { TbarAccentButton, TbarButton, WindowCtlButton, RailItemButton } from "components/buttons.slint";
+import { StatusPill, CaptureFlyoutCard } from "components/cards.slint";
+import { BufferProgressBar } from "components/meters_and_bars.slint";
+import { Tr, MainVM, Page, WindowMetrics } from "globals.slint";
+import { SettingsPage, SettingsVM } from "views/settings.slint";
+import { LibraryPage, LibraryVM } from "views/library.slint";
+import { PlayerPage, PlayerVM } from "views/player.slint";
+import { EditorPage, EditorVM } from "views/editor.slint";
+
+import { ToastWindow } from "toast.slint";
+import { PlayerOverlayWindow, PlayerOverlayVM } from "player_overlay.slint";
+import { EditorOverlayWindow, EditorOverlayVM } from "editor_overlay.slint";
+import { SplashWindow } from "splash.slint";
+import { TrayMenuWindow } from "tray_menu.slint";
+export { Tr, MainVM, Page, SettingsVM, LibraryVM, PlayerVM, EditorVM, ToastWindow, PlayerOverlayWindow, PlayerOverlayVM, EditorOverlayWindow, EditorOverlayVM, SplashWindow, TrayMenuWindow }
+
+component PageLayer inherits Rectangle {
+    in property <bool> active;
+    opacity: active ? 1 : 0;
+    y: active ? 0px : 16px;
+    visible: self.opacity > 0;
+    background: Theme.surface-app;
+    animate opacity, y { duration: 220ms; easing: ease-in-out; }
+    @children
+}
+
+export component AppWindow inherits Window {
+    title: "Lag";
+    // read by the tray: tray + window icons follow the theme (incl. "system"); the window icon is set natively
+    // (shell/tray.rs apply_window_icon) from the .ico's own small/big drawings
+    out property <bool> is-dark-theme: Theme.is-dark;
+    preferred-width: 1360px;
+    preferred-height: 840px;
+    min-width: 1080px;
+    min-height: 640px;
+    no-frame: true;
+    background: Theme.surface-app;
+    default-font-family: Theme.font-ui;
+    in property <string> theme-mode: "dark";
+    init => { WindowMetrics.width = self.width; WindowMetrics.height = self.height; }
+    changed width => { WindowMetrics.width = self.width; }
+    changed height => { WindowMetrics.height = self.height; }
+    changed theme-mode => { Theme.mode = root.theme-mode; }
+    private property <length> bar-height: MainVM.is-fullscreen ? 0px : 58px;
+    private property <length> rail-width: MainVM.is-fullscreen ? 0px : 78px;
+
+    FocusScope {
+        width: 100%; height: 100%;
+        key-pressed(event) => {
+            if event.text == Key.Escape && MainVM.is-fullscreen {
+                MainVM.toggle-fullscreen(); return accept;
+            }
+            return reject;
+        }
+        Rectangle {
+            x: 0px; y: 0px; width: parent.width;
+            height: root.bar-height;
+            visible: !MainVM.is-fullscreen;
+            background: Theme.surface-app;
+            Rectangle { y: parent.height - 1px; height: 1px; background: Theme.border-card; }
+            HorizontalLayout {
+                padding-left: 18px; spacing: 0px;
+                Rectangle {
+                    width: 70px; horizontal-stretch: 0;
+                    HorizontalLayout {
+                        spacing: 10px; alignment: center;
+                        VerticalLayout { alignment: center;
+                            Rectangle {
+                                width: 28px; height: 28px; border-radius: 8px; background: Theme.accent;
+                                LagLogoMark { x: 3px; y: 3px; }
+                            }
+                        }
+                        Text { text: "Lag"; color: Theme.text-hi; font-size: 18px; font-weight: 700; vertical-alignment: center; }
+                    }
+                    TouchArea { pointer-event(event) => { if event.kind == PointerEventKind.down && event.button == PointerEventButton.left { MainVM.begin-move-drag(); } } }
+                }
+                Rectangle { width: 33px; Rectangle { x: 16px; y: (parent.height - 26px)/2; width: 1px; height: 26px; background: Theme.border-strong; } }
+                VerticalLayout { alignment: center; horizontal-stretch: 0;
+                    TbarAccentButton {
+                        recording: MainVM.is-recording;
+                        text: Tr.t(MainVM.is-recording ? "Btn_StopRecording" : "Btn_StartRecording", Tr.rev);
+                        clicked => { MainVM.toggle-recording(); }
+                    }
+                }
+                Rectangle { width: 10px; }
+                VerticalLayout { alignment: center; horizontal-stretch: 0;
+                    TbarButton { text: Tr.t("Btn_SaveReplay", Tr.rev); has-icon: true; icon: Icons.tray-arrow-down;
+                        enabled: MainVM.is-recording; clicked => { MainVM.save-replay(); }
+                    }
+                }
+                if MainVM.is-recording: Rectangle { width: 9px; }
+                if MainVM.is-recording: VerticalLayout { alignment: center; horizontal-stretch: 0;
+                    TbarButton { text: Tr.t(MainVM.is-paused ? "Btn_ResumeRecording" : "Btn_PauseRecording", Tr.rev);
+                        has-icon: true; icon: MainVM.is-paused ? Icons.play : Icons.pause; icon-size: 13px;
+                        clicked => { MainVM.toggle-pause-recording(); }
+                    }
+                }
+                Rectangle {
+                    horizontal-stretch: 1;
+                    TouchArea { pointer-event(event) => { if event.kind == PointerEventKind.down && event.button == PointerEventButton.left { MainVM.begin-move-drag(); } } }
+                }
+                VerticalLayout { alignment: center; horizontal-stretch: 0;
+                    StatusPill { recording: MainVM.is-recording; status-text: MainVM.status-text;
+                        buffer-text: MainVM.buffer-status; buffer-percent: MainVM.buffer-fill-percent;
+                        VerticalLayout { alignment: center; horizontal-stretch: 0; BufferProgressBar { value: MainVM.buffer-fill-percent; } }
+                    }
+                }
+                Rectangle { width: 4px; }
+                HorizontalLayout { spacing: 0px;
+                    WindowCtlButton { icon: Icons.window-minimize; clicked => { MainVM.minimize-window(); } }
+                    WindowCtlButton { icon: Icons.square-rounded-outline; icon-size: 11px; clicked => { MainVM.maximize-window(); } }
+                    WindowCtlButton { icon: Icons.window-close; is-close: true; clicked => { MainVM.close-window(); } }
+                }
+            }
+        }
+        Rectangle {
+            x: 0px; width: parent.width;
+            y: root.bar-height; height: root.height - root.bar-height;
+            background: Theme.surface-app;
+            Rectangle {
+                x: 0px; y: 0px; height: parent.height;
+                width: root.rail-width; visible: !MainVM.is-fullscreen;
+                Rectangle { x: parent.width - 1px; width: 1px; background: Theme.border-card; }
+                VerticalLayout {
+                    padding-top: 14px; padding-bottom: 14px; padding-left: 8px; padding-right: 8px; spacing: 6px;
+                    RailItemButton { label: Tr.t("Nav_Library",Tr.rev); icon: Icons.view-grid-outline; active: MainVM.current-page == Page.library; clicked => { MainVM.navigate(Page.library); } }
+                    RailItemButton { label: Tr.t("Nav_Player",Tr.rev); icon: Icons.play; active: MainVM.current-page == Page.player; clicked => { MainVM.navigate(Page.player); } }
+                    RailItemButton { label: Tr.t("Editor_Title",Tr.rev); icon: Icons.pencil-outline; active: MainVM.current-page == Page.editor; clicked => { MainVM.navigate(Page.editor); } }
+                    Rectangle { vertical-stretch: 1; }
+                    Rectangle {
+                        height: MainVM.has-capture-target ? 56px : 0px;
+                        visible: MainVM.has-capture-target;
+                        MaterialIcon { x: (parent.width - self.width)/2; y: 12px;
+                            source: MainVM.capture-target-is-game ? Icons.controller : Icons.monitor; size: 20px; tint: Theme.accent;
+                            opacity: MainVM.has-capture-target ? 0.4 + 0.6 * (0.5 + 0.5 * cos(360deg * mod(animation-tick()/Theme.dur-capture-pulse,1))) : 1;
+                        }
+                        capture-hover := TouchArea { mouse-cursor: pointer; }
+                    }
+                    RailItemButton { label: Tr.t("Nav_Settings",Tr.rev); icon: Icons.tune; active: MainVM.current-page == Page.settings; clicked => { MainVM.navigate(Page.settings); } }
+                }
+            }
+            // Persistent layers animate both outgoing and incoming pages. Exactly one per Page.
+            Rectangle {
+                x: root.rail-width; y: 0px; height: parent.height; width: parent.width - root.rail-width; clip: true;
+                PageLayer { x: 0px; width: parent.width; height: parent.height; active: MainVM.current-page == Page.settings; SettingsPage { width: parent.width; height: parent.height; } }
+                PageLayer { x: 0px; width: parent.width; height: parent.height; active: MainVM.current-page == Page.library; LibraryPage { width: parent.width; height: parent.height; } }
+                PageLayer { x: 0px; width: parent.width; height: parent.height; active: MainVM.current-page == Page.player; PlayerPage { width: parent.width; height: parent.height; } }
+                PageLayer { x: 0px; width: parent.width; height: parent.height; active: MainVM.current-page == Page.editor; EditorPage { width: parent.width; height: parent.height; } }
+            }
+            CaptureFlyoutCard {
+                x: capture-hover.has-hover ? 86px : 76px;
+                y: parent.height - 134px; height: 48px; min-width: 140px;
+                shown: capture-hover.has-hover && MainVM.has-capture-target && !MainVM.is-fullscreen;
+                visible: self.opacity > 0;
+                icon: MainVM.capture-target-is-game ? Icons.controller : Icons.monitor;
+                target-name: MainVM.capture-target-name;
+                animate x { duration: 180ms; easing: ease-out; }
+                changed visible => { MainVM.occluder-changed(self.visible, self.absolute-position.x / 1px, self.absolute-position.y / 1px, self.width / 1px, self.height / 1px); }
+                changed x => { MainVM.occluder-changed(self.visible, self.absolute-position.x / 1px, self.absolute-position.y / 1px, self.width / 1px, self.height / 1px); }
+                changed width => { MainVM.occluder-changed(self.visible, self.absolute-position.x / 1px, self.absolute-position.y / 1px, self.width / 1px, self.height / 1px); }
+            }
+        }
+    }
+    // every dropdown list is drawn here, above all pages (no PopupWindow)
+    DropdownLayer { x: 0; y: 0; width: root.width; height: root.height; }
+    // theme cross-fade (Rust takes the snapshot, switches the theme, then clears `theme-fade-shown`)
+    if MainVM.theme-fade-active: Image {
+        x: 0; y: 0; width: root.width; height: root.height;
+        source: MainVM.theme-fade-image;
+        image-fit: fill;
+        opacity: MainVM.theme-fade-shown ? 1 : 0;
+        animate opacity { duration: 380ms; easing: ease-in-out; }
+    }
+}

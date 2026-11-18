@@ -1,0 +1,203 @@
+//! Lag.exe: port of `Program.cs` + `App.axaml.cs` (startup sequence, spec shell.md §4.1).
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+
+slint::include_modules!();
+
+mod app_ctx;
+mod gpucheck;
+mod services;
+mod shell;
+mod snapshot;
+mod startup;
+mod views;
+
+fn main() {
+    // Per-monitor DPI awareness before ANY window or monitor query (C# app.manifest PerMonitorV2):
+    // without it monitors are reported in logical pixels (3440x1440 @125% -> 2752x1152).
+    unsafe {
+        use windows::Win32::UI::HiDpi::{SetProcessDpiAwarenessContext, DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2};
+        let _ = SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
+    }
+    // Real-window GPU render check (dev tool): `--gpu-check <script> <out-dir>`.
+    if let Some((script, dir)) = gpucheck::args() {
+        gpucheck::run(script, dir);
+        return;
+    }
+    // Headless UI snapshot mode (no window, no tray/hotkeys/engine): `--snapshot <out.png> [page] [WxH]`.
+    if let Some(snap) = snapshot::install_from_args() {
+        run_snapshot(snap);
+        return;
+    }
+    // 1. Log first, so everything below is captured (FileLog.Initialize).
+    let _log = startup::init_logging();
+    // 2. 1 ms timer resolution (Program.cs:68).
+    startup::raise_timer_resolution();
+    // 3. Single instance ("LagAppSingleInstanceMutex"): a second launch exits immediately.
+    let Some(_instance) = startup::acquire_single_instance() else {
+        log::info!("[Startup] another Lag instance is running \u{2014} exiting.");
+        return;
+    };
+    // 4. Settings + language before any UI string is built.
+    let settings = startup::load_settings();
+    lag_core::i18n::set_language(settings.language.as_deref().unwrap_or("en"));
+
+    // The app (main window + context) lives here; built either right away (start minimized: straight to the
+    // tray) or behind the startup splash on a manual launch.
+    type App = (AppWindow, std::rc::Rc<app_ctx::AppCtx>);
+    let app: std::rc::Rc<std::cell::RefCell<Option<App>>> = Default::default();
+    let build = |settings: lag_core::settings::SettingsData| -> Option<App> {
+        let ui = match AppWindow::new() {
+            Ok(ui) => ui,
+            Err(e) => {
+                log::error!("[Startup] UI init failed: {e}");
+                return None;
+            }
+        };
+        ui.global::<Tr>().on_t(|key, _rev| lag_core::i18n::tr(&key).into());
+        ui.global::<MainVM>().set_status_text(lag_core::i18n::tr("Status_Ready").into());
+        let ctx = app_ctx::AppCtx::new(settings);
+        views::init_all(&ui, &ctx);
+        shell::init(&ui, &ctx);
+        Some((ui, ctx))
+    };
+
+    let splash = (!settings.start_minimized).then(|| startup::show_splash(&settings)).flatten();
+    if let Some(splash) = splash {
+        // Build inside the event loop so the splash is already animating while the app initialises; keep it
+        // up for at least SPLASH_MIN so it reads as an intentional animation, not a flicker.
+        const SPLASH_MIN: std::time::Duration = std::time::Duration::from_millis(1400);
+        let shown = std::time::Instant::now();
+        let slot = app.clone();
+        slint::Timer::single_shot(std::time::Duration::from_millis(80), move || {
+            let Some((ui, ctx)) = build(settings) else {
+                let _ = slint::quit_event_loop();
+                return;
+            };
+            let weak = ui.as_weak();
+            *slot.borrow_mut() = Some((ui, ctx));
+            let rest = SPLASH_MIN.saturating_sub(shown.elapsed());
+            slint::Timer::single_shot(rest, move || {
+                if let Some(ui) = weak.upgrade() {
+                    if let Err(e) = ui.show() {
+                        log::error!("[Startup] main window show failed: {e}");
+                    }
+                }
+                let _ = splash.hide();
+            });
+        });
+    } else {
+        let Some((ui, ctx)) = build(settings) else { return };
+        // NOT ui.run(): that ends the event loop as soon as the last window is hidden, and "start minimized"
+        // hides the main window into the tray on the first turn -> the app silently exited at startup. The
+        // loop must live until an explicit Exit (tray menu / updater: shell::exit -> quit_event_loop).
+        if let Err(e) = ui.show() {
+            log::error!("[Startup] main window show failed: {e}");
+        }
+        *app.borrow_mut() = Some((ui, ctx));
+    }
+    if let Err(e) = slint::run_event_loop_until_quit() {
+        log::error!("[Startup] event loop ended with error: {e}");
+    }
+    let Some((_ui, ctx)) = app.borrow_mut().take() else { return };
+    // Orderly exit like C# (Dispose services, then Environment.Exit): recording engine first (bounded wait),
+    // then tray/hotkeys/HUD while their threads still exist, settings, log; then end the process without
+    // running thread-local destructors, which would otherwise touch threads Windows already tore down.
+    views::main_vm::shutdown_recorder();
+    ctx.flush_settings(); // C# ShutdownRequested -> FlushSettings()
+    shell::shutdown();
+    log::info!("[Shutdown] clean exit.");
+    drop(_log);
+    unsafe {
+        use windows::Win32::System::Threading::{GetCurrentProcess, TerminateProcess};
+        let _ = TerminateProcess(GetCurrentProcess(), 0);
+    }
+}
+
+/// `--ui-check` / `--snapshot`: info+ log lines go to stderr (no log file in these modes).
+struct StderrLog;
+impl log::Log for StderrLog {
+    fn enabled(&self, m: &log::Metadata) -> bool {
+        m.level() <= log::Level::Info
+    }
+    fn log(&self, r: &log::Record) {
+        if self.enabled(r.metadata()) {
+            eprintln!("{} {}", r.level(), r.args());
+        }
+    }
+    fn flush(&self) {}
+}
+static STDERR_LOG: StderrLog = StderrLog;
+
+fn run_snapshot(snap: snapshot::Snapshot) {
+    if log::set_logger(&STDERR_LOG).is_ok() {
+        log::set_max_level(log::LevelFilter::Info);
+    }
+    let mut settings = startup::load_settings();
+    // A snapshot must never record or pop anything: force the side-effect settings off (in memory only).
+    settings.auto_start_recording = false;
+    settings.start_minimized = false;
+    settings.stats_shown = false;
+    lag_core::i18n::set_language(settings.language.as_deref().unwrap_or("en"));
+    let Ok(ui) = AppWindow::new() else {
+        eprintln!("snapshot: UI init failed");
+        return;
+    };
+    ui.global::<Tr>().on_t(|key, _rev| lag_core::i18n::tr(&key).into());
+    ui.global::<MainVM>().set_status_text(lag_core::i18n::tr("Status_Ready").into());
+    let ctx = app_ctx::AppCtx::new(settings);
+    views::init_all(&ui, &ctx);
+    let page = match snap.page.as_str() {
+        "library" => Page::Library,
+        "player" => Page::Player,
+        "editor" => Page::Editor,
+        _ => Page::Settings,
+    };
+    ui.global::<MainVM>().set_current_page(page);
+    if let Err(e) = ui.show() {
+        eprintln!("snapshot: show failed: {e}");
+        return;
+    }
+    if snap.script.is_some() {
+        snap.pump(std::time::Duration::from_millis(2500));
+        snap.run_script(&ui);
+        return;
+    }
+    match snap.render(std::time::Duration::from_millis(2500)) {
+        Ok(()) => println!("snapshot written: {}", snap.out),
+        Err(e) => eprintln!("snapshot failed: {e}"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    /// Type-checks the design-system gallery without building it into the exe (and without a window).
+    #[test]
+    fn gallery_compiles() {
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("ui/gallery.slint");
+        let compiler = slint_interpreter::Compiler::default();
+        let result = spin_on(compiler.build_from_path(path));
+        let errors: Vec<_> = result
+            .diagnostics()
+            .filter(|d| d.level() == slint_interpreter::DiagnosticLevel::Error)
+            .map(|d| d.to_string())
+            .collect();
+        assert!(errors.is_empty(), "{errors:#?}");
+    }
+
+    fn spin_on<F: std::future::Future>(f: F) -> F::Output {
+        use std::task::{Context, Poll, RawWaker, RawWakerVTable, Waker};
+        fn noop(_: *const ()) {}
+        fn clone(p: *const ()) -> RawWaker {
+            RawWaker::new(p, &VTABLE)
+        }
+        static VTABLE: RawWakerVTable = RawWakerVTable::new(clone, noop, noop, noop);
+        let waker = unsafe { Waker::from_raw(RawWaker::new(std::ptr::null(), &VTABLE)) };
+        let mut cx = Context::from_waker(&waker);
+        let mut f = std::pin::pin!(f);
+        loop {
+            if let Poll::Ready(v) = f.as_mut().poll(&mut cx) {
+                return v;
+            }
+        }
+    }
+}

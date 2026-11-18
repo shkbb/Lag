@@ -1,0 +1,34 @@
+// Tray menu in the app's own style (C#: Avalonia-rendered tray menu = themed MenuFlyoutPresenter, App.axaml
+// 336-346). Replaces the grey native Windows menu (owner, 2026-11-16). Closes when it loses focus.
+import { Theme } from "theme/tokens.slint";
+import { Tr } from "globals.slint";
+import { LagContextMenuContainer, LagMenuItem, LagMenuSeparator } from "components/menu.slint";
+
+export component TrayMenuWindow inherits Window {
+    title: "Lag";
+    no-frame: true;
+    background: transparent;
+    always-on-top: true;
+    width: 210px;
+    height: layout.preferred-height + 8px;
+    in property <string> theme-mode: "dark";
+    changed theme-mode => { Theme.mode = root.theme-mode; }
+    init => { Theme.mode = root.theme-mode; }
+    callback activate(int); // 0 save replay, 1 open library, 2 open, 3 exit
+
+    LagContextMenuContainer {
+        x: 4px;
+        y: 4px;
+        width: parent.width - 8px;
+        height: parent.height - 8px;
+        layout := VerticalLayout {
+            padding: Theme.menu-flyout-presenter-theme-padding;
+            spacing: 2px;
+            LagMenuItem { text: Tr.t("Tray_SaveReplay", Tr.rev); clicked => { root.activate(0); } }
+            LagMenuItem { text: Tr.t("Tray_OpenLibrary", Tr.rev); clicked => { root.activate(1); } }
+            LagMenuSeparator { }
+            LagMenuItem { text: Tr.t("Tray_Open", Tr.rev); clicked => { root.activate(2); } }
+            LagMenuItem { text: Tr.t("Tray_Exit", Tr.rev); clicked => { root.activate(3); } }
+        }
+    }
+}

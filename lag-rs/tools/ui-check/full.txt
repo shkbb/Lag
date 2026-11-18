@@ -1,0 +1,190 @@
+# Full UI pass (headless). Run: Lag.exe --ui-check tools\ui-check\full.txt <out-dir>
+# Coordinates are logical px at 1360x840 unless a later `size` changes them.
+size 1360x840
+
+# ---------- Settings ----------
+page settings
+wait 300
+tab 0
+shot s-video-top
+scroll 700 500 -500
+wait 300
+shot s-video-mid
+scroll 700 500 -900
+wait 300
+shot s-video-bottom
+scroll 700 500 3000
+wait 200
+click 1067 450
+wait 400
+shot s-video-dropdown-open
+click 200 700
+wait 400
+shot s-video-dropdown-closed
+click 1040 511
+wait 400
+shot s-video-display-dropdown
+click 200 700
+wait 300
+click 1040 572
+wait 400
+shot s-video-focus-dropdown
+click 200 700
+wait 300
+move 707 329
+wait 200
+shot s-video-hover-preset
+tab 1
+wait 300
+shot s-audio-top
+click 1010 780
+wait 400
+shot s-audio-mic-dropdown
+click 200 700
+wait 300
+scroll 700 500 -500
+wait 300
+shot s-audio-mid
+scroll 700 500 -1500
+wait 300
+shot s-audio-bottom
+scroll 700 500 3000
+tab 2
+wait 300
+shot s-overlay-top
+scroll 700 500 -600
+wait 300
+shot s-overlay-bottom
+scroll 700 500 3000
+tab 3
+wait 300
+shot s-general-top
+scroll 700 500 -600
+wait 300
+shot s-general-mid
+scroll 700 500 -1500
+wait 300
+shot s-general-bottom
+scroll 700 500 3000
+tab 0
+
+# ---------- Top bar states ----------
+recording 1
+wait 300
+shot bar-recording
+recording 0
+move 192 29
+wait 200
+shot bar-hover-record
+
+# ---------- Library ----------
+page library
+wait 800
+shot l-top
+move 240 340
+wait 300
+shot l-hover-card
+rclick 240 340
+wait 300
+shot l-context-menu
+key esc
+click 900 480
+wait 200
+scroll 700 500 -800
+wait 600
+shot l-scrolled
+scroll 700 500 5000
+wait 300
+click 270 192
+key c
+key s
+wait 600
+shot l-search
+
+# ---------- Player ----------
+page player
+wait 600
+shot p-empty
+move 500 500
+wait 300
+shot p-empty-controls
+fullscreen 1
+wait 400
+move 600 400
+wait 200
+shot p-fullscreen
+move 600 800
+wait 300
+shot p-fullscreen-controls
+fullscreen 0
+wait 300
+
+# ---------- Editor ----------
+page editor
+wait 800
+shot e-start
+click 1188 166
+wait 300
+shot e-tab-filters
+click 1277 166
+wait 300
+shot e-tab-text
+click 1104 166
+click 1254 99
+wait 400
+shot e-export-menu
+key esc
+click 700 600
+
+# ---------- Small window ----------
+size 1080x640
+page settings
+wait 400
+shot z-small-settings
+page library
+wait 600
+shot z-small-library
+page player
+wait 400
+move 400 400
+wait 200
+shot z-small-player
+page editor
+wait 600
+shot z-small-editor
+
+# ---------- Big window (game monitor) ----------
+size 3440x1440
+page settings
+wait 400
+shot z-big-settings
+page library
+wait 600
+shot z-big-library
+page editor
+wait 600
+shot z-big-editor
+
+# ---------- English ----------
+size 1360x840
+lang en
+page settings
+tab 0
+wait 400
+shot en-settings-video
+tab 1
+wait 300
+shot en-settings-audio
+tab 3
+wait 300
+shot en-settings-general
+page library
+wait 500
+shot en-library
+page editor
+wait 500
+shot en-editor
+page player
+wait 400
+shot en-player
+lang uk

@@ -1,0 +1,186 @@
+﻿// Mirrors Views/PlayerView.axaml(.cs), with native child video surface + owned overlay window.
+import { Theme } from "../theme/tokens.slint";
+import { Icons, LagLogoMark } from "../theme/icons.slint";
+import { Tr, MainVM, Page } from "../globals.slint";
+import { LibraryVM } from "library.slint";
+import { LagScrollView } from "../components/scrollbar.slint";
+import { ReplayListItem } from "../components/list_items.slint";
+import { LagContextMenuContainer, LagMenuItem } from "../components/menu.slint";
+
+export struct PlayerClip {
+    path: string, title: string, meta: string, header-meta: string, thumbnail: image, is-image: bool,
+}
+
+export global PlayerVM {
+    in property <image> image;
+    in property <bool> has-clip: false;
+    in property <bool> is-playing: false;
+    in property <bool> is-loading: false;
+    in property <bool> is-image: false;
+    in property <string> path;
+    in property <string> title;
+    in property <string> meta;
+    in property <string> time-text: "0:00.000 / 0:00.000";
+    in-out property <float> position: 0;
+    in-out property <bool> dragging: false;
+    in-out property <float> volume: 80;
+    in property <bool> muted: false;
+    in property <float> speed: 1;
+    in property <int> audio-track: 0;
+    in property <int> audio-track-count: 0;
+    in property <[PlayerClip]> clips;
+    in property <string> total-duration: "";
+    in property <string> total-size: "0 MB";
+    in property <string> error;
+    in-out property <bool> mute-flash: false;
+    callback toggle();
+    callback stop();
+    callback seek(float, bool);
+    callback skip(float);
+    callback next();
+    callback play-clip(string);
+    callback edit(string);
+    callback volume-changed(float);
+    callback mute();
+    callback speed-changed(float);
+    callback audio-changed(int);
+    callback frame-step();
+    callback active-changed(bool);
+    callback fullscreen-changed(bool);
+    callback video-rect-changed(float, float, float, float);
+    callback pointer-left-video();
+    // fullscreen: mouse moved over the video (the native surface passes hit-testing to this window)
+    callback video-pointer(float, float);
+    in-out property <bool> cursor-hidden: false;   // fullscreen, overlay hidden: cursor hidden after idle
+    callback synthetic-move() -> bool;              // see PlayerOverlayVM.synthetic-move
+}
+
+export component PlayerPage inherits Rectangle {
+    background: Theme.surface-app;
+    property <bool> active: MainVM.current-page == Page.player;
+    property <bool> fullscreen: MainVM.is-fullscreen;
+    property <bool> context-open: false;
+    property <string> context-path;
+    property <length> context-x;
+    property <length> context-y;
+    changed active => {
+        PlayerVM.active-changed(self.active);
+        if (self.active) { keys.focus(); }
+    }
+    changed fullscreen => {
+        PlayerVM.fullscreen-changed(self.fullscreen);
+        keys.focus();
+    }
+    function menu(path: string, x: length, y: length) {
+        root.context-path = path; root.context-x = min(x, root.width - 205px);
+        root.context-y = min(y, root.height - 120px); root.context-open = path != "";
+    }
+    keys := FocusScope {
+        width: 100%; height: 100%;
+        key-pressed(e) => {
+            if (e.text == " ") { PlayerVM.toggle(); return accept; }
+            if (e.text == Key.LeftArrow) { PlayerVM.skip(-10); return accept; }
+            if (e.text == Key.RightArrow) { PlayerVM.skip(10); return accept; }
+            if (e.text == "m" || e.text == "M") { PlayerVM.mute(); return accept; }
+            if (e.text == Key.Escape) { if (MainVM.is-fullscreen) { MainVM.toggle-fullscreen(); } root.context-open = false; return accept; }
+            reject
+        }
+    }
+    // fullscreen cursor auto-hide lives here: the overlay window is hidden while its controls are not shown
+    fs-idle := Timer { interval: 2500ms; running: false; triggered => { self.running = false; PlayerVM.cursor-hidden = MainVM.is-fullscreen && PlayerVM.is-playing; } }
+    TouchArea {
+        mouse-cursor: MainVM.is-fullscreen && PlayerVM.cursor-hidden ? none : default;
+        // fullscreen with the controls hidden: the click reaches this window (the overlay is hidden)
+        clicked => { if (MainVM.is-fullscreen) { PlayerVM.toggle(); } }
+        // hover (pointer-event move), not `moved` (that one needs a held button)
+        pointer-event(e) => {
+            if (e.kind == PointerEventKind.cancel || e.kind == PointerEventKind.move) {
+                PlayerVM.pointer-left-video();
+                if (MainVM.is-fullscreen && !PlayerVM.synthetic-move()) {
+                    PlayerVM.cursor-hidden = false;
+                    fs-idle.running = false;
+                    fs-idle.running = true;
+                    PlayerVM.video-pointer(self.mouse-x / 1px, self.mouse-y / 1px);
+                }
+            }
+        }
+    }
+    if !MainVM.is-fullscreen: VerticalLayout {
+        x: 24px; y: 20px; width: max(0px, root.width - 364px); height: 54px; spacing: 3px;
+        Text { text: PlayerVM.title; color: Theme.text-hi; font-family: Theme.font-display; font-size: 22px; font-weight: 600; overflow: elide; }
+        Text { text: PlayerVM.meta; color: Theme.text-faint; font-family: Theme.font-mono; font-size: 11.5px; }
+    }
+    video := Rectangle {
+        x: MainVM.is-fullscreen ? 0px : 24px; y: MainVM.is-fullscreen ? 0px : 90px;
+        width: MainVM.is-fullscreen ? root.width : max(0px, root.width - 364px);
+        height: MainVM.is-fullscreen ? root.height : max(0px, root.height - 114px);
+        property <length> abs-x: self.absolute-position.x;
+        property <length> abs-y: self.absolute-position.y;
+        function report-rect() {
+            PlayerVM.video-rect-changed(self.abs-x / 1px, self.abs-y / 1px, self.width / 1px, self.height / 1px);
+        }
+        init => { self.report-rect(); }
+        changed abs-x => { self.report-rect(); }
+        changed abs-y => { self.report-rect(); }
+        changed width => { self.report-rect(); }
+        changed height => { self.report-rect(); }
+        border-radius: MainVM.is-fullscreen ? 0px : 12px;
+        border-width: MainVM.is-fullscreen ? 0px : 1px; border-color: Theme.border-card;
+        background: #07090C; clip: true;
+        if PlayerVM.is-image: Image { width: parent.width; height: parent.height; source: PlayerVM.image; image-fit: contain; }
+        if !PlayerVM.has-clip: VerticalLayout {
+            width: 100%; height: 100%;
+            alignment: center; spacing: 10px;
+            HorizontalLayout { alignment: center; LagLogoMark { size: 44px; stroke: Theme.empty-icon-brush; } }
+            Text { text: Tr.t("Player_Placeholder", Tr.rev); color: Theme.text-faint; font-size: 13px; horizontal-alignment: center; }
+        }
+    }
+    if !MainVM.is-fullscreen: panel := Rectangle {
+        x: root.width - self.width - 24px;
+        y: 20px; width: 300px;
+        height: root.height - 44px;
+        background: Theme.surface-app; border-radius: 14px; border-width: 1px; border-color: Theme.border-card;
+        TouchArea { pointer-event(e) => { if (e.kind == PointerEventKind.move) { PlayerVM.pointer-left-video(); } } }
+        Text { x: 18px; y: 18px; text: Tr.t("Player_Replays", Tr.rev); color: Theme.text-faintest; font-family: Theme.font-mono; font-size: 11px; }
+        Text { x: parent.width - self.width - 18px; y: 18px; text: "\{PlayerVM.clips.length}"; color: Theme.text-faintest; font-family: Theme.font-mono; font-size: 11px; }
+        sidebar-scroll := LagScrollView {
+            x: 10px; y: 46px; width: parent.width - 20px; height: max(0px, parent.height - 176px);
+            content-height: PlayerVM.clips.length * 54px;
+            for clip[index] in PlayerVM.clips: Rectangle {
+                x: 0; y: index * 54px; width: parent.width; height: 52px;
+                ReplayListItem {
+                    width: 100%; height: 100%;
+                    selected: PlayerVM.path == clip.path;
+                    touch-enabled: !MainVM.is-fullscreen;
+                    clicked => { keys.focus(); PlayerVM.play-clip(clip.path); }
+                    moved(mx, my) => { PlayerVM.pointer-left-video(); }
+                    right-clicked(mx, my) => { root.menu(clip.path, panel.x + 10px + mx, panel.y + 46px + index * 54px + sidebar-scroll.content-y + my); }
+                    Rectangle { width: 64px; height: 36px; border-radius: 7px; background: Theme.thumb-placeholder-bg; clip: true;
+                        Image { width: 100%; height: 100%; source: clip.thumbnail; image-fit: cover; }
+                    }
+                    VerticalLayout { horizontal-stretch: 1; alignment: center; padding-left: 11px; spacing: 2px;
+                        Text { text: clip.title; color: Theme.text-hi; font-size: 12px; font-weight: 600; overflow: elide; }
+                        Text { text: clip.meta; color: Theme.text-faint; font-family: Theme.font-mono; font-size: 10px; }
+                    }
+                }
+            }
+        }
+        VerticalLayout {
+            x: 18px; y: parent.height - 112px; width: parent.width - 36px; height: 98px; spacing: 8px;
+            Rectangle { height: 1px; background: Theme.border-card; }
+            HorizontalLayout { Text { text: Tr.t("Player_Clips", Tr.rev); color: Theme.text-muted; font-size: 12.5px; } Text { text: "\{PlayerVM.clips.length}"; color: Theme.text-hi; horizontal-alignment: right; font-family: Theme.font-mono; font-size: 12.5px; } }
+            HorizontalLayout { Text { text: Tr.t("Player_Duration", Tr.rev); color: Theme.text-muted; font-size: 12.5px; } Text { text: PlayerVM.total-duration; color: Theme.text-hi; horizontal-alignment: right; font-family: Theme.font-mono; font-size: 12.5px; } }
+            HorizontalLayout { Text { text: Tr.t("Player_Used", Tr.rev); color: Theme.text-muted; font-size: 12.5px; } Text { text: PlayerVM.total-size; color: Theme.text-hi; horizontal-alignment: right; font-family: Theme.font-mono; font-size: 12.5px; } }
+        }
+        if LibraryVM.is-loading: Rectangle { y: 1px; x: 1px; height: 3px; width: parent.width - 2px; background: Theme.accent; }
+    }
+    if root.context-open: TouchArea { clicked => { root.context-open = false; } }
+    if root.context-open: LagContextMenuContainer {
+        x: root.context-x; y: root.context-y; width: 200px; height: 112px;
+        VerticalLayout { padding: 4px;
+            LagMenuItem { text: Tr.t("Editor_Edit", Tr.rev); icon: Icons.movie-edit-outline; has-icon: true; clicked => { PlayerVM.edit(root.context-path); root.context-open = false; } }
+            LagMenuItem { text: Tr.t("Library_ShowInFolder", Tr.rev); icon: Icons.folder-search-outline; has-icon: true; clicked => { LibraryVM.context-show-in-folder(root.context-path); root.context-open = false; } }
+            LagMenuItem { text: Tr.t("Library_Delete", Tr.rev); icon: Icons.trash-can-outline; has-icon: true; clicked => { LibraryVM.context-delete(root.context-path); root.context-open = false; } }
+        }
+    }
+}

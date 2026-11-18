@@ -1,0 +1,4 @@
+# One code style for the whole workspace (owner, 2026-11-18: code quality pass). Lines up to 120 columns,
+# matching how the code base was written.
+max_width = 120
+use_small_heuristics = "Max"

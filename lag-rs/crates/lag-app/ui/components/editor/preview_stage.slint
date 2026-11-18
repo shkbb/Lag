@@ -1,0 +1,741 @@
+// Ported from Views/EditorView.axaml:218-333 & EditorView.axaml.cs:208-618
+import { Theme } from "../../theme/tokens.slint";
+import { Icons, MaterialIcon } from "../../theme/icons.slint";
+import { Tr } from "../../globals.slint";
+import { TransportButton } from "../buttons.slint";
+import { CropHandle } from "../list_items.slint";
+import { EditorTextOverlayData } from "types.slint";
+
+component EditorBarChip {
+    in property <string> text;
+    in property <image> icon;
+    in property <bool> icon-right: false;
+    in property <bool> accent-text: false;
+    callback clicked();
+
+    height: 30px;
+    width: chip-layout.preferred-width;
+
+    Rectangle {
+        width: 100%;
+        height: 100%;
+        border-radius: Theme.rad-control;
+        background: ta.has-hover ? Theme.surface-hover-brush : Theme.surface-brush;
+        animate background { duration: Theme.dur-base; }
+
+
+        chip-layout := HorizontalLayout {
+            padding-left: 12px;
+            padding-right: 12px;
+            padding-top: 6px;
+            padding-bottom: 6px;
+            spacing: 6px;
+            alignment: center;
+
+            if !root.icon-right: VerticalLayout {
+                alignment: center;
+                MaterialIcon {
+                    source: root.icon;
+                    size: 14px;
+                    tint: Theme.fg-brush;
+                }
+            }
+
+            Text {
+                text: root.text;
+                color: root.accent-text ? Theme.accent-brush : Theme.fg-brush;
+                font-family: Theme.font-ui;
+                font-size: 12px;
+                vertical-alignment: center;
+            }
+
+            if root.icon-right: VerticalLayout {
+                alignment: center;
+                MaterialIcon {
+                    source: root.icon;
+                    size: 14px;
+                    tint: Theme.fg-brush;
+                }
+            }
+        }
+    }
+
+    ta := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+    }
+}
+
+// Everything drawn OVER the video: crop shades, frame outline, crop box + handles, captions, deselect chip,
+// and the stage pointer handling. Used inside the main window (headless / fallback) and, with the native
+// video surface, alone in the transparent EditorOverlayWindow that sits above that surface.
+export component EditorStageOverlay {
+    in property <bool> has-clip;
+
+    // Display-space (post-rotation) aspects and normalized active edit rect (in refr coords)
+    in property <float> display-source-aspect-raw: 1.7777778;
+    in property <float> display-frame-aspect: 1.7777778;
+    in property <bool> crop-tool-active: false;
+    in property <bool> reframe-selected: false;
+    in property <float> edit-nx: 0.0;
+    in property <float> edit-ny: 0.0;
+    in property <float> edit-nw: 1.0;
+    in property <float> edit-nh: 1.0;
+    in property <[EditorTextOverlayData]> texts;
+
+    callback focus-keys();
+    callback deselect-reframe();
+    callback select-reframe();
+    callback right-click-reset();
+    callback begin-overlay-drag();
+    callback drag-overlay(int /* drag-mode: 1=Move,2=N,3=S,4=E,5=W,6=NE,7=NW,8=SE,9=SW */, float /* dx-px */, float /* dy-px */, float /* refr-x */, float /* refr-y */, float /* refr-w */, float /* refr-h */, float /* sw */, float /* sh */);
+    callback select-text(int);
+    callback move-text(int, float /* nx */, float /* ny */);
+    callback push-undo();
+    // in-place caption editing (owner, 2026-11-17: "click the text on the video and edit it, like any editor"):
+    // double-click a caption -> a text field right there; Enter / Esc / click elsewhere ends it
+    in-out property <int> editing-index: -1;
+    callback text-edit-started(int);
+    callback text-edit-finished();
+    callback deselect-text();
+    property <bool> caret-on: true;
+    Timer { interval: 530ms; running: root.editing-index >= 0; triggered => { root.caret-on = !root.caret-on; } }
+    function finish-edit() {
+        if (root.editing-index >= 0) {
+            root.editing-index = -1;
+            root.text-edit-finished();
+        }
+    }
+
+    callback play-pause();
+
+    pure function fit-x(sw: length, sh: length, aspect: float) -> length {
+        if (sw <= 0px || sh <= 0px || aspect <= 0) { return 0px; }
+        if (sw / aspect > sh) { return (sw - sh * aspect) / 2; }
+        return 0px;
+    }
+    pure function fit-y(sw: length, sh: length, aspect: float) -> length {
+        if (sw <= 0px || sh <= 0px || aspect <= 0) { return 0px; }
+        if (sw / aspect > sh) { return 0px; }
+        return (sh - sw / aspect) / 2;
+    }
+    pure function fit-w(sw: length, sh: length, aspect: float) -> length {
+        if (sw <= 0px || sh <= 0px || aspect <= 0) { return max(0px, sw); }
+        if (sw / aspect > sh) { return sh * aspect; }
+        return sw;
+    }
+    pure function fit-h(sw: length, sh: length, aspect: float) -> length {
+        if (sw <= 0px || sh <= 0px || aspect <= 0) { return max(0px, sh); }
+        if (sw / aspect > sh) { return sh; }
+        return sw / aspect;
+    }
+
+    property <length> sw: root.width;
+    property <length> sh: root.height;
+
+    property <float> ref-aspect: crop-tool-active ? display-source-aspect-raw : display-frame-aspect;
+    property <length> refr-x: fit-x(sw, sh, ref-aspect);
+    property <length> refr-y: fit-y(sw, sh, ref-aspect);
+    property <length> refr-w: fit-w(sw, sh, ref-aspect);
+    property <length> refr-h: fit-h(sw, sh, ref-aspect);
+
+    property <length> frame-x: fit-x(sw, sh, display-frame-aspect);
+    property <length> frame-y: fit-y(sw, sh, display-frame-aspect);
+    property <length> frame-w: fit-w(sw, sh, display-frame-aspect);
+    property <length> frame-h: fit-h(sw, sh, display-frame-aspect);
+
+    property <length> edit-x: refr-x + edit-nx * refr-w;
+    property <length> edit-y: refr-y + edit-ny * refr-h;
+    property <length> edit-w: edit-nw * refr-w;
+    property <length> edit-h: edit-nh * refr-h;
+
+    property <length> vid-x: crop-tool-active ? refr-x : edit-x;
+    property <length> vid-y: crop-tool-active ? refr-y : edit-y;
+    property <length> vid-w: crop-tool-active ? refr-w : edit-w;
+    property <length> vid-h: crop-tool-active ? refr-h : edit-h;
+
+    property <length> dim-x: crop-tool-active ? edit-x : refr-x;
+    property <length> dim-y: crop-tool-active ? edit-y : refr-y;
+    property <length> dim-w: crop-tool-active ? edit-w : refr-w;
+    property <length> dim-h: crop-tool-active ? edit-h : refr-h;
+
+    property <bool> show-chrome: has-clip && (crop-tool-active || reframe-selected);
+
+    // Drag state for CropOverlay: 0=None, 1=Move, 2=N, 3=S, 4=E, 5=W, 6=NE, 7=NW, 8=SE, 9=SW
+    property <int> drag-mode: 0;
+    property <length> drag-start-x: 0px;
+    property <length> drag-start-y: 0px;
+    property <bool> drag-moved: false;
+    property <bool> pending-select: false; // pressed on the unselected video: select only once it is dragged
+    property <MouseCursor> overlay-cursor: default;
+
+    // HitTest matching EditorView.axaml.cs:446-471 (HandleReach = 11px)
+    pure function hit-test(px: length, py: length) -> int {
+        if (!root.has-clip || root.refr-w <= 0px) { return 0; }
+        let bx = root.edit-x;
+        let by = root.edit-y;
+        let bw = root.edit-w;
+        let bh = root.edit-h;
+        let r = 11px;
+
+        let near-l = abs(px - bx) <= r;
+        let near-r = abs(px - (bx + bw)) <= r;
+        let near-t = abs(py - by) <= r;
+        let near-b = abs(py - (by + bh)) <= r;
+        let in-x = px >= bx - r && px <= bx + bw + r;
+        let in-y = py >= by - r && py <= by + bh + r;
+
+        if (near-l && near-t) { return 7; } // NW
+        if (near-r && near-t) { return 6; } // NE
+        if (near-l && near-b) { return 9; } // SW
+        if (near-r && near-b) { return 8; } // SE
+        if (near-l && in-y) { return 5; }   // W
+        if (near-r && in-y) { return 4; }   // E
+        if (near-t && in-x) { return 2; }   // N
+        if (near-b && in-x) { return 3; }   // S
+        if (px > bx && px < bx + bw && py > by && py < by + bh) { return 1; } // Move
+        return 0;
+    }
+
+    pure function cursor-for(mode: int) -> MouseCursor {
+        if (mode == 1) { return MouseCursor.move; }
+        if (mode == 4 || mode == 5) { return MouseCursor.ew-resize; }
+        if (mode == 2 || mode == 3) { return MouseCursor.ns-resize; }
+        if (mode == 7 || mode == 8) { return MouseCursor.nwse-resize; }
+        if (mode == 6 || mode == 9) { return MouseCursor.nesw-resize; }
+        return MouseCursor.default;
+    }
+
+    // the overlay window is transparent: an almost invisible fill keeps clicks outside the video ours
+    Rectangle { width: 100%; height: 100%; background: #00000001; }
+    // 4 dim shades (#99000000 -> #00000099)
+    if root.show-chrome: Rectangle {
+        x: 0px; y: 0px; width: root.sw; height: max(0px, root.dim-y);
+        background: Theme.crop-shade;
+    }
+    if root.show-chrome: Rectangle {
+        x: 0px; y: root.dim-y + root.dim-h; width: root.sw; height: max(0px, root.sh - (root.dim-y + root.dim-h));
+        background: Theme.crop-shade;
+    }
+    if root.show-chrome: Rectangle {
+        x: 0px; y: root.dim-y; width: max(0px, root.dim-x); height: max(0px, root.dim-h);
+        background: Theme.crop-shade;
+    }
+    if root.show-chrome: Rectangle {
+        x: root.dim-x + root.dim-w; y: root.dim-y; width: max(0px, root.sw - (root.dim-x + root.dim-w)); height: max(0px, root.dim-h);
+        background: Theme.crop-shade;
+    }
+
+    // FrameOutline: only while the frame is being edited (owner, 2026-11-17: thin light lines along the video's
+    // edges all the time looked like stripes in the video; C# always drew it)
+    if root.show-chrome: Rectangle {
+        x: root.refr-x;
+        y: root.refr-y;
+        width: max(0px, root.refr-w);
+        height: max(0px, root.refr-h);
+        border-width: 1px;
+        border-color: #FFFFFF;
+        opacity: 0.55;
+        background: transparent;
+    }
+
+    // CropRect + 8 handles (visible when CropToolActive || reframe-selected)
+    if root.show-chrome: Rectangle {
+        x: root.edit-x;
+        y: root.edit-y;
+        width: max(0px, root.edit-w);
+        height: max(0px, root.edit-h);
+        border-width: 1.5px;
+        border-color: Theme.accent-brush;
+        background: transparent;
+    }
+
+    if root.show-chrome: CropHandle { x: root.edit-x - 6px; y: root.edit-y - 6px; }
+    if root.show-chrome: CropHandle { x: root.edit-x + root.edit-w - 6px; y: root.edit-y - 6px; }
+    if root.show-chrome: CropHandle { x: root.edit-x - 6px; y: root.edit-y + root.edit-h - 6px; }
+    if root.show-chrome: CropHandle { x: root.edit-x + root.edit-w - 6px; y: root.edit-y + root.edit-h - 6px; }
+    if root.show-chrome: CropHandle { x: root.edit-x + root.edit-w / 2 - 6px; y: root.edit-y - 6px; }
+    if root.show-chrome: CropHandle { x: root.edit-x + root.edit-w / 2 - 6px; y: root.edit-y + root.edit-h - 6px; }
+    if root.show-chrome: CropHandle { x: root.edit-x - 6px; y: root.edit-y + root.edit-h / 2 - 6px; }
+    if root.show-chrome: CropHandle { x: root.edit-x + root.edit-w - 6px; y: root.edit-y + root.edit-h / 2 - 6px; }
+
+    // Stage pointer interaction (reframe/crop/play-pause/right-click-reset)
+    // cursor for what is under the pointer: resize arrows on the edges/corners of the selected box, a move
+    // cursor inside it (owner, 2026-11-17: it showed the 4-way arrow everywhere while cropping)
+    function hover-cursor(px: length, py: length) {
+        let m = root.hit-test(px, py);
+        if (!root.crop-tool-active && !root.reframe-selected) {
+            root.overlay-cursor = m != 0 ? MouseCursor.move : MouseCursor.default;
+        } else {
+            root.overlay-cursor = root.cursor-for(m);
+        }
+    }
+
+    stage-ta := TouchArea {
+        mouse-cursor: root.overlay-cursor;
+        pointer-event(ev) => {
+            // hover (no button held): `moved` only fires while a button is down
+            if (ev.kind == PointerEventKind.move && root.drag-mode == 0) {
+                root.hover-cursor(self.mouse-x, self.mouse-y);
+            }
+            if (ev.kind == PointerEventKind.down && root.editing-index >= 0) {
+                root.finish-edit();
+                return;
+            }
+            // a click on the video/background deselects the caption (like Medal)
+            if (ev.kind == PointerEventKind.down && ev.button == PointerEventButton.left) {
+                root.deselect-text();
+            }
+            if (ev.kind == PointerEventKind.down) {
+                if (ev.button == PointerEventButton.right) {
+                    if (root.has-clip) {
+                        root.push-undo();
+                        root.right-click-reset();
+                    }
+                    return;
+                }
+                if (ev.button != PointerEventButton.left) { return; }
+
+                let m = root.hit-test(self.mouse-x, self.mouse-y);
+                let eff-m = (!root.crop-tool-active && !root.reframe-selected && m != 0) ? 1 : m;
+
+                // one action per click (owner, 2026-11-17: a left click both selected the video AND paused it):
+                // click = play/pause; drag = move the video in the frame (selects it); with the box selected a
+                // click outside it only deselects; while cropping clicks never pause
+                if (eff-m == 0) {
+                    if (root.crop-tool-active) { return; }
+                    if (root.reframe-selected) {
+                        root.deselect-reframe();
+                        return;
+                    }
+                    root.play-pause();
+                    root.focus-keys();
+                    return;
+                }
+
+                root.pending-select = !root.crop-tool-active && !root.reframe-selected;
+                root.drag-mode = eff-m;
+                root.overlay-cursor = root.cursor-for(eff-m); // keep the grabbed handle's arrows while dragging
+                root.drag-moved = false;
+                root.drag-start-x = self.mouse-x;
+                root.drag-start-y = self.mouse-y;
+                root.begin-overlay-drag();
+            } else if (ev.kind == PointerEventKind.up || ev.kind == PointerEventKind.cancel) {
+                // a plain click on the (unselected) video = play/pause, nothing else
+                let was-click = root.drag-mode != 0 && !root.drag-moved && root.pending-select;
+                root.drag-mode = 0;
+                root.pending-select = false;
+                root.hover-cursor(self.mouse-x, self.mouse-y);
+                if (was-click) {
+                    root.play-pause();
+                    root.focus-keys();
+                }
+            }
+        }
+        moved => {
+            if (root.drag-mode == 0) {
+                root.hover-cursor(self.mouse-x, self.mouse-y);
+                return;
+            }
+            if (root.refr-w <= 0px || root.refr-h <= 0px) { return; }
+            let dx = self.mouse-x - root.drag-start-x;
+            let dy = self.mouse-y - root.drag-start-y;
+            if (!root.drag-moved && (abs(dx) > 3px || abs(dy) > 3px)) {
+                root.drag-moved = true;
+                root.push-undo();
+                if (root.pending-select) {
+                    root.pending-select = false;
+                    root.select-reframe(); // dragging the video selects it
+                }
+            }
+            if (!root.drag-moved) { return; }
+            root.drag-overlay(
+                root.drag-mode,
+                dx / 1px,
+                dy / 1px,
+                root.refr-x / 1px,
+                root.refr-y / 1px,
+                root.refr-w / 1px,
+                root.refr-h / 1px,
+                root.sw / 1px,
+                root.sh / 1px
+            );
+        }
+    }
+
+    // Caption overlays on the (post-rotation) output frame
+    for item[idx] in root.texts: caption := Rectangle {
+        property <length> fs: max(6px, root.frame-h * clamp(item.font-percent, 1, 50) / 100.0);
+        property <length> drag-start-stage-x: 0px;
+        property <length> drag-start-stage-y: 0px;
+        property <float> drag-start-nx: 0.0;
+        property <float> drag-start-ny: 0.0;
+        property <bool> txt-moved: false;
+
+        visible: root.has-clip && root.frame-w > 0px && root.frame-h > 0px;
+        x: root.frame-x + max(0px, root.frame-w - self.width) * clamp(item.nx, 0.0, 1.0);
+        y: root.frame-y + max(0px, root.frame-h - self.height) * clamp(item.ny, 0.0, 1.0);
+        property <bool> editing: root.editing-index == idx;
+        property <bool> dragging: false;
+        width: max(self.editing ? 30px : 0px, txt.preferred-width + (self.editing ? 4px : 0px)) + 11px;
+        height: txt.preferred-height + 7px;
+        border-radius: 4px;
+        border-width: 1.5px;
+        border-color: item.selected || self.editing ? Theme.accent : transparent;
+        background: self.editing ? #0000004D : transparent;
+
+        txt := Text {
+            x: 5.5px;
+            y: 3.5px;
+            text: item.text;
+            font-family: Theme.font-ui;
+            font-size: parent.fs;
+            font-weight: Theme.font-weight-bold;
+            color: item.text-color;
+        }
+
+        // caret at the end of the text while it is edited (typing goes to the Text tab's field)
+        if caption.editing: Rectangle {
+            x: txt.x + txt.preferred-width + 1px;
+            y: txt.y + 2px;
+            width: 2px;
+            height: max(4px, txt.preferred-height - 4px);
+            background: item.text-color;
+            opacity: root.caret-on ? 1 : 0;
+        }
+
+        TouchArea {
+            mouse-cursor: caption.editing ? MouseCursor.text : MouseCursor.move;
+            double-clicked => {
+                root.select-text(idx);
+                root.editing-index = idx;
+                root.text-edit-started(idx);
+            }
+            pointer-event(ev) => {
+                if (ev.button == PointerEventButton.left && ev.kind == PointerEventKind.down) {
+                    if (root.editing-index >= 0 && root.editing-index != idx) { root.finish-edit(); }
+                    root.select-text(idx);
+                    caption.dragging = !caption.editing;
+                    caption.txt-moved = false;
+                    caption.drag-start-stage-x = caption.x + self.mouse-x;
+                    caption.drag-start-stage-y = caption.y + self.mouse-y;
+                    caption.drag-start-nx = item.nx;
+                    caption.drag-start-ny = item.ny;
+                } else if (ev.kind == PointerEventKind.up || ev.kind == PointerEventKind.cancel) {
+                    caption.dragging = false;
+                } else if (ev.kind == PointerEventKind.move && caption.dragging && root.frame-w > 0px) {
+                    let dx = caption.x + self.mouse-x - caption.drag-start-stage-x;
+                    let dy = caption.y + self.mouse-y - caption.drag-start-stage-y;
+                    if (!caption.txt-moved && (abs(dx) > 3px || abs(dy) > 3px)) {
+                        caption.txt-moved = true;
+                        root.push-undo();
+                    }
+                    if (caption.txt-moved) {
+                        let avail-w = max(1px, root.frame-w - caption.width);
+                        let avail-h = max(1px, root.frame-h - caption.height);
+                        root.move-text(idx, clamp(caption.drag-start-nx + dx / avail-w, 0.0, 1.0),
+                                       clamp(caption.drag-start-ny + dy / avail-h, 0.0, 1.0));
+                    }
+                }
+            }
+        }
+    }
+
+    // Deselect chip button (top-right, visible only when !crop-tool-active && reframe-selected)
+    if root.has-clip && !root.crop-tool-active && root.reframe-selected: Rectangle {
+        x: parent.width - self.width - 12px;
+        y: 12px;
+        width: desel-layout.preferred-width;
+        height: 30px;
+        border-radius: Theme.rad-control;
+        background: desel-ta.has-hover ? Theme.surface-hover-brush : Theme.surface-brush;
+        animate background { duration: Theme.dur-base; }
+
+        desel-layout := HorizontalLayout {
+            padding-left: 12px;
+            padding-right: 12px;
+            spacing: 6px;
+            alignment: center;
+
+            VerticalLayout {
+                alignment: center;
+                MaterialIcon { source: Icons.close; size: 13px; tint: Theme.fg-brush; }
+            }
+
+            Text {
+                text: Tr.t("Editor_Deselect", Tr.rev);
+                color: Theme.fg-brush;
+                font-family: Theme.font-ui;
+                font-size: Theme.font-size-body;
+                vertical-alignment: center;
+            }
+        }
+
+        desel-ta := TouchArea {
+            mouse-cursor: pointer;
+            clicked => {
+                root.deselect-reframe();
+                root.focus-keys();
+            }
+        }
+    }
+}
+
+export component EditorPreviewStage {
+    in property <bool> has-clip;
+    in property <image> video-image;
+    in property <bool> is-playing;
+    in property <string> time-display;
+    in property <string> trim-start-display;
+    in property <string> trim-end-display;
+    in property <bool> is-marking-cut;
+
+    // Display-space (post-rotation) aspects and normalized active edit rect (in refr coords)
+    in property <float> display-source-aspect-raw: 1.7777778;
+    in property <float> display-frame-aspect: 1.7777778;
+    in property <bool> crop-tool-active: false;
+    in property <bool> reframe-selected: false;
+    in property <float> edit-nx: 0.0;
+    in property <float> edit-ny: 0.0;
+    in property <float> edit-nw: 1.0;
+    in property <float> edit-nh: 1.0;
+    in property <[EditorTextOverlayData]> texts;
+
+    callback focus-keys();
+    callback play-pause();
+    callback set-trim-start-here();
+    callback set-trim-end-here();
+    callback toggle-cut();
+    callback reset-trim();
+    callback deselect-reframe();
+    callback select-reframe();
+    callback right-click-reset();
+    callback begin-overlay-drag();
+    callback drag-overlay(int /* drag-mode: 1=Move,2=N,3=S,4=E,5=W,6=NE,7=NW,8=SE,9=SW */, float /* dx-px */, float /* dy-px */, float /* refr-x */, float /* refr-y */, float /* refr-w */, float /* refr-h */, float /* sw */, float /* sh */);
+    callback select-text(int);
+    callback move-text(int, float /* nx */, float /* ny */);
+    callback push-undo();
+
+    // true when Rust shows the video in a native window: the stage only reports its rect and stays empty
+    in property <bool> native-video: false;
+    callback stage-rect-changed(float, float, float, float);
+    in-out property <int> editing-index: -1;
+    callback text-edit-started(int);
+    callback text-edit-finished();
+    callback deselect-text();
+
+    pure function fit-x(sw: length, sh: length, aspect: float) -> length {
+        if (sw <= 0px || sh <= 0px || aspect <= 0) { return 0px; }
+        if (sw / aspect > sh) { return (sw - sh * aspect) / 2; }
+        return 0px;
+    }
+    pure function fit-y(sw: length, sh: length, aspect: float) -> length {
+        if (sw <= 0px || sh <= 0px || aspect <= 0) { return 0px; }
+        if (sw / aspect > sh) { return 0px; }
+        return (sh - sw / aspect) / 2;
+    }
+    pure function fit-w(sw: length, sh: length, aspect: float) -> length {
+        if (sw <= 0px || sh <= 0px || aspect <= 0) { return max(0px, sw); }
+        if (sw / aspect > sh) { return sh * aspect; }
+        return sw;
+    }
+    pure function fit-h(sw: length, sh: length, aspect: float) -> length {
+        if (sw <= 0px || sh <= 0px || aspect <= 0) { return max(0px, sh); }
+        if (sw / aspect > sh) { return sh; }
+        return sw / aspect;
+    }
+
+    property <length> sw: stage.width;
+    property <length> sh: stage.height;
+
+    property <float> ref-aspect: crop-tool-active ? display-source-aspect-raw : display-frame-aspect;
+    property <length> refr-x: fit-x(sw, sh, ref-aspect);
+    property <length> refr-y: fit-y(sw, sh, ref-aspect);
+    property <length> refr-w: fit-w(sw, sh, ref-aspect);
+    property <length> refr-h: fit-h(sw, sh, ref-aspect);
+
+    property <length> edit-x: refr-x + edit-nx * refr-w;
+    property <length> edit-y: refr-y + edit-ny * refr-h;
+    property <length> edit-w: edit-nw * refr-w;
+    property <length> edit-h: edit-nh * refr-h;
+
+    property <length> vid-x: crop-tool-active ? refr-x : edit-x;
+    property <length> vid-y: crop-tool-active ? refr-y : edit-y;
+    property <length> vid-w: crop-tool-active ? refr-w : edit-w;
+    property <length> vid-h: crop-tool-active ? refr-h : edit-h;
+
+    Rectangle {
+        width: 100%;
+        height: 100%;
+        background: #07090C;
+        border-width: 1px;
+        border-color: Theme.border-card;
+        border-radius: 14px;
+        clip: true;
+
+        VerticalLayout {
+            // Video stage
+            stage := Rectangle {
+                vertical-stretch: 1;
+                background: transparent;
+                clip: true;
+                property <length> abs-x: self.absolute-position.x;
+                property <length> abs-y: self.absolute-position.y;
+                function report() { root.stage-rect-changed(self.abs-x / 1px, self.abs-y / 1px, self.width / 1px, self.height / 1px); }
+                init => { self.report(); }
+                changed abs-x => { self.report(); }
+                changed abs-y => { self.report(); }
+                changed width => { self.report(); }
+                changed height => { self.report(); }
+
+                // Without a native surface (headless checks): the frame image + overlay are drawn here
+                // Video frame image
+                if root.has-clip && !root.native-video: Image {
+                    x: root.vid-x;
+                    y: root.vid-y;
+                    width: max(1px, root.vid-w);
+                    height: max(1px, root.vid-h);
+                    source: root.video-image;
+                    image-fit: fill;
+                }
+
+                if !root.native-video: EditorStageOverlay {
+                    width: 100%; height: 100%;
+                    has-clip: root.has-clip;
+                    display-source-aspect-raw: root.display-source-aspect-raw;
+                    display-frame-aspect: root.display-frame-aspect;
+                    crop-tool-active: root.crop-tool-active;
+                    reframe-selected: root.reframe-selected;
+                    edit-nx: root.edit-nx;
+                    edit-ny: root.edit-ny;
+                    edit-nw: root.edit-nw;
+                    edit-nh: root.edit-nh;
+                    texts: root.texts;
+                    focus-keys => { root.focus-keys(); }
+                    play-pause => { root.play-pause(); }
+                    deselect-reframe => { root.deselect-reframe(); }
+                    select-reframe => { root.select-reframe(); }
+                    right-click-reset => { root.right-click-reset(); }
+                    begin-overlay-drag => { root.begin-overlay-drag(); }
+                    push-undo => { root.push-undo(); }
+                    drag-overlay(m, dx, dy, rx, ry, rw, rh, sw, sh) => { root.drag-overlay(m, dx, dy, rx, ry, rw, rh, sw, sh); }
+                    select-text(i) => { root.select-text(i); }
+                    move-text(i, nx, ny) => { root.move-text(i, nx, ny); }
+                    editing-index <=> root.editing-index;
+                    text-edit-started(i) => { root.text-edit-started(i); }
+                    text-edit-finished => { root.text-edit-finished(); }
+                    deselect-text => { root.deselect-text(); }
+                }
+
+                // Empty state prompt (hit-test transparent)
+                if !root.has-clip: Text {
+                    text: Tr.t("Editor_PickClip", Tr.rev);
+                    color: Theme.text-faint;
+                    font-family: Theme.font-ui;
+                    font-size: 14px;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+
+            }
+
+            // Bottom control bar (#D10A0C0F -> #0A0C0FD1, margin 12, r=10, padding 14,10)
+            Rectangle {
+                height: 74px;
+                background: transparent;
+
+                Rectangle {
+                    x: 12px;
+                    y: 12px;
+                    width: parent.width - 24px;
+                    height: 50px;
+                    border-radius: 10px;
+                    // same bar as the player (C# kept it dark in the light theme too: the reset icon and the
+                    // play glyph disappeared there)
+                    background: Theme.player-bar-brush;
+
+                    HorizontalLayout {
+                        padding-left: 14px;
+                        padding-right: 14px;
+                        padding-top: 10px;
+                        padding-bottom: 10px;
+                        spacing: 0px;
+
+                        // 30x30 white circular Play/Pause button
+                        Rectangle {
+                            width: 30px;
+                            height: 30px;
+                            border-radius: 15px;
+                            background: Theme.is-dark ? #FFFFFF : Theme.accent;
+
+                            MaterialIcon {
+                                x: (parent.width - self.width) / 2;
+                                y: (parent.height - self.height) / 2;
+                                source: root.is-playing ? Icons.pause : Icons.play;
+                                size: root.is-playing ? 14px : 15px;
+                                tint: Theme.on-accent-brush;
+                            }
+
+                            TouchArea {
+                                mouse-cursor: pointer;
+                                clicked => {
+                                    root.play-pause();
+                                    root.focus-keys();
+                                }
+                            }
+                        }
+
+                        // Time display. Hidden when the bar is too narrow for it (minimum window width):
+                        // the timeline header shows the same position, the trim chips must not overlap it.
+                        if parent.width >= 440px: Rectangle { width: 12px; }
+                        if parent.width >= 440px: Text {
+                            text: root.time-display;
+                            color: Theme.fg-2-brush;
+                            font-family: Theme.font-ui;
+                            font-size: 11px;
+                            vertical-alignment: center;
+                        }
+
+                        Rectangle { horizontal-stretch: 1; }
+
+                        HorizontalLayout {
+                            spacing: 8px;
+                            alignment: end;
+
+                            EditorBarChip {
+                                text: root.trim-start-display;
+                                icon: Icons.arrow-collapse-left;
+                                icon-right: false;
+                                clicked => { root.set-trim-start-here(); root.focus-keys(); }
+                            }
+
+                            EditorBarChip {
+                                text: root.trim-end-display;
+                                icon: Icons.arrow-collapse-right;
+                                icon-right: true;
+                                clicked => { root.set-trim-end-here(); root.focus-keys(); }
+                            }
+
+                            EditorBarChip {
+                                text: Tr.t(root.is-marking-cut ? "Editor_CutEnd" : "Editor_Cut", Tr.rev);
+                                icon: Icons.content-cut;
+                                icon-right: false;
+                                accent-text: root.is-marking-cut;
+                                clicked => { root.toggle-cut(); root.focus-keys(); }
+                            }
+
+                            VerticalLayout {
+                                alignment: center;
+                                TransportButton {
+                                    icon: Icons.restore;
+                                    icon-size: 16px;
+                                    clicked => { root.reset-trim(); root.focus-keys(); }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

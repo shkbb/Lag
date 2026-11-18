@@ -1,0 +1,93 @@
+// Startup splash (owner, 2026-11-16: "like Discord's"): the app's background with the brand-coloured Lag
+// rewind-clock mark animated: the rewind arrow circles backwards, the minute and hour hands run forward at
+// their own speeds. Geometry is computed (sin/cos), not transformed, so every renderer draws it identically.
+// Shown only on a manual launch (not when starting minimized into the tray).
+import { Theme } from "theme/tokens.slint";
+export { Theme }
+
+export component SplashWindow inherits Window {
+    title: "Lag";
+    no-frame: true;
+    background: transparent;
+    width: 300px;
+    height: 340px;
+    in property <string> theme-mode: "dark";
+    in property <string> text: "Starting...";
+    changed theme-mode => { Theme.mode = root.theme-mode; }
+    init => { Theme.mode = root.theme-mode; }
+
+    property <bool> dark: Theme.is-dark;
+    // the app's own brand pairs: dark = near-black background + cyan mark; light = warm cream + bronze mark
+    property <color> card: Theme.surface-app;
+    property <color> ink: Theme.accent;
+    property <color> label: Theme.text-hi;
+    property <length> mark: 104px;
+    property <float> t: animation-tick() / 1ms;
+    // rewind arrow: one turn backwards per 1.6 s; minute hand 1.2 s; hour hand 12x slower
+    property <angle> rho: -360deg * mod(root.t, 1600) / 1600;
+    property <angle> minute: -90deg + 360deg * mod(root.t, 1200) / 1200;
+    property <angle> hour: 26.5deg + 360deg * mod(root.t, 14400) / 14400;
+
+    // rotate point (x, y) of the 22x22 mark about its centre (11, 11)
+    pure function rx(x: float, y: float, a: angle) -> float { return 11 + (x - 11) * cos(a) - (y - 11) * sin(a); }
+    pure function ry(x: float, y: float, a: angle) -> float { return 11 + (x - 11) * sin(a) + (y - 11) * cos(a); }
+
+    Rectangle {
+        width: 100%;
+        height: 100%;
+        border-radius: 18px;
+        background: root.card;
+        border-width: 1px;
+        border-color: root.dark ? #FFFFFF14 : #00000018;
+
+        Rectangle {
+            x: (parent.width - root.mark) / 2;
+            y: 92px;
+            width: root.mark;
+            height: root.mark;
+
+            // rewind arc (315 degrees, counter-clockwise from the left) + its tail
+            Path {
+                width: 100%; height: 100%;
+                viewbox-x: 0; viewbox-y: 0; viewbox-width: 22; viewbox-height: 22;
+                stroke: root.ink; stroke-width: root.mark * 2 / 22; stroke-line-cap: round; stroke-line-join: round; fill: transparent;
+                MoveTo { x: root.rx(2.75, 11, root.rho); y: root.ry(2.75, 11, root.rho); }
+                ArcTo {
+                    x: root.rx(5.166, 5.166, root.rho); y: root.ry(5.166, 5.166, root.rho);
+                    radius-x: 8.25; radius-y: 8.25; large-arc: true; sweep: false;
+                }
+                LineTo { x: root.rx(2.75, 7.333, root.rho); y: root.ry(2.75, 7.333, root.rho); }
+            }
+            // arrow head
+            Path {
+                width: 100%; height: 100%;
+                viewbox-x: 0; viewbox-y: 0; viewbox-width: 22; viewbox-height: 22;
+                stroke: root.ink; stroke-width: root.mark * 2 / 22; stroke-line-cap: round; stroke-line-join: round; fill: transparent;
+                MoveTo { x: root.rx(2.75, 2.75, root.rho); y: root.ry(2.75, 2.75, root.rho); }
+                LineTo { x: root.rx(2.75, 7.333, root.rho); y: root.ry(2.75, 7.333, root.rho); }
+                LineTo { x: root.rx(7.333, 7.333, root.rho); y: root.ry(7.333, 7.333, root.rho); }
+            }
+            // hands
+            Path {
+                width: 100%; height: 100%;
+                viewbox-x: 0; viewbox-y: 0; viewbox-width: 22; viewbox-height: 22;
+                stroke: root.ink; stroke-width: root.mark * 2 / 22; stroke-line-cap: round; stroke-line-join: round; fill: transparent;
+                MoveTo { x: 11 + 4.583 * cos(root.minute); y: 11 + 4.583 * sin(root.minute); }
+                LineTo { x: 11; y: 11; }
+                LineTo { x: 11 + 4.1 * cos(root.hour); y: 11 + 4.1 * sin(root.hour); }
+            }
+        }
+
+        Text {
+            x: 0;
+            y: 92px + root.mark + 40px;
+            width: parent.width;
+            text: root.text;
+            color: root.label;
+            font-family: Theme.font-ui;
+            font-size: 15px;
+            font-weight: 600;
+            horizontal-alignment: center;
+        }
+    }
+}

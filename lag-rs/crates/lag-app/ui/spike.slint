@@ -1,0 +1,24 @@
+// Spike: does Slint render at the monitor's refresh rate (165 Hz) with no timer hacks?
+export component SpikeWindow inherits Window {
+    title: "Lag (Rust spike)";
+    preferred-width: 900px;
+    preferred-height: 560px;
+    background: #0e0f12;
+    in property <string> fps-text: "…";
+    property <angle> spin: animation-tick() / 1000ms * 360deg;
+
+    VerticalLayout {
+        padding: 24px;
+        spacing: 16px;
+        Text { text: "Lag — Rust/Slint spike"; color: #e8e8ea; font-size: 22px; font-weight: 700; }
+        Text { text: root.fps-text; color: #b6f23a; font-size: 16px; }
+        Rectangle {
+            Rectangle {
+                width: 120px; height: 120px;
+                background: #b6f23a;
+                border-radius: 16px;
+                transform-rotation: root.spin;
+            }
+        }
+    }
+}

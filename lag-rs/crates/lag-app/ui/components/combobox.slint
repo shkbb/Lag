@@ -1,0 +1,284 @@
+import { ChevronIcon } from "chevron.slint";
+import { Theme } from "../theme/tokens.slint";
+import { Icons, MaterialIcon } from "../theme/icons.slint";
+import { LagScrollView } from "scrollbar.slint";
+
+export struct ComboBoxItemData {
+    text: string,
+    tier: int, // 0 = normal, 1 = caution (#E5B84C), >= 2 = extreme (#E0564C)
+}
+
+// Ported from DarkTheme.axaml:353-407 + App.axaml:226-227 + Core/UiConverters.cs:42-60
+export component LagComboBox {
+    in property <[ComboBoxItemData]> items: [];
+    in-out property <int> selected-index: 0;
+    in property <string> placeholder: "Select...";
+    in property <bool> enabled: true;
+    in-out property <bool> dropdown-open: false;
+    callback selected(int);
+
+    min-height: Theme.control-min-height;
+    min-width: 0px;
+    preferred-width: inner.preferred-width;
+    preferred-height: inner.preferred-height;
+    opacity: enabled ? 1.0 : 0.45;
+
+    property <string> current-text: (selected-index >= 0 && selected-index < items.length)
+        ? items[selected-index].text
+        : placeholder;
+    property <int> current-tier: (selected-index >= 0 && selected-index < items.length)
+        ? items[selected-index].tier
+        : 0;
+
+    pure function tier-color(tier: int, fallback: color) -> color {
+        if (tier >= 2) { return Theme.intensity-extreme; }
+        if (tier == 1) { return Theme.intensity-caution; }
+        return fallback;
+    }
+
+    Rectangle {
+        width: 100%;
+        height: 100%;
+        border-radius: Theme.rad-control;
+        background: (ta.has-hover && root.enabled) ? Theme.surface-hover-brush : Theme.surface-brush;
+        animate background { duration: Theme.dur-base; }
+
+        inner := HorizontalLayout {
+            padding-left: 12px;
+            padding-right: 8px;
+            padding-top: 5px;
+            padding-bottom: 5px;
+            spacing: 8px;
+
+            Text {
+                horizontal-stretch: 1;
+                text: root.current-text;
+                color: (root.selected-index >= 0 && root.selected-index < root.items.length)
+                    ? root.tier-color(root.current-tier, Theme.fg-brush)
+                    : Theme.fg-2-brush;
+                font-family: Theme.font-ui;
+                font-size: Theme.font-size-body;
+                vertical-alignment: center;
+                overflow: elide;
+            }
+
+            VerticalLayout {
+                alignment: center;
+                ChevronIcon { size: 14px; tint: Theme.combo-box-drop-down-glyph-foreground; up: root.dropdown-open; }
+            }
+        }
+    }
+
+    ta := TouchArea {
+        enabled: root.enabled;
+        mouse-cursor: root.enabled ? pointer : default;
+        clicked => {
+            if !root.waiting && !DropdownHost.visible {
+                DropdownHost.items = root.items;
+                DropdownHost.show-flags = false;
+                DropdownHost.selected = root.selected-index;
+                DropdownHost.max-list-h = 0px;
+                DropdownHost.ax = root.absolute-position.x;
+                DropdownHost.ay = root.absolute-position.y;
+                DropdownHost.aw = root.width;
+                DropdownHost.ah = root.height;
+                root.waiting = true;
+                root.dropdown-open = true;
+                DropdownHost.visible = true;
+            }
+        }
+    }
+
+    // The list is drawn by the window-level DropdownLayer (no Slint PopupWindow: with a popup open the GPU
+    // renderer drew the whole page ~1 px off - owner, 2026-11-17, measured frame by frame on his video).
+    property <bool> waiting: false;
+    property <int> picked: DropdownHost.picked-serial;
+    changed picked => {
+        if root.waiting {
+            root.waiting = false;
+            root.dropdown-open = false;
+            root.selected-index = DropdownHost.picked-index;
+            root.selected(root.selected-index);
+        }
+    }
+    property <int> closed: DropdownHost.closing-serial;
+    changed closed => {
+        if root.waiting {
+            root.waiting = false;
+            root.dropdown-open = false;
+        }
+    }
+}
+
+/// Shared state of the one open dropdown list (filled by LagComboBox / LanguagePicker, drawn by DropdownLayer).
+export global DropdownHost {
+    in-out property <bool> visible: false;      // layer present (stays until the close animation ends)
+    in-out property <bool> open: false;         // animated state
+    in-out property <length> ax;                // anchor box, window coordinates
+    in-out property <length> ay;
+    in-out property <length> aw;
+    in-out property <length> ah;
+    in-out property <[ComboBoxItemData]> items;
+    in-out property <[image]> flags;
+    in-out property <bool> show-flags: false;
+    in-out property <int> selected: 0;
+    in-out property <length> max-list-h: 0px;   // 0 = no cap
+    in-out property <int> picked-serial: 0;
+    in-out property <int> picked-index: 0;
+    in-out property <int> closing-serial: 0;
+}
+
+/// Window-level list layer: put it LAST in the main window so it draws above every page.
+export component DropdownLayer {
+    pure function tier-color(tier: int, fallback: color) -> color {
+        if (tier >= 2) { return Theme.intensity-extreme; }
+        if (tier == 1) { return Theme.intensity-caution; }
+        return fallback;
+    }
+    property <length> row-h: 30px;
+    property <length> pad: Theme.combo-box-dropdown-border-padding;
+    property <length> natural-h: DropdownHost.items.length * root.row-h + max(0, DropdownHost.items.length - 1) * 2px + 2 * root.pad;
+    property <length> list-h: DropdownHost.max-list-h > 0px ? min(root.natural-h, DropdownHost.max-list-h) : root.natural-h;
+    // open DOWN whenever reasonable; shorten (scroll) instead of flipping; flip only if below is tiny
+    property <length> space-below: root.height - 8px - (DropdownHost.ay + DropdownHost.ah + 4px);
+    property <length> space-above: DropdownHost.ay - 4px - 8px;
+    property <bool> fits-below: root.list-h <= root.space-below || root.space-below >= min(root.list-h, 120px) || root.space-below >= root.space-above;
+    property <length> shown-h: max(60px, min(root.list-h, root.fits-below ? root.space-below : root.space-above));
+
+    // `dismissed`: closed without a pick (outside click). A pick only bumps picked-serial: bumping both made
+    // the owner's "closed" handler run first and drop the pick.
+    function close(dismissed: bool) {
+        if DropdownHost.open || DropdownHost.visible {
+            DropdownHost.open = false;
+            if dismissed { DropdownHost.closing-serial += 1; }
+            close-timer.running = true;
+        }
+    }
+    close-timer := Timer {
+        interval: Theme.dur-flyout;
+        running: false;
+        triggered => { self.running = false; DropdownHost.visible = false; }
+    }
+    // open one frame after the layer appears, so height/opacity actually animate
+    property <bool> vis: DropdownHost.visible;
+    changed vis => { if self.vis && !close-timer.running { open-timer.running = true; } }
+    open-timer := Timer {
+        interval: 16ms;
+        running: false;
+        triggered => { self.running = false; DropdownHost.open = true; }
+    }
+
+    if DropdownHost.visible: Rectangle {
+        width: root.width;
+        height: root.height;
+
+        TouchArea { clicked => { root.close(true); } }   // outside click
+
+        panel := Rectangle {
+            x: DropdownHost.ax;
+            width: max(DropdownHost.aw, list-layout.preferred-width);
+            height: DropdownHost.open ? root.shown-h : 0px;
+            y: root.fits-below ? DropdownHost.ay + DropdownHost.ah + 4px : DropdownHost.ay - 4px - self.height;
+            opacity: DropdownHost.open ? 1 : 0;
+            clip: true;
+            border-radius: Theme.rad-overlay;
+            background: Theme.combo-box-drop-down-background;
+            border-width: 1px;
+            border-color: Theme.combo-box-drop-down-border-brush;
+            animate height, opacity, y { duration: Theme.dur-flyout; easing: cubic-bezier(0.215, 0.61, 0.355, 1); }
+
+            TouchArea { }   // clicks on the panel padding are not outside clicks
+
+            LagScrollView {
+                x: 0; y: 0; width: parent.width; height: root.shown-h;
+                content-height: root.natural-h;
+                list-layout := VerticalLayout {
+                    width: parent.width;
+                    height: self.preferred-height;
+                    padding: root.pad;
+                    spacing: 2px;
+                    for item[idx] in DropdownHost.items: item-row := Rectangle {
+                        property <bool> is-sel: idx == DropdownHost.selected;
+                        height: root.row-h;
+                        border-radius: Theme.rad-kbd;
+                        background: item-row.is-sel ? Theme.seg-sel-brush : (item-ta.has-hover ? Theme.surface-brush : transparent);
+                        animate background { duration: Theme.dur-fast; }
+                        HorizontalLayout {
+                            padding-left: 10px;
+                            padding-right: 10px;
+                            spacing: 8px;
+                            if DropdownHost.show-flags: VerticalLayout {
+                                alignment: center;
+                                Image { source: DropdownHost.flags[idx]; width: 17px; height: 12px; image-fit: contain; }
+                            }
+                            Text {
+                                text: item.text;
+                                color: root.tier-color(item.tier, item-row.is-sel ? Theme.fg-brush : Theme.fg-2-brush);
+                                font-family: Theme.font-ui;
+                                font-size: Theme.font-size-body;
+                                vertical-alignment: center;
+                                overflow: elide;
+                            }
+                        }
+                        item-ta := TouchArea {
+                            mouse-cursor: pointer;
+                            clicked => {
+                                DropdownHost.selected = idx;
+                                DropdownHost.picked-index = idx;
+                                DropdownHost.picked-serial += 1;
+                                root.close(false);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Ported from Components.axaml:100-106 (Border.rpill)
+export component RPillTrigger {
+    in property <string> text;
+    in property <bool> open: false;
+    callback clicked();
+
+    min-height: 34px;
+
+    Rectangle {
+        width: 100%;
+        height: 100%;
+        border-radius: Theme.rad-input;
+        background: ta.has-hover ? Theme.surface-hover : Theme.surface-input;
+        border-width: 1px;
+        border-color: Theme.border-input;
+        animate background { duration: Theme.dur-fast; }
+
+        HorizontalLayout {
+            padding-left: 12px;
+            padding-right: 12px;
+            padding-top: 8px;
+            padding-bottom: 8px;
+            spacing: 8px;
+
+            Text {
+                horizontal-stretch: 1;
+                text: root.text;
+                color: Theme.text-hi;
+                font-family: Theme.font-ui;
+                font-size: Theme.font-size-sub;
+                vertical-alignment: center;
+                overflow: elide;
+            }
+
+            VerticalLayout {
+                alignment: center;
+                ChevronIcon { size: 14px; tint: Theme.text-mid; up: root.open; }
+            }
+        }
+    }
+
+    ta := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+    }
+}

@@ -1,0 +1,709 @@
+// Editor page (Views/EditorView.axaml). Owned by the editor work package (docs/AGENTS.md, docs/WORKPACKAGES.md).
+import { Theme } from "../theme/tokens.slint";
+import { Icons, MaterialIcon } from "../theme/icons.slint";
+import { Tr, MainVM, Page } from "../globals.slint";
+import { RChipButton } from "../components/buttons.slint";
+import { ComboBoxItemData } from "../components/combobox.slint";
+import { SegmentedOption } from "../components/segmented_control.slint";
+import { LagScrollView } from "../components/scrollbar.slint";
+import { ClipPickerItem } from "../components/list_items.slint";
+import {
+    EditorClipItem, EditorAudioTrackData, EditorFilterData,
+    EditorCutBand, EditorTextOverlayData, EditorColorSwatch
+} from "../components/editor/types.slint";
+import { EditorTimeline } from "../components/editor/timeline.slint";
+import { EditorPreviewStage } from "../components/editor/preview_stage.slint";
+import { EditorToolsPanel } from "../components/editor/tools_panel.slint";
+import { EditorExportFlyout } from "../components/editor/export_flyout.slint";
+
+export {
+    EditorClipItem, EditorAudioTrackData, EditorFilterData,
+    EditorCutBand, EditorTextOverlayData, EditorColorSwatch
+}
+
+export global EditorVM {
+    // Header & sidebar clips
+    in property <bool> has-clip: false;
+    in property <string> current-clip-path: "";
+    in property <string> clip-name: "";
+    in property <[EditorClipItem]> clips: [];
+
+    // Preview & playback
+    in property <image> video-image;
+    // set by Rust once the native video surface exists: the stage stays empty, the overlay window draws the rest
+    in property <bool> native-video: false;
+    // the stage's rect in the window (logical px): Rust places the native surface + overlay window there
+    callback stage-rect-changed(float, float, float, float);
+    // bumped by Rust when a click in the overlay window must give keyboard focus back to the page
+    in property <int> focus-serial: 0;
+    // caption being edited on the video (-1 = none); the Text tab's field takes the keyboard meanwhile
+    in-out property <int> editing-text-index: -1;
+    in-out property <int> text-focus-serial: 0;
+    in property <bool> is-playing: false;
+    in-out property <float> position: 0.0;
+    in property <string> time-display: "0:00 / 0:00";
+    in property <float> duration-sec: 1.0;
+    in-out property <float> trim-start-sec: 0.0;
+    in-out property <float> trim-end-sec: 1.0;
+    in property <string> trim-start-display: "0:00";
+    in property <string> trim-end-display: "0:00";
+    in property <string> trim-duration-display: "0:00";
+    in property <float> playhead-fraction: 0.0;
+    in-out property <bool> is-video-selected: false;
+    in property <[image]> timeline-thumbs: [];
+    in property <[EditorCutBand]> cut-bands: [];
+    in property <bool> is-marking-cut: false;
+    in property <[EditorAudioTrackData]> audio-tracks: [];
+    in-out property <bool> audio-follows-video: true;
+    callback set-audio-follows-video(bool);
+
+    // Stage reframe / crop / transform
+    in property <float> display-source-aspect-raw: 1.7777778;
+    in property <float> display-frame-aspect: 1.7777778;
+    in-out property <bool> crop-tool-active: false;
+    in-out property <bool> reframe-selected: false;
+    in property <float> edit-nx: 0.0;
+    in property <float> edit-ny: 0.0;
+    in property <float> edit-nw: 1.0;
+    in property <float> edit-nh: 1.0;
+
+    // Tools panel
+    in-out property <int> selected-tools-tab: 0;
+    in property <[ComboBoxItemData]> aspect-options: [];
+    in-out property <int> selected-aspect-index: 0;
+    in property <[SegmentedOption]> speed-options: [];
+    in-out property <int> selected-speed-index: 1;
+    in-out property <string> speed-text: "1";
+
+    in property <[EditorFilterData]> filter-options: [];
+    in-out property <int> selected-filter-index: 0;
+    in-out property <int> color-brightness: 100;
+    in-out property <int> color-contrast: 100;
+    in-out property <int> color-saturation: 100;
+
+    in property <[EditorTextOverlayData]> texts: [];
+    in property <bool> has-texts: false;
+    in property <bool> has-selected-text: false;
+    in-out property <string> selected-text-content: "";
+    in-out property <int> selected-text-font-percent: 8;
+    in property <[EditorColorSwatch]> text-colors: [
+        { hex: "#FFFFFF", swatch: #FFFFFF },
+        { hex: "#000000", swatch: #000000 },
+        { hex: "#FFD43B", swatch: #FFD43B },
+        { hex: "#FF6B6B", swatch: #FF6B6B },
+        { hex: "#4DABF7", swatch: #4DABF7 },
+        { hex: "#51CF66", swatch: #51CF66 },
+    ];
+
+    // Export
+    in property <bool> is-exporting: false;
+    in property <int> export-progress: 0;
+    in property <string> export-status: "";
+    in property <[ComboBoxItemData]> export-resolution-options: [];
+    in-out property <int> selected-export-resolution-index: 0;
+    in property <[ComboBoxItemData]> export-format-options: [];
+    in-out property <int> selected-export-format-index: 0;
+    in-out property <bool> export-as-gif: false;
+    in-out property <bool> export-flyout-open: false;
+
+    // Callbacks (UI -> Rust)
+    callback open-clip(string);
+    callback import-clip();
+    // clip merging: picking mode in the sidebar, picked count, start
+    in-out property <bool> merge-mode: false;
+    in property <int> merge-count: 0;
+    callback toggle-merge-mode();
+    callback merge-pick(string);
+    callback merge-clips();
+    callback back();
+    callback active-changed(bool);
+    callback play-pause();
+    callback undo();
+    callback push-undo();
+    callback set-trim-start-here();
+    callback set-trim-end-here();
+    callback toggle-cut();
+    callback reset-trim();
+    callback remove-cut-at(float);
+    callback timeline-drag(int, float, float);
+    callback timeline-drag-end();
+    callback toggle-video-selected();
+    callback toggle-audio-selected(int);
+    callback set-audio-muted(int, bool);
+    callback set-audio-volume(int, int);
+    callback set-audio-range(int, float, float);
+    callback select-aspect(int);
+    callback toggle-crop-tool();
+    callback right-click-reset();
+    callback begin-overlay-drag();
+    callback drag-overlay(int, float, float, float, float, float, float, float, float);
+    callback rotate-left();
+    callback rotate-right();
+    callback toggle-flip-h();
+    callback toggle-flip-v();
+    callback select-speed-preset(int);
+    callback speed-text-edited(string);
+    callback select-filter(int);
+    callback color-changed(int, int, int);
+    callback reset-color();
+    callback add-text();
+    callback select-text(int);
+    callback update-selected-text(string);
+    callback update-selected-text-size(int);
+    callback set-text-color(string);
+    callback move-text(int, float, float);
+    callback remove-selected-text();
+    callback select-export-resolution(int);
+    callback select-export-format(int);
+    callback set-export-gif(bool);
+    callback export-clip();
+    callback cancel-export();
+}
+
+export component EditorPage inherits Rectangle {
+    background: Theme.surface-app;
+
+    property <bool> active: MainVM.current-page == Page.editor;
+    property <int> focus-serial: EditorVM.focus-serial;
+    changed focus-serial => { keys.focus(); }
+    changed active => {
+        EditorVM.active-changed(self.active);
+        if (!self.active) {
+            EditorVM.export-flyout-open = false;
+        } else {
+            keys.focus();
+        }
+    }
+
+    function clear-reframe() {
+        if (!EditorVM.crop-tool-active && EditorVM.reframe-selected) {
+            EditorVM.reframe-selected = false;
+        }
+    }
+
+    keys := FocusScope {
+        width: 100%;
+        height: 100%;
+
+        key-pressed(ev) => {
+            if (ev.text == " ") {
+                EditorVM.play-pause();
+                return accept;
+            }
+            if ((ev.text == "z" || ev.text == "Z" || ev.text == "\u{001a}") && ev.modifiers.control) {
+                EditorVM.undo();
+                return accept;
+            }
+            if (ev.text == Key.Escape && EditorVM.editing-text-index >= 0) {
+                EditorVM.editing-text-index = -1;
+                keys.focus();
+                return accept;
+            }
+            if (ev.text == Key.Escape && EditorVM.export-flyout-open) {
+                EditorVM.export-flyout-open = false;
+                return accept;
+            }
+            reject
+        }
+
+        VerticalLayout {
+            padding-left: 24px;
+            padding-top: 20px;
+            padding-right: 24px;
+            padding-bottom: 24px;
+            spacing: 14px;
+
+            // ── Header: title/clip + export status + Back + Export/Cancel ──
+            HorizontalLayout {
+                spacing: 0px;
+
+                VerticalLayout {
+                    spacing: 2px;
+                    Text {
+                        text: Tr.t("Editor_Title", Tr.rev);
+                        color: Theme.text-hi;
+                        font-family: Theme.font-display;
+                        font-size: 22px;
+                        font-weight: Theme.font-weight-semibold;
+                    }
+                    Text {
+                        max-width: 420px;
+                        text: EditorVM.clip-name;
+                        color: Theme.text-faint;
+                        font-family: Theme.font-mono;
+                        font-size: 11px;
+                        overflow: elide;
+                    }
+                }
+
+                Rectangle { horizontal-stretch: 1; }
+
+                if EditorVM.export-status != "": Text {
+                    max-width: 340px;
+                    text: EditorVM.export-status;
+                    color: Theme.text-muted;
+                    font-family: Theme.font-ui;
+                    font-size: 12px;
+                    overflow: elide;
+                    vertical-alignment: center;
+                }
+
+                if EditorVM.export-status != "": Rectangle { width: 12px; }
+
+                HorizontalLayout {
+                    spacing: 8px;
+                    alignment: end;
+
+                    // Owner, 2026-11-18: open any video file in the built-in editor, not only library clips.
+                    VerticalLayout {
+                        alignment: center;
+                        RChipButton {
+                            text: Tr.t("Editor_Import", Tr.rev);
+                            has-icon: true;
+                            icon: Icons.folder-outline;
+                            enabled: !EditorVM.is-exporting;
+                            clicked => {
+                                root.clear-reframe();
+                                EditorVM.import-clip();
+                                keys.focus();
+                            }
+                        }
+                    }
+
+                    VerticalLayout {
+                        alignment: center;
+                        RChipButton {
+                            text: Tr.t("Editor_Back", Tr.rev);
+                            clicked => {
+                                root.clear-reframe();
+                                EditorVM.back();
+                            }
+                        }
+                    }
+
+                    if !EditorVM.is-exporting: VerticalLayout {
+                        alignment: center;
+                        Rectangle {
+                            width: max(140px, exp-layout.preferred-width);
+                            height: Theme.cta-height;
+                            border-radius: Theme.rad-control;
+                            background: exp-ta.has-hover ? Theme.accent-hover-brush : Theme.accent-brush;
+                            animate background { duration: Theme.dur-base; }
+
+
+                            exp-layout := HorizontalLayout {
+                                padding-left: 14px;
+                                padding-right: 14px;
+                                spacing: 8px;
+                                alignment: center;
+
+                                VerticalLayout {
+                                    alignment: center;
+                                    MaterialIcon { source: Icons.movie-check-outline; size: 15px; tint: Theme.on-accent-brush; }
+                                }
+                                Text {
+                                    text: Tr.t("Editor_Export", Tr.rev);
+                                    color: Theme.on-accent-brush;
+                                    font-family: Theme.font-ui;
+                                    font-size: Theme.font-size-body;
+                                    font-weight: Theme.font-weight-medium;
+                                    vertical-alignment: center;
+                                }
+                                VerticalLayout {
+                                    alignment: center;
+                                    MaterialIcon { source: Icons.chevron-down; size: 14px; tint: Theme.on-accent-brush; }
+                                }
+                            }
+
+                            exp-ta := TouchArea {
+                                mouse-cursor: pointer;
+                                clicked => {
+                                    root.clear-reframe();
+                                    EditorVM.export-flyout-open = !EditorVM.export-flyout-open;
+                                    keys.focus();
+                                }
+                            }
+                        }
+                    }
+
+                    if EditorVM.is-exporting: VerticalLayout {
+                        alignment: center;
+                        Rectangle {
+                            width: max(140px, cancel-layout.preferred-width);
+                            height: Theme.cta-height;
+                            border-radius: Theme.rad-control;
+                            background: cancel-ta.has-hover ? Theme.accent-hover-brush : Theme.accent-brush;
+                            animate background { duration: Theme.dur-base; }
+
+                            cancel-layout := HorizontalLayout {
+                                padding-left: 14px;
+                                padding-right: 14px;
+                                spacing: 8px;
+                                alignment: center;
+
+                                VerticalLayout {
+                                    alignment: center;
+                                    MaterialIcon { source: Icons.close; size: 14px; tint: Theme.on-accent-brush; }
+                                }
+                                Text {
+                                    text: "\{EditorVM.export-progress}%";
+                                    color: Theme.on-accent-brush;
+                                    font-family: Theme.font-ui;
+                                    font-size: Theme.font-size-body;
+                                    font-weight: Theme.font-weight-medium;
+                                    vertical-alignment: center;
+                                }
+                                Text {
+                                    text: Tr.t("Editor_CancelExport", Tr.rev);
+                                    color: Theme.on-accent-brush;
+                                    font-family: Theme.font-ui;
+                                    font-size: Theme.font-size-body;
+                                    font-weight: Theme.font-weight-medium;
+                                    vertical-alignment: center;
+                                }
+                            }
+
+                            cancel-ta := TouchArea {
+                                mouse-cursor: pointer;
+                                clicked => {
+                                    EditorVM.cancel-export();
+                                    keys.focus();
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // ── Main Workspace: Left sidebar (240px) | Center (Preview + Timeline) | Right Tools (286px) ──
+            HorizontalLayout {
+                vertical-stretch: 1;
+                spacing: 14px;
+
+                // Left Column — Clip Picker Sidebar (240px)
+                Rectangle {
+                    width: 240px;
+                    background: Theme.surface-card;
+                    border-width: 1px;
+                    border-color: Theme.border-card;
+                    border-radius: 14px;
+
+                    VerticalLayout {
+                        padding-top: 14px;
+                        padding-bottom: 14px;
+                        spacing: 10px;
+
+                        // header: "CLIPS" + Merge (picking mode: hint + Cancel)
+                        HorizontalLayout {
+                            padding-left: 16px;
+                            padding-right: 12px;
+                            spacing: 8px;
+                            Text {
+                                horizontal-stretch: 1;
+                                text: EditorVM.merge-mode ? Tr.t("Editor_MergeHint", Tr.rev) : Tr.t("Editor_Clips", Tr.rev);
+                                color: EditorVM.merge-mode ? Theme.text-muted : Theme.text-faintest;
+                                font-family: EditorVM.merge-mode ? Theme.font-ui : Theme.font-mono;
+                                font-size: 11px;
+                                vertical-alignment: center;
+                                overflow: elide;
+                            }
+                            Text {
+                                text: EditorVM.merge-mode ? Tr.t("Editor_CancelExport", Tr.rev) : Tr.t("Editor_Merge", Tr.rev);
+                                color: merge-link-ta.has-hover ? Theme.accent-hover-brush : Theme.accent-brush;
+                                opacity: EditorVM.is-exporting ? 0.45 : 1;
+                                font-family: Theme.font-ui;
+                                font-size: 11.5px;
+                                font-weight: Theme.font-weight-semibold;
+                                vertical-alignment: center;
+                                merge-link-ta := TouchArea {
+                                    enabled: !EditorVM.is-exporting;
+                                    mouse-cursor: pointer;
+                                    clicked => {
+                                        EditorVM.toggle-merge-mode();
+                                        keys.focus();
+                                    }
+                                }
+                            }
+                        }
+
+                        LagScrollView {
+                            vertical-stretch: 1;
+                            content-height: EditorVM.clips.length * 165px;
+
+                            VerticalLayout {
+                                width: parent.width;
+                                padding-left: 8px;
+                                padding-right: 8px;
+                                spacing: 4px;
+
+                                for clip in EditorVM.clips: ClipPickerItem {
+                                    height: 161px;
+                                    clicked => {
+                                        if (EditorVM.merge-mode) {
+                                            EditorVM.merge-pick(clip.path);
+                                        } else {
+                                            root.clear-reframe();
+                                            EditorVM.open-clip(clip.path);
+                                        }
+                                        keys.focus();
+                                    }
+
+                                    VerticalLayout {
+                                        width: 190px;
+                                        spacing: 6px;
+                                        alignment: center;
+
+                                        Rectangle {
+                                            width: 190px;
+                                            height: 107px;
+                                            border-radius: 8px;
+                                            background: Theme.thumb-placeholder-bg;
+                                            clip: true;
+
+                                            if clip.has-thumbnail: Image {
+                                                width: 100%;
+                                                height: 100%;
+                                                source: clip.thumbnail;
+                                                image-fit: cover;
+                                            }
+                                            // picked for the merge: accent frame + its place in the order
+                                            if clip.merge-number > 0: Rectangle {
+                                                width: 100%;
+                                                height: 100%;
+                                                border-radius: 8px;
+                                                border-width: 2px;
+                                                border-color: Theme.accent-brush;
+                                            }
+                                            if clip.merge-number > 0: Rectangle {
+                                                x: 6px;
+                                                y: 6px;
+                                                width: 22px;
+                                                height: 22px;
+                                                border-radius: 11px;
+                                                background: Theme.accent-brush;
+                                                Text {
+                                                    text: clip.merge-number;
+                                                    color: Theme.on-accent-brush;
+                                                    font-family: Theme.font-ui;
+                                                    font-size: 11.5px;
+                                                    font-weight: Theme.font-weight-semibold;
+                                                    horizontal-alignment: center;
+                                                    vertical-alignment: center;
+                                                }
+                                            }
+                                        }
+
+                                        Text {
+                                            width: 190px;
+                                            text: clip.title;
+                                            color: Theme.text-hi;
+                                            font-family: Theme.font-ui;
+                                            font-size: 11.5px;
+                                            font-weight: Theme.font-weight-semibold;
+                                            overflow: elide;
+                                        }
+
+                                        Text {
+                                            width: 190px;
+                                            text: clip.meta;
+                                            color: Theme.text-faint;
+                                            font-family: Theme.font-mono;
+                                            font-size: 10px;
+                                            overflow: elide;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // Merge (N) under the list while picking
+                        if EditorVM.merge-mode: HorizontalLayout {
+                            padding-left: 12px;
+                            padding-right: 12px;
+                            Rectangle {
+                                property <bool> can-merge: EditorVM.merge-count >= 2 && !EditorVM.is-exporting;
+                                height: Theme.cta-height;
+                                border-radius: Theme.rad-control;
+                                background: merge-run-ta.has-hover && self.can-merge ? Theme.accent-hover-brush : Theme.accent-brush;
+                                opacity: self.can-merge ? 1 : 0.45;
+                                animate background { duration: Theme.dur-base; }
+                                HorizontalLayout {
+                                    alignment: center;
+                                    spacing: 6px;
+                                    Text {
+                                        text: Tr.t("Editor_Merge", Tr.rev);
+                                        color: Theme.on-accent-brush;
+                                        font-family: Theme.font-ui;
+                                        font-size: Theme.font-size-body;
+                                        font-weight: Theme.font-weight-medium;
+                                        vertical-alignment: center;
+                                    }
+                                    if EditorVM.merge-count > 0: Text {
+                                        text: "(" + EditorVM.merge-count + ")";
+                                        color: Theme.on-accent-brush;
+                                        font-family: Theme.font-ui;
+                                        font-size: Theme.font-size-body;
+                                        vertical-alignment: center;
+                                    }
+                                }
+                                merge-run-ta := TouchArea {
+                                    enabled: parent.can-merge;
+                                    mouse-cursor: pointer;
+                                    clicked => {
+                                        EditorVM.merge-clips();
+                                        keys.focus();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Center Column — Preview + Timeline
+                VerticalLayout {
+                    horizontal-stretch: 1;
+                    spacing: 14px;
+
+                    EditorPreviewStage {
+                        vertical-stretch: 1;
+                        min-height: 180px; // C#: VideoFrame MinHeight=180
+                        has-clip: EditorVM.has-clip;
+                        video-image: EditorVM.video-image;
+                        native-video: EditorVM.native-video;
+                        stage-rect-changed(x, y, w, h) => { EditorVM.stage-rect-changed(x, y, w, h); }
+                        editing-index <=> EditorVM.editing-text-index;
+                        text-edit-started(i) => { EditorVM.selected-tools-tab = 2; EditorVM.text-focus-serial += 1; }
+                        text-edit-finished => { keys.focus(); }
+                        deselect-text => { EditorVM.select-text(-1); }
+                        is-playing: EditorVM.is-playing;
+                        time-display: EditorVM.time-display;
+                        trim-start-display: EditorVM.trim-start-display;
+                        trim-end-display: EditorVM.trim-end-display;
+                        is-marking-cut: EditorVM.is-marking-cut;
+                        display-source-aspect-raw: EditorVM.display-source-aspect-raw;
+                        display-frame-aspect: EditorVM.display-frame-aspect;
+                        crop-tool-active: EditorVM.crop-tool-active;
+                        reframe-selected: EditorVM.reframe-selected;
+                        edit-nx: EditorVM.edit-nx;
+                        edit-ny: EditorVM.edit-ny;
+                        edit-nw: EditorVM.edit-nw;
+                        edit-nh: EditorVM.edit-nh;
+                        texts: EditorVM.texts;
+
+                        focus-keys => { keys.focus(); }
+                        play-pause => { EditorVM.play-pause(); }
+                        set-trim-start-here => { EditorVM.set-trim-start-here(); }
+                        set-trim-end-here => { EditorVM.set-trim-end-here(); }
+                        toggle-cut => { EditorVM.toggle-cut(); }
+                        reset-trim => { EditorVM.reset-trim(); }
+                        deselect-reframe => { EditorVM.reframe-selected = false; }
+                        select-reframe => { EditorVM.reframe-selected = true; }
+                        right-click-reset => { EditorVM.right-click-reset(); }
+                        begin-overlay-drag => { EditorVM.begin-overlay-drag(); }
+                        drag-overlay(m, dx, dy, rx, ry, rw, rh, sw, sh) => {
+                            EditorVM.drag-overlay(m, dx, dy, rx, ry, rw, rh, sw, sh);
+                        }
+                        select-text(idx) => { EditorVM.select-text(idx); }
+                        move-text(idx, nx, ny) => { EditorVM.move-text(idx, nx, ny); }
+                        push-undo => { EditorVM.push-undo(); }
+                    }
+
+                    EditorTimeline {
+                        trim-start-display: EditorVM.trim-start-display;
+                        trim-duration-display: EditorVM.trim-duration-display;
+                        trim-end-display: EditorVM.trim-end-display;
+                        is-video-selected: EditorVM.is-video-selected;
+                        timeline-thumbs: EditorVM.timeline-thumbs;
+                        cut-bands: EditorVM.cut-bands;
+                        duration-sec: EditorVM.duration-sec;
+                        trim-start-sec: EditorVM.trim-start-sec;
+                        trim-end-sec: EditorVM.trim-end-sec;
+                        playhead-fraction: EditorVM.playhead-fraction;
+                        audio-tracks: EditorVM.audio-tracks;
+                        audio-follows-video: EditorVM.audio-follows-video;
+                        toggle-audio-link => { EditorVM.set-audio-follows-video(!EditorVM.audio-follows-video); }
+
+                        interaction-started => { root.clear-reframe(); keys.focus(); }
+                        toggle-video-selected => { EditorVM.toggle-video-selected(); }
+                        push-undo => { EditorVM.push-undo(); }
+                        timeline-drag(m, f, w) => { EditorVM.timeline-drag(m, f, w); }
+                        timeline-drag-end => { EditorVM.timeline-drag-end(); }
+                        remove-cut-at(frac) => { EditorVM.remove-cut-at(frac); }
+                        toggle-audio-selected(idx) => { EditorVM.toggle-audio-selected(idx); }
+                        set-audio-muted(idx, m) => { EditorVM.set-audio-muted(idx, m); }
+                        set-audio-volume(idx, v) => { EditorVM.set-audio-volume(idx, v); }
+                        set-audio-range(idx, s, e) => { EditorVM.set-audio-range(idx, s, e); }
+                    }
+                }
+
+                // Right Column — Tools Panel (286px)
+                EditorToolsPanel {
+                    width: 286px;
+                    selected-tab <=> EditorVM.selected-tools-tab;
+                    aspect-options: EditorVM.aspect-options;
+                    selected-aspect-index <=> EditorVM.selected-aspect-index;
+                    crop-tool-active: EditorVM.crop-tool-active;
+                    speed-options: EditorVM.speed-options;
+                    selected-speed-index <=> EditorVM.selected-speed-index;
+                    speed-text <=> EditorVM.speed-text;
+                    filter-options: EditorVM.filter-options;
+                    selected-filter-index <=> EditorVM.selected-filter-index;
+                    color-brightness <=> EditorVM.color-brightness;
+                    color-contrast <=> EditorVM.color-contrast;
+                    color-saturation <=> EditorVM.color-saturation;
+                    has-texts: EditorVM.has-texts;
+                    has-selected-text: EditorVM.has-selected-text;
+                    selected-text-content <=> EditorVM.selected-text-content;
+                    selected-text-font-percent <=> EditorVM.selected-text-font-percent;
+                    editing-text-index <=> EditorVM.editing-text-index;
+                    text-focus-serial: EditorVM.text-focus-serial;
+                    text-colors: EditorVM.text-colors;
+
+                    interaction-started => { root.clear-reframe(); }
+                    focus-keys => { keys.focus(); }
+                    select-aspect(idx) => { EditorVM.select-aspect(idx); }
+                    toggle-crop-tool => { EditorVM.toggle-crop-tool(); }
+                    rotate-left => { EditorVM.rotate-left(); }
+                    rotate-right => { EditorVM.rotate-right(); }
+                    toggle-flip-h => { EditorVM.toggle-flip-h(); }
+                    toggle-flip-v => { EditorVM.toggle-flip-v(); }
+                    select-speed-preset(idx) => { EditorVM.select-speed-preset(idx); }
+                    speed-text-edited(s) => { EditorVM.speed-text-edited(s); }
+                    select-filter(idx) => { EditorVM.select-filter(idx); }
+                    color-changed(b, c, s) => { EditorVM.color-changed(b, c, s); }
+                    reset-color => { EditorVM.reset-color(); }
+                    add-text => { EditorVM.add-text(); }
+                    update-selected-text(s) => { EditorVM.update-selected-text(s); }
+                    update-selected-text-size(p) => { EditorVM.update-selected-text-size(p); }
+                    set-text-color(h) => { EditorVM.set-text-color(h); }
+                    remove-selected-text => { EditorVM.remove-selected-text(); }
+                }
+            }
+        }
+    }
+
+    // Export flyout backdrop + presenter (BottomEdgeAlignedRight under Export button)
+    if EditorVM.export-flyout-open && !EditorVM.is-exporting: TouchArea {
+        width: 100%;
+        height: 100%;
+        clicked => { EditorVM.export-flyout-open = false; keys.focus(); }
+    }
+    if EditorVM.export-flyout-open && !EditorVM.is-exporting: EditorExportFlyout {
+        x: parent.width - self.width - 24px;
+        y: 66px;
+        resolution-options: EditorVM.export-resolution-options;
+        selected-resolution-index <=> EditorVM.selected-export-resolution-index;
+        format-options: EditorVM.export-format-options;
+        selected-format-index <=> EditorVM.selected-export-format-index;
+        export-as-gif <=> EditorVM.export-as-gif;
+
+        resolution-selected(idx) => { EditorVM.select-export-resolution(idx); }
+        format-selected(idx) => { EditorVM.select-export-format(idx); }
+        gif-toggled(v) => { EditorVM.set-export-gif(v); }
+        confirm-export => {
+            EditorVM.export-flyout-open = false;
+            EditorVM.export-clip();
+            keys.focus();
+        }
+    }
+}

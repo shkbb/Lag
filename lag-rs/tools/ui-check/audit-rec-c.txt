@@ -1,0 +1,15 @@
+# Settings audit C: second monitor, keys overlay baked into the recording, mp4 again.
+size 1360x840
+page settings
+wait 3000
+choose monitor 1
+choose format 0
+toggle overlay 1
+toggle keys-shown 1
+wait 1500
+rec
+wait 9000
+save
+wait 7000
+rec
+wait 3000

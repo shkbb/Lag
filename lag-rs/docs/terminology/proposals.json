@@ -1,0 +1,2144 @@
+[
+  {
+    "key": "About_CheckUpdates",
+    "en_old": "Check for Updates",
+    "uk_old": "Перевірити оновлення",
+    "en_new": "Check for Updates",
+    "uk_new": "Перевірити оновлення",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "About_Group",
+    "en_old": "ABOUT",
+    "uk_old": "ПРО ПРОГРАМУ",
+    "en_new": "About",
+    "uk_new": "Про програму",
+    "changed": true,
+    "note": "Used as a regular row label inside STORAGE & ABOUT, not a section header."
+  },
+  {
+    "key": "About_Version",
+    "en_old": "Version",
+    "uk_old": "Версія",
+    "en_new": "Version",
+    "uk_new": "Версія",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "App_Tagline",
+    "en_old": "Background screen recording",
+    "uk_old": "Фоновий запис екрану",
+    "en_new": "Background game & screen recording",
+    "uk_new": "Фоновий запис ігор та екрана",
+    "changed": true,
+    "note": "Reflects game focus; fixes UK genitive 'екрану' -> 'екрана'."
+  },
+  {
+    "key": "AudioMode_All",
+    "en_old": "All PC audio",
+    "uk_old": "Весь звук ПК",
+    "en_new": "All system audio",
+    "uk_new": "Увесь системний звук",
+    "changed": true,
+    "note": "Unifies 'PC audio'/'sound' to 'system audio' and avoids 'ПК' abbreviation."
+  },
+  {
+    "key": "AudioMode_Apps",
+    "en_old": "Specific apps",
+    "uk_old": "Обрані програми",
+    "en_new": "Specific apps",
+    "uk_new": "Окремі програми",
+    "changed": true,
+    "note": "'Specific' means 'Окремі', whereas 'Обрані' means 'Selected'."
+  },
+  {
+    "key": "Browse_Title",
+    "en_old": "Select a folder for saving replays",
+    "uk_old": "Виберіть папку для збереження повторів",
+    "en_new": "Select library folder",
+    "uk_new": "Виберіть папку бібліотеки",
+    "changed": true,
+    "note": "Short, direct, consistent with 'Library' and 'clip' terminology."
+  },
+  {
+    "key": "Btn_PauseRecording",
+    "en_old": "Pause",
+    "uk_old": "Пауза",
+    "en_new": "Pause",
+    "uk_new": "Пауза",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Btn_ResumeRecording",
+    "en_old": "Resume",
+    "uk_old": "Відновити",
+    "en_new": "Resume",
+    "uk_new": "Відновити",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Btn_SaveReplay",
+    "en_old": "Save Replay",
+    "uk_old": "Зберегти повтор",
+    "en_new": "Save Replay",
+    "uk_new": "Зберегти повтор",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Btn_StartRecording",
+    "en_old": "Start Recording",
+    "uk_old": "Почати запис",
+    "en_new": "Start Recording",
+    "uk_new": "Почати запис",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Btn_StopRecording",
+    "en_old": "Stop Recording",
+    "uk_old": "Зупинити запис",
+    "en_new": "Stop Recording",
+    "uk_new": "Зупинити запис",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Channels_Mono",
+    "en_old": "Mono",
+    "uk_old": "Моно",
+    "en_new": "Mono",
+    "uk_new": "Моно",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Channels_Stereo",
+    "en_old": "Stereo",
+    "uk_old": "Стерео",
+    "en_new": "Stereo",
+    "uk_new": "Стерео",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Editor_AddText",
+    "en_old": "Add text",
+    "uk_old": "Додати текст",
+    "en_new": "Add Text",
+    "uk_new": "Додати текст",
+    "changed": true,
+    "note": "Title Case for EN action buttons."
+  },
+  {
+    "key": "Editor_Back",
+    "en_old": "Back",
+    "uk_old": "Назад",
+    "en_new": "Back",
+    "uk_new": "Назад",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Editor_Brightness",
+    "en_old": "Brightness",
+    "uk_old": "Яскравість",
+    "en_new": "Brightness",
+    "uk_new": "Яскравість",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Editor_CancelExport",
+    "en_old": "Cancel",
+    "uk_old": "Скасувати",
+    "en_new": "Cancel",
+    "uk_new": "Скасувати",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Editor_Clips",
+    "en_old": "CLIPS",
+    "uk_old": "КЛІПИ",
+    "en_new": "CLIPS",
+    "uk_new": "КЛІПИ",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Editor_Color",
+    "en_old": "Color",
+    "uk_old": "Колір",
+    "en_new": "Color",
+    "uk_new": "Колір",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Editor_Contrast",
+    "en_old": "Contrast",
+    "uk_old": "Контраст",
+    "en_new": "Contrast",
+    "uk_new": "Контраст",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Editor_Crop",
+    "en_old": "Crop",
+    "uk_old": "Кадрування",
+    "en_new": "Crop",
+    "uk_new": "Кадрування",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Editor_Cut",
+    "en_old": "Cut",
+    "uk_old": "Вирізати",
+    "en_new": "Cut",
+    "uk_new": "Вирізати",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Editor_CutEnd",
+    "en_old": "End here",
+    "uk_old": "Кінець тут",
+    "en_new": "End Here",
+    "uk_new": "Кінець тут",
+    "changed": true,
+    "note": "Title Case for EN action buttons."
+  },
+  {
+    "key": "Editor_DeleteText",
+    "en_old": "Delete",
+    "uk_old": "Видалити",
+    "en_new": "Delete",
+    "uk_new": "Видалити",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Editor_Deselect",
+    "en_old": "Deselect",
+    "uk_old": "Зняти виділення",
+    "en_new": "Deselect",
+    "uk_new": "Зняти виділення",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Editor_Edit",
+    "en_old": "Edit",
+    "uk_old": "Редагувати",
+    "en_new": "Edit",
+    "uk_new": "Редагувати",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Editor_Export",
+    "en_old": "Export",
+    "uk_old": "Експортувати",
+    "en_new": "Export",
+    "uk_new": "Експортувати",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Editor_ExportDone",
+    "en_old": "Saved: {0}",
+    "uk_old": "Збережено: {0}",
+    "en_new": "Saved: {0}",
+    "uk_new": "Збережено: {0}",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Editor_ExportError",
+    "en_old": "Export failed: {0}",
+    "uk_old": "Помилка експорту: {0}",
+    "en_new": "Export failed: {0}",
+    "uk_new": "Помилка експорту: {0}",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Editor_ExportGif",
+    "en_old": "Export as GIF",
+    "uk_old": "Експорт у GIF",
+    "en_new": "Export as GIF",
+    "uk_new": "Експортувати як GIF",
+    "changed": true,
+    "note": "Consistent infinitive verb form for action checkbox."
+  },
+  {
+    "key": "Editor_ExportOptions",
+    "en_old": "Export options",
+    "uk_old": "Опції експорту",
+    "en_new": "Export options",
+    "uk_new": "Параметри експорту",
+    "changed": true,
+    "note": "Avoids anglicism calque 'Опції'."
+  },
+  {
+    "key": "Editor_ExportResolution",
+    "en_old": "Resolution",
+    "uk_old": "Роздільність",
+    "en_new": "Resolution",
+    "uk_new": "Роздільна здатність",
+    "changed": true,
+    "note": "Standard Ukrainian term instead of calque 'Роздільність'."
+  },
+  {
+    "key": "Editor_Exporting",
+    "en_old": "Exporting… {0}%",
+    "uk_old": "Експорт… {0}%",
+    "en_new": "Exporting... {0}%",
+    "uk_new": "Експорт... {0}%",
+    "changed": true,
+    "note": "Standardizes ellipsis to ASCII '...' across all progress strings."
+  },
+  {
+    "key": "Editor_Format",
+    "en_old": "Format",
+    "uk_old": "Формат",
+    "en_new": "Format",
+    "uk_new": "Формат",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Editor_NoClips",
+    "en_old": "No clips to edit yet.",
+    "uk_old": "Поки немає кліпів для редагування.",
+    "en_new": "No clips to edit yet.",
+    "uk_new": "Кліпів для редагування ще немає.",
+    "changed": true,
+    "note": "Natural Ukrainian phrasing consistent with empty library text."
+  },
+  {
+    "key": "Editor_PickClip",
+    "en_old": "Choose a clip to edit",
+    "uk_old": "Оберіть кліп для редагування",
+    "en_new": "Choose a clip to edit",
+    "uk_new": "Виберіть кліп для редагування",
+    "changed": true,
+    "note": "Consistent 'Виберіть' verb for selecting items/folders."
+  },
+  {
+    "key": "Editor_ResetTrim",
+    "en_old": "Reset trim",
+    "uk_old": "Скинути обрізку",
+    "en_new": "Reset trim",
+    "uk_new": "Скинути обрізку",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Editor_Saturation",
+    "en_old": "Saturation",
+    "uk_old": "Насиченість",
+    "en_new": "Saturation",
+    "uk_new": "Насиченість",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Editor_SetEnd",
+    "en_old": "Set clip end to the current moment",
+    "uk_old": "Встановити кінець кліпу на поточний момент",
+    "en_new": "Set end to current position",
+    "uk_new": "Встановити кінець на поточну позицію",
+    "changed": true,
+    "note": "Concise wording; replaces clunky 'current moment'."
+  },
+  {
+    "key": "Editor_SetStart",
+    "en_old": "Set clip start to the current moment",
+    "uk_old": "Встановити початок кліпу на поточний момент",
+    "en_new": "Set start to current position",
+    "uk_new": "Встановити початок на поточну позицію",
+    "changed": true,
+    "note": "Concise wording; replaces clunky 'current moment'."
+  },
+  {
+    "key": "Editor_Speed",
+    "en_old": "Speed",
+    "uk_old": "Швидкість",
+    "en_new": "Speed",
+    "uk_new": "Швидкість",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Editor_TabClip",
+    "en_old": "Clip",
+    "uk_old": "Кліп",
+    "en_new": "Clip",
+    "uk_new": "Кліп",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Editor_TabFilters",
+    "en_old": "Filters",
+    "uk_old": "Фільтри",
+    "en_new": "Filters",
+    "uk_new": "Фільтри",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Editor_TabText",
+    "en_old": "Text",
+    "uk_old": "Текст",
+    "en_new": "Text",
+    "uk_new": "Текст",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Editor_TextDefault",
+    "en_old": "Text",
+    "uk_old": "Текст",
+    "en_new": "Text",
+    "uk_new": "Текст",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Editor_TextHint",
+    "en_old": "Add text, then drag it on the video",
+    "uk_old": "Додай текст і перетягни його на відео",
+    "en_new": "Add text, then drag it on the video",
+    "uk_new": "Додайте текст і перетягніть його на відео",
+    "changed": true,
+    "note": "Replaces informal 'ти'-form with polite 'ви'-form."
+  },
+  {
+    "key": "Editor_TextSize",
+    "en_old": "Size",
+    "uk_old": "Розмір",
+    "en_new": "Size",
+    "uk_new": "Розмір",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Editor_Title",
+    "en_old": "Editor",
+    "uk_old": "Редактор",
+    "en_new": "Editor",
+    "uk_new": "Редактор",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Editor_TrackAudio",
+    "en_old": "Audio",
+    "uk_old": "Звук",
+    "en_new": "Audio",
+    "uk_new": "Аудіо",
+    "changed": true,
+    "note": "Consistent with 'Аудіо' tab and 'АУДІОДОРІЖКИ'."
+  },
+  {
+    "key": "Editor_TrackMic",
+    "en_old": "Microphone",
+    "uk_old": "Мікрофон",
+    "en_new": "Microphone",
+    "uk_new": "Мікрофон",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Editor_TrackSystem",
+    "en_old": "System sound",
+    "uk_old": "Системний звук",
+    "en_new": "System audio",
+    "uk_new": "Системний звук",
+    "changed": true,
+    "note": "Unifies 'System sound' to 'System audio'."
+  },
+  {
+    "key": "Editor_Tracks",
+    "en_old": "AUDIO TRACKS",
+    "uk_old": "АУДІОДОРІЖКИ",
+    "en_new": "AUDIO TRACKS",
+    "uk_new": "АУДІОДОРІЖКИ",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Hotkey_PressCombo",
+    "en_old": "Press a key combination...",
+    "uk_old": "Натисніть комбінацію клавіш...",
+    "en_new": "Press key combination...",
+    "uk_new": "Натисніть комбінацію клавіш...",
+    "changed": true,
+    "note": "Shorter, matches Medal-like brevity."
+  },
+  {
+    "key": "Library_ClearSelection",
+    "en_old": "Clear selection",
+    "uk_old": "Скасувати виділення",
+    "en_new": "Clear Selection",
+    "uk_new": "Зняти виділення",
+    "changed": true,
+    "note": "Title Case EN button; UK matches 'Editor_Deselect'."
+  },
+  {
+    "key": "Library_ClipCount",
+    "en_old": "{0} CLIPS",
+    "uk_old": "{0} КЛІПІВ",
+    "en_new": "{0} CLIPS",
+    "uk_new": "КЛІПІВ: {0}",
+    "changed": true,
+    "note": "Plural-safe Ukrainian format for any count without ICU plural rules."
+  },
+  {
+    "key": "Library_Delete",
+    "en_old": "Delete",
+    "uk_old": "Видалити",
+    "en_new": "Delete",
+    "uk_new": "Видалити",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Library_Desktop",
+    "en_old": "Desktop",
+    "uk_old": "Робочий стіл",
+    "en_new": "Desktop",
+    "uk_new": "Робочий стіл",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Library_Empty",
+    "en_old": "No replays yet. Start recording and press the hotkey to save a replay!",
+    "uk_old": "Поки немає повторів. Почніть запис і натисніть гарячу клавішу, щоб зберегти повтор!",
+    "en_new": "No clips yet. Start recording and press your hotkey to save a replay.",
+    "uk_new": "Кліпів ще немає. Почніть запис і натисніть гарячу клавішу, щоб зберегти повтор.",
+    "changed": true,
+    "note": "Uses 'clips' for saved items in Library and calmer tone without exclamation."
+  },
+  {
+    "key": "Library_EmptyTitle",
+    "en_old": "No replays yet",
+    "uk_old": "Поки що немає повторів",
+    "en_new": "No clips yet",
+    "uk_new": "Кліпів ще немає",
+    "changed": true,
+    "note": "Consistent 'clips' terminology for Library items."
+  },
+  {
+    "key": "Library_Favorites",
+    "en_old": "Favorites",
+    "uk_old": "Улюблені",
+    "en_new": "Favorites",
+    "uk_new": "Улюблені",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Library_FreeSpace",
+    "en_old": "Free space",
+    "uk_old": "Вільно",
+    "en_new": "Free space",
+    "uk_new": "Вільно",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Library_GroupCount",
+    "en_old": "{0} clips",
+    "uk_old": "{0} кліпів",
+    "en_new": "{0} clips",
+    "uk_new": "Кліпів: {0}",
+    "changed": true,
+    "note": "Plural-safe Ukrainian format for any count."
+  },
+  {
+    "key": "Library_NoResults",
+    "en_old": "No clips match your search.",
+    "uk_old": "Немає кліпів за вашим запитом.",
+    "en_new": "No clips match your search.",
+    "uk_new": "Немає кліпів за вашим запитом.",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Library_OpenFolder",
+    "en_old": "Open folder",
+    "uk_old": "Відкрити папку",
+    "en_new": "Open Folder",
+    "uk_new": "Відкрити папку",
+    "changed": true,
+    "note": "Title Case for EN action buttons."
+  },
+  {
+    "key": "Library_Search",
+    "en_old": "Search clips",
+    "uk_old": "Пошук кліпів",
+    "en_new": "Search clips",
+    "uk_new": "Пошук кліпів",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Library_ShowInFolder",
+    "en_old": "Show in folder",
+    "uk_old": "Показати в папці",
+    "en_new": "Show in Folder",
+    "uk_new": "Показати в папці",
+    "changed": true,
+    "note": "Title Case for EN action buttons/menu items."
+  },
+  {
+    "key": "Library_Stats",
+    "en_old": "{0} clips · {1} free",
+    "uk_old": "{0} кліпів · вільно {1}",
+    "en_new": "{0} clips · {1} free",
+    "uk_new": "Кліпів: {0} · вільно {1}",
+    "changed": true,
+    "note": "Plural-safe Ukrainian format for any count."
+  },
+  {
+    "key": "Library_Subtitle",
+    "en_old": "Your saved moments",
+    "uk_old": "Ваші збережені моменти",
+    "en_new": "Your saved clips",
+    "uk_new": "Ваші збережені кліпи",
+    "changed": true,
+    "note": "Replaces 'moments' with 'clips' for terminology consistency."
+  },
+  {
+    "key": "Library_Title",
+    "en_old": "Library",
+    "uk_old": "Бібліотека",
+    "en_new": "Library",
+    "uk_new": "Бібліотека",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Library_Today",
+    "en_old": "Today",
+    "uk_old": "Сьогодні",
+    "en_new": "Today",
+    "uk_new": "Сьогодні",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Library_Yesterday",
+    "en_old": "Yesterday",
+    "uk_old": "Вчора",
+    "en_new": "Yesterday",
+    "uk_new": "Вчора",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Nav_Header",
+    "en_old": "NAVIGATION",
+    "uk_old": "НАВІГАЦІЯ",
+    "en_new": "NAVIGATION",
+    "uk_new": "НАВІГАЦІЯ",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Nav_Library",
+    "en_old": "Library",
+    "uk_old": "Бібліотека",
+    "en_new": "Library",
+    "uk_new": "Бібліотека",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Nav_Player",
+    "en_old": "Player",
+    "uk_old": "Програвач",
+    "en_new": "Player",
+    "uk_new": "Програвач",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Nav_Settings",
+    "en_old": "Settings",
+    "uk_old": "Налаштування",
+    "en_new": "Settings",
+    "uk_new": "Налаштування",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Option_Auto",
+    "en_old": "Auto",
+    "uk_old": "Авто",
+    "en_new": "Auto",
+    "uk_new": "Авто",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Option_Custom",
+    "en_old": "Custom",
+    "uk_old": "Власний",
+    "en_new": "Custom",
+    "uk_new": "Власний",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Option_DefaultDevice",
+    "en_old": "Default (auto)",
+    "uk_old": "За замовчуванням",
+    "en_new": "System default",
+    "uk_new": "За замовчуванням",
+    "changed": true,
+    "note": "Removes parenthetical '(auto)' from label."
+  },
+  {
+    "key": "Option_Native",
+    "en_old": "Native",
+    "uk_old": "Нативна",
+    "en_new": "Native",
+    "uk_new": "Оригінальна",
+    "changed": true,
+    "note": "Avoids anglicism calque 'Нативна'."
+  },
+  {
+    "key": "Overlay_Camera",
+    "en_old": "Camera",
+    "uk_old": "Камера",
+    "en_new": "Webcam",
+    "uk_new": "Вебкамера",
+    "changed": true,
+    "note": "Unifies 'Camera' and 'Webcam' across overlay settings."
+  },
+  {
+    "key": "Overlay_Enable",
+    "en_old": "Video overlays",
+    "uk_old": "Відео-оверлеї",
+    "en_new": "Enable overlays",
+    "uk_new": "Увімкнути оверлеї",
+    "changed": true,
+    "note": "Covers stats overlay too; fixes invalid hyphen in 'Відео-оверлеї'."
+  },
+  {
+    "key": "Overlay_Enable_Desc",
+    "en_old": "Bake the webcam and keyboard/mouse into recordings — pick a corner for each below",
+    "uk_old": "Запікати вебкамеру та клавіатуру/мишу в записи — оберіть кут для кожного нижче",
+    "en_new": "Show webcam, input display, or stats in your recordings",
+    "uk_new": "Додавати вебкамеру, натискання клавіш або статистику до записів",
+    "changed": true,
+    "note": "Removes 'Bake' jargon and outdated 'pick a corner' text."
+  },
+  {
+    "key": "Overlay_Keys",
+    "en_old": "Keyboard + mouse",
+    "uk_old": "Клавіатура + миша",
+    "en_new": "Keyboard & mouse",
+    "uk_new": "Клавіатура та миша",
+    "changed": true,
+    "note": "Cleaner than '+' symbol in UI labels."
+  },
+  {
+    "key": "Overlay_None",
+    "en_old": "None",
+    "uk_old": "Нічого",
+    "en_new": "None",
+    "uk_new": "Немає",
+    "changed": true,
+    "note": "Standard UK option for 'None'."
+  },
+  {
+    "key": "Overlay_Stats",
+    "en_old": "Resource monitor",
+    "uk_old": "Моніторинг ресурсів",
+    "en_new": "Performance stats",
+    "uk_new": "Статистика продуктивності",
+    "changed": true,
+    "note": "Avoids Windows 'Resource monitor' confusion; describes FPS/CPU/GPU/RAM."
+  },
+  {
+    "key": "Overlay_WheelHint",
+    "en_old": "Drag to move · drag an edge or scroll the mouse wheel to resize",
+    "uk_old": "Тягніть, щоб перемістити · за край або колесиком миші — щоб змінити розмір",
+    "en_new": "Drag to move · drag an edge or scroll to resize",
+    "uk_new": "Перетягніть, щоб перемістити · потягніть за край або прокрутіть коліщатко для масштабу",
+    "changed": true,
+    "note": "Concise EN; fixes Russianism 'колесиком' in UK."
+  },
+  {
+    "key": "Player_Clips",
+    "en_old": "Clips",
+    "uk_old": "Кліпи",
+    "en_new": "Clips",
+    "uk_new": "Кліпи",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Player_Duration",
+    "en_old": "Duration",
+    "uk_old": "Тривалість",
+    "en_new": "Duration",
+    "uk_new": "Тривалість",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Player_NowPlaying",
+    "en_old": "Now playing: ",
+    "uk_old": "Відтворюється: ",
+    "en_new": "Now playing: ",
+    "uk_new": "Відтворюється: ",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Player_Placeholder",
+    "en_old": "Video player",
+    "uk_old": "Відеопрогравач",
+    "en_new": "Video player",
+    "uk_new": "Відеопрогравач",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Player_ReplayBadge",
+    "en_old": "REPLAY",
+    "uk_old": "ПОВТОР",
+    "en_new": "REPLAY",
+    "uk_new": "ПОВТОР",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Player_Replays",
+    "en_old": "REPLAYS",
+    "uk_old": "ПОВТОРИ",
+    "en_new": "CLIPS",
+    "uk_new": "КЛІПИ",
+    "changed": true,
+    "note": "Consistent with 'Player_Clips' and 'Library_ClipCount'."
+  },
+  {
+    "key": "Player_Used",
+    "en_old": "Used",
+    "uk_old": "Зайнято",
+    "en_new": "Used",
+    "uk_new": "Зайнято",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Preset_Advanced",
+    "en_old": "ADVANCED",
+    "uk_old": "РОЗШИРЕНІ",
+    "en_new": "ADVANCED",
+    "uk_new": "РОЗШИРЕНІ",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Preset_Balanced",
+    "en_old": "Balanced",
+    "uk_old": "Баланс",
+    "en_new": "Balanced",
+    "uk_new": "Баланс",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Preset_BalancedDesc",
+    "en_old": "Solid fps and quality",
+    "uk_old": "Стабільні fps і якість",
+    "en_new": "Good FPS and quality",
+    "uk_new": "Оптимальні FPS і якість",
+    "changed": true,
+    "note": "Uppercase 'FPS'; avoids repeating 'Balanced' and informal 'Solid'."
+  },
+  {
+    "key": "Preset_CleanupHint",
+    "en_old": "Only {0} GB free — consider enabling auto-cleanup (~{1} GB).",
+    "uk_old": "Вільно лише {0} ГБ — варто увімкнути автоочищення (~{1} ГБ).",
+    "en_new": "Only {0} GB free — consider enabling auto-cleanup (~{1} GB).",
+    "uk_new": "Вільно лише {0} ГБ — варто увімкнути автоочищення (~{1} ГБ).",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Preset_Performance",
+    "en_old": "Performance",
+    "uk_old": "Продуктивність",
+    "en_new": "Performance",
+    "uk_new": "Продуктивність",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Preset_PerformanceDesc",
+    "en_old": "Smoothest gameplay",
+    "uk_old": "Найплавніший геймплей",
+    "en_new": "Smoothest gameplay",
+    "uk_new": "Найплавніший геймплей",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Preset_Quality",
+    "en_old": "Quality",
+    "uk_old": "Якість",
+    "en_new": "Quality",
+    "uk_new": "Якість",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Preset_QualityDesc",
+    "en_old": "Sharpest clips",
+    "uk_old": "Найчіткіші кліпи",
+    "en_new": "Sharpest clips",
+    "uk_new": "Найчіткіші кліпи",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Preset_RecommendedBadge",
+    "en_old": "Recommended",
+    "uk_old": "Рекомендовано",
+    "en_new": "Recommended",
+    "uk_new": "Рекомендовано",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Preset_Rescan",
+    "en_old": "Re-scan hardware",
+    "uk_old": "Пересканувати залізо",
+    "en_new": "Re-scan Hardware",
+    "uk_new": "Перевірити обладнання",
+    "changed": true,
+    "note": "Title Case EN button; replaces slangy 'залізо' with 'обладнання'."
+  },
+  {
+    "key": "Preset_SectionTitle",
+    "en_old": "PRESETS",
+    "uk_old": "ПРЕСЕТИ",
+    "en_new": "PRESETS",
+    "uk_new": "ПРЕСЕТИ",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Preset_Subtitle",
+    "en_old": "Tuned to your hardware — pick a goal",
+    "uk_old": "Підібрано під твоє залізо — обери ціль",
+    "en_new": "Tuned to your hardware — choose a priority",
+    "uk_new": "Підібрано під ваше обладнання — оберіть пріоритет",
+    "changed": true,
+    "note": "Fixes 'pick a goal', UK 'ти'-form ('твоє'), and slang ('залізо')."
+  },
+  {
+    "key": "Settings_AppsHint",
+    "en_old": "Apps will appear here when they start playing audio.",
+    "uk_old": "Програми з'являться тут, коли почнуть відтворювати звук.",
+    "en_new": "Apps will appear here when they start playing audio.",
+    "uk_new": "Програми з'являться тут, коли почнуть відтворювати звук.",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Settings_AudioMode",
+    "en_old": "Recording mode",
+    "uk_old": "Режим запису",
+    "en_new": "Audio source",
+    "uk_new": "Джерело звуку",
+    "changed": true,
+    "note": "Clarifies setting inside Audio tab (switches All system audio vs Specific apps)."
+  },
+  {
+    "key": "Settings_AudioModeByTarget",
+    "en_old": "Match audio mode to capture",
+    "uk_old": "Звук залежно від джерела",
+    "en_new": "Auto-switch audio source",
+    "uk_new": "Автоперемикання джерела звуку",
+    "changed": true,
+    "note": "Plain, self-explanatory toggle label."
+  },
+  {
+    "key": "Settings_AudioModeByTarget_Desc",
+    "en_old": "Recording a game captures the selected apps; the desktop captures all PC sound.",
+    "uk_old": "Запис гри бере обрані програми, робочий стіл — весь звук ПК.",
+    "en_new": "Record selected apps for games, and all system audio for desktop",
+    "uk_new": "Для ігор записувати обрані програми, для робочого стола — увесь системний звук",
+    "changed": true,
+    "note": "One concise sentence using consistent 'system audio' and 'desktop' terms."
+  },
+  {
+    "key": "Settings_Auto",
+    "en_old": "Auto",
+    "uk_old": "Авто",
+    "en_new": "Auto",
+    "uk_new": "Авто",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Settings_AutoCleanup",
+    "en_old": "Auto-clean library",
+    "uk_old": "Автоочищення бібліотеки",
+    "en_new": "Auto-clean library",
+    "uk_new": "Автоочищення бібліотеки",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Settings_AutoCleanup_Desc",
+    "en_old": "Automatically delete the oldest clips when the library exceeds the limit",
+    "uk_old": "Автоматично видаляти найстаріші кліпи, коли бібліотека перевищує ліміт",
+    "en_new": "Delete the oldest clips when the library exceeds your size limit",
+    "uk_new": "Видаляти найстаріші кліпи при перевищенні ліміту розміру",
+    "changed": true,
+    "note": "Shorter, clearer description."
+  },
+  {
+    "key": "Settings_AutoStart",
+    "en_old": "Start recording automatically",
+    "uk_old": "Автоматично починати запис",
+    "en_new": "Auto-start recording",
+    "uk_new": "Автоматично починати запис",
+    "changed": true,
+    "note": "Concise label matching 'Auto-clean library'."
+  },
+  {
+    "key": "Settings_AutoStart_Desc",
+    "en_old": "The replay buffer starts right after launch",
+    "uk_old": "Запис у буфер повтору стартує одразу після запуску",
+    "en_new": "Start the replay buffer when the app opens",
+    "uk_new": "Запускати буфер повтору одразу після відкриття програми",
+    "changed": true,
+    "note": "Plain, consistent 'app' / 'програма' wording."
+  },
+  {
+    "key": "Settings_Bitrate",
+    "en_old": "Bitrate",
+    "uk_old": "Бітрейт",
+    "en_new": "Bitrate",
+    "uk_new": "Бітрейт",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Settings_Bitrate_CustomSuffix",
+    "en_old": "Mbps",
+    "uk_old": "Мбіт/с",
+    "en_new": "Mbps",
+    "uk_new": "Мбіт/с",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Settings_Browse",
+    "en_old": "Browse",
+    "uk_old": "Огляд",
+    "en_new": "Browse",
+    "uk_new": "Огляд",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Settings_BufferLength",
+    "en_old": "Replay buffer length",
+    "uk_old": "Довжина буфера повтору",
+    "en_new": "Replay buffer length",
+    "uk_new": "Тривалість буфера повтору",
+    "changed": true,
+    "note": "Fixes literal calque 'Довжина' -> 'Тривалість' for time duration."
+  },
+  {
+    "key": "Settings_Codec",
+    "en_old": "Video codec",
+    "uk_old": "Відеокодек",
+    "en_new": "Video codec",
+    "uk_new": "Відеокодек",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Settings_DisableGameMode",
+    "en_old": "Disable Windows Game Mode",
+    "uk_old": "Вимикати ігровий режим Windows",
+    "en_new": "Disable Windows Game Mode",
+    "uk_new": "Вимикати ігровий режим Windows",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Settings_DisableGameMode_Desc",
+    "en_old": "Windows Game Mode throttles background apps: in-game recordings can drop to 1-2 FPS and saving a replay may not trigger until you alt-tab. Lag disables it automatically while this is on. Strongly recommended to keep enabled.",
+    "uk_old": "Ігровий режим Windows пригнічує фонові програми: запис у грі може падати до 1–2 кадрів/с, а збереження повтору — не спрацьовувати до alt-tab. Lag вимикатиме його автоматично. Наполегливо радимо лишити увімкненим.",
+    "en_new": "Prevents Windows Game Mode from throttling background recording and hotkeys",
+    "uk_new": "Запобігає обмеженню фонового запису та гарячих клавіш ігровим режимом Windows",
+    "changed": true,
+    "note": "Rewrites 3-sentence wall of text into one clear sentence without 'alt-tab'."
+  },
+  {
+    "key": "Settings_Display",
+    "en_old": "Display",
+    "uk_old": "Екран",
+    "en_new": "Display",
+    "uk_new": "Дисплей",
+    "changed": true,
+    "note": "Standard Windows UK term; unifies 'Екран' and 'Монітор'."
+  },
+  {
+    "key": "Settings_Format",
+    "en_old": "File format",
+    "uk_old": "Формат файлу",
+    "en_new": "File format",
+    "uk_new": "Формат файлу",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Settings_FrameRate",
+    "en_old": "Frame rate (FPS)",
+    "uk_old": "Частота кадрів (FPS)",
+    "en_new": "Frame rate",
+    "uk_new": "Частота кадрів",
+    "changed": true,
+    "note": "Removes technical brackets '(FPS)' from setting name."
+  },
+  {
+    "key": "Settings_GameCapture",
+    "en_old": "Game capture (hook)",
+    "uk_old": "Захоплення ігор (хук)",
+    "en_new": "Game capture",
+    "uk_new": "Захоплення гри",
+    "changed": true,
+    "note": "Removes technical brackets '(hook)' from setting name."
+  },
+  {
+    "key": "Settings_GameCapture_Desc",
+    "en_old": "Needed for games in EXCLUSIVE fullscreen. CS2 also requires the \"-allow_third_party_software\" Steam launch option, otherwise the hook is rejected and retries waste CPU. Leave off if you record in windowed/borderless modes.",
+    "uk_old": "Потрібно для ігор в ЕКСКЛЮЗИВНОМУ повноекранному режимі. Для CS2 додатково потрібен параметр запуску Steam \"-allow_third_party_software\", інакше гра відхиляє хук і повторні спроби марнують CPU. Якщо граєте у віконному/безрамковому режимі — лишіть вимкненим.",
+    "en_new": "For exclusive fullscreen games only; leave off in borderless mode, and CS2 requires -allow_third_party_software",
+    "uk_new": "Лише для ексклюзивного повноекранного режиму; вимкніть для безрамкового, у CS2 потрібен параметр -allow_third_party_software",
+    "changed": true,
+    "note": "One short sentence; removes ALL CAPS, 'hook' jargon, and wasted-CPU prose."
+  },
+  {
+    "key": "Settings_Gpu",
+    "en_old": "Recording GPU",
+    "uk_old": "GPU для запису",
+    "en_new": "Recording GPU",
+    "uk_new": "GPU для запису",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Settings_Group_Advanced",
+    "en_old": "ADVANCED",
+    "uk_old": "ДОДАТКОВО",
+    "en_new": "ADVANCED",
+    "uk_new": "РОЗШИРЕНІ",
+    "changed": true,
+    "note": "Unifies UK section header with 'Preset_Advanced'."
+  },
+  {
+    "key": "Settings_Group_Automation",
+    "en_old": "AUTOMATION",
+    "uk_old": "АВТОМАТИЗАЦІЯ",
+    "en_new": "AUTOMATION",
+    "uk_new": "АВТОМАТИЗАЦІЯ",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Settings_Group_Devices",
+    "en_old": "DEVICES",
+    "uk_old": "ПРИСТРОЇ",
+    "en_new": "DEVICES",
+    "uk_new": "ПРИСТРОЇ",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Settings_Group_Encoding",
+    "en_old": "ENCODING",
+    "uk_old": "КОДУВАННЯ",
+    "en_new": "ENCODING",
+    "uk_new": "КОДУВАННЯ",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Settings_Group_Hotkey",
+    "en_old": "HOTKEY",
+    "uk_old": "ГАРЯЧІ КЛАВІШІ",
+    "en_new": "HOTKEYS",
+    "uk_new": "ГАРЯЧІ КЛАВІШІ",
+    "changed": true,
+    "note": "Plural to match the 4 hotkey rows and UK 'ГАРЯЧІ КЛАВІШІ'."
+  },
+  {
+    "key": "Settings_Group_Language",
+    "en_old": "LANGUAGE",
+    "uk_old": "МОВА",
+    "en_new": "LANGUAGE",
+    "uk_new": "МОВА",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Settings_Group_Mic",
+    "en_old": "MICROPHONE",
+    "uk_old": "МІКРОФОН",
+    "en_new": "MICROPHONE",
+    "uk_new": "МІКРОФОН",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Settings_Group_Overlay",
+    "en_old": "Overlay",
+    "uk_old": "Оверлей",
+    "en_new": "Overlay",
+    "uk_new": "Оверлей",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Settings_Group_Paths",
+    "en_old": "PATHS",
+    "uk_old": "ШЛЯХИ",
+    "en_new": "PATHS",
+    "uk_new": "ШЛЯХИ",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Settings_Group_Recording",
+    "en_old": "RECORDING",
+    "uk_old": "ЗАПИС",
+    "en_new": "RECORDING",
+    "uk_new": "ЗАПИС",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Settings_Group_Startup",
+    "en_old": "STARTUP & PERFORMANCE",
+    "uk_old": "ЗАПУСК І ПРОДУКТИВНІСТЬ",
+    "en_new": "STARTUP & PERFORMANCE",
+    "uk_new": "ЗАПУСК І ПРОДУКТИВНІСТЬ",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Settings_Group_Storage",
+    "en_old": "STORAGE & ABOUT",
+    "uk_old": "СХОВИЩЕ ТА ПРО ПРОГРАМУ",
+    "en_new": "STORAGE & ABOUT",
+    "uk_new": "СХОВИЩЕ ТА ПРО ПРОГРАМУ",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Settings_Group_SystemAudio",
+    "en_old": "SYSTEM SOUND",
+    "uk_old": "СИСТЕМНИЙ ЗВУК",
+    "en_new": "SYSTEM AUDIO",
+    "uk_new": "СИСТЕМНИЙ ЗВУК",
+    "changed": true,
+    "note": "Unifies 'System sound' to 'System audio'."
+  },
+  {
+    "key": "Settings_HearYourself",
+    "en_old": "Hear yourself",
+    "uk_old": "Чути себе",
+    "en_new": "Hear yourself",
+    "uk_new": "Прослуховування мікрофона",
+    "changed": true,
+    "note": "Natural Ukrainian label replacing literal 'Чути себе'."
+  },
+  {
+    "key": "Settings_HearYourselfHint",
+    "en_old": "Plays your mic to the selected output — use headphones to avoid echo.",
+    "uk_old": "Відтворює мікрофон у вибраний вихід — слухай у навушниках, щоб уникнути відлуння.",
+    "en_new": "Plays your mic through your output device; use headphones to avoid echo.",
+    "uk_new": "Відтворює мікрофон через вибраний пристрій — використовуйте навушники, щоб уникнути луни.",
+    "changed": true,
+    "note": "Fixes UK 'ти'-form ('слухай') and awkward 'вибраний вихід'."
+  },
+  {
+    "key": "Settings_Hotkey_Change",
+    "en_old": "Change",
+    "uk_old": "Змінити",
+    "en_new": "Change",
+    "uk_new": "Змінити",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Settings_Hotkey_Desc",
+    "en_old": "Click the button, then press the desired key combination",
+    "uk_old": "Натисніть кнопку, а потім потрібну комбінацію клавіш",
+    "en_new": "Click, then press a key combination",
+    "uk_new": "Натисніть і задайте комбінацію клавіш",
+    "changed": true,
+    "note": "Shorter, plain instruction."
+  },
+  {
+    "key": "Settings_Hotkey_Listening",
+    "en_old": "Listening...",
+    "uk_old": "Слухаю...",
+    "en_new": "Press keys...",
+    "uk_new": "Натисніть клавіші...",
+    "changed": true,
+    "note": "Clear action prompt instead of anthropomorphic 'Listening...'/'Слухаю...'."
+  },
+  {
+    "key": "Settings_Hotkey_Pause",
+    "en_old": "Pause recording",
+    "uk_old": "Пауза запису",
+    "en_new": "Pause recording",
+    "uk_new": "Призупинити запис",
+    "changed": true,
+    "note": "Consistent infinitive verb for hotkey action."
+  },
+  {
+    "key": "Settings_Hotkey_Record",
+    "en_old": "Start/stop recording",
+    "uk_old": "Старт/стоп запису",
+    "en_new": "Start/stop recording",
+    "uk_new": "Почати / зупинити запис",
+    "changed": true,
+    "note": "Consistent infinitive verbs matching transport buttons."
+  },
+  {
+    "key": "Settings_Hotkey_SaveReplay",
+    "en_old": "Save replay",
+    "uk_old": "Зберегти повтор",
+    "en_new": "Save replay",
+    "uk_new": "Зберегти повтор",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Settings_Hotkey_Screenshot",
+    "en_old": "Screenshot",
+    "uk_old": "Скріншот",
+    "en_new": "Screenshot",
+    "uk_new": "Скриншот",
+    "changed": true,
+    "note": "Follows 2019 Ukrainian orthography ('Скриншот')."
+  },
+  {
+    "key": "Settings_InputSensitivity",
+    "en_old": "Input sensitivity",
+    "uk_old": "Поріг чутливості",
+    "en_new": "Input sensitivity",
+    "uk_new": "Чутливість мікрофона",
+    "changed": true,
+    "note": "Standard Discord UK term; avoids collision with 'Поріг' (Threshold)."
+  },
+  {
+    "key": "Settings_InputSensitivityHint",
+    "en_old": "Mutes the mic below the threshold — auto adapts to your room.",
+    "uk_old": "Глушить мікрофон нижче порога — авто підлаштовується під твою кімнату.",
+    "en_new": "Mutes your mic below the threshold, or adjusts automatically.",
+    "uk_new": "Вимикає мікрофон нижче порога; авторежим підлаштовується під фон.",
+    "changed": true,
+    "note": "Fixes UK 'ти'-form ('твою кімнату') and slang ('Глушить')."
+  },
+  {
+    "key": "Settings_KeysOverlay",
+    "en_old": "Show pressed keys",
+    "uk_old": "Показувати натиснуті клавіші",
+    "en_new": "Input overlay",
+    "uk_new": "Показувати натиснуті клавіші",
+    "changed": true,
+    "note": "Concise setting name consistent with 'Webcam overlay'."
+  },
+  {
+    "key": "Settings_KeysOverlay_Desc",
+    "en_old": "Overlay pressed keyboard and mouse buttons on clips",
+    "uk_old": "Накладати натиснуті клавіші й кнопки миші на кліпи",
+    "en_new": "Show pressed keys and mouse clicks in recordings",
+    "uk_new": "Показувати натиснуті клавіші та кнопки миші в записах",
+    "changed": true,
+    "note": "Clear, plain one-sentence description."
+  },
+  {
+    "key": "Settings_Language",
+    "en_old": "Language",
+    "uk_old": "Мова",
+    "en_new": "Language",
+    "uk_new": "Мова",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Settings_LibraryFolder",
+    "en_old": "Library folder",
+    "uk_old": "Папка бібліотеки",
+    "en_new": "Library folder",
+    "uk_new": "Папка бібліотеки",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Settings_Listen",
+    "en_old": "Listen",
+    "uk_old": "Слухати",
+    "en_new": "Listen",
+    "uk_new": "Слухати",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Settings_Logs",
+    "en_old": "Logs",
+    "uk_old": "Логи",
+    "en_new": "Logs",
+    "uk_new": "Логи",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Settings_MicChannels",
+    "en_old": "Channels",
+    "uk_old": "Канали",
+    "en_new": "Channels",
+    "uk_new": "Канали",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Settings_MicLevel",
+    "en_old": "Mic level",
+    "uk_old": "Рівень мікрофона",
+    "en_new": "Mic level",
+    "uk_new": "Рівень мікрофона",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Settings_MicVolume",
+    "en_old": "Mic volume",
+    "uk_old": "Гучність мікрофона",
+    "en_new": "Mic volume",
+    "uk_new": "Гучність мікрофона",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Settings_Microphone",
+    "en_old": "Microphone",
+    "uk_old": "Мікрофон",
+    "en_new": "Microphone",
+    "uk_new": "Мікрофон",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Settings_NoiseSuppression",
+    "en_old": "Noise suppression",
+    "uk_old": "Шумозаглушення",
+    "en_new": "Noise suppression",
+    "uk_new": "Шумозаглушення",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Settings_NoiseSuppressionHint",
+    "en_old": "Removes steady background noise — fans, hum, keyboard — from your mic.",
+    "uk_old": "Прибирає постійний фоновий шум — кулери, гул, клавіатуру — з мікрофона.",
+    "en_new": "Removes background noise like fans, hum, and keyboard clicks.",
+    "uk_new": "Прибирає фоновий шум від вентиляторів, гулу та клавіатури.",
+    "changed": true,
+    "note": "Cleaner punctuation; replaces slangy 'кулери' with 'вентиляторів'."
+  },
+  {
+    "key": "Settings_OpenLogs",
+    "en_old": "Open folder",
+    "uk_old": "Відкрити папку",
+    "en_new": "Open Folder",
+    "uk_new": "Відкрити папку",
+    "changed": true,
+    "note": "Title Case for EN action buttons."
+  },
+  {
+    "key": "Settings_OutputDevice",
+    "en_old": "Output device",
+    "uk_old": "Пристрій виводу",
+    "en_new": "Output device",
+    "uk_new": "Пристрій виведення",
+    "changed": true,
+    "note": "Fixes Russian calque 'виводу' -> 'виведення'."
+  },
+  {
+    "key": "Settings_OutputLevel",
+    "en_old": "Output level",
+    "uk_old": "Рівень виходу",
+    "en_new": "Output level",
+    "uk_new": "Рівень виведення",
+    "changed": true,
+    "note": "Fixes Russian calque 'виходу' -> 'виведення'."
+  },
+  {
+    "key": "Settings_OutputResolution",
+    "en_old": "Output resolution",
+    "uk_old": "Роздільність виводу",
+    "en_new": "Resolution",
+    "uk_new": "Роздільна здатність",
+    "changed": true,
+    "note": "Matches Editor label; fixes calque 'Роздільність виводу'."
+  },
+  {
+    "key": "Settings_PendingChanges",
+    "en_old": "Changes will take effect after restarting the recording.",
+    "uk_old": "Зміни набудуть чинності після перезапуску запису.",
+    "en_new": "Changes will take effect after restarting the recording.",
+    "uk_new": "Зміни набудуть чинності після перезапуску запису.",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Settings_Ptt",
+    "en_old": "Push-to-talk",
+    "uk_old": "Push-to-talk",
+    "en_new": "Push-to-talk",
+    "uk_new": "Натисни і говори",
+    "changed": true,
+    "note": "Standard Ukrainian term (Discord/Steam); removes Latin mixing."
+  },
+  {
+    "key": "Settings_PttKey",
+    "en_old": "Push-to-talk key",
+    "uk_old": "Клавіша push-to-talk",
+    "en_new": "Push-to-talk key",
+    "uk_new": "Клавіша «Натисни і говори»",
+    "changed": true,
+    "note": "Ukrainian term with proper guillemets."
+  },
+  {
+    "key": "Settings_Ptt_Desc",
+    "en_old": "Microphone is live only while the key is held",
+    "uk_old": "Мікрофон активний лише доки затиснута клавіша",
+    "en_new": "Only record your mic while holding this key",
+    "uk_new": "Мікрофон записується лише під час утримання клавіші",
+    "changed": true,
+    "note": "Plain Medal-like phrasing; removes 'затиснута'."
+  },
+  {
+    "key": "Settings_SaveDiagnostics",
+    "en_old": "Export .zip",
+    "uk_old": "Експорт .zip",
+    "en_new": "Export .zip",
+    "uk_new": "Експортувати .zip",
+    "changed": true,
+    "note": "Consistent infinitive verb form for action button."
+  },
+  {
+    "key": "Settings_SeparateTracks",
+    "en_old": "Separate audio tracks",
+    "uk_old": "Окремі аудіодоріжки",
+    "en_new": "Separate audio tracks",
+    "uk_new": "Окремі аудіодоріжки",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Settings_SeparateTracks_Desc",
+    "en_old": "System sound and microphone are saved as separate tracks in the file",
+    "uk_old": "Системний звук і мікрофон зберігаються окремими доріжками у файлі",
+    "en_new": "Save system audio and microphone on separate tracks",
+    "uk_new": "Зберігати системний звук і мікрофон на окремих доріжках",
+    "changed": true,
+    "note": "Shorter, consistent 'system audio' and infinitive UK toggle description."
+  },
+  {
+    "key": "Settings_StartMinimized",
+    "en_old": "Start minimized",
+    "uk_old": "Запускати згорнутим",
+    "en_new": "Start minimized",
+    "uk_new": "Запускати згорнутим",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Settings_StartMinimized_Desc",
+    "en_old": "Launches hidden in the system tray",
+    "uk_old": "Застосунок стартує прихованим у треї",
+    "en_new": "Start hidden in the system tray",
+    "uk_new": "Запускати згорнутим у системний трей",
+    "changed": true,
+    "note": "Consistent 'програма' / infinitive style; removes 'Застосунок'."
+  },
+  {
+    "key": "Settings_StartWithWindows",
+    "en_old": "Start with Windows",
+    "uk_old": "Запускати разом із Windows",
+    "en_new": "Start with Windows",
+    "uk_new": "Запускати разом із Windows",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Settings_StartWithWindows_Desc",
+    "en_old": "Adds the app to system startup",
+    "uk_old": "Додає застосунок до автозавантаження системи",
+    "en_new": "Launch Lag automatically when you sign in to Windows",
+    "uk_new": "Автоматично запускати програму під час входу у Windows",
+    "changed": true,
+    "note": "Plain description; unifies 'застосунок' -> 'програма'."
+  },
+  {
+    "key": "Settings_Stop",
+    "en_old": "Stop",
+    "uk_old": "Зупинити",
+    "en_new": "Stop",
+    "uk_new": "Зупинити",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Settings_StorageLimit",
+    "en_old": "Library size limit",
+    "uk_old": "Ліміт розміру бібліотеки",
+    "en_new": "Storage limit",
+    "uk_new": "Ліміт сховища",
+    "changed": true,
+    "note": "Shorter, matches 'STORAGE & ABOUT'."
+  },
+  {
+    "key": "Settings_Subtitle",
+    "en_old": "Configure capture, audio and app behavior.",
+    "uk_old": "Налаштування захоплення, звуку та поведінки програми.",
+    "en_new": "Configure recording, audio, and app preferences.",
+    "uk_new": "Налаштування запису, звуку та параметрів програми.",
+    "changed": true,
+    "note": "Replaces 'capture'/'behavior' calques with plain 'recording'/'preferences'."
+  },
+  {
+    "key": "Settings_Theme",
+    "en_old": "Theme",
+    "uk_old": "Тема",
+    "en_new": "Theme",
+    "uk_new": "Тема",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Settings_Theme_Desc",
+    "en_old": "Light, dark, or follow your system",
+    "uk_old": "Світла, темна або як у системі",
+    "en_new": "Choose light, dark, or match Windows",
+    "uk_new": "Світла, темна або системна",
+    "changed": true,
+    "note": "Plain, concise phrasing."
+  },
+  {
+    "key": "Settings_Threshold",
+    "en_old": "Threshold",
+    "uk_old": "Поріг",
+    "en_new": "Threshold",
+    "uk_new": "Поріг",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Settings_Title",
+    "en_old": "Settings",
+    "uk_old": "Налаштування",
+    "en_new": "Settings",
+    "uk_new": "Налаштування",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Settings_WebcamDevice",
+    "en_old": "Camera",
+    "uk_old": "Камера",
+    "en_new": "Webcam",
+    "uk_new": "Вебкамера",
+    "changed": true,
+    "note": "Unifies 'Camera' and 'Webcam' across overlay settings."
+  },
+  {
+    "key": "Settings_WebcamOverlay",
+    "en_old": "Webcam in recordings",
+    "uk_old": "Вебкамера в записах",
+    "en_new": "Webcam overlay",
+    "uk_new": "Оверлей вебкамери",
+    "changed": true,
+    "note": "Consistent with 'Input overlay'."
+  },
+  {
+    "key": "Settings_WebcamOverlay_Desc",
+    "en_old": "Show your camera in a corner of saved clips",
+    "uk_old": "Показувати камеру в куті збережених кліпів",
+    "en_new": "Show your webcam in recordings",
+    "uk_new": "Показувати вебкамеру в записах",
+    "changed": true,
+    "note": "Concise; removes outdated 'in a corner' text."
+  },
+  {
+    "key": "Settings_WebcamPosition",
+    "en_old": "Position",
+    "uk_old": "Позиція",
+    "en_new": "Position",
+    "uk_new": "Розташування",
+    "changed": true,
+    "note": "Standard Ukrainian UI term instead of anglicism 'Позиція'."
+  },
+  {
+    "key": "Settings_WebcamSize",
+    "en_old": "Size",
+    "uk_old": "Розмір",
+    "en_new": "Size",
+    "uk_new": "Розмір",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Sidebar_Buffer",
+    "en_old": "Buffer",
+    "uk_old": "Буфер",
+    "en_new": "Buffer",
+    "uk_new": "Буфер",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Status_NoMonitor",
+    "en_old": "No display selected for recording.",
+    "uk_old": "Монітор для запису не вибрано.",
+    "en_new": "No display selected for recording.",
+    "uk_new": "Дисплей для запису не вибрано.",
+    "changed": true,
+    "note": "Consistent with 'Settings_Display: Дисплей'."
+  },
+  {
+    "key": "Status_NotRecording",
+    "en_old": "Recording is not active — press 'Start Recording' first.",
+    "uk_old": "Запис не активний — спочатку натисніть 'Почати запис'.",
+    "en_new": "Not recording — press Start Recording first.",
+    "uk_new": "Запис не запущено — спочатку натисніть «Почати запис».",
+    "changed": true,
+    "note": "Shorter EN; UK uses guillemets and natural 'не запущено'."
+  },
+  {
+    "key": "Status_Paused",
+    "en_old": "Paused",
+    "uk_old": "Призупинено",
+    "en_new": "Paused",
+    "uk_new": "Призупинено",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Status_Ready",
+    "en_old": "Ready",
+    "uk_old": "Готовий",
+    "en_new": "Ready",
+    "uk_new": "Готово",
+    "changed": true,
+    "note": "Impersonal status matching 'Призупинено' / 'Зупинено', not masculine 'Готовий'."
+  },
+  {
+    "key": "Status_RecordError",
+    "en_old": "Recording error: {0}",
+    "uk_old": "Помилка запису: {0}",
+    "en_new": "Recording error: {0}",
+    "uk_new": "Помилка запису: {0}",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Status_Recording",
+    "en_old": "Recording...",
+    "uk_old": "Запис...",
+    "en_new": "Recording...",
+    "uk_new": "Запис...",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Status_ReplaySaved",
+    "en_old": "Replay saved: {0}",
+    "uk_old": "Повтор збережено: {0}",
+    "en_new": "Replay saved: {0}",
+    "uk_new": "Повтор збережено: {0}",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Status_SaveError",
+    "en_old": "Save error: {0}",
+    "uk_old": "Помилка збереження: {0}",
+    "en_new": "Save error: {0}",
+    "uk_new": "Помилка збереження: {0}",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Status_Saving",
+    "en_old": "Saving replay...",
+    "uk_old": "Збереження повтору...",
+    "en_new": "Saving replay...",
+    "uk_new": "Збереження повтору...",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Status_Starting",
+    "en_old": "Starting recording...",
+    "uk_old": "Початок запису...",
+    "en_new": "Starting recording...",
+    "uk_new": "Запуск запису...",
+    "changed": true,
+    "note": "More natural Ukrainian for starting a process."
+  },
+  {
+    "key": "Status_StopError",
+    "en_old": "Stop error: {0}",
+    "uk_old": "Помилка зупинки: {0}",
+    "en_new": "Stop error: {0}",
+    "uk_new": "Помилка зупинки: {0}",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Status_Stopped",
+    "en_old": "Stopped",
+    "uk_old": "Зупинено",
+    "en_new": "Stopped",
+    "uk_new": "Зупинено",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Status_Stopping",
+    "en_old": "Stopping...",
+    "uk_old": "Зупинка...",
+    "en_new": "Stopping...",
+    "uk_new": "Зупинення...",
+    "changed": true,
+    "note": "Proper process noun instead of 'Зупинка'."
+  },
+  {
+    "key": "Tab_Audio",
+    "en_old": "Audio",
+    "uk_old": "Аудіо",
+    "en_new": "Audio",
+    "uk_new": "Аудіо",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Tab_General",
+    "en_old": "General",
+    "uk_old": "Загальні",
+    "en_new": "General",
+    "uk_new": "Загальні",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Tab_Video",
+    "en_old": "Video",
+    "uk_old": "Відео",
+    "en_new": "Video",
+    "uk_new": "Відео",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Theme_Dark",
+    "en_old": "Dark",
+    "uk_old": "Темна",
+    "en_new": "Dark",
+    "uk_new": "Темна",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Theme_Light",
+    "en_old": "Light",
+    "uk_old": "Світла",
+    "en_new": "Light",
+    "uk_new": "Світла",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Theme_System",
+    "en_old": "System",
+    "uk_old": "Системна",
+    "en_new": "System",
+    "uk_new": "Системна",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Time_HourMinShort",
+    "en_old": "{0} h {1} min",
+    "uk_old": "{0} год {1} хв",
+    "en_new": "{0} h {1} min",
+    "uk_new": "{0} год {1} хв",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Time_MinShort",
+    "en_old": "{0} min",
+    "uk_old": "{0} хв",
+    "en_new": "{0} min",
+    "uk_new": "{0} хв",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Time_SecShort",
+    "en_old": "{0} sec",
+    "uk_old": "{0} с",
+    "en_new": "{0} sec",
+    "uk_new": "{0} с",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Toast_NowRecording",
+    "en_old": "Now recording",
+    "uk_old": "Зараз записується",
+    "en_new": "Now recording",
+    "uk_new": "Триває запис",
+    "changed": true,
+    "note": "Natural Ukrainian replacing literal calque 'Зараз записується'."
+  },
+  {
+    "key": "Toast_RecordingStarted",
+    "en_old": "Recording started",
+    "uk_old": "Запис почато",
+    "en_new": "Recording started",
+    "uk_new": "Запис розпочато",
+    "changed": true,
+    "note": "Natural Ukrainian replacing truncated 'почато'."
+  },
+  {
+    "key": "Toast_RecordingStopped",
+    "en_old": "Recording stopped",
+    "uk_old": "Запис зупинено",
+    "en_new": "Recording stopped",
+    "uk_new": "Запис зупинено",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Toast_ReplaySaved",
+    "en_old": "Replay saved",
+    "uk_old": "Повтор збережено",
+    "en_new": "Replay saved",
+    "uk_new": "Повтор збережено",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Toast_ScreenshotSaved",
+    "en_old": "Screenshot saved",
+    "uk_old": "Скріншот збережено",
+    "en_new": "Screenshot saved",
+    "uk_new": "Скриншот збережено",
+    "changed": true,
+    "note": "Follows 2019 Ukrainian orthography ('Скриншот')."
+  },
+  {
+    "key": "Tooltip_Forward",
+    "en_old": "Forward 10s",
+    "uk_old": "Вперед 10 с",
+    "en_new": "Forward 10s",
+    "uk_new": "Вперед 10 с",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Tooltip_Fullscreen",
+    "en_old": "Fullscreen (ESC to exit)",
+    "uk_old": "Повний екран (ESC — вихід)",
+    "en_new": "Fullscreen",
+    "uk_new": "На весь екран",
+    "changed": true,
+    "note": "Removes technical brackets '(ESC to exit)'."
+  },
+  {
+    "key": "Tooltip_Next",
+    "en_old": "Next replay",
+    "uk_old": "Наступний повтор",
+    "en_new": "Next clip",
+    "uk_new": "Наступний кліп",
+    "changed": true,
+    "note": "Consistent 'clip' terminology in Player."
+  },
+  {
+    "key": "Tooltip_PlayPause",
+    "en_old": "Play / Pause",
+    "uk_old": "Відтворити / Пауза",
+    "en_new": "Play / Pause",
+    "uk_new": "Відтворити / Пауза",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Tooltip_Rewind",
+    "en_old": "Back 10s",
+    "uk_old": "Назад 10 с",
+    "en_new": "Back 10s",
+    "uk_new": "Назад 10 с",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Tooltip_Stop",
+    "en_old": "Stop",
+    "uk_old": "Зупинити",
+    "en_new": "Stop",
+    "uk_new": "Зупинити",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Tooltip_Volume",
+    "en_old": "Volume",
+    "uk_old": "Гучність",
+    "en_new": "Volume",
+    "uk_new": "Гучність",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Tray_Exit",
+    "en_old": "Exit",
+    "uk_old": "Вихід",
+    "en_new": "Exit",
+    "uk_new": "Вийти",
+    "changed": true,
+    "note": "Consistent infinitive verb for tray menu items."
+  },
+  {
+    "key": "Tray_Open",
+    "en_old": "Open",
+    "uk_old": "Відкрити",
+    "en_new": "Open",
+    "uk_new": "Відкрити",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Tray_OpenLibrary",
+    "en_old": "Open Library",
+    "uk_old": "Відкрити бібліотеку",
+    "en_new": "Open Library",
+    "uk_new": "Відкрити бібліотеку",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Tray_SaveReplay",
+    "en_old": "Save Replay",
+    "uk_old": "Зберегти повтор",
+    "en_new": "Save Replay",
+    "uk_new": "Зберегти повтор",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Update_Checking",
+    "en_old": "Checking for updates...",
+    "uk_old": "Перевірка оновлень...",
+    "en_new": "Checking for updates...",
+    "uk_new": "Перевірка оновлень...",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Update_DevMode",
+    "en_old": "Updates are unavailable in dev mode.",
+    "uk_old": "Оновлення недоступні в режимі розробки.",
+    "en_new": "Updates are unavailable in dev mode.",
+    "uk_new": "Оновлення недоступні в режимі розробки.",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Update_Downloading",
+    "en_old": "Downloading update...",
+    "uk_old": "Завантаження оновлення...",
+    "en_new": "Downloading update...",
+    "uk_new": "Завантаження оновлення...",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Update_Failed",
+    "en_old": "Update failed: {0}",
+    "uk_old": "Помилка оновлення: {0}",
+    "en_new": "Update failed: {0}",
+    "uk_new": "Помилка оновлення: {0}",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Update_UpToDate",
+    "en_old": "You have the latest version.",
+    "uk_old": "У вас найновіша версія.",
+    "en_new": "You have the latest version.",
+    "uk_new": "У вас найновіша версія.",
+    "changed": false,
+    "note": ""
+  },
+  {
+    "key": "Settings_GameFocusMode",
+    "en_old": "",
+    "uk_old": "",
+    "en_new": "When the game is out of focus",
+    "uk_new": "Коли гра не у фокусі",
+    "changed": true,
+    "note": "New approved key; kept as-is (consistent with glossary)."
+  },
+  {
+    "key": "GameFocus_KeepGame",
+    "en_old": "",
+    "uk_old": "",
+    "en_new": "Keep recording the game",
+    "uk_new": "Продовжувати записувати гру",
+    "changed": true,
+    "note": "New approved key; kept as-is (consistent with glossary)."
+  },
+  {
+    "key": "GameFocus_Desktop",
+    "en_old": "",
+    "uk_old": "",
+    "en_new": "Record the desktop",
+    "uk_new": "Записувати робочий стіл",
+    "changed": true,
+    "note": "New approved key; kept as-is (consistent with glossary)."
+  }
+]

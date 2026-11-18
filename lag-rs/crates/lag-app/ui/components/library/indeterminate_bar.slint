@@ -1,0 +1,22 @@
+// Indeterminate accent progress bar for Library scan loading strips (LibraryView.axaml:281-283, 499-501).
+import { Theme } from "../../theme/tokens.slint";
+
+export component IndeterminateBar inherits Rectangle {
+    in property <bool> active: false;
+
+    visible: root.active;
+    background: transparent;
+    clip: true;
+
+    property <float> phase: root.active ? mod(animation-tick() / 1200ms, 1.0) : 0.0;
+    property <length> bar-w: root.width * 0.35;
+
+    if root.active: Rectangle {
+        y: 0px;
+        height: parent.height;
+        width: root.bar-w;
+        x: -root.bar-w + (root.width + root.bar-w) * root.phase;
+        background: Theme.accent;
+        border-radius: parent.height / 2;
+    }
+}

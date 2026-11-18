@@ -1,0 +1,20 @@
+// Public FFmpeg 7.1 API surface used by Lag (mirrors what the C# engine bound through FFmpeg.AutoGen).
+#include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
+#include <libavutil/avutil.h>
+#include <libavutil/opt.h>
+#include <libavutil/dict.h>
+#include <libavutil/error.h>
+#include <libavutil/frame.h>
+#include <libavutil/hwcontext.h>
+#include <libavutil/imgutils.h>
+#include <libavutil/audio_fifo.h>
+#include <libavutil/channel_layout.h>
+#include <libavutil/samplefmt.h>
+#include <libavutil/mathematics.h>
+#include <libavutil/log.h>
+#include <libswresample/swresample.h>
+#include <libswscale/swscale.h>
+#include <libavfilter/avfilter.h>
+#include <libavfilter/buffersrc.h>
+#include <libavfilter/buffersink.h>

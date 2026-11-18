@@ -1,0 +1,90 @@
+import { Theme } from "../theme/tokens.slint";
+import { MaterialIcon } from "../theme/icons.slint";
+
+// Ported from DarkTheme.axaml:416-458 (ContextMenu, MenuFlyoutPresenter, MenuItem, Separator)
+// and Components.axaml:129-135 (FlyoutPresenter)
+
+export component LagContextMenuContainer inherits Rectangle {
+    background: Theme.menu-flyout-presenter-background;
+    border-color: Theme.menu-flyout-presenter-border-brush;
+    border-width: 1px;
+    border-radius: Theme.rad-overlay;
+}
+
+export component LagFlyoutPresenter inherits Rectangle {
+    background: Theme.surface-card;
+    border-color: Theme.border-strong;
+    border-width: 1px;
+    border-radius: Theme.rad-general;
+}
+
+export component LagMenuItem {
+    in property <string> text;
+    in property <image> icon;
+    in property <bool> has-icon: false;
+    in property <bool> selected: false;
+    in property <bool> enabled: true;
+    callback clicked();
+
+    min-height: 32px;
+    opacity: enabled ? 1.0 : 0.45;
+
+    property <bool> hovered: ta.has-hover && enabled;
+    property <bool> pressed: ta.pressed && enabled;
+
+    Rectangle {
+        width: 100%;
+        height: 100%;
+        border-radius: Theme.rad-kbd;
+        background: root.pressed
+            ? Theme.menu-flyout-item-background-pressed
+            : (root.hovered ? Theme.menu-flyout-item-background-pointer-over : Theme.menu-flyout-item-background);
+        animate background { duration: Theme.dur-fast; }
+
+        HorizontalLayout {
+            padding-left: 10px;
+            padding-right: 10px;
+            padding-top: 7px;
+            padding-bottom: 7px;
+            spacing: 10px;
+
+            if root.has-icon: VerticalLayout {
+                alignment: center;
+                MaterialIcon {
+                    source: root.icon;
+                    size: 16px;
+                    tint: (root.selected || root.hovered) ? Theme.accent-brush : Theme.fg-2-brush;
+                }
+            }
+
+            Text {
+                horizontal-stretch: 1;
+                text: root.text;
+                color: root.pressed
+                    ? Theme.menu-flyout-item-foreground-pressed
+                    : (root.hovered ? Theme.menu-flyout-item-foreground-pointer-over : Theme.menu-flyout-item-foreground);
+                font-family: Theme.font-ui;
+                font-size: Theme.font-size-body;
+                vertical-alignment: center;
+            }
+        }
+    }
+
+    ta := TouchArea {
+        enabled: root.enabled;
+        mouse-cursor: root.enabled ? pointer : default;
+        clicked => { root.clicked(); }
+    }
+}
+
+export component LagMenuSeparator {
+    height: 9px;
+
+    Rectangle {
+        x: 8px;
+        y: 4px;
+        width: max(0px, parent.width - 16px);
+        height: 1px;
+        background: Theme.menu-flyout-separator-background;
+    }
+}

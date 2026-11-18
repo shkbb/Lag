@@ -1,0 +1,85 @@
+// Editor preview overlay window (owner, 2026-11-17: the editor gets the player's native video engine).
+// The video is a native mpv child window inside the main window; Slint cannot draw over it, so the crop shades,
+// frame outline, crop box + handles, captions and the deselect chip live in this transparent, non-activating
+// window placed exactly over the preview stage (like PlayerOverlayWindow over the player video).
+// Rust copies EditorVM state into EditorOverlayVM and forwards every callback back to EditorVM.
+import { Theme } from "theme/tokens.slint";
+import { EditorStageOverlay } from "components/editor/preview_stage.slint";
+import { EditorTextOverlayData } from "components/editor/types.slint";
+
+export global EditorOverlayVM {
+    in property <bool> has-clip: false;
+    in property <float> display-source-aspect-raw: 1.7777778;
+    in property <float> display-frame-aspect: 1.7777778;
+    in property <bool> crop-tool-active: false;
+    in property <bool> reframe-selected: false;
+    in property <float> edit-nx: 0.0;
+    in property <float> edit-ny: 0.0;
+    in property <float> edit-nw: 1.0;
+    in property <float> edit-nh: 1.0;
+    in property <[EditorTextOverlayData]> texts: [];
+
+    callback focus-keys();
+    callback play-pause();
+    callback deselect-reframe();
+    callback select-reframe();
+    callback right-click-reset();
+    callback begin-overlay-drag();
+    callback drag-overlay(int, float, float, float, float, float, float, float, float);
+    callback select-text(int);
+    callback move-text(int, float, float);
+    callback push-undo();
+    in-out property <int> editing-index: -1;
+    callback text-edit-started(int);
+    callback text-edit-finished();
+    callback deselect-text();
+}
+
+export component EditorOverlayWindow inherits Window {
+    title: "Lag Editor Overlay";
+    no-frame: true;
+    background: transparent;
+    in property <string> theme-mode: "dark";
+    changed theme-mode => { Theme.mode = root.theme-mode; }
+
+    // the stage card's shape: 1 px inside its border, top corners rounded (transparent outside = the card shows)
+    Rectangle {
+        x: 1px;
+        y: 1px;
+        width: max(0px, parent.width - 2px);
+        height: max(0px, parent.height - 1px);
+        border-top-left-radius: 13px;
+        border-top-right-radius: 13px;
+        clip: true;
+    EditorStageOverlay {
+        x: -1px;
+        y: -1px;
+        width: root.width;
+        height: root.height;
+        has-clip: EditorOverlayVM.has-clip;
+        display-source-aspect-raw: EditorOverlayVM.display-source-aspect-raw;
+        display-frame-aspect: EditorOverlayVM.display-frame-aspect;
+        crop-tool-active: EditorOverlayVM.crop-tool-active;
+        reframe-selected: EditorOverlayVM.reframe-selected;
+        edit-nx: EditorOverlayVM.edit-nx;
+        edit-ny: EditorOverlayVM.edit-ny;
+        edit-nw: EditorOverlayVM.edit-nw;
+        edit-nh: EditorOverlayVM.edit-nh;
+        texts: EditorOverlayVM.texts;
+        focus-keys => { EditorOverlayVM.focus-keys(); }
+        play-pause => { EditorOverlayVM.play-pause(); }
+        deselect-reframe => { EditorOverlayVM.deselect-reframe(); }
+        select-reframe => { EditorOverlayVM.select-reframe(); }
+        right-click-reset => { EditorOverlayVM.right-click-reset(); }
+        begin-overlay-drag => { EditorOverlayVM.begin-overlay-drag(); }
+        drag-overlay(m, dx, dy, rx, ry, rw, rh, sw, sh) => { EditorOverlayVM.drag-overlay(m, dx, dy, rx, ry, rw, rh, sw, sh); }
+        select-text(i) => { EditorOverlayVM.select-text(i); }
+        move-text(i, nx, ny) => { EditorOverlayVM.move-text(i, nx, ny); }
+        push-undo => { EditorOverlayVM.push-undo(); }
+        editing-index <=> EditorOverlayVM.editing-index;
+        text-edit-started(i) => { EditorOverlayVM.text-edit-started(i); }
+        text-edit-finished => { EditorOverlayVM.text-edit-finished(); }
+        deselect-text => { EditorOverlayVM.deselect-text(); }
+    }
+    }
+}

@@ -1,0 +1,15 @@
+[package]
+name = "lag-ffi"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+bindgen = { version = "0.72", optional = true }
+
+[features]
+bindgen = ["dep:bindgen"]
+
+[[bin]]
+name = "regen"
+required-features = ["bindgen"]

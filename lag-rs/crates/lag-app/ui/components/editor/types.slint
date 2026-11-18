@@ -1,0 +1,51 @@
+// Shared data structs for the Editor view and components.
+// Mirrors sub-models in ViewModels/EditorViewModel.cs.
+
+export struct EditorClipItem {
+    path: string,
+    title: string,
+    meta: string,
+    thumbnail: image,
+    has-thumbnail: bool,
+    // position in the clip-merge order (1-based), 0 = not picked
+    merge-number: int,
+}
+
+export struct EditorAudioTrackData {
+    stream-index: int,
+    name: string,
+    volume: int,
+    is-muted: bool,
+    is-selected: bool,
+    start-sec: float,
+    end-sec: float,
+    clip-duration-sec: float,
+}
+
+export struct EditorFilterData {
+    name: string,
+    preview: image,
+    has-preview: bool,
+}
+
+export struct EditorCutBand {
+    start-sec: float,
+    end-sec: float,
+    is-pending: bool,
+    cut-index: int, // -1 for pending
+}
+
+export struct EditorTextOverlayData {
+    text: string,
+    nx: float,
+    ny: float,
+    font-percent: int,
+    text-color: color,
+    hex: string,
+    selected: bool,
+}
+
+export struct EditorColorSwatch {
+    hex: string,
+    swatch: color,
+}

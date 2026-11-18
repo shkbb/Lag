@@ -1,0 +1,147 @@
+import { Theme } from "../theme/tokens.slint";
+
+// Ported from SettingsView.axaml:48-53 ("Recommended" badge)
+export component RecommendedBadge {
+    in property <string> text: "Recommended";
+
+    Rectangle {
+        border-radius: Theme.rad-kbd;
+        background: Theme.accent;
+
+        HorizontalLayout {
+            padding-left: 6px;
+            padding-right: 6px;
+            padding-top: 2px;
+            padding-bottom: 2px;
+
+            Text {
+                text: root.text;
+                color: #FFFFFF;
+                font-family: Theme.font-ui;
+                font-size: Theme.font-size-badge;
+                font-weight: Theme.font-weight-semibold;
+                vertical-alignment: center;
+            }
+        }
+    }
+}
+
+// Ported from LibraryView.axaml:356-361 (EDITED badge)
+export component EditedBadge {
+    in property <string> text: "EDITED";
+
+    Rectangle {
+        border-radius: Theme.rad-badge-sm;
+        background: Theme.accent;
+
+        HorizontalLayout {
+            padding-left: 6px;
+            padding-right: 6px;
+            padding-top: 3px;
+            padding-bottom: 3px;
+
+            Text {
+                text: root.text;
+                color: Theme.on-accent;
+                font-family: Theme.font-mono;
+                font-size: Theme.font-size-badge-mono;
+                font-weight: Theme.font-weight-medium;
+                vertical-alignment: center;
+            }
+        }
+    }
+}
+
+// Ported from LibraryView.axaml:364-368 (clip duration badge)
+export component DurationBadge {
+    in property <string> text;
+
+    Rectangle {
+        border-radius: Theme.rad-kbd;
+        background: Theme.card-badge-hover-bg;
+
+        HorizontalLayout {
+            padding-left: 7px;
+            padding-right: 7px;
+            padding-top: 2px;
+            padding-bottom: 2px;
+
+            Text {
+                text: root.text;
+                color: Theme.card-badge-fg;
+                font-family: Theme.font-mono;
+                font-size: Theme.font-size-group;
+                vertical-alignment: center;
+            }
+        }
+    }
+}
+
+// Ported from Components.axaml:55-66 (Border.rkbd)
+export component RKbdChip {
+    in property <string> text;
+    in property <bool> listening: false;
+
+    opacity: root.listening ? (0.45 + 0.55 * (0.5 + 0.5 * cos(360deg * mod(animation-tick() / Theme.dur-kbd-pulse, 1)))) : 1.0;
+
+    Rectangle {
+        border-radius: Theme.rad-kbd;
+        background: Theme.surface-input;
+        border-width: 1px;
+        border-color: root.listening ? Theme.accent : Theme.border-strong;
+
+        HorizontalLayout {
+            padding-left: 9px;
+            padding-right: 9px;
+            padding-top: 4px;
+            padding-bottom: 4px;
+
+            Text {
+                text: root.text;
+                color: Theme.text-kbd;
+                font-family: Theme.font-mono;
+                font-size: Theme.font-size-xs;
+                vertical-alignment: center;
+            }
+        }
+    }
+}
+
+// Ported from DarkTheme.axaml:322-350 (Border.kbd, Border.kbd.listening, Button.bare)
+export component KbdChipButton {
+    in property <string> text;
+    in property <bool> listening: false;
+    in property <bool> enabled: true;
+    callback clicked();
+
+    opacity: !enabled ? 0.45 : (listening ? (0.45 + 0.55 * (0.5 + 0.5 * cos(360deg * mod(animation-tick() / Theme.dur-kbd-pulse, 1)))) : 1.0);
+
+    Rectangle {
+        border-radius: Theme.rad-kbd;
+        background: Theme.surface-brush;
+        border-width: listening ? 1px : 0px;
+        border-color: Theme.accent-brush;
+
+        HorizontalLayout {
+            padding-left: 8px;
+            padding-right: 8px;
+            padding-top: 4px;
+            padding-bottom: 4px;
+
+            Text {
+                text: root.text;
+                color: Theme.fg-brush;
+                font-family: Theme.font-ui;
+                font-size: Theme.font-size-sm;
+                font-weight: Theme.font-weight-medium;
+                vertical-alignment: center;
+            }
+        }
+    }
+
+    ta := TouchArea {
+        enabled: root.enabled;
+        mouse-cursor: root.enabled ? pointer : default;
+        clicked => { root.clicked(); }
+    }
+}

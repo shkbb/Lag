@@ -1,0 +1,18 @@
+# Settings audit E: webcam overlay baked into the recording (real camera), MP4 track names, noise
+# suppression model found next to the exe.
+size 1360x840
+page settings
+wait 3000
+choose format 0
+toggle tracks 1
+toggle mic-volume 1
+toggle denoise 1
+toggle overlay 1
+toggle webcam-shown 1
+wait 1500
+rec
+wait 9000
+save
+wait 6000
+rec
+wait 3000

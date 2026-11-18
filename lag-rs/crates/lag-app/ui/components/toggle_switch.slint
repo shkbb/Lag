@@ -1,0 +1,57 @@
+import { Theme } from "../theme/tokens.slint";
+
+// Ported from App.axaml:256-320 (ControlTheme TargetType="ToggleSwitch")
+export component LagToggleSwitch {
+    in-out property <bool> checked: false;
+    in property <bool> enabled: true;
+    callback toggled(bool);
+
+    width: Theme.toggle-width;
+    height: Theme.toggle-height;
+    opacity: enabled ? 1.0 : 0.45;
+
+    property <bool> hovered: ta.has-hover && enabled;
+    property <bool> pressed: ta.pressed && enabled;
+
+    Rectangle {
+        width: Theme.toggle-width;
+        height: Theme.toggle-height;
+        border-radius: Theme.rad-pill;
+        border-width: 1px;
+        background: root.checked
+            ? (root.pressed ? Theme.toggle-switch-fill-on-pressed : root.hovered ? Theme.toggle-switch-fill-on-pointer-over : Theme.toggle-switch-fill-on)
+            : (root.pressed ? Theme.toggle-switch-fill-off-pressed : root.hovered ? Theme.toggle-switch-fill-off-pointer-over : Theme.toggle-switch-fill-off);
+        border-color: root.checked
+            ? (root.pressed ? Theme.toggle-switch-stroke-on-pressed : root.hovered ? Theme.toggle-switch-stroke-on-pointer-over : Theme.toggle-switch-stroke-on)
+            : (root.pressed ? Theme.toggle-switch-stroke-off-pressed : root.hovered ? Theme.toggle-switch-stroke-off-pointer-over : Theme.toggle-switch-stroke-off);
+
+        animate background, border-color { duration: Theme.dur-toggle; }
+
+        // 16x16 knob, 2px left inset at rest, translates +18px when checked.
+        Rectangle {
+            x: root.checked ? (2px + Theme.toggle-knob-travel) : 2px;
+            y: (parent.height - self.height) / 2;
+            width: Theme.toggle-knob-size;
+            height: Theme.toggle-knob-size;
+            border-radius: Theme.toggle-knob-size / 2;
+            background: root.checked
+                ? (root.pressed ? Theme.toggle-switch-knob-fill-on-pressed : root.hovered ? Theme.toggle-switch-knob-fill-on-pointer-over : Theme.toggle-switch-knob-fill-on)
+                : (root.pressed ? Theme.toggle-switch-knob-fill-off-pressed : root.hovered ? Theme.toggle-switch-knob-fill-off-pointer-over : Theme.toggle-switch-knob-fill-off);
+
+            animate x {
+                duration: Theme.dur-toggle;
+                easing: cubic-bezier(0.215, 0.61, 0.355, 1);
+            }
+            animate background { duration: Theme.dur-toggle; }
+        }
+    }
+
+    ta := TouchArea {
+        enabled: root.enabled;
+        mouse-cursor: root.enabled ? pointer : default;
+        clicked => {
+            root.checked = !root.checked;
+            root.toggled(root.checked);
+        }
+    }
+}

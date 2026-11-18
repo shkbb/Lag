@@ -1,0 +1,42 @@
+# REAL window (--gpu-check): editor on the native video engine. `screen` = what is really on screen.
+size 1360x880
+page editor
+wait 800
+editor-clip 0
+wait 2500
+screen g-ed-loaded
+shot g-ed-scene
+editor-play
+wait 3000
+screen g-ed-playing
+editor-play
+wait 600
+editor-crop
+wait 700
+screen g-ed-crop
+editor-crop
+wait 300
+editor-rotate
+wait 900
+screen g-ed-rotated
+editor-rotate
+editor-rotate
+editor-rotate
+wait 300
+editor-filter 1
+wait 900
+screen g-ed-filter
+editor-filter 0
+editor-aspect 2
+wait 900
+screen g-ed-aspect
+editor-aspect 0
+size 1080x640
+wait 900
+screen g-ed-small
+page library
+wait 600
+screen g-ed-left
+page editor
+wait 900
+screen g-ed-back

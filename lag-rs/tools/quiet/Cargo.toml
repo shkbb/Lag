@@ -1,0 +1,8 @@
+[package]
+name = "quiet"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+windows = { workspace = true, features = ["Win32_System_Diagnostics_Debug"] }
