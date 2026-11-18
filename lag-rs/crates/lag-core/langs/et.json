@@ -182,7 +182,7 @@
   "Settings_StorageLimit": "Salvestusruumi piirang",
   "Settings_Subtitle": "Seadista salvestamine, heli ja rakenduse eelistused.",
   "Settings_Theme": "Teema",
-  "Settings_Theme_Desc": "Hele, tume, süsteemi või neoon",
+  "Settings_Theme_Desc": "Hele, tume, süsteemi või GTA VI",
   "Settings_Threshold": "Lävi",
   "Settings_Title": "Seaded",
   "Settings_WebcamDevice": "Veebikaamera",
@@ -266,5 +266,5 @@
   "Editor_Split": "Poolita",
   "Editor_RemoveSegment": "Eemalda",
   "Editor_AddFile": "Fail",
-  "Theme_Neon": "Neoon"
+  "Theme_Neon": "GTA VI"
 }

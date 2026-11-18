@@ -33,6 +33,7 @@ export component AppWindow inherits Window {
     // read by the tray: tray + window icons follow the theme (incl. "system"); the window icon is set natively
     // (shell/tray.rs apply_window_icon) from the .ico's own small/big drawings
     out property <bool> is-dark-theme: Theme.is-dark;
+    out property <bool> is-gta-theme: Theme.is-neon;
     preferred-width: 1360px;
     preferred-height: 840px;
     min-width: 1080px;
@@ -70,7 +71,7 @@ export component AppWindow inherits Window {
                         spacing: 10px; alignment: center;
                         VerticalLayout { alignment: center;
                             Rectangle {
-                                width: 28px; height: 28px; border-radius: 8px; background: Theme.accent;
+                                width: 28px; height: 28px; border-radius: 8px; background: Theme.cta-brush;
                                 LagLogoMark { x: 3px; y: 3px; }
                             }
                         }

@@ -249,6 +249,14 @@ pub struct SettingsData {
     /// NEW in Rust: webcam overlay mode, index into `presets::WEBCAM_MODES` (0 = Auto).
     #[serde(default)]
     pub webcam_mode: i32,
+    /// NEW in Rust: the main window's normal size (logical px, 0 = default) and maximized state, remembered
+    /// across hiding to the tray and restarts (owner, 2026-11-18).
+    #[serde(default)]
+    pub window_width: i32,
+    #[serde(default)]
+    pub window_height: i32,
+    #[serde(default)]
+    pub window_maximized: bool,
 }
 
 fn d_game_focus() -> Option<String> {
@@ -256,7 +264,8 @@ fn d_game_focus() -> Option<String> {
 }
 
 /// Keys the Rust version adds after the C# ones (written last, in this order).
-pub const RUST_ONLY_KEYS: &[&str] = &["GameFocusMode", "SlowmoInterpolation", "WebcamMode"];
+pub const RUST_ONLY_KEYS: &[&str] =
+    &["GameFocusMode", "SlowmoInterpolation", "WebcamMode", "WindowWidth", "WindowHeight", "WindowMaximized"];
 
 impl Default for SettingsData {
     fn default() -> Self {
@@ -363,7 +372,7 @@ mod tests {
         assert!(j.contains("\"KeysY\": 1,\r\n"));
         assert!(j.contains("\"WebcamScale\": 0.19130434782608696,"));
         assert!(j.starts_with("{\r\n  \"BufferSeconds\": 0,\r\n"));
-        assert!(j.ends_with("\"FileFormat\": \"mp4\",\r\n  \"GameFocusMode\": \"game\",\r\n  \"SlowmoInterpolation\": true,\r\n  \"WebcamMode\": 0\r\n}"));
+        assert!(j.ends_with("\"FileFormat\": \"mp4\",\r\n  \"GameFocusMode\": \"game\",\r\n  \"SlowmoInterpolation\": true,\r\n  \"WebcamMode\": 0,\r\n  \"WindowWidth\": 0,\r\n  \"WindowHeight\": 0,\r\n  \"WindowMaximized\": false\r\n}"));
         assert!(j.contains("\"AudioApps\": [],"));
     }
 

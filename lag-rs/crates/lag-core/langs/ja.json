@@ -182,7 +182,7 @@
   "Settings_StorageLimit": "ストレージ上限",
   "Settings_Subtitle": "録画、音声、アプリの設定を行います。",
   "Settings_Theme": "テーマ",
-  "Settings_Theme_Desc": "ライト、ダーク、システム、またはネオン",
+  "Settings_Theme_Desc": "ライト、ダーク、システム、または GTA VI",
   "Settings_Threshold": "しきい値",
   "Settings_Title": "設定",
   "Settings_WebcamDevice": "ウェブカメラ",
@@ -266,5 +266,5 @@
   "Editor_Split": "分割",
   "Editor_RemoveSegment": "削除",
   "Editor_AddFile": "ファイル",
-  "Theme_Neon": "ネオン"
+  "Theme_Neon": "GTA VI"
 }

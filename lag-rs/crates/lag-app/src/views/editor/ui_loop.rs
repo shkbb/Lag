@@ -31,7 +31,7 @@ pub(super) fn run(
             let (Some(host), Some(st), Some(ui)) = (host.upgrade(), st.upgrade(), weak.upgrade()) else { return };
             let (Ok(h), Ok(s)) = (host.try_borrow(), st.try_borrow()) else { return };
             if let Some(h) = h.as_ref() {
-                h.sync(&ui, &s.model, stage_rect.get());
+                h.sync(&ui, &s.model, stage_rect.get(), s.video_ready);
             }
         })
     };
@@ -83,7 +83,7 @@ pub(super) fn run(
             }
         }
         if let Some(h) = host.borrow().as_ref() {
-            h.sync(&ui, &s.model, stage_rect.get());
+            h.sync(&ui, &s.model, stage_rect.get(), s.video_ready);
         }
 
         for msg in events.try_iter() {
@@ -184,6 +184,10 @@ pub(super) fn run(
                         s.apply_preview_audio();
                         s.apply_preview_vf();
                     }
+                    PlayerEvent::PlaybackRestart => {
+                        s.first_frame = true;
+                        s.reveal_video_if_ready();
+                    }
                     PlayerEvent::Error(e) => log::warn!("[Editor] mpv error: {e}"),
                     _ => {}
                 },
@@ -201,6 +205,7 @@ pub(super) fn run(
                     if !s.model.is_probed() {
                         s.model.apply_probe(&res, &track_names());
                     }
+                    s.reveal_video_if_ready();
                     s.apply_preview_audio();
                     s.sync_all_to_ui();
                 }

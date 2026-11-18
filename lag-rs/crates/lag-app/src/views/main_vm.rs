@@ -600,8 +600,11 @@ pub fn init(ui: &AppWindow, ctx: &Rc<AppCtx>) {
     let weak = ui.as_weak();
     vm.on_show_main_window(move || {
         if let Some(ui) = weak.upgrade() {
+            // the window may come back as a fresh native window: give it the remembered size first
+            crate::shell::window_geometry::apply_size(&ui);
             let _ = ui.show();
             ui.window().set_minimized(false);
+            crate::shell::window_geometry::apply_state(&ui);
             apply_round_corners(&ui);
             if let Some(hwnd) = nofocus::hwnd(ui.window()) {
                 unsafe {
@@ -623,6 +626,13 @@ pub fn init(ui: &AppWindow, ctx: &Rc<AppCtx>) {
     // be lost, so Space / M / arrows / Esc are handled here whenever the player page is up, then swallowed.
     ui.window().on_winit_window_event(move |_, event| {
         use winit::keyboard::{Key, NamedKey};
+        if let winit::event::WindowEvent::Resized(size) = event {
+            if let Some(ui) = me.upgrade().and_then(|me| me.ui.upgrade()) {
+                let full = ui.global::<MainVM>().get_is_fullscreen();
+                crate::shell::window_geometry::on_resized(&ui, full, (size.width, size.height));
+            }
+            return EventResult::Propagate;
+        }
         if let winit::event::WindowEvent::KeyboardInput { event, .. } = event {
             if event.state != winit::event::ElementState::Pressed {
                 return EventResult::Propagate;

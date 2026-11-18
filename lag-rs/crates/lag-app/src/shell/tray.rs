@@ -23,14 +23,36 @@ pub struct Tray {
     _menu: TrayMenuWindow,
 }
 
+/// Which drawing of the app icon the current theme uses (tools/make_theme_icons.py makes the variants).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum IconStyle {
+    Dark,
+    Light,
+    /// GTA VI theme: violet tile, sunset-gradient mark (owner, 2026-11-18).
+    Gta,
+}
+
+impl IconStyle {
+    /// The style for the main window's resolved theme ("system" included).
+    pub(crate) fn of(ui: &AppWindow) -> Self {
+        if ui.get_is_gta_theme() {
+            Self::Gta
+        } else if ui.get_is_dark_theme() {
+            Self::Dark
+        } else {
+            Self::Light
+        }
+    }
+}
+
 /// The app icon for the theme, as the hand-drawn entry of `size` px (or the nearest larger one) from the .ico.
 /// Owner, 2026-11-17: the icon follows the theme (light = cream + bronze); and the small sizes must be the
 /// .ico's own drawings - a 256 px image scaled to 32 made the outer arrow too thin.
-pub(crate) fn themed_icon_rgba(dark: bool, size: u32) -> Option<(Vec<u8>, u32, u32)> {
-    let bytes: &[u8] = if dark {
-        include_bytes!("../../../../../InstantReplay/Assets/icon.ico")
-    } else {
-        include_bytes!("../../assets/icon-light.ico")
+pub(crate) fn themed_icon_rgba(style: IconStyle, size: u32) -> Option<(Vec<u8>, u32, u32)> {
+    let bytes: &[u8] = match style {
+        IconStyle::Dark => include_bytes!("../../../../../InstantReplay/Assets/icon.ico"),
+        IconStyle::Light => include_bytes!("../../assets/icon-light.ico"),
+        IconStyle::Gta => include_bytes!("../../assets/icon-gta.ico"),
     };
     let dir = ico::IconDir::read(Cursor::new(bytes)).ok()?;
     let entry = dir
@@ -43,8 +65,8 @@ pub(crate) fn themed_icon_rgba(dark: bool, size: u32) -> Option<(Vec<u8>, u32, u
     Some((image.rgba_data().to_vec(), image.width(), image.height()))
 }
 
-fn themed_icon(dark: bool) -> Option<tray_icon::Icon> {
-    let (rgba, w, h) = themed_icon_rgba(dark, 32)?;
+fn themed_icon(style: IconStyle) -> Option<tray_icon::Icon> {
+    let (rgba, w, h) = themed_icon_rgba(style, 32)?;
     tray_icon::Icon::from_rgba(rgba, w, h).ok()
 }
 
@@ -52,7 +74,7 @@ thread_local! { static WINDOW_ICONS: std::cell::Cell<[isize; 2]> = const { std::
 
 /// Taskbar / Alt+Tab / title icons of the main window for the theme (WM_SETICON small + big, each from its own
 /// .ico entry). Returns false while the window has no HWND yet.
-pub(crate) fn apply_window_icon(ui: &AppWindow, dark: bool) -> bool {
+pub(crate) fn apply_window_icon(ui: &AppWindow, style: IconStyle) -> bool {
     use windows::Win32::Foundation::{LPARAM, WPARAM};
     use windows::Win32::UI::WindowsAndMessaging::{
         DestroyIcon, GetSystemMetrics, SendMessageW, HICON, ICON_BIG, ICON_SMALL, SM_CXICON, SM_CXSMICON, WM_SETICON,
@@ -60,7 +82,7 @@ pub(crate) fn apply_window_icon(ui: &AppWindow, dark: bool) -> bool {
     let Some(hwnd) = super::nofocus::hwnd(ui.window()) else { return false };
     let small = unsafe { GetSystemMetrics(SM_CXSMICON) }.max(16) as u32;
     let big = unsafe { GetSystemMetrics(SM_CXICON) }.max(32) as u32;
-    let make = |size: u32| themed_icon_rgba(dark, size).and_then(|(px, w, h)| hicon_from_rgba(&px, w, h));
+    let make = |size: u32| themed_icon_rgba(style, size).and_then(|(px, w, h)| hicon_from_rgba(&px, w, h));
     let (Some(s), Some(b)) = (make(small), make(big)) else { return false };
     unsafe {
         let _ = SendMessageW(hwnd, WM_SETICON, Some(WPARAM(ICON_SMALL as usize)), Some(LPARAM(s.0 as isize)));
@@ -122,8 +144,8 @@ fn hicon_from_rgba(rgba: &[u8], w: u32, h: u32) -> Option<windows::Win32::UI::Wi
 impl Tray {
     pub fn new(ui: &AppWindow, ctx: &Rc<AppCtx>) -> Result<Self, Box<dyn std::error::Error>> {
         CONTEXT.with(|c| *c.borrow_mut() = Rc::downgrade(ctx));
-        let dark = ui.get_is_dark_theme();
-        let icon = match themed_icon(dark) {
+        let style = IconStyle::of(ui);
+        let icon = match themed_icon(style) {
             Some(i) => i,
             None => {
                 let ico =
@@ -138,22 +160,22 @@ impl Tray {
         // the theme was read once at startup, before the window knew the Windows theme. A 1 s watcher keeps both
         // icons on the current theme (also when Windows itself switches light/dark), and retries the window icon
         // until the window has an HWND (start minimized).
-        let icon_dark = Rc::new(std::cell::Cell::new(dark));
-        let window_dark: Rc<std::cell::Cell<Option<bool>>> = Rc::new(std::cell::Cell::new(None));
+        let icon_style = Rc::new(std::cell::Cell::new(style));
+        let window_style: Rc<std::cell::Cell<Option<IconStyle>>> = Rc::new(std::cell::Cell::new(None));
         let sync_icons: Rc<dyn Fn()> = {
             let (ui_w, tray_w) = (ui.as_weak(), Rc::downgrade(&icon));
-            let (icon_dark, window_dark) = (icon_dark.clone(), window_dark.clone());
+            let (icon_style, window_style) = (icon_style.clone(), window_style.clone());
             Rc::new(move || {
                 let (Some(ui), Some(tray)) = (ui_w.upgrade(), tray_w.upgrade()) else { return };
-                let dark = ui.get_is_dark_theme();
-                if dark != icon_dark.get() {
-                    if let Some(i) = themed_icon(dark) {
+                let style = IconStyle::of(&ui);
+                if style != icon_style.get() {
+                    if let Some(i) = themed_icon(style) {
                         let _ = tray.set_icon(Some(i));
-                        icon_dark.set(dark);
+                        icon_style.set(style);
                     }
                 }
-                if window_dark.get() != Some(dark) && apply_window_icon(&ui, dark) {
-                    window_dark.set(Some(dark));
+                if window_style.get() != Some(style) && apply_window_icon(&ui, style) {
+                    window_style.set(Some(style));
                 }
             })
         };

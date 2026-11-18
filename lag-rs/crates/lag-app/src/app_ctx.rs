@@ -59,6 +59,13 @@ impl AppCtx {
         }
     }
 
+    /// Like `update_settings`, but nobody is told: for values no listener cares about (the window's size),
+    /// so resizing never re-runs theme / hotkey / recorder reactions.
+    pub fn update_settings_silently(self: &Rc<Self>, f: impl FnOnce(&mut SettingsData)) {
+        f(&mut self.settings.borrow_mut());
+        self.schedule_save();
+    }
+
     pub fn on_settings_changed(&self, f: impl Fn(&SettingsData) + 'static) {
         self.settings_listeners.borrow_mut().push(Rc::new(f));
     }

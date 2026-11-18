@@ -56,6 +56,10 @@ fn main() {
         ui.global::<Tr>().on_t(|key, _rev| lag_core::i18n::tr(&key).into());
         ui.global::<MainVM>().set_status_text(lag_core::i18n::tr("Status_Ready").into());
         let ctx = app_ctx::AppCtx::new(settings);
+        // the size the user left the window at (settings.json), before it is first shown
+        shell::window_geometry::load(&ctx.settings());
+        shell::window_geometry::attach(&ctx);
+        shell::window_geometry::apply_size(&ui);
         views::init_all(&ui, &ctx);
         shell::init(&ui, &ctx);
         Some((ui, ctx))
@@ -81,6 +85,7 @@ fn main() {
                     if let Err(e) = ui.show() {
                         log::error!("[Startup] main window show failed: {e}");
                     }
+                    shell::window_geometry::apply_state(&ui);
                 }
                 let _ = splash.hide();
             });
@@ -93,6 +98,7 @@ fn main() {
         if let Err(e) = ui.show() {
             log::error!("[Startup] main window show failed: {e}");
         }
+        shell::window_geometry::apply_state(&ui);
         *app.borrow_mut() = Some((ui, ctx));
     }
     if let Err(e) = slint::run_event_loop_until_quit() {
@@ -103,6 +109,7 @@ fn main() {
     // then tray/hotkeys/HUD while their threads still exist, settings, log; then end the process without
     // running thread-local destructors, which would otherwise touch threads Windows already tore down.
     views::main_vm::shutdown_recorder();
+    shell::window_geometry::save_pending_now();
     ctx.flush_settings(); // C# ShutdownRequested -> FlushSettings()
     shell::shutdown();
     log::info!("[Shutdown] clean exit.");

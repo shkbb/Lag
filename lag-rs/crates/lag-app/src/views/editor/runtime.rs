@@ -53,6 +53,13 @@ pub(super) struct EditorRuntime {
     pub(super) strip_live_duration: f64,
     /// The strip's width (logical px) as last reported by the UI: the blocks are laid out for it.
     pub(super) strip_width: f64,
+    /// The preview may show: the clip's size is known AND mpv has shown its first frame. Until then the native
+    /// surface stays hidden, so the frame never visibly snaps from a guessed shape to the real one (owner,
+    /// 2026-11-18: "the video adapts first, that spoils it"); then it fades in from black.
+    pub(super) video_ready: bool,
+    pub(super) first_frame: bool,
+    /// Bumped on every load: pending steps of an older fade-in see it and do nothing.
+    pub(super) reveal_gen: Rc<std::cell::Cell<u64>>,
     pub(super) stopped_by_inactive: bool,
     pub(super) sidebar_durations: HashMap<String, f64>,
 
@@ -89,6 +96,9 @@ impl EditorRuntime {
             montage_gen: 0,
             strip_live_duration: 0.0,
             strip_width: 0.0,
+            video_ready: false,
+            first_frame: false,
+            reveal_gen: Rc::default(),
             model,
             commands,
             messages_tx,

@@ -19,7 +19,9 @@ export component SplashWindow inherits Window {
     property <bool> dark: Theme.is-dark;
     // the app's own brand pairs: dark = near-black background + cyan mark; light = warm cream + bronze mark
     property <color> card: Theme.surface-app;
-    property <color> ink: Theme.accent;
+    // GTA VI theme: the mark in the sunset gradient over the palm backdrop (owner, 2026-11-18)
+    property <bool> gta: Theme.is-neon;
+    property <brush> ink: root.gta ? @linear-gradient(135deg, #FF4FA3 0%, #FF8A4C 100%) : Theme.accent;
     property <color> label: Theme.text-hi;
     property <length> mark: 104px;
     property <float> t: animation-tick() / 1ms;
@@ -38,7 +40,31 @@ export component SplashWindow inherits Window {
         border-radius: 18px;
         background: root.card;
         border-width: 1px;
-        border-color: root.dark ? #FFFFFF14 : #00000018;
+        border-color: root.gta ? #FF4FA366 : root.dark ? #FFFFFF14 : #00000018;
+        clip: true;
+
+        // GTA VI: the palm sunset drifts slowly behind the mark, under a veil that keeps the mark and text clear
+        if root.gta: Image {
+            // card height, 16:9 wide, panned left-right over 12 s (no transforms: FemtoVG shifts them at 125 %)
+            height: parent.height;
+            width: self.height * 16 / 9;
+            x: -(self.width - parent.width) * (0.5 + 0.5 * sin(360deg * mod(root.t, 12000) / 12000));
+            y: 0px;
+            source: @image-url("theme/neon-backdrop.jpg");
+            image-fit: cover;
+        }
+        if root.gta: Rectangle {
+            background: @linear-gradient(180deg, #120B1EE6 0%, #120B1EB0 55%, #120B1E66 100%);
+        }
+        // soft glow behind the mark
+        if root.gta: Rectangle {
+            x: (parent.width - 190px) / 2;
+            y: 92px + root.mark / 2 - 95px;
+            width: 190px;
+            height: 190px;
+            border-radius: 95px;
+            background: @radial-gradient(circle, #FF4FA355 0%, #FF4FA300 70%);
+        }
 
         Rectangle {
             x: (parent.width - root.mark) / 2;

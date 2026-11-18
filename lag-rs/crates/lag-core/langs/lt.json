@@ -182,7 +182,7 @@
   "Settings_StorageLimit": "Saugyklos riba",
   "Settings_Subtitle": "Konfigūruokite įrašymą, garsą ir programos nuostatas.",
   "Settings_Theme": "Tema",
-  "Settings_Theme_Desc": "Šviesi, tamsi, sistemos arba neoninė",
+  "Settings_Theme_Desc": "Šviesi, tamsi, sistemos arba GTA VI",
   "Settings_Threshold": "Slenkstis",
   "Settings_Title": "Nustatymai",
   "Settings_WebcamDevice": "Internetinė kamera",
@@ -266,5 +266,5 @@
   "Editor_Split": "Padalinti",
   "Editor_RemoveSegment": "Pašalinti",
   "Editor_AddFile": "Failas",
-  "Theme_Neon": "Neonas"
+  "Theme_Neon": "GTA VI"
 }

@@ -182,7 +182,7 @@
   "Settings_StorageLimit": "Limite archiviazione",
   "Settings_Subtitle": "Configura registrazione, audio e preferenze dell'app.",
   "Settings_Theme": "Tema",
-  "Settings_Theme_Desc": "Chiaro, scuro, di sistema o neon",
+  "Settings_Theme_Desc": "Chiaro, scuro, di sistema o GTA VI",
   "Settings_Threshold": "Soglia",
   "Settings_Title": "Impostazioni",
   "Settings_WebcamDevice": "Webcam",
@@ -266,5 +266,5 @@
   "Editor_Split": "Dividi",
   "Editor_RemoveSegment": "Rimuovi",
   "Editor_AddFile": "File",
-  "Theme_Neon": "Neon"
+  "Theme_Neon": "GTA VI"
 }

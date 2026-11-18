@@ -182,7 +182,7 @@
   "Settings_StorageLimit": "Tallennustilaraja",
   "Settings_Subtitle": "Määritä tallennus-, ääni- ja sovellusasetukset.",
   "Settings_Theme": "Teema",
-  "Settings_Theme_Desc": "Vaalea, tumma, järjestelmä tai neon",
+  "Settings_Theme_Desc": "Vaalea, tumma, järjestelmä tai GTA VI",
   "Settings_Threshold": "Kynnys",
   "Settings_Title": "Asetukset",
   "Settings_WebcamDevice": "Webkamera",
@@ -266,5 +266,5 @@
   "Editor_Split": "Jaa",
   "Editor_RemoveSegment": "Poista",
   "Editor_AddFile": "Tiedosto",
-  "Theme_Neon": "Neon"
+  "Theme_Neon": "GTA VI"
 }

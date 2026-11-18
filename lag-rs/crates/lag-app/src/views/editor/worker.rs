@@ -53,6 +53,8 @@ pub(super) enum MpvCommand {
     Look(String),
     Crop(Option<(f64, f64, f64, f64)>),
     Rotate(i32),
+    /// mpv video equalizer brightness (-100 = black): the reveal fade of a freshly loaded clip.
+    Brightness(i64),
     Audio(bool, usize, i32),
 }
 
@@ -65,6 +67,7 @@ impl MpvCommand {
                 | (Self::Look(_), Self::Look(_))
                 | (Self::Crop(_), Self::Crop(_))
                 | (Self::Rotate(_), Self::Rotate(_))
+                | (Self::Brightness(_), Self::Brightness(_))
         )
     }
 }
@@ -235,6 +238,9 @@ pub(super) fn mpv_worker(rx: mpsc::Receiver<MpvCommand>, tx: mpsc::Sender<UiMess
                         player.command(&["set", "video-rotate", &deg.to_string()])?;
                         last_rotate = Some(deg);
                     }
+                }
+                MpvCommand::Brightness(v) => {
+                    player.command(&["set", "brightness", &v.to_string()])?;
                 }
                 MpvCommand::Audio(mute, stream_index, volume) => {
                     player.set_mute(mute)?;

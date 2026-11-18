@@ -206,7 +206,8 @@ impl EditorHost {
     }
 
     /// Place/show or hide the surface and the overlay. `stage` = the stage rect in the window (logical px).
-    pub fn sync(&self, ui: &AppWindow, model: &EditModel, stage: (f32, f32, f32, f32)) {
+    /// `video_ready`: the clip's first frame and size are in; until then the video surface stays hidden.
+    pub fn sync(&self, ui: &AppWindow, model: &EditModel, stage: (f32, f32, f32, f32), video_ready: bool) {
         let mvm = ui.global::<MainVM>();
         let vm = ui.global::<EditorVM>();
         let (sx, sy, sw, sh) = stage;
@@ -257,7 +258,11 @@ impl EditorHost {
             (r > l && b > t).then_some((l, t, r - l, b - t))
         });
         self.surface.set_exclusion(hole);
-        self.surface.show();
+        if video_ready {
+            self.surface.show();
+        } else {
+            self.surface.hide();
+        }
 
         // overlay window: exactly over the stage
         let ovm = self.overlay.global::<EditorOverlayVM>();

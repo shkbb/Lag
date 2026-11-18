@@ -10,6 +10,7 @@ pub use crate::services::nofocus;
 pub mod fade_cover;
 pub mod tray;
 pub mod updater;
+pub mod window_geometry;
 
 thread_local! {
     static SERVICES: RefCell<Option<Services>> = const { RefCell::new(None) };

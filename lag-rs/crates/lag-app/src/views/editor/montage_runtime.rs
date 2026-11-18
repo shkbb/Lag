@@ -58,11 +58,35 @@ impl EditorRuntime {
             self.sync_all_to_ui();
             self.sync_montage_to_ui(&vm);
         }
+        // hidden and black until the new clip's first frame + size are in (see `reveal_video_if_ready`)
+        self.video_ready = false;
+        self.first_frame = false;
+        self.reveal_gen.set(self.reveal_gen.get().wrapping_add(1));
+        let _ = self.commands.send(MpvCommand::Brightness(-100));
         let _ = self.commands.send(MpvCommand::LoadAt { path: path.clone(), start, play });
         self.apply_all_preview();
         let cancel = Arc::new(AtomicBool::new(false));
         self.thumb_cancel = Some(cancel.clone());
         spawn_probe_and_thumbs(self.clip_gen, path, self.model.duration_sec, cancel, self.messages_tx.clone());
+    }
+
+    /// Shows the preview once the clip's size is known and its first frame is up: the surface appears (still
+    /// black) at its final shape and fades in over ~180 ms.
+    pub(super) fn reveal_video_if_ready(&mut self) {
+        if self.video_ready || !self.first_frame || !self.model.is_probed() {
+            return;
+        }
+        self.video_ready = true;
+        const STEPS: i64 = 12; // x 15 ms
+        let gen = self.reveal_gen.get();
+        for n in 1..=STEPS {
+            let (tx, current) = (self.commands.clone(), self.reveal_gen.clone());
+            slint::Timer::single_shot(std::time::Duration::from_millis(15 * n as u64), move || {
+                if current.get() == gen {
+                    let _ = tx.send(MpvCommand::Brightness(-100 + 100 * n / STEPS));
+                }
+            });
+        }
     }
 
     /// Makes segment `index` the live edit (the current one is written back first).

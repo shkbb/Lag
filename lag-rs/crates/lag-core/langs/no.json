@@ -182,7 +182,7 @@
   "Settings_StorageLimit": "Lagringsgrense",
   "Settings_Subtitle": "Konfigurer opptak, lyd og appinnstillinger.",
   "Settings_Theme": "Tema",
-  "Settings_Theme_Desc": "Lys, mørk, system eller neon",
+  "Settings_Theme_Desc": "Lys, mørk, system eller GTA VI",
   "Settings_Threshold": "Terskel",
   "Settings_Title": "Innstillinger",
   "Settings_WebcamDevice": "Webkamera",
@@ -266,5 +266,5 @@
   "Editor_Split": "Del",
   "Editor_RemoveSegment": "Fjern",
   "Editor_AddFile": "Fil",
-  "Theme_Neon": "Neon"
+  "Theme_Neon": "GTA VI"
 }

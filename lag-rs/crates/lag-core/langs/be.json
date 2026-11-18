@@ -182,7 +182,7 @@
   "Settings_StorageLimit": "Ліміт сховішча",
   "Settings_Subtitle": "Наладзьце запіс, аўдыя і параметры праграмы.",
   "Settings_Theme": "Тэма",
-  "Settings_Theme_Desc": "Светлая, цёмная, сістэмная або неонавая",
+  "Settings_Theme_Desc": "Светлая, цёмная, сістэмная або GTA VI",
   "Settings_Threshold": "Парог",
   "Settings_Title": "Налады",
   "Settings_WebcamDevice": "Вэб-камера",
@@ -266,5 +266,5 @@
   "Editor_Split": "Разрэзаць",
   "Editor_RemoveSegment": "Прыбраць",
   "Editor_AddFile": "Файл",
-  "Theme_Neon": "Неон"
+  "Theme_Neon": "GTA VI"
 }
