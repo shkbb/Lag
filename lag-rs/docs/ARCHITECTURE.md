@@ -10,6 +10,7 @@ Read with `docs/AGENTS.md`. Specs per area: `docs/spec/*.md`.
 | lag-audio | WASAPI/process loopback, AAC tracks, noise gate, RNNoise, engine clock |
 | lag-capture | the replay engine: WGC, NV12, encoder, rings, mux, carry-over, stalls, detect, overlay |
 | lag-player | libmpv player rendering into an OpenGL texture shown by Slint |
+| lag-cloud | cloud storage model (docs/spec/cloud.md): clip ids, folder layout, cloud index + merge, presence, settings, transfer queue, limits. Pure: no Win32, no network |
 | lag-app | the exe `Lag.exe`: Slint UI, view models, tray, hotkeys, toasts, HUD, updater |
 
 ## Threads

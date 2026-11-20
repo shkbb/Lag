@@ -1,0 +1,14 @@
+[package]
+name = "lag-cloud"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+# Cloud storage model (docs/spec/cloud.md): ids, folder layout, cloud index + merge, presence, settings,
+# transfer queue. Pure Rust: no Win32, no network (providers and the UI build on top of it).
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+log = { workspace = true }
+chrono = { version = "0.4.45", features = ["serde"] }
+uuid = { version = "1.29", features = ["v4", "serde"] }
