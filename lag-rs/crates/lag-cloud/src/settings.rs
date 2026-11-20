@@ -75,10 +75,21 @@ pub struct AccountSettings {
     pub display_name: String,
     pub role: Role,
     pub mirror: MirrorSelection,
-    /// Cloud limit in GB for Lag's clips in this account; 0 = only the provider's own quota.
-    pub limit_gb: u32,
-    /// When over the limit, remove the oldest non-favorite clips from this cloud (off: uploads stop instead).
-    pub cleanup: bool,
+    /// Cloud auto-cleanup, the cloud's own "library size limit": GB Lag's clips may take in this account;
+    /// 0 = no limit of our own (the provider's free space still counts, quota.rs).
+    pub max_size_gb: u32,
+    /// What happens when a clip does not fit (own limit or the cloud itself is full).
+    pub when_full: WhenFull,
+}
+
+/// The cloud's auto-cleanup behaviour (spec §11).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+pub enum WhenFull {
+    /// Remove the oldest clips from this cloud, never favorites (like the local auto-cleanup).
+    #[default]
+    RemoveOldest,
+    /// Remove nothing; new uploads to this cloud wait ("cloud is full" on the cards).
+    StopUploads,
 }
 
 impl Default for AccountSettings {
@@ -89,8 +100,8 @@ impl Default for AccountSettings {
             display_name: String::new(),
             role: Role::Primary,
             mirror: MirrorSelection::Everything,
-            limit_gb: 0,
-            cleanup: false,
+            max_size_gb: 0,
+            when_full: WhenFull::default(),
         }
     }
 }
@@ -120,7 +131,7 @@ impl Default for CloudSettings {
             upload_what: UploadWhat::default(),
             upload_when: UploadWhen::default(),
             upload_limit_kbps: 0,
-            upload_screenshots: false,
+            upload_screenshots: true,
             keep_local: KeepLocal::default(),
             delete_mode: DeleteMode::default(),
             accounts: Vec::new(),
@@ -232,10 +243,12 @@ mod tests {
         let fav = ClipFacts { favorite: true, ..Default::default() };
         assert_eq!(names(s.targets(plain, Trigger::Automatic)), ["main"]);
         assert_eq!(names(s.targets(fav, Trigger::Automatic)), ["main", "backup"], "favorites mirror");
-        // screenshots only when asked for, but a manual upload always works
+        // screenshots go up by default (owner, 2026-11-20); switched off, only a manual upload sends them
         let shot = ClipFacts { is_image: true, ..Default::default() };
-        assert!(s.targets(shot, Trigger::Automatic).is_empty());
-        assert_eq!(names(s.targets(shot, Trigger::Manual)), ["main"]);
+        assert_eq!(names(s.targets(shot, Trigger::Automatic)), ["main"]);
+        let no_shots = CloudSettings { upload_screenshots: false, ..s.clone() };
+        assert!(no_shots.targets(shot, Trigger::Automatic).is_empty());
+        assert_eq!(names(no_shots.targets(shot, Trigger::Manual)), ["main"]);
     }
 
     #[test]

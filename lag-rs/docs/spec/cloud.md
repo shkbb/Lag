@@ -123,12 +123,12 @@ Owner, 2026-11-20: "all library functions have to work, the storage limit and so
 | feature | with the cloud |
 |---|---|
 | **Library size limit** (auto-cleanup, oldest first, screenshots not counted) | Same limit, local files only (cloud-only clips take no disk). First removes the LOCAL COPIES of the oldest clips already in a cloud (lossless: they stay in the library as cloud-only); only then deletes the oldest local-only clips, as today. Never a clip in transfer. (`quota::plan_local_limit`) |
-| **Cloud limit** (new, per account) | GB limit for Lag's clips in that cloud. Over it: remove the oldest non-favorite clips from that cloud if the user allowed it, otherwise stop uploading there ("cloud is full" on the cards). Favorites are never removed. (`quota::plan_cloud_limit`) |
+| **Cloud auto-cleanup** (new, per account; owner: "the cloud needs a limit too") | The cloud's own "library size limit": GB Lag's clips may take in that account (0 = none). The room is the smaller of that limit and what the cloud itself has left, so cleanup also runs when the user's Drive fills up with other files. When a clip does not fit: `RemoveOldest` (default, like the local cleanup: oldest first, never favorites) or `StopUploads` ("cloud is full" on the cards). Runs before every upload. (`quota::plan_cloud_limit`, `sync::make_room`) |
 | **Free local space after N days** (new, off by default) | Local copies older than N days that are in a cloud are removed; they stay playable from the cloud. (`quota::plan_free_space`) |
 | **Disk usage bar** | Unchanged for the disk; a second line per account: used by Lag / limit / provider quota. |
 | **Favorites** (star, favorites-only filter) | Toggling writes the index (`SyncMeta`), so other PCs see it; with "upload favorites" it also queues the upload; favorite mirrors receive it. Filter works on cloud-only clips too. |
 | **Game filter chips, search, date groups** | Run on the joined library: cloud-only clips have game, file name and date from the index. Chips count both. |
-| **Play** | Local: as today. Cloud-only: download into the library folder (progress on the card), then play; streaming is an open question. |
+| **Play** | Local: as today. Cloud-only: plays straight from the cloud (stream, seeking works); "Save to this PC" downloads it into the library folder (owner, 2026-11-20). (`sync::stream`) |
 | **Edit / montage** | Needs local files: missing ones are downloaded first. The export is a NEW clip (new id) and follows the upload rule. |
 | **Delete** (one, selected, context menu) | Delete mode: this PC only (a synced clip becomes cloud-only), everywhere (local file + cloud file + tombstone), from the cloud only (menu item on synced clips). Default: ask. Selection delete asks once for all. |
 | **Show in folder** | Local: as today. Cloud-only: "Open in <cloud>" (web link to the file). |
@@ -139,16 +139,20 @@ Owner, 2026-11-20: "all library functions have to work, the storage limit and so
 | **Library refresh** | Refreshes local scan + every account index (index read is cheap; full rescan of the cloud only on demand). |
 
 ## 10. Order of work
-1. `lag-cloud` model: ids, layout + names, index + merge, presence, settings + policy, queue (THIS STEP).
-2. `CloudProvider` trait + an in-memory provider; end-to-end tests: upload on PC A, connect PC B, library
-   shows everything; delete on B, A sees the tombstone.
+1. DONE: `lag-cloud` model: ids, layout + names, index + merge, presence, settings + policy, queue, quota.
+2. DONE: `CloudProvider` trait, in-memory provider with faults, `sync::AccountClient`; end-to-end tests
+   (tests/two_pcs.rs): PC B sees PC A's library, concurrent index writes, resumed upload, full cloud cleanup,
+   corrupt index rebuilt from the files, expired sign-in.
 3. Google Drive provider (REST, resumable upload, appProperties), OAuth + DPAPI token store.
 4. Engine: queue worker thread, file-stable check, pause-while-gaming, speed limit.
 5. UI: Settings > Cloud page, library badges + menus, download on play, first-run flow on a new PC.
 6. Dropbox, OneDrive providers (same trait).
 
+## Decisions (owner, 2026-11-20)
+- Cloud-only clips play from the cloud; the user can save them locally.
+- Screenshots are uploaded too (default on), into the same game folders.
+- Free local space after N days: off by default.
+- Cloud auto-cleanup per account, default RemoveOldest, favorites never removed.
+
 ## Open questions (owner)
-- Delete in the library: ask every time, or a setting?
-- `CloudOnly` clips: download on play, or stream (Drive supports range reads; mpv can play an https URL)?
-- Screenshots: same tree (`<game>/Screenshots/`) or not at all?
-- Free-local-space: off by default?
+- Deleting a clip that is both here and in the cloud: ask every time (default), or a fixed choice?
