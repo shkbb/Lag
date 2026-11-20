@@ -168,6 +168,8 @@ impl Tray {
             Rc::new(move || {
                 let (Some(ui), Some(tray)) = (ui_w.upgrade(), tray_w.upgrade()) else { return };
                 let style = IconStyle::of(&ui);
+                // the taskbar button (from the Start-menu shortcut); the worker skips a style already applied
+                super::shortcut_icon::follow(style);
                 if style != icon_style.get() {
                     if let Some(i) = themed_icon(style) {
                         let _ = tray.set_icon(Some(i));

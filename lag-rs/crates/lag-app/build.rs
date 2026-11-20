@@ -23,8 +23,19 @@ fn embed_exe_icon() {
     let rc = out.join("lag_icon.rc");
     let obj = out.join("lag_icon_res.o");
     // canonicalize() gives a verbatim path (\\?\E:\...): windres wants a plain one with forward slashes
-    let ico_path = ico.to_string_lossy().trim_start_matches(r"\\?\").replace('\\', "/");
-    if std::fs::write(&rc, format!("1 ICON \"{ico_path}\"\n")).is_err() {
+    let plain = |p: &std::path::Path| p.to_string_lossy().trim_start_matches(r"\\?\").replace('\\', "/");
+    let mut script = format!("1 ICON \"{}\"\n", plain(&ico));
+    // 2 = light, 3 = GTA VI: the app points its shortcuts at these when the theme changes, so the taskbar button
+    // follows the theme (src/shell/shortcut_icon.rs)
+    for (id, name) in [(2, "icon-light.ico"), (3, "icon-gta.ico")] {
+        let themed = manifest.join("assets").join(name);
+        println!("cargo:rerun-if-changed={}", themed.display());
+        match themed.canonicalize() {
+            Ok(p) => script.push_str(&format!("{id} ICON \"{}\"\n", plain(&p))),
+            Err(_) => println!("cargo:warning=theme icon not found: {}", themed.display()),
+        }
+    }
+    if std::fs::write(&rc, script).is_err() {
         return;
     }
     for tool in ["windres", "x86_64-w64-mingw32-windres"] {

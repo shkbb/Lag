@@ -6,6 +6,7 @@ use std::{cell::RefCell, rc::Rc};
 pub mod autostart;
 pub mod hotkeys;
 pub mod hud;
+pub mod shortcut_icon;
 pub use crate::services::nofocus;
 pub mod fade_cover;
 pub mod tray;
