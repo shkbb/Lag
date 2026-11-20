@@ -146,6 +146,8 @@ Owner, 2026-11-20: "all library functions have to work, the storage limit and so
 3. DONE in code (crate lag-cloud-drive, 19 tests on scripted HTTP): Google Drive provider (REST v3, resumable
    upload that asks Google where it stands, appProperties), OAuth PKCE + loopback, DPAPI token store.
    Live check: `cargo run -p lag-cloud-drive --example drive_live --release` (opens the browser).
+   PASSED on the owner's Drive 2026-11-20: sign-in, 20 MB in 3 chunks (9.9 s), byte-exact download, stream URL,
+   rescan without the index, delete + tombstone.
 4. Engine: queue worker thread, file-stable check, pause-while-gaming, speed limit.
 5. UI: Settings > Cloud page, library badges + menus, download on play, first-run flow on a new PC.
 6. Dropbox, OneDrive providers (same trait).
