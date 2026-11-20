@@ -175,10 +175,25 @@ pub(super) fn worker(rx: mpsc::Receiver<Command>, tx: mpsc::Sender<Message>, lat
                     let _ = tx.send(Message::LoadStarted(gen));
                     path = next_path;
                     stopped = false;
+                    let cloud = crate::services::cloud::stream::is_cloud_key(&path);
                     if is_image(&path) {
                         p.stop()?;
-                        let pixels = Pixels::decode(Path::new(&path));
+                        // a cloud-only screenshot is fetched into a temporary file first
+                        let local = if cloud { crate::services::cloud::stream::fetch_image(&path) } else { Some(path.clone().into()) };
+                        let pixels = local.and_then(|l| Pixels::decode(&l));
                         let _ = tx.send(Message::Still(gen, path.clone(), pixels));
+                    } else if cloud {
+                        // a cloud-only clip plays straight from the cloud (signed URL + header, seeking works)
+                        let _ = p.command(&["set", "brightness", "0"]);
+                        match crate::services::cloud::stream::resolve(&path) {
+                            Some(source) => p.load_stream(&source.url, &source.headers)?,
+                            None => {
+                                let error = PlayerEvent::Error(lag_core::i18n::tr("Cloud_Error_Stream").to_owned());
+                                let _ = tx.send(Message::Event(gen, error));
+                                return Ok(());
+                            }
+                        }
+                        p.pause(false)?;
                     } else {
                         let _ = p.command(&["set", "brightness", "0"]); // never inherit a half-done fade
                         p.load(&path)?;

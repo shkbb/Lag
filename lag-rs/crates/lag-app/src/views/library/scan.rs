@@ -121,6 +121,7 @@ pub fn scan_library_phase1(
 
         let cached_thumb = mem_cache.lock().ok().and_then(|c| c.get(Path::new(&thumb_path)));
 
+        let cloud_id = sidecar.as_ref().and_then(|m| m.cloud_id.as_deref()).and_then(lag_cloud::ClipId::parse);
         let duration_ticks = sidecar
             .as_ref()
             .and_then(|m| m.duration_seconds)
@@ -145,6 +146,8 @@ pub fn scan_library_phase1(
             duration_ticks,
             created_date: f.created_local,
             file_size: f.len,
+            cloud_id,
+            cloud: Default::default(),
         });
     }
 

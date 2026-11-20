@@ -14,6 +14,10 @@ pub struct ClipMetadata {
     pub favorite: bool,
     pub edited: bool,
     pub duration_seconds: Option<f64>,
+    /// The clip's cloud id (lag_cloud::ClipId, docs/spec/cloud.md §3): set the first time the clip meets the
+    /// cloud, the same on every PC. Omitted while unset, so the C# build's files stay byte-identical.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cloud_id: Option<String>,
 }
 
 impl ClipMetadata {
@@ -97,6 +101,9 @@ impl ClipMetadataStore {
     }
     pub fn set_favorite(&self, clip_path: &str, favorite: bool) {
         self.update(clip_path, |m| m.favorite = favorite);
+    }
+    pub fn set_cloud_id(&self, clip_path: &str, id: &str) {
+        self.update(clip_path, |m| m.cloud_id = Some(id.to_owned()));
     }
     pub fn set_edited(&self, clip_path: &str, edited: bool) {
         self.update(clip_path, |m| m.edited = edited);

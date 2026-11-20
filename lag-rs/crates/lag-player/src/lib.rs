@@ -263,9 +263,22 @@ impl MpvPlayer {
     pub fn load(&self, path: &str) -> Result<()> {
         self.set_speed(1.0)?;
         let _ = self.set_slowmo_smoothing(1.0);
+        // a cloud clip's sign-in header never travels with the next file
+        let _ = self.command(&["set", "http-header-fields", ""]);
         self.command(&["set", "loop-file", if path.to_ascii_lowercase().ends_with(".gif") { "inf" } else { "no" }])?;
         self.command(&["set", "aid", "auto"])?;
         self.command(&["loadfile", path, "replace"])
+    }
+    /// Plays a clip straight from the cloud: an https URL plus the request headers it needs (the sign-in).
+    /// mpv reads it with range requests, so seeking works without downloading the whole file.
+    pub fn load_stream(&self, url: &str, headers: &[(String, String)]) -> Result<()> {
+        self.set_speed(1.0)?;
+        let _ = self.set_slowmo_smoothing(1.0);
+        let fields: Vec<String> = headers.iter().map(|(k, v)| format!("{k}: {v}")).collect();
+        self.command(&["set", "http-header-fields", &fields.join(",")])?;
+        self.command(&["set", "loop-file", "no"])?;
+        self.command(&["set", "aid", "auto"])?;
+        self.command(&["loadfile", url, "replace"])
     }
     /// Like `load`, but playback starts at `start` seconds (mpv's per-file `start` option: no frame of the file's
     /// beginning is shown first, unlike load + seek).

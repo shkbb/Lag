@@ -17,6 +17,11 @@ export struct LibraryCardData {
     is-favorite: bool,
     is-edited: bool,
     is-selected: bool,
+    // cloud (docs/spec/cloud.md §5): 0 only here, 1 here + cloud, 2 only in the cloud, 3 uploading / queued,
+    // 4 downloading, 5 failed; progress 0..1, below 0 = waiting
+    cloud-state: int,
+    cloud-progress: float,
+    cloud-only: bool,
 }
 
 export component LibraryClipTile {
@@ -132,6 +137,45 @@ export component LibraryClipTile {
                 animate opacity { duration: Theme.dur-fast; }
             }
 
+            // Cloud badge (bottom-left; gives way to the Edit pill on hover)
+            if root.data.cloud-state > 0: Rectangle {
+                x: 9px;
+                y: parent.height - self.height - 9px;
+                height: 24px;
+                width: cloud-layout.preferred-width;
+                border-radius: Theme.rad-kbd;
+                background: Theme.card-badge-hover-bg;
+                opacity: root.hovered && !root.is-selecting && !root.data.cloud-only ? 0.0 : 1.0;
+                animate opacity { duration: Theme.dur-fast; }
+                cloud-layout := HorizontalLayout {
+                    padding-left: 6px;
+                    padding-right: root.data.cloud-progress >= 0 && (root.data.cloud-state == 3 || root.data.cloud-state == 4) ? 7px : 6px;
+                    spacing: 4px;
+                    VerticalLayout {
+                        alignment: center;
+                        MaterialIcon {
+                            source: root.data.cloud-state == 1 ? Icons.cloud-check-outline
+                                : root.data.cloud-state == 2 ? Icons.cloud-outline
+                                : root.data.cloud-state == 3 ? Icons.cloud-upload-outline
+                                : root.data.cloud-state == 4 ? Icons.cloud-download-outline
+                                : Icons.cloud-alert-outline;
+                            size: 15px;
+                            tint: root.data.cloud-state == 5 ? #F0B45A : root.data.cloud-state == 1 ? Theme.accent-text : Theme.card-badge-fg;
+                            // waiting in the queue: breathes
+                            opacity: root.data.cloud-state == 3 && root.data.cloud-progress < 0
+                                ? 0.45 + 0.55 * (0.5 + 0.5 * cos(360deg * mod(animation-tick() / 1400ms, 1))) : 1.0;
+                        }
+                    }
+                    if root.data.cloud-progress >= 0 && (root.data.cloud-state == 3 || root.data.cloud-state == 4): Text {
+                        text: round(root.data.cloud-progress * 100) + "%";
+                        color: Theme.card-badge-fg;
+                        font-family: Theme.font-mono;
+                        font-size: Theme.font-size-group;
+                        vertical-alignment: center;
+                    }
+                }
+            }
+
             // Duration badge (bottom-right, videos/GIFs only)
             if !root.data.is-image && root.data.duration-text != "": DurationBadge {
                 x: parent.width - self.width - 9px;
@@ -217,9 +261,9 @@ export component LibraryClipTile {
                     }
                 }
 
-                // Edit pill (bottom-left, videos only)
+                // Edit pill (bottom-left, videos on this PC only)
                 Rectangle {
-                    visible: !root.data.is-image;
+                    visible: !root.data.is-image && !root.data.cloud-only;
                     x: 9px;
                     y: parent.height - self.height - 9px;
                     height: 28px;

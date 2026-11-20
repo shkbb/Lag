@@ -16,7 +16,7 @@ pub(super) fn bind_controls(ui: &AppWindow, ctx: &Rc<AppCtx>, state: &Rc<RefCell
             ui.global::<SettingsVM>().set_capture_id("".into());
             st.refresh(&ui);
             if st.tab == 3 {
-                c.cloud().refresh_usage();
+                c.cloud().refresh();
             }
         }
     });

@@ -7,6 +7,7 @@ import { LagSearchBox } from "../components/text_input.slint";
 import { RKbdChip } from "../components/badges.slint";
 import { LagScrollView } from "../components/scrollbar.slint";
 import { LagContextMenuContainer, LagMenuItem } from "../components/menu.slint";
+import { LagCheckBox } from "../components/checkbox.slint";
 import { LibraryClipTile, LibraryCardData } from "../components/library/clip_card.slint";
 import { IndeterminateBar } from "../components/library/indeterminate_bar.slint";
 
@@ -79,6 +80,14 @@ export global LibraryVM {
     in property <[string]> hotkey-parts: [];
     in property <float> total-content-height: 0;
     in property <[LibraryRowData]> visible-rows: [];
+    // a cloud is connected: the cloud actions are offered
+    in property <bool> cloud-connected: false;
+    // Delete (docs/spec/cloud.md §12): asked when a clip is also, or only, in the cloud
+    in-out property <bool> delete-dialog-open: false;
+    // some of the clips are both here and in the cloud (offer "this PC" / "cloud" / "everywhere")
+    in property <bool> delete-dialog-mixed: false;
+    // every clip is only in the cloud (deleting is for good)
+    in property <bool> delete-dialog-cloud-only: false;
 
     callback search-changed(string);
     callback set-game-filter(string);
@@ -95,6 +104,13 @@ export global LibraryVM {
     callback context-edit(string /* file-path */);
     callback context-show-in-folder(string /* file-path */);
     callback context-delete(string /* file-path */);
+    callback context-upload(string /* file-path */);
+    callback context-save-local(string /* file-path */);
+    callback context-open-cloud(string /* file-path */);
+    callback context-retry();
+    // 0 = this PC, 1 = the cloud, 2 = everywhere; remember = don't ask again
+    callback delete-choose(int, bool);
+    callback delete-cancel();
     callback viewport-changed(float /* scroll-y */, float /* width */, float /* height */);
 }
 
@@ -104,6 +120,9 @@ export component LibraryPage inherits Rectangle {
     // Context menu overlay state
     property <bool> context-menu-open: false;
     property <string> context-clip-path: "";
+    property <int> context-cloud-state: 0;
+    property <bool> context-cloud-only: false;
+    property <bool> delete-remember: false;
     property <length> context-menu-x: 0px;
     property <length> context-menu-y: 0px;
 
@@ -130,12 +149,14 @@ export component LibraryPage inherits Rectangle {
         }
     }
 
-    function open-context-menu(file-path: string, abs-x: length, abs-y: length) {
+    function open-context-menu(file-path: string, cloud-state: int, cloud-only: bool, abs-x: length, abs-y: length) {
         let local-x = abs-x - root.absolute-position.x;
         let local-y = abs-y - root.absolute-position.y;
-        let menu-w = 190px;
-        let menu-h = 114px;
+        let menu-w = 220px;
+        let menu-h = 190px;
         root.context-clip-path = file-path;
+        root.context-cloud-state = cloud-state;
+        root.context-cloud-only = cloud-only;
         root.context-menu-x = clamp(local-x, 8px, max(8px, root.width - menu-w - 8px));
         root.context-menu-y = clamp(local-y, 8px, max(8px, root.height - menu-h - 8px));
         root.context-menu-open = true;
@@ -557,7 +578,7 @@ export component LibraryPage inherits Rectangle {
                                         }
                                         context-menu-requested(ax, ay) => {
                                             body-focus.focus();
-                                            root.open-context-menu(card.file-path, ax, ay);
+                                            root.open-context-menu(card.file-path, card.cloud-state, card.cloud-only, ax, ay);
                                         }
                                     }
                                 }
@@ -650,7 +671,7 @@ export component LibraryPage inherits Rectangle {
         LagContextMenuContainer {
             x: root.context-menu-x;
             y: root.context-menu-y;
-            width: 190px;
+            width: 220px;
             height: ctx-layout.preferred-height;
             drop-shadow-offset-x: Theme.shadow-flyout-x;
             drop-shadow-offset-y: Theme.shadow-flyout-y;
@@ -662,7 +683,7 @@ export component LibraryPage inherits Rectangle {
                 padding: Theme.menu-flyout-presenter-theme-padding;
                 spacing: 2px;
 
-                LagMenuItem {
+                if !root.context-cloud-only: LagMenuItem {
                     text: Tr.t("Editor_Edit", Tr.rev);
                     has-icon: true;
                     icon: Icons.movie-edit-outline;
@@ -672,13 +693,53 @@ export component LibraryPage inherits Rectangle {
                     }
                 }
 
-                LagMenuItem {
+                if !root.context-cloud-only: LagMenuItem {
                     text: Tr.t("Library_ShowInFolder", Tr.rev);
                     has-icon: true;
                     icon: Icons.folder-search-outline;
                     clicked => {
                         root.context-menu-open = false;
                         LibraryVM.context-show-in-folder(root.context-clip-path);
+                    }
+                }
+
+                if root.context-cloud-only: LagMenuItem {
+                    text: Tr.t("Library_Cloud_SaveLocal", Tr.rev);
+                    has-icon: true;
+                    icon: Icons.cloud-download-outline;
+                    clicked => {
+                        root.context-menu-open = false;
+                        LibraryVM.context-save-local(root.context-clip-path);
+                    }
+                }
+
+                if LibraryVM.cloud-connected && root.context-cloud-state == 0: LagMenuItem {
+                    text: Tr.t("Library_Cloud_Upload", Tr.rev);
+                    has-icon: true;
+                    icon: Icons.cloud-upload-outline;
+                    clicked => {
+                        root.context-menu-open = false;
+                        LibraryVM.context-upload(root.context-clip-path);
+                    }
+                }
+
+                if root.context-cloud-state == 5: LagMenuItem {
+                    text: Tr.t("Library_Cloud_Retry", Tr.rev);
+                    has-icon: true;
+                    icon: Icons.cloud-alert-outline;
+                    clicked => {
+                        root.context-menu-open = false;
+                        LibraryVM.context-retry();
+                    }
+                }
+
+                if root.context-cloud-state == 1 || root.context-cloud-state == 2: LagMenuItem {
+                    text: Tr.t("Library_Cloud_Open", Tr.rev);
+                    has-icon: true;
+                    icon: Icons.cloud-outline;
+                    clicked => {
+                        root.context-menu-open = false;
+                        LibraryVM.context-open-cloud(root.context-clip-path);
                     }
                 }
 
@@ -689,6 +750,63 @@ export component LibraryPage inherits Rectangle {
                     clicked => {
                         root.context-menu-open = false;
                         LibraryVM.context-delete(root.context-clip-path);
+                    }
+                }
+            }
+        }
+    }
+
+    // Delete: where from (docs/spec/cloud.md §12). Only shown when a clip is also, or only, in the cloud.
+    if LibraryVM.delete-dialog-open: Rectangle {
+        background: #000000B0;
+        TouchArea { }
+        Rectangle {
+            width: 520px;
+            height: del-layout.preferred-height;
+            x: (parent.width - self.width) / 2;
+            y: (parent.height - self.height) / 2;
+            background: Theme.surface-card;
+            border-radius: 14px;
+            border-width: 1px;
+            border-color: Theme.border-strong;
+            drop-shadow-offset-y: 12px;
+            drop-shadow-blur: 40px;
+            drop-shadow-color: #00000080;
+            del-layout := VerticalLayout {
+                padding: 26px;
+                spacing: 14px;
+                Text {
+                    text: Tr.t(LibraryVM.delete-dialog-cloud-only ? "Delete_CloudOnly_Title" : "Delete_Title", Tr.rev);
+                    font-size: 18px; font-weight: 700; color: Theme.text-hi; wrap: word-wrap;
+                }
+                Text {
+                    text: Tr.t(LibraryVM.delete-dialog-cloud-only ? "Delete_CloudOnly_Body" : "Delete_Body", Tr.rev);
+                    font-size: 13px; color: LibraryVM.delete-dialog-cloud-only ? #E5B84C : Theme.text-mid; wrap: word-wrap;
+                }
+                if !LibraryVM.delete-dialog-cloud-only: HorizontalLayout {
+                    spacing: 8px;
+                    LagCheckBox { checked: root.delete-remember; toggled(v) => { root.delete-remember = v; } }
+                    Text { text: Tr.t("Delete_Remember", Tr.rev); font-size: 12.5px; color: Theme.text-mid; vertical-alignment: center; }
+                }
+                HorizontalLayout {
+                    alignment: end;
+                    spacing: 8px;
+                    RChipButton {
+                        text: Tr.t("Editor_CancelExport", Tr.rev);
+                        clicked => { root.delete-remember = false; LibraryVM.delete-cancel(); }
+                    }
+                    if LibraryVM.delete-dialog-mixed: RChipButton {
+                        text: Tr.t("Delete_ThisPc", Tr.rev);
+                        clicked => { LibraryVM.delete-choose(0, root.delete-remember); root.delete-remember = false; }
+                    }
+                    RChipButton {
+                        text: Tr.t("Delete_Cloud", Tr.rev);
+                        clicked => { LibraryVM.delete-choose(1, false); root.delete-remember = false; }
+                    }
+                    if LibraryVM.delete-dialog-mixed: RChipButton {
+                        text: Tr.t("Delete_Everywhere", Tr.rev);
+                        danger: true;
+                        clicked => { LibraryVM.delete-choose(2, root.delete-remember); root.delete-remember = false; }
                     }
                 }
             }

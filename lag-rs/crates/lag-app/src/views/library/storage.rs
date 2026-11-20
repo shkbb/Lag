@@ -74,7 +74,15 @@ pub fn enforce_storage_quota_bytes(
         return;
     }
 
-    for f in files {
+    // With a cloud (docs/spec/cloud.md §11, lag_cloud::quota::plan_local_limit): first the local copies of
+    // clips that are safely in a cloud (nothing is lost, they stay in the library as cloud clips), then the
+    // oldest local-only clips as before; a clip being uploaded or downloaded is never touched.
+    let guard = crate::services::cloud::local_guard();
+    let key = |f: &VideoFile| f.path.to_string_lossy().to_lowercase();
+    let (in_cloud, local_only): (Vec<VideoFile>, Vec<VideoFile>) =
+        files.into_iter().filter(|f| !guard.busy.contains(&key(f))).partition(|f| guard.in_cloud.contains(&key(f)));
+
+    for f in in_cloud.into_iter().chain(local_only) {
         if total_bytes <= max_bytes {
             break;
         }

@@ -133,6 +133,19 @@ pub(super) fn hydrate_single_clip(
     let mut buffer: Option<SharedPixelBuffer<Rgba8Pixel>> = None;
     let mut duration_ticks = task.duration_ticks;
 
+    // a clip only in the cloud: nothing to probe or render here, only the thumbnail the cloud worker fetched
+    if crate::services::cloud::stream::is_cloud_key(&task.file_path) {
+        let thumb_path = Path::new(&task.thumbnail_path);
+        if task.has_thumbnail || !thumb_path.exists() {
+            return None;
+        }
+        let buf = decode_image_to_buffer(thumb_path, None).ok()?;
+        if let Ok(mut cache) = mem_cache.lock() {
+            cache.insert(thumb_path, buf.clone());
+        }
+        return Some((Some(buf), duration_ticks));
+    }
+
     if task.is_image {
         let p = Path::new(&task.file_path);
         match decode_image_to_buffer(p, Some(640)) {

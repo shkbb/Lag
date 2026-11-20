@@ -32,9 +32,18 @@ pub struct ClipEntry {
     pub duration_ticks: i64,
     pub created_date: NaiveDateTime,
     pub file_size: i64,
+    /// The clip's cloud id (metadata `CloudId`), once it met the cloud.
+    pub cloud_id: Option<lag_cloud::ClipId>,
+    /// Where it lives, for the card's cloud badge.
+    pub cloud: super::cloud::CloudMark,
 }
 
 impl ClipEntry {
+    /// A card for a clip that is only in the cloud (its path is a `cloud:` key, not a file).
+    pub fn is_cloud_only(&self) -> bool {
+        crate::services::cloud::stream::is_cloud_key(&self.file_path)
+    }
+
     pub fn has_game(&self) -> bool {
         self.game.as_ref().is_some_and(|s| !s.trim_matches(dotnet_whitespace).is_empty())
     }
@@ -150,6 +159,8 @@ impl Default for ClipEntry {
             duration_ticks: 0,
             created_date: NaiveDate::from_ymd_opt(1, 1, 1).unwrap().and_hms_opt(0, 0, 0).unwrap(),
             file_size: 0,
+            cloud_id: None,
+            cloud: Default::default(),
         }
     }
 }

@@ -56,6 +56,9 @@ pub struct Job {
     pub not_before: Option<DateTime<Utc>>,
     pub state: JobState,
     pub last_error: Option<String>,
+    /// SyncMeta: the favorite flag to write (a cloud-only clip has no local metadata to read it from).
+    #[serde(default)]
+    pub favorite: Option<bool>,
 }
 
 /// Waits after the 1st, 2nd, ... failure; after the last one the job is Failed.
@@ -124,6 +127,7 @@ impl Queue {
             not_before: None,
             state: JobState::Pending,
             last_error: None,
+            favorite: None,
         });
         self.next_id
     }
@@ -150,6 +154,21 @@ impl Queue {
     pub fn save_session(&mut self, id: u64, session: UploadSession) {
         if let Some(j) = self.job_mut(id) {
             j.session = Some(session);
+        }
+    }
+
+    /// Sets what a SyncMeta job writes.
+    pub fn set_favorite(&mut self, id: u64, favorite: bool) {
+        if let Some(j) = self.job_mut(id) {
+            j.favorite = Some(favorite);
+        }
+    }
+
+    /// Stopped on purpose (a game started, Lag is closing): back to waiting, not counted as a failure; an
+    /// upload keeps its session and resumes.
+    pub fn requeue(&mut self, id: u64) {
+        if let Some(j) = self.job_mut(id).filter(|j| j.state == JobState::Running) {
+            j.state = JobState::Pending;
         }
     }
 
@@ -297,6 +316,9 @@ mod tests {
         assert_eq!(q.next_ready(t(0), OPEN), None);
         q.signed_in(&drive());
         assert_eq!(q.next_ready(t(0), OPEN), Some(id));
+        q.start(id);
+        q.requeue(id);
+        assert_eq!((q.get(id).unwrap().state.clone(), q.get(id).unwrap().attempts), (JobState::Pending, 0), "paused, not failed");
         q.forget_account(&drive());
         assert!(q.jobs().is_empty());
     }

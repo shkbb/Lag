@@ -4,11 +4,12 @@ use super::*;
 use crate::services::cloud::{AccountView, CloudView};
 use crate::SettingsRowData;
 use lag_cloud::layout::SortMode;
-use lag_cloud::settings::{CloudSettings, UploadWhat, UploadWhen, LIMIT_RUNGS_GB};
+use lag_cloud::settings::{CloudSettings, DeleteMode, UploadWhat, UploadWhen, LIMIT_RUNGS_GB};
 
 const UPLOAD: [UploadWhat; 3] = [UploadWhat::All, UploadWhat::Favorites, UploadWhat::Manual];
 const WHEN: [UploadWhen; 2] = [UploadWhen::Immediately, UploadWhen::NoGameRunning];
 const SORT: [SortMode; 4] = [SortMode::ByGame, SortMode::ByGameMonth, SortMode::ByMonth, SortMode::Flat];
+const DELETE: [DeleteMode; 3] = [DeleteMode::Ask, DeleteMode::ThisPcOnly, DeleteMode::Everywhere];
 
 pub(super) fn rows(view: &CloudView) -> Vec<SettingsRowData> {
     let s = &view.settings;
@@ -67,7 +68,11 @@ pub(super) fn rows(view: &CloudView) -> Vec<SettingsRowData> {
     );
     limit.enabled = auto_cleanup;
 
-    let mut rows = vec![acc, space, upload, when, sort, shots, cleanup, limit];
+    // what Delete in the library does with a clip that is also in the cloud ("remember my choice" lands here)
+    let mut delete = segmented("cloud-delete", "Cloud_DeleteMode", &["Cloud_Delete_Ask", "Delete_ThisPc", "Delete_Everywhere"], pos(&DELETE, &s.delete_mode));
+    delete.description = "Cloud_DeleteMode_Desc".into();
+
+    let mut rows = vec![acc, space, upload, when, sort, shots, cleanup, limit, delete];
     for r in rows.iter_mut().skip(1) {
         r.visible = account.is_some();
     }
@@ -107,6 +112,7 @@ pub(super) fn choose(cs: &mut CloudSettings, id: &str, index: usize) {
         "cloud-upload" => cs.upload_what = UPLOAD.get(index).copied().unwrap_or_default(),
         "cloud-when" => cs.upload_when = WHEN.get(index).copied().unwrap_or_default(),
         "cloud-sort" => cs.sort = SORT.get(index).copied().unwrap_or_default(),
+        "cloud-delete" => cs.delete_mode = DELETE.get(index).copied().unwrap_or_default(),
         "cloud-limit" => {
             if let (Some(a), Some(gb)) = (cs.accounts.first_mut(), LIMIT_RUNGS_GB.get(index)) {
                 a.max_size_gb = *gb;
@@ -189,6 +195,8 @@ mod tests {
         choose(&mut cs, "cloud-sort", 3);
         toggle(&mut cs, "cloud-cleanup", true);
         choose(&mut cs, "cloud-limit", 4);
+        choose(&mut cs, "cloud-delete", 2);
+        assert_eq!(cs.delete_mode, DeleteMode::Everywhere);
         toggle(&mut cs, "cloud-shots", false);
         assert_eq!(
             (cs.upload_what, cs.upload_when, cs.sort, cs.upload_screenshots),

@@ -121,11 +121,12 @@ fn scan_discovers_all_media_ignores_other_and_subfolders_and_builds_signature() 
             favorite: true,
             edited: false,
             duration_seconds: Some(12.5),
+            cloud_id: None,
         },
     );
     store.write(
         &lib.join("clip3.mov").to_string_lossy(),
-        &ClipMetadata { game: None, exe: None, favorite: false, edited: true, duration_seconds: None },
+        &ClipMetadata { game: None, exe: None, favorite: false, edited: true, duration_seconds: None, cloud_id: None },
     );
 
     let mem = Mutex::new(ThumbnailMemCache::default());

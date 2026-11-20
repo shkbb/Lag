@@ -1,6 +1,6 @@
 //! `LibraryState`: the page's state on the UI thread and everything that pushes it into `LibraryVM`.
 
-use super::{clip::*, filter::*, grouping::*, layout::*, scan::*, storage::*, thumbnails::*};
+use super::{clip::*, cloud, filter::*, grouping::*, layout::*, scan::*, storage::*, thumbnails::*};
 use crate::app_ctx::AppCtx;
 use crate::{GameChipData, LibraryCardData, LibraryRowData, LibraryVM};
 use chrono::Local;
@@ -70,6 +70,13 @@ pub(super) struct LibraryState {
     pub(super) visible_window: (usize, usize),
     pub(super) visible_card_models: HashMap<usize, Rc<VecModel<LibraryCardData>>>,
     pub(super) clip_to_visible_pos: HashMap<usize, (usize, usize)>,
+
+    /// The cloud's view of the library (services/cloud keeps it current).
+    pub(super) cloud: crate::services::cloud::CloudLibrary,
+    /// Clips the user just deleted from the cloud: hidden until the cloud index no longer lists them.
+    pub(super) deleting: std::collections::HashSet<lag_cloud::ClipId>,
+    /// The clips the delete dialog is about.
+    pub(super) pending_delete: Vec<String>,
 }
 
 impl LibraryState {
@@ -104,6 +111,9 @@ impl LibraryState {
             visible_window: (0, 0),
             visible_card_models: HashMap::new(),
             clip_to_visible_pos: HashMap::new(),
+            cloud: Default::default(),
+            deleting: Default::default(),
+            pending_delete: Vec::new(),
         }
     }
 
@@ -138,7 +148,55 @@ impl LibraryState {
             is_favorite: c.is_favorite,
             is_edited: c.is_edited,
             is_selected: c.is_selected,
+            cloud_state: c.cloud.state,
+            cloud_progress: c.cloud.progress,
+            cloud_only: c.is_cloud_only(),
         }
+    }
+
+    /// Tells the library size limit which local clips are safely in a cloud and which are moving.
+    pub(super) fn publish_guard(&self) {
+        let mut guard = crate::services::cloud::LocalGuard::default();
+        for c in self.clips.iter().filter(|c| !c.is_cloud_only()) {
+            match c.cloud.state {
+                cloud::SYNCED => {
+                    guard.in_cloud.insert(c.file_path.to_lowercase());
+                }
+                3 | 4 => {
+                    guard.busy.insert(c.file_path.to_lowercase());
+                }
+                _ => {}
+            }
+        }
+        crate::services::cloud::set_local_guard(guard);
+    }
+
+    /// Joins the clips with the cloud (`self.cloud`). True if cloud-only cards came or went (the caller
+    /// rescans, which lays out and hydrates them); otherwise the visible cards are refreshed here.
+    pub(super) fn apply_cloud(&mut self, ui: &crate::AppWindow) -> bool {
+        let mut cloud = self.cloud.clone();
+        // just deleted from the cloud: not shown again while the delete job runs
+        for (_, index) in &mut cloud.indexes {
+            index.entries.retain(|id, _| !self.deleting.contains(id));
+        }
+        let still: Vec<_> = self
+            .deleting
+            .iter()
+            .filter(|id| self.cloud.indexes.iter().any(|(_, i)| i.entries.get(id).is_some_and(|e| e.is_live())))
+            .copied()
+            .collect();
+        self.deleting = still.into_iter().collect();
+        ui.global::<LibraryVM>().set_cloud_connected(cloud.connected);
+        let changed = cloud::merge(&mut self.clips, &cloud, self.meta_store.as_ref());
+        self.publish_guard();
+        self.rebuild_path_index();
+        if changed {
+            self.rebuild_view(ui);
+            self.publish_clips();
+        } else {
+            self.refresh_all_visible_cards();
+        }
+        changed
     }
 
     pub(super) fn build_slint_row(&mut self, vrow_idx: usize) -> LibraryRowData {
@@ -380,9 +438,12 @@ impl LibraryState {
         c.is_favorite = !c.is_favorite;
         let path = c.file_path.clone();
         let fav = c.is_favorite;
-        if let Some(ref store) = self.meta_store {
+        let (cloud_only, cloud_id) = (c.is_cloud_only(), c.cloud_id);
+        if let (Some(store), false) = (&self.meta_store, cloud_only) {
             store.set_favorite(&path, fav);
         }
+        // other PCs see it; with "upload favorites" a new favorite goes up
+        self.ctx.cloud().favorite_changed((!cloud_only).then_some(path.as_str()), cloud_id, fav);
         if self.favorites_only {
             self.rebuild_groups(ui);
         } else {
@@ -394,6 +455,9 @@ impl LibraryState {
         let Some(&idx) = self.clip_path_to_idx.get(file_path) else {
             return false;
         };
+        if self.clips[idx].is_cloud_only() {
+            return false;
+        }
         let thumb_path = self.clips[idx].thumbnail_path.clone();
         let res: std::io::Result<()> = (|| {
             if Path::new(file_path).exists() {
@@ -414,30 +478,6 @@ impl LibraryState {
         self.clips.remove(idx);
         self.rebuild_path_index();
         true
-    }
-
-    pub(super) fn delete_single(&mut self, ui: &crate::AppWindow, file_path: &str) {
-        if self.delete_clip_by_path(file_path) {
-            self.rebuild_view(ui);
-            self.publish_clips();
-        }
-        self.notify_selection_changed(ui);
-    }
-
-    pub(super) fn delete_selected(&mut self, ui: &crate::AppWindow) {
-        let targets: Vec<String> = self.clips.iter().filter(|c| c.is_selected).map(|c| c.file_path.clone()).collect();
-        let mut deleted_any = false;
-        for path in targets {
-            if self.delete_clip_by_path(&path) {
-                deleted_any = true;
-            }
-        }
-        self.selection_anchor = None;
-        if deleted_any {
-            self.rebuild_view(ui);
-            self.publish_clips();
-        }
-        self.notify_selection_changed(ui);
     }
 
     pub(super) fn apply_hydration_batch(&mut self, ui: &crate::AppWindow, batch: Vec<HydrateResult>) {
@@ -559,7 +599,7 @@ impl LibraryState {
                 let tasks_and_hk: Option<(Vec<HydrateTask>, bool)> = {
                     let mut st = st_rc.borrow_mut();
                     let unchanged = st.published_signature.as_deref().is_some_and(|prev| prev == signature)
-                        && st.clips.len() == built.len();
+                        && st.clips.iter().filter(|c| !c.is_cloud_only()).count() == built.len();
 
                     if unchanged {
                         let pending: Vec<HydrateTask> = st
@@ -582,7 +622,17 @@ impl LibraryState {
                             Some((pending, false))
                         }
                     } else {
-                        let tasks: Vec<HydrateTask> = built
+                        // cloud cards from before keep their decoded thumbnails
+                        let cloud_cards: Vec<ClipEntry> = st.clips.iter().filter(|c| c.is_cloud_only()).cloned().collect();
+                        st.clips = built;
+                        st.clips.extend(cloud_cards);
+                        let cloud_view = st.cloud.clone();
+                        let store = st.meta_store.clone();
+                        cloud::merge(&mut st.clips, &cloud_view, store.as_ref());
+                        st.publish_guard();
+                        ui.global::<LibraryVM>().set_cloud_connected(cloud_view.connected);
+                        let tasks: Vec<HydrateTask> = st
+                            .clips
                             .iter()
                             .map(|c| HydrateTask {
                                 file_path: c.file_path.clone(),
@@ -592,7 +642,6 @@ impl LibraryState {
                                 has_thumbnail: c.thumbnail.is_some(),
                             })
                             .collect();
-                        st.clips = built;
                         st.rebuild_path_index();
                         st.selection_anchor = None;
                         st.published_signature = Some(signature);

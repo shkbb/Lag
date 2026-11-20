@@ -212,6 +212,8 @@ impl Runtime {
                 // Recorder wrote the metadata sidecar off-thread BEFORE this refresh.
                 if let Some(ctx) = self.ctx.upgrade() {
                     ctx.request_library_refresh();
+                    // the cloud's upload rule decides whether it goes up (docs/spec/cloud.md §7)
+                    ctx.cloud().clip_saved(&path);
                 }
                 notify("Toast_ReplaySaved", filename(&path), "check-circle", "Accent");
             }
@@ -318,6 +320,7 @@ impl Runtime {
             if let Some(path) = screenshot::capture(device, recorder::library_path(&settings)) {
                 sound::play("screenshot.wav");
                 let _ = slint::invoke_from_event_loop(move || {
+                    crate::services::cloud::clip_saved(&path.to_string_lossy());
                     notify("Toast_ScreenshotSaved", filename(&path.to_string_lossy()), "check-circle", "Accent")
                 });
             }

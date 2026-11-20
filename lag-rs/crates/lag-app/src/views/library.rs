@@ -14,6 +14,8 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 mod clip;
+mod cloud;
+mod cloud_actions;
 mod filter;
 mod grouping;
 mod layout;
@@ -131,15 +133,7 @@ pub fn init(ui: &crate::AppWindow, ctx: &Rc<AppCtx>) {
         });
     }
 
-    // Bulk delete & clear/select-all
-    {
-        let st = Rc::clone(&state);
-        let ui_w = ui.as_weak();
-        vm.on_delete_selected(move || {
-            let Some(ui) = ui_w.upgrade() else { return };
-            st.borrow_mut().delete_selected(&ui);
-        });
-    }
+    // Clear/select-all (Delete and the cloud actions: cloud_actions.rs)
     {
         let st = Rc::clone(&state);
         let ui_w = ui.as_weak();
@@ -206,7 +200,8 @@ pub fn init(ui: &crate::AppWindow, ctx: &Rc<AppCtx>) {
         let st = Rc::clone(&state);
         vm.on_card_edit(move |clip_idx| {
             let target = st.borrow().clips.get(clip_idx as usize).and_then(|c| {
-                if c.is_image {
+                // a clip only in the cloud is edited once it is saved to this PC
+                if c.is_image || c.is_cloud_only() {
                     None
                 } else {
                     Some(c.file_path.clone())
@@ -246,14 +241,6 @@ pub fn init(ui: &crate::AppWindow, ctx: &Rc<AppCtx>) {
     {
         vm.on_context_show_in_folder(move |file_path| {
             show_in_folder(file_path.as_str());
-        });
-    }
-    {
-        let st = Rc::clone(&state);
-        let ui_w = ui.as_weak();
-        vm.on_context_delete(move |file_path| {
-            let Some(ui) = ui_w.upgrade() else { return };
-            st.borrow_mut().delete_single(&ui, file_path.as_str());
         });
     }
 
@@ -301,6 +288,8 @@ pub fn init(ui: &crate::AppWindow, ctx: &Rc<AppCtx>) {
             }
         });
     }
+
+    cloud_actions::bind(ui, ctx, &state);
 
     // Initial background scan at startup (MainViewModel.cs:231)
     LibraryState::start_refresh(&state);
