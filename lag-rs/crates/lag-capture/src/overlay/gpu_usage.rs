@@ -50,6 +50,10 @@ impl GpuUsageProbe {
     pub fn get_3d(&self, pid: u32) -> f64 {
         self.last.get(&pid).copied().unwrap_or(0.0)
     }
+    /// 3D load of every process in the last sample.
+    pub(crate) fn loads(&self) -> &HashMap<u32, f64> {
+        &self.last
+    }
     pub(crate) fn collect(&mut self) -> Option<GpuSample> {
         self.ensure_open();
         if self.counter.0.is_null() {

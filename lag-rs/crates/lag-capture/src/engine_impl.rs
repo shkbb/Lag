@@ -459,6 +459,7 @@ impl Engine {
 fn lock_timer(shared: Arc<Shared>, stop: Arc<(Mutex<bool>, Condvar)>) {
     // The detector holds PDH handles (not Send): it lives on this thread, like C#'s timer-owned detector.
     let mut detector = crate::detect::GameDetector::new();
+    let mut review = crate::detect::LockReview::default();
     let mut wait = Duration::from_millis(500);
     loop {
         {
@@ -473,13 +474,17 @@ fn lock_timer(shared: Arc<Shared>, stop: Arc<(Mutex<bool>, Condvar)>) {
         if !shared.running.load(Ordering::Acquire) {
             continue;
         }
-        evaluate_lock(&shared, &mut detector);
+        evaluate_lock(&shared, &mut detector, &mut review);
         trim_carry_over(&shared);
         log_capture_stats(&shared);
     }
 }
 
-fn evaluate_lock(shared: &Arc<Shared>, detector: &mut crate::detect::GameDetector) {
+fn evaluate_lock(
+    shared: &Arc<Shared>,
+    detector: &mut crate::detect::GameDetector,
+    review: &mut crate::detect::LockReview,
+) {
     let (kind, hwnd, pid, cooldown, forced, mode, monitor) = {
         let st = lock(&shared.state);
         (
@@ -495,6 +500,9 @@ fn evaluate_lock(shared: &Arc<Shared>, detector: &mut crate::detect::GameDetecto
     let mut kind = kind;
     if kind == LockKind::Game {
         if is_window(hwnd) && is_process_alive(pid) {
+            if forced == 0 && mode != CaptureMode::Display {
+                review_game_lock(shared, detector, review, hwnd, pid, monitor.as_deref());
+            }
             return;
         }
         // The game is gone. Keep recording without a hole: the SAME session switches to the desktop, so the
@@ -531,7 +539,11 @@ fn evaluate_lock(shared: &Arc<Shared>, detector: &mut crate::detect::GameDetecto
     }
     if let Some(cand) = detector.find_best_game(monitor.as_deref()) {
         if kind == LockKind::Desktop {
-            log::info!("[VfrReplayEngine] Game appeared ({}) \u{2014} switching from desktop to game.", cand.exe);
+            log::info!(
+                "[VfrReplayEngine] Game appeared ({}, {}) \u{2014} switching from desktop to game.",
+                cand.exe,
+                if cand.certain { "certain" } else { "guess" }
+            );
             // Same session when the game fits the session frame (no stitch, no hole); else a new session
             // and the desktop part is carried over (C# behaviour).
             if desktop_to_game_in_place(shared, &cand) {
@@ -542,11 +554,12 @@ fn evaluate_lock(shared: &Arc<Shared>, detector: &mut crate::detect::GameDetecto
         }
         if kind == LockKind::None {
             log::info!(
-                "[VfrReplayEngine] Game detected: {} ({}) score={} fullscreen={}",
+                "[VfrReplayEngine] Game detected: {} ({}) score={} fullscreen={} certain={}",
                 cand.game_name,
                 cand.exe,
                 cand.score,
-                cand.fullscreen
+                cand.fullscreen,
+                cand.certain
             );
             lock_onto_window(shared, cand.hwnd, cand.pid, &cand.exe, Some(&cand.game_name));
         }
@@ -554,6 +567,50 @@ fn evaluate_lock(shared: &Arc<Shared>, detector: &mut crate::detect::GameDetecto
     }
     if kind == LockKind::None {
         lock_onto_monitor(shared, monitor.as_deref());
+    }
+}
+
+/// A running game lock is not final (detect::lock_policy decides when it gives way); this applies the change.
+fn review_game_lock(
+    shared: &Arc<Shared>,
+    detector: &mut crate::detect::GameDetector,
+    review: &mut crate::detect::LockReview,
+    hwnd: isize,
+    pid: u32,
+    monitor: Option<&str>,
+) {
+    use crate::detect::LockChange;
+    if !review.due() {
+        return;
+    }
+    let candidates = detector.candidates(monitor);
+    let locked_certain = match candidates.iter().find(|c| c.hwnd == hwnd) {
+        Some(c) => c.certain,
+        None => detector.is_certain_process(pid),
+    };
+    let Some(change) = review.review(hwnd, locked_certain, &candidates) else { return };
+    let old = process_exe_name(pid).unwrap_or_default();
+    match change {
+        LockChange::BackToDesktop => {
+            log::info!("[VfrReplayEngine] {old} no longer looks like a game \u{2014} continuing on the desktop.");
+            if !game_ended_switch_to_desktop(shared) {
+                teardown(shared, true);
+            }
+        }
+        LockChange::SwitchTo(target) => {
+            let Some(cand) = candidates.iter().find(|c| c.hwnd == target) else { return };
+            log::info!(
+                "[VfrReplayEngine] {} ({}, score {}) replaces {old} \u{2014} switching game.",
+                cand.exe,
+                if cand.certain { "certain" } else { "guess" },
+                cand.score
+            );
+            if game_ended_switch_to_desktop(shared) && desktop_to_game_in_place(shared, cand) {
+                return;
+            }
+            teardown(shared, true);
+            lock_onto_window(shared, cand.hwnd, cand.pid, &cand.exe, Some(&cand.game_name));
+        }
     }
 }
 

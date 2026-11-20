@@ -30,7 +30,7 @@ Version 2.0 is a rewrite in Rust; 1.x was written in C# with Avalonia. Your sett
 | Replay buffer | A rolling buffer in RAM. A global hotkey saves the last N seconds or minutes. You can pause the buffer with a button or a hotkey, and the paused stretch is left out of saved clips. |
 | Capture | Windows Graphics Capture of a game window or a whole monitor, with variable frame rate and a real timestamp on every frame. |
 | Encoding | H.264 or HEVC on NVENC (NVIDIA), AMF (AMD) or QSV (Intel). Without a hardware encoder Lag falls back to x264 on the CPU. It probes your GPU and picks the encoder itself. |
-| Game detection | Finds the active game by GPU 3D load and Steam, and switches between the game and the desktop without stopping the buffer. |
+| Game detection | Recognises games from the list Windows keeps for Game Bar and from launcher install folders (Steam, Epic, GOG, Ubisoft, EA, Riot, Xbox). A game no one lists counts when it runs truly fullscreen with a steady GPU load. Apps such as Discord or ChatGPT never take the recording, and if a real game starts later it takes over within a few seconds. Switching between the game and the desktop does not stop the buffer. |
 | Audio | Game or system sound and the microphone, as separate named tracks or one mix. You can record only the apps you choose, use push-to-talk, and clean the mic with RNNoise noise suppression. |
 | Presets | Performance, Balanced and Quality, tuned from your GPU, CPU and displays. |
 | Overlays | Webcam (choose resolution and 30 or 60 fps) and a keyboard and mouse display, both recorded into the clip. A live FPS / CPU / GPU / RAM monitor stays on screen but never ends up in clips. |
@@ -118,7 +118,7 @@ Lag тримає в пам'яті останні хвилини того, що �
 | Буфер повтору | Кільцевий буфер в оперативній пам'яті. Глобальна гаряча клавіша зберігає останні N секунд або хвилин. Буфер можна поставити на паузу кнопкою чи клавішею, і пауза не потрапляє в кліпи. |
 | Захоплення | Windows Graphics Capture вікна гри або цілого монітора, зі змінною частотою кадрів і справжньою позначкою часу на кожному кадрі. |
 | Кодування | H.264 або HEVC на NVENC (NVIDIA), AMF (AMD) чи QSV (Intel). Без апаратного кодека Lag переходить на x264 на процесорі. Відеокарту перевіряє і кодек обирає сам. |
-| Визначення гри | Знаходить активну гру за навантаженням 3D на відеокарті та Steam і перемикається між грою й робочим столом, не зупиняючи буфер. |
+| Визначення гри | Впізнає ігри за списком, який Windows веде для Game Bar, і за папками лаунчерів (Steam, Epic, GOG, Ubisoft, EA, Riot, Xbox). Гра, якої немає в жодному списку, зараховується, якщо вона справді на весь екран і стабільно навантажує відеокарту. Застосунки на кшталт Discord чи ChatGPT запис не перехоплять, а гра, запущена пізніше, забирає його за кілька секунд. Перемикання між грою й робочим столом не зупиняє буфер. |
 | Звук | Звук гри чи системи і мікрофон, окремими підписаними доріжками або одним міксом. Можна записувати лише вибрані програми, вмикати push-to-talk і чистити мікрофон шумозаглушенням RNNoise. |
 | Пресети | Продуктивність, Баланс і Якість, підібрані під вашу відеокарту, процесор і монітори. |
 | Оверлеї | Вебкамера (роздільність і 30 чи 60 fps на вибір) і показ клавіатури з мишею, обидва записуються в кліп. Монітор FPS / CPU / GPU / RAM видно на екрані, але в кліпи він не потрапляє. |

@@ -14,6 +14,9 @@ use std::sync::{Mutex, MutexGuard};
 
 /// Start may precede the companion (audio) streams by this much without re-alignment.
 const ALIGN_TOLERANCE_US: i64 = 500_000;
+/// The keyframe a clip starts on may lie this far before the buffer window; older means the picture stood
+/// still (no frames) across the window edge.
+const MAX_LEAD_US: i64 = 3_000_000;
 
 struct Inner {
     packets: VecDeque<EncodedPacket>,
@@ -123,8 +126,27 @@ impl PacketRing {
         let Some(mut start) = start.or_else(|| g.keyframes.front().copied()) else {
             return (Vec::new(), 0); // no keyframe yet: nothing decodable
         };
+        // A still picture across the window edge (a static window sends no frames): the last keyframe before
+        // the cutoff can be minutes old, and the clip came out minutes longer than the buffer (owner,
+        // 2026-11-20: 16 min with a 2 min buffer). A lone keyframe (the next packet starts a new GOP) is the
+        // picture that stood there, so it is shown from the cutoff on; a longer GOP is skipped to the first
+        // keyframe inside the window.
+        let mut still_from: Option<i64> = None;
+        let lead = cutoff - g.at(start).pts_us;
+        if lead > MAX_LEAD_US {
+            let next = start + 1;
+            if next >= g.next_seq() || g.at(next).is_keyframe {
+                still_from = Some(cutoff);
+            } else if let Some(&kf) = g.keyframes.iter().find(|&&kf| g.at(kf).pts_us > cutoff) {
+                start = kf;
+            }
+            log::info!(
+                "[PacketRingBuffer] picture stood still {:.1}s before the buffer window: clip kept to the window.",
+                lead as f64 / 1_000_000.0
+            );
+        }
         if let Some(min_start) = min_start_us {
-            let start_pts = g.at(start).pts_us;
+            let start_pts = still_from.unwrap_or(g.at(start).pts_us);
             if min_start - start_pts > ALIGN_TOLERANCE_US {
                 if let Some(&kf) = g.keyframes.iter().find(|&&kf| g.at(kf).pts_us >= min_start) {
                     log::info!(
@@ -132,11 +154,18 @@ impl PacketRing {
                         (g.at(kf).pts_us - start_pts) as f64 / 1_000_000.0
                     );
                     start = kf;
+                    still_from = None;
                 }
             }
         }
-        let base = g.at(start).pts_us;
         let from = (start - g.head_seq) as usize;
+        if let Some(base) = still_from {
+            let first = g.at(start);
+            let mut clip = vec![first.shifted(-first.pts_us)];
+            clip.extend(g.packets.range(from + 1..).map(|p| p.shifted(-base)));
+            return (clip, base);
+        }
+        let base = g.at(start).pts_us;
         (g.packets.range(from..).map(|p| p.shifted(-base)).collect(), base)
     }
 
@@ -216,6 +245,37 @@ mod tests {
         let a = r.snapshot_rebased_from(25_000_000);
         assert_eq!(a[0].pts_us, 0);
         assert_eq!(a.len(), 500);
+    }
+
+    /// 10 s buffer. A static window: one frame at 0 s, then nothing until 125 s, then 5 s of frames (each
+    /// frame after the gap is a forced keyframe, then every 2 s).
+    fn still_then_motion(lone: bool) -> PacketRing {
+        let r = PacketRing::new(10.0);
+        r.add(pkt(0, true));
+        if !lone {
+            r.add(pkt(10, false)); // the old GOP has more than its keyframe
+        }
+        for i in 0..500 {
+            let t = 125_000 + i * 10;
+            r.add(pkt(t, (t - 125_000) % 2000 == 0));
+        }
+        r
+    }
+
+    #[test]
+    fn still_picture_does_not_stretch_the_clip() {
+        // lone keyframe: shown from the cutoff (129.99 - 10 = 119.99 s) -> clip is exactly the buffer
+        let (clip, base) = still_then_motion(true).snapshot(None);
+        assert_eq!(base, 119_990_000);
+        assert_eq!(clip[0].pts_us, 0);
+        assert!(clip[0].is_keyframe);
+        assert_eq!(clip[1].pts_us, 125_000_000 - 119_990_000);
+        assert_eq!(clip.last().unwrap().pts_us, 10_000_000);
+        // longer old GOP: starts at the first keyframe inside the window instead
+        let (clip, base) = still_then_motion(false).snapshot(None);
+        assert_eq!(base, 125_000_000);
+        assert!(clip[0].is_keyframe && clip[0].pts_us == 0);
+        assert_eq!(clip.len(), 500);
     }
 
     #[test]
