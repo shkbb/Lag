@@ -2468,6 +2468,8 @@ dependencies = [
  "image",
  "lag-audio",
  "lag-capture",
+ "lag-cloud",
+ "lag-cloud-drive",
  "lag-core",
  "lag-player",
  "log",

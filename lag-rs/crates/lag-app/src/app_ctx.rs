@@ -25,6 +25,12 @@ pub struct AppCtx {
     edit_clip_listeners: Listener<String>,
     clips: RefCell<Vec<SharedClip>>,
     clips_listeners: Listener<Vec<SharedClip>>,
+    /// Cloud settings + connected accounts (offline until the real app calls `go_online`).
+    cloud: Rc<crate::services::cloud::CloudService>,
+    /// Off in --snapshot / --ui-check: they run on the user's own APPDATA, and a script that switches the
+    /// language left `Language: en` in the owner's settings.json (2026-11-20; the debounced save of the
+    /// final `lang uk` never ran before the check exited).
+    persist: Cell<bool>,
 }
 
 impl AppCtx {
@@ -39,7 +45,19 @@ impl AppCtx {
             edit_clip_listeners: RefCell::default(),
             clips: RefCell::default(),
             clips_listeners: RefCell::default(),
+            cloud: crate::services::cloud::CloudService::load(),
+            persist: Cell::new(true),
         })
+    }
+
+    /// Settings changes stay in memory from now on (UI checks).
+    pub fn never_save(&self) {
+        self.persist.set(false);
+        self.save_pending.set(false);
+    }
+
+    pub fn cloud(&self) -> Rc<crate::services::cloud::CloudService> {
+        self.cloud.clone()
     }
 
     /// Snapshot of the current settings.
@@ -82,7 +100,7 @@ impl AppCtx {
 
     /// Writes settings.json now if a save is pending (C# FlushPendingSave on shutdown).
     pub fn flush_settings(&self) {
-        if !self.save_pending.replace(false) {
+        if !self.save_pending.replace(false) || !self.persist.get() {
             return;
         }
         let data = self.settings();

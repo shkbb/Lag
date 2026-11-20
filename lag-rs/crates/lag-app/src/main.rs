@@ -62,6 +62,8 @@ fn main() {
         shell::window_geometry::apply_size(&ui);
         views::init_all(&ui, &ctx);
         shell::init(&ui, &ctx);
+        // the real app only: --snapshot / --gpu-check never reach the network or the user's cloud
+        ctx.cloud().go_online();
         Some((ui, ctx))
     };
 
@@ -152,6 +154,8 @@ fn run_snapshot(snap: snapshot::Snapshot) {
     ui.global::<Tr>().on_t(|key, _rev| lag_core::i18n::tr(&key).into());
     ui.global::<MainVM>().set_status_text(lag_core::i18n::tr("Status_Ready").into());
     let ctx = app_ctx::AppCtx::new(settings);
+    // a UI check never writes the user's settings.json (its scripts switch language, theme...)
+    ctx.never_save();
     views::init_all(&ui, &ctx);
     let page = match snap.page.as_str() {
         "library" => Page::Library,

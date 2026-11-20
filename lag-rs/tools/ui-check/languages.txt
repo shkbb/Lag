@@ -1,5 +1,6 @@
 # Every language: editor filter names + settings video/general tops (text fit check).
 size 1360x840
+cloud-preview
 page editor
 wait 600
 click 1188 166
@@ -12,9 +13,15 @@ page settings
 tab 0
 wait 300
 shot lang-en-video
-tab 3
+tab 4
 wait 300
 shot lang-en-general
+tab 3
+wait 300
+scroll 700 500 -600
+wait 300
+shot lang-en-settings-library
+scroll 700 500 3000
 tab 1
 wait 300
 shot lang-en-audio
@@ -33,9 +40,15 @@ page settings
 tab 0
 wait 300
 shot lang-uk-video
-tab 3
+tab 4
 wait 300
 shot lang-uk-general
+tab 3
+wait 300
+scroll 700 500 -600
+wait 300
+shot lang-uk-settings-library
+scroll 700 500 3000
 tab 1
 wait 300
 shot lang-uk-audio
@@ -54,9 +67,15 @@ page settings
 tab 0
 wait 300
 shot lang-de-video
-tab 3
+tab 4
 wait 300
 shot lang-de-general
+tab 3
+wait 300
+scroll 700 500 -600
+wait 300
+shot lang-de-settings-library
+scroll 700 500 3000
 tab 1
 wait 300
 shot lang-de-audio
@@ -75,9 +94,15 @@ page settings
 tab 0
 wait 300
 shot lang-fr-video
-tab 3
+tab 4
 wait 300
 shot lang-fr-general
+tab 3
+wait 300
+scroll 700 500 -600
+wait 300
+shot lang-fr-settings-library
+scroll 700 500 3000
 tab 1
 wait 300
 shot lang-fr-audio
@@ -96,9 +121,15 @@ page settings
 tab 0
 wait 300
 shot lang-be-video
-tab 3
+tab 4
 wait 300
 shot lang-be-general
+tab 3
+wait 300
+scroll 700 500 -600
+wait 300
+shot lang-be-settings-library
+scroll 700 500 3000
 tab 1
 wait 300
 shot lang-be-audio
@@ -117,9 +148,15 @@ page settings
 tab 0
 wait 300
 shot lang-lt-video
-tab 3
+tab 4
 wait 300
 shot lang-lt-general
+tab 3
+wait 300
+scroll 700 500 -600
+wait 300
+shot lang-lt-settings-library
+scroll 700 500 3000
 tab 1
 wait 300
 shot lang-lt-audio
@@ -138,9 +175,15 @@ page settings
 tab 0
 wait 300
 shot lang-et-video
-tab 3
+tab 4
 wait 300
 shot lang-et-general
+tab 3
+wait 300
+scroll 700 500 -600
+wait 300
+shot lang-et-settings-library
+scroll 700 500 3000
 tab 1
 wait 300
 shot lang-et-audio
@@ -159,9 +202,15 @@ page settings
 tab 0
 wait 300
 shot lang-lv-video
-tab 3
+tab 4
 wait 300
 shot lang-lv-general
+tab 3
+wait 300
+scroll 700 500 -600
+wait 300
+shot lang-lv-settings-library
+scroll 700 500 3000
 tab 1
 wait 300
 shot lang-lv-audio
@@ -180,9 +229,15 @@ page settings
 tab 0
 wait 300
 shot lang-fi-video
-tab 3
+tab 4
 wait 300
 shot lang-fi-general
+tab 3
+wait 300
+scroll 700 500 -600
+wait 300
+shot lang-fi-settings-library
+scroll 700 500 3000
 tab 1
 wait 300
 shot lang-fi-audio
@@ -201,9 +256,15 @@ page settings
 tab 0
 wait 300
 shot lang-sv-video
-tab 3
+tab 4
 wait 300
 shot lang-sv-general
+tab 3
+wait 300
+scroll 700 500 -600
+wait 300
+shot lang-sv-settings-library
+scroll 700 500 3000
 tab 1
 wait 300
 shot lang-sv-audio
@@ -222,9 +283,15 @@ page settings
 tab 0
 wait 300
 shot lang-no-video
-tab 3
+tab 4
 wait 300
 shot lang-no-general
+tab 3
+wait 300
+scroll 700 500 -600
+wait 300
+shot lang-no-settings-library
+scroll 700 500 3000
 tab 1
 wait 300
 shot lang-no-audio
@@ -243,9 +310,15 @@ page settings
 tab 0
 wait 300
 shot lang-da-video
-tab 3
+tab 4
 wait 300
 shot lang-da-general
+tab 3
+wait 300
+scroll 700 500 -600
+wait 300
+shot lang-da-settings-library
+scroll 700 500 3000
 tab 1
 wait 300
 shot lang-da-audio
@@ -264,9 +337,15 @@ page settings
 tab 0
 wait 300
 shot lang-nl-video
-tab 3
+tab 4
 wait 300
 shot lang-nl-general
+tab 3
+wait 300
+scroll 700 500 -600
+wait 300
+shot lang-nl-settings-library
+scroll 700 500 3000
 tab 1
 wait 300
 shot lang-nl-audio
@@ -285,9 +364,15 @@ page settings
 tab 0
 wait 300
 shot lang-it-video
-tab 3
+tab 4
 wait 300
 shot lang-it-general
+tab 3
+wait 300
+scroll 700 500 -600
+wait 300
+shot lang-it-settings-library
+scroll 700 500 3000
 tab 1
 wait 300
 shot lang-it-audio
@@ -306,9 +391,15 @@ page settings
 tab 0
 wait 300
 shot lang-es-video
-tab 3
+tab 4
 wait 300
 shot lang-es-general
+tab 3
+wait 300
+scroll 700 500 -600
+wait 300
+shot lang-es-settings-library
+scroll 700 500 3000
 tab 1
 wait 300
 shot lang-es-audio
@@ -327,9 +418,15 @@ page settings
 tab 0
 wait 300
 shot lang-pt-video
-tab 3
+tab 4
 wait 300
 shot lang-pt-general
+tab 3
+wait 300
+scroll 700 500 -600
+wait 300
+shot lang-pt-settings-library
+scroll 700 500 3000
 tab 1
 wait 300
 shot lang-pt-audio
@@ -348,9 +445,15 @@ page settings
 tab 0
 wait 300
 shot lang-ja-video
-tab 3
+tab 4
 wait 300
 shot lang-ja-general
+tab 3
+wait 300
+scroll 700 500 -600
+wait 300
+shot lang-ja-settings-library
+scroll 700 500 3000
 tab 1
 wait 300
 shot lang-ja-audio

@@ -5,7 +5,8 @@
 //! Modules: `devices` (monitors, encoders, devices probed off the UI thread), `normalize` (repairing a loaded
 //! settings file against the hardware), `rows` (row builders), `state` (the page state and the rows of every
 //! tab), `edit` (what each control changes, presets, restart-required), `appearance` (theme, language flags),
-//! `audio_monitor` (input level meter / hear yourself), `os` (folder dialog, Explorer, diagnostics zip).
+//! `audio_monitor` (input level meter / hear yourself), `os` (folder dialog, Explorer, diagnostics zip),
+//! `cloud` (the cloud rows of the Library tab and what they change).
 //! This file wires the page (`init`) and hotkey capture.
 
 use crate::{app_ctx::AppCtx, AppWindow, MainVM, Page, SettingsVM};
@@ -25,6 +26,7 @@ use std::{
 mod appearance;
 mod audio_monitor;
 mod bind;
+mod cloud;
 mod devices;
 mod edit;
 mod normalize;
@@ -61,6 +63,15 @@ pub fn init(ui: &AppWindow, ctx: &Rc<AppCtx>) {
     ));
     apply_appearance(ui, &initial);
     let state = Rc::new(RefCell::new(State::new(initial.clone(), groups)));
+    state.borrow_mut().cloud = ctx.cloud().view();
+    let (st, weak) = (state.clone(), ui.as_weak());
+    ctx.cloud().on_changed(move |view| {
+        if let Some(ui) = weak.upgrade() {
+            let mut st = st.borrow_mut();
+            st.cloud = view.clone();
+            st.refresh(&ui);
+        }
+    });
     // Hardware probing (including encoder-open tests and webcam enumeration) never blocks Slint.
     let (hardware_send, hardware_recv) = mpsc::channel();
     std::thread::spawn(move || {

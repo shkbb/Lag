@@ -59,7 +59,10 @@ export component SettingsRow {
             if root.data.label != "" && root.data.kind != 14: VerticalLayout {
                 horizontal-stretch: 1; alignment: center; spacing: 2px;
                 Text { text: Tr.t(root.data.label, Tr.rev); color: Theme.text-row; font-size: 14px; font-weight: root.data.kind == 4 ? 400 : 500; overflow: elide; }
-                if root.data.description != "": Text { text: Tr.t(root.data.description, Tr.rev); color: Theme.text-faint; font-size: 12.5px; wrap: word-wrap; }
+                // kind 15 (cloud account): the signed-in e-mail under the provider's name
+                if root.data.kind == 15 && root.data.display != "": Text { text: root.data.display; color: Theme.text-mid; font-size: 12.5px; overflow: elide; }
+                if root.data.description != "": Text { text: Tr.t(root.data.description, Tr.rev);
+                    color: root.data.kind == 15 && root.data.auto-mode ? #F0B45A : Theme.text-faint; font-size: 12.5px; wrap: word-wrap; }
             }
             if root.data.kind == 0: HorizontalLayout {
                 horizontal-stretch: 0;
@@ -142,6 +145,20 @@ export component SettingsRow {
                 RChipButton { text: Tr.t("Settings_SaveDiagnostics", Tr.rev); clicked => { root.action("diagnostics"); } }
             }
             if root.data.kind == 13: LevelMeterBar { level: root.output-level; }
+            // kind 15: a cloud account. checked = connected, custom = signing in (in the browser)
+            if root.data.kind == 15: HorizontalLayout {
+                horizontal-stretch: 0; spacing: 10px;
+                if root.data.custom: Text { text: Tr.t("Cloud_Connecting", Tr.rev); color: Theme.text-faint; font-size: 12.5px; vertical-alignment: center; }
+                VerticalLayout { alignment: center;
+                    RChipButton {
+                        text: Tr.t(root.data.custom ? "Cloud_Cancel" : root.data.checked ? "Cloud_Disconnect" : "Cloud_Connect", Tr.rev);
+                        active: !root.data.checked && !root.data.custom; enabled: root.data.enabled;
+                        clicked => { root.action(root.data.custom ? "cloud-cancel" : root.data.checked ? "cloud-disconnect" : "cloud-connect"); }
+                    }
+                }
+            }
+            // kind 16: a value read from somewhere (cloud space), shown on the right
+            if root.data.kind == 16: Text { text: root.data.display; color: Theme.text-faint; font-size: 12.5px; vertical-alignment: center; horizontal-alignment: right; }
         }
         if root.data.kind == 5: HorizontalLayout {
             NoiseGateBar { auto-mode: root.data.auto-mode; mic-level: root.mic-level; threshold: root.data.value;

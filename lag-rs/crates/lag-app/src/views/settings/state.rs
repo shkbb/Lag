@@ -27,6 +27,8 @@ pub(super) struct State {
     pub(super) apps: Vec<(String, String)>,
     /// App icons by lower-case exe name, decoded on the UI thread (slint::Image is not Send).
     pub(super) app_icons: std::collections::HashMap<String, slint::Image>,
+    /// The cloud part of the Library tab (services/cloud.rs keeps it current).
+    pub(super) cloud: crate::services::cloud::CloudView,
 }
 
 impl State {
@@ -47,6 +49,7 @@ impl State {
             update_status: String::new(),
             apps: Vec::new(),
             app_icons: Default::default(),
+            cloud: Default::default(),
         }
     }
 
@@ -391,6 +394,35 @@ impl State {
                 }
                 vec![("Settings_Group_Overlay".into(), rows)]
             }
+            3 => {
+                // Library (owner, 2026-11-20): everything about the clips in one place - the folder and its size
+                // limit on this PC, and the cloud next to it
+                let mut storage = combo(
+                    "storage",
+                    "Settings_StorageLimit",
+                    presets::STORAGE_RUNGS.iter().map(|v| format!("{v} GB")).collect(),
+                    pos(presets::STORAGE_RUNGS, &s.max_library_size_gb),
+                );
+                storage.enabled = s.auto_cleanup_enabled;
+                let mut folder = row("folder", "Settings_LibraryFolder", 7);
+                folder.display = text(&s.library_path).into();
+                vec![
+                    (
+                        "Settings_Group_LibraryDisk".into(),
+                        vec![
+                            folder,
+                            toggle(
+                                "cleanup",
+                                "Settings_AutoCleanup",
+                                "Settings_AutoCleanup_Desc",
+                                s.auto_cleanup_enabled,
+                            ),
+                            storage,
+                        ],
+                    ),
+                    ("Settings_Group_Cloud".into(), super::cloud::rows(&self.cloud)),
+                ]
+            }
             _ => {
                 let mut keys = Vec::new();
                 for (id, label, key, mods) in [
@@ -405,16 +437,8 @@ impl State {
                     r.display = display.into();
                     keys.push(r);
                 }
-                let mut storage = combo(
-                    "storage",
-                    "Settings_StorageLimit",
-                    presets::STORAGE_RUNGS.iter().map(|v| format!("{v} GB")).collect(),
-                    pos(presets::STORAGE_RUNGS, &s.max_library_size_gb),
-                );
-                storage.enabled = s.auto_cleanup_enabled;
-                let mut folder = row("folder", "Settings_LibraryFolder", 7);
-                folder.display = text(&s.library_path).into();
-                let mut about = row("updates", "About_Group", 8);
+                // the group is already called "About": the row is the app itself
+                let mut about = row("updates", "Lag", 8);
                 about.enabled = self.update_status != tr("Update_Checking");
                 about.display = if self.update_status.is_empty() {
                     format!("{} {}", tr("About_Version"), env!("CARGO_PKG_VERSION"))
@@ -463,21 +487,7 @@ impl State {
                             ),
                         ],
                     ),
-                    (
-                        "Settings_Group_Storage".into(),
-                        vec![
-                            toggle(
-                                "cleanup",
-                                "Settings_AutoCleanup",
-                                "Settings_AutoCleanup_Desc",
-                                s.auto_cleanup_enabled,
-                            ),
-                            storage,
-                            folder,
-                            about,
-                            row("logs", "Settings_Logs", 9),
-                        ],
-                    ),
+                    ("Settings_Group_About".into(), vec![about, row("logs", "Settings_Logs", 9)]),
                 ]
             }
         }

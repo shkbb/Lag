@@ -26,7 +26,7 @@ use windows::{
 const GIB: f64 = 1024.0 * 1024.0 * 1024.0;
 
 /// `F1` formatting follows the Windows user culture, as C# interpolated labels do.
-pub(crate) fn fixed_one(value: f64) -> String {
+pub fn fixed_one(value: f64) -> String {
     use windows::Win32::Globalization::{GetLocaleInfoEx, LOCALE_SDECIMAL};
     let mut buffer = [0u16; 16];
     // A null locale name selects LOCALE_NAME_USER_DEFAULT. No global locale state is changed.

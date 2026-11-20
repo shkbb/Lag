@@ -58,6 +58,20 @@ shot s-overlay-bottom
 scroll 700 500 3000
 tab 3
 wait 300
+shot s-library-top
+scroll 700 500 -600
+wait 300
+shot s-library-bottom
+scroll 700 500 3000
+cloud-preview
+wait 300
+shot s-library-cloud
+scroll 700 500 -600
+wait 300
+shot s-library-cloud-bottom
+scroll 700 500 3000
+tab 4
+wait 300
 shot s-general-top
 scroll 700 500 -600
 wait 300
@@ -176,6 +190,9 @@ tab 1
 wait 300
 shot en-settings-audio
 tab 3
+wait 300
+shot en-settings-library
+tab 4
 wait 300
 shot en-settings-general
 page library

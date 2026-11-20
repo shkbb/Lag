@@ -190,6 +190,8 @@ impl Snapshot {
                 }
                 "scale" => win.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: num(&a, 0) }),
                 "tab" => ui.global::<crate::SettingsVM>().invoke_select_tab(num(&a, 0) as i32),
+                // the Library tab with a connected cloud (in memory only)
+                "cloud-preview" => crate::services::cloud::preview_connected(),
                 "fullscreen" => ui.global::<crate::MainVM>().set_is_fullscreen(a.first() == Some(&"1")),
                 "recording" => ui.global::<crate::MainVM>().set_is_recording(a.first() == Some(&"1")),
                 // the record / save buttons while their action is under way

@@ -1,9 +1,14 @@
 //! The user's cloud settings (spec §6, §7) and the one rule that follows from them: which accounts a clip
-//! goes to. Stored inside settings.json under `Cloud` (PascalCase like the rest of the file); tokens are
-//! never here (DPAPI store, spec §9).
+//! goes to. Stored in their own file `%APPDATA%\Lag\cloud.json` next to settings.json (that file stays
+//! readable by the old C# build line by line; a nested object would break it). Tokens are never here (DPAPI
+//! store, spec §9).
 use crate::ids::{AccountId, ProviderKind};
 use crate::layout::{safe_name, SortMode, DEFAULT_ROOT};
 use serde::{Deserialize, Serialize};
+use std::path::Path;
+
+/// The choices of the cloud limit (GB), like the library's own storage limit.
+pub const LIMIT_RUNGS_GB: &[u32] = &[10, 25, 50, 100, 250, 500, 1000, 2000];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub enum Role {
@@ -146,6 +151,27 @@ pub enum Trigger {
 }
 
 impl CloudSettings {
+    /// The stored settings; defaults when the file is missing or unreadable (never an error: the cloud is
+    /// simply off).
+    pub fn load(path: &Path) -> Self {
+        let mut settings = std::fs::read_to_string(path)
+            .ok()
+            .and_then(|text| serde_json::from_str::<Self>(text.trim_start_matches('\u{feff}')).ok())
+            .unwrap_or_default();
+        settings.normalize();
+        settings
+    }
+
+    /// Write-then-rename, so a crash never leaves half a file.
+    pub fn save(&self, path: &Path) -> std::io::Result<()> {
+        if let Some(dir) = path.parent() {
+            std::fs::create_dir_all(dir)?;
+        }
+        let tmp = path.with_extension("tmp");
+        std::fs::write(&tmp, serde_json::to_string_pretty(self).map_err(std::io::Error::other)?)?;
+        std::fs::rename(&tmp, path)
+    }
+
     /// Makes stored settings consistent: at most one primary (extra ones become mirrors; a lone mirror is
     /// promoted), a usable root folder name, no duplicate accounts.
     pub fn normalize(&mut self) {
@@ -281,5 +307,18 @@ mod tests {
         assert!(json.contains("\"UploadWhat\":\"Favorites\""), "{json}");
         assert_eq!(serde_json::from_str::<CloudSettings>(&json).unwrap(), s);
         assert_eq!(serde_json::from_str::<CloudSettings>("{}").unwrap(), CloudSettings::default());
+    }
+
+    #[test]
+    fn the_file_is_saved_and_a_bad_one_means_defaults() {
+        let dir = std::env::temp_dir().join(format!("lag-cloud-settings-{}", std::process::id()));
+        let path = dir.join("cloud.json");
+        assert_eq!(CloudSettings::load(&path), CloudSettings::default(), "no file: cloud off");
+        let s = settings(UploadWhat::Favorites);
+        s.save(&path).unwrap();
+        assert_eq!(CloudSettings::load(&path), s);
+        std::fs::write(&path, "{ broken").unwrap();
+        assert_eq!(CloudSettings::load(&path), CloudSettings::default());
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }

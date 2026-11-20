@@ -17,6 +17,8 @@ slint = { version = "1.18.1", default-features = false, features = [
 lag-core = { workspace = true }
 lag-capture = { workspace = true }
 lag-audio = { workspace = true }
+lag-cloud = { path = "../lag-cloud" }
+lag-cloud-drive = { path = "../lag-cloud-drive" }
 log = { workspace = true }
 serde_json = { workspace = true }
 crossbeam-channel = { workspace = true }

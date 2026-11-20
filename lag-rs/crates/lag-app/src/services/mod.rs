@@ -1,5 +1,6 @@
 //! Background services (recorder = lag_capture engine adapter, ...). Owned by the shell package.
 pub mod clip_merge;
+pub mod cloud;
 pub mod ffmpeg;
 pub mod recorder;
 pub mod screenshot;

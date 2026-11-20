@@ -8,27 +8,33 @@ pub(super) fn bind_controls(ui: &AppWindow, ctx: &Rc<AppCtx>, state: &Rc<RefCell
     ui.global::<SettingsVM>().on_select_tab(move |tab| {
         if let Some(ui) = weak.upgrade() {
             let mut st = st.borrow_mut();
-            st.tab = tab.clamp(0, 3);
+            st.tab = tab.clamp(0, 4);
             ui.global::<SettingsVM>().set_tab(st.tab);
             ui.global::<SettingsVM>().set_hear_yourself(false);
             crate::shell::hotkeys::cancel();
             st.capture.clear();
             ui.global::<SettingsVM>().set_capture_id("".into());
             st.refresh(&ui);
-            let _ = &c;
+            if st.tab == 3 {
+                c.cloud().refresh_usage();
+            }
         }
     });
     let (st, c, weak) = (state.clone(), ctx.clone(), ui.as_weak());
     ui.global::<SettingsVM>().on_choose(move |id, index| {
         if let Some(ui) = weak.upgrade() {
-            if index >= 0 {
+            if index >= 0 && id.starts_with("cloud-") {
+                c.cloud().edit(|cs| super::cloud::choose(cs, &id, index as usize));
+            } else if index >= 0 {
                 save(&ui, &c, &st, &id, |s| choose(s, &id, index as usize));
             }
         }
     });
     let (st, c, weak) = (state.clone(), ctx.clone(), ui.as_weak());
     ui.global::<SettingsVM>().on_toggle(move |id, value| {
-        if let Some(ui) = weak.upgrade() {
+        if id.starts_with("cloud-") {
+            c.cloud().edit(|cs| super::cloud::toggle(cs, &id, value));
+        } else if let Some(ui) = weak.upgrade() {
             save(&ui, &c, &st, &id, |s| set_toggle(&mut s.settings, &id, value));
         }
     });
@@ -122,6 +128,15 @@ pub(super) fn bind_controls(ui: &AppWindow, ctx: &Rc<AppCtx>, state: &Rc<RefCell
                         }
                     }
                 });
+            }
+            "cloud-connect" => c.cloud().connect(),
+            "cloud-cancel" => c.cloud().cancel_connect(),
+            "cloud-disconnect" => {
+                // the page's state is borrowed again by the change listener: take the id out first
+                let id = st.borrow().cloud.accounts.first().map(|a| a.settings.id.clone());
+                if let Some(id) = id {
+                    c.cloud().disconnect(&id);
+                }
             }
             "logs" => {
                 std::thread::spawn(|| {
