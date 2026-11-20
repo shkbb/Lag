@@ -6,7 +6,7 @@ use crate::provider::*;
 use crate::queue::UploadSession;
 use crate::quota::ProviderSpace;
 use std::collections::{BTreeMap, VecDeque};
-use std::io::{Read, Write};
+use std::io::{SeekFrom, Write};
 use std::sync::Mutex;
 
 /// Upload chunk size of the fake (real providers use 8-16 MB).
@@ -145,7 +145,7 @@ impl CloudProvider for MemoryCloud {
         folder_id: &str,
         name: &str,
         size: u64,
-        source: &mut dyn Read,
+        source: &mut dyn ReadSeek,
         props: &FileProps,
         session: Option<&UploadSession>,
         on_session: &mut dyn FnMut(UploadSession),
@@ -177,6 +177,7 @@ impl CloudProvider for MemoryCloud {
             (url, received, drop_after)
         };
         on_session(UploadSession { url: url.clone(), offset: received.len() as u64 });
+        source.seek(SeekFrom::Start(received.len() as u64)).map_err(|e| CloudError::Permanent(e.to_string()))?;
         let mut chunk = [0u8; CHUNK];
         let mut sent_now = 0u64;
         while (received.len() as u64) < size {

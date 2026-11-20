@@ -8,7 +8,6 @@ use crate::provider::*;
 use crate::queue::UploadSession;
 use crate::quota::{plan_cloud_limit, CloudLimitPlan, NoRoom, ProviderSpace};
 use chrono::{DateTime, Utc};
-use std::io::Read;
 
 /// How often a read-merge-write of the index is retried when other PCs keep writing in between.
 const COMMIT_TRIES: usize = 8;
@@ -44,7 +43,7 @@ pub struct AccountClient<'a> {
 pub struct UploadRequest<'r> {
     pub id: ClipId,
     pub entry: IndexEntry,
-    pub source: &'r mut dyn Read,
+    pub source: &'r mut dyn ReadSeek,
     pub thumbnail_jpeg: Option<Vec<u8>>,
 }
 
@@ -128,7 +127,7 @@ impl AccountClient<'_> {
                 &thumb_folder,
                 &thumb_name,
                 jpeg.len() as u64,
-                &mut jpeg.as_slice(),
+                &mut std::io::Cursor::new(jpeg.as_slice()),
                 &thumb_props,
                 None,
                 &mut |_| {},

@@ -1,0 +1,22 @@
+[package]
+name = "lag-cloud-drive"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+# Google Drive for Lag's cloud storage (docs/spec/cloud.md §9): OAuth sign-in (PKCE + loopback), encrypted
+# token store, the Drive REST v3 provider behind lag_cloud::provider::CloudProvider. HTTP goes through a small
+# trait (http.rs) so the Drive logic is tested without a network; the real transport is WinHTTP.
+[dependencies]
+lag-cloud = { path = "../lag-cloud" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+log = { workspace = true }
+chrono = "0.4.45"
+base64 = "0.23"
+percent-encoding = "2.3"
+form_urlencoded = "1.2"
+windows = { workspace = true, features = [
+    "Win32_Foundation", "Win32_Networking_WinHttp", "Win32_Security_Cryptography",
+    "Win32_UI_Shell", "Win32_UI_WindowsAndMessaging",
+] }

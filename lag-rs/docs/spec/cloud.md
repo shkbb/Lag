@@ -143,7 +143,9 @@ Owner, 2026-11-20: "all library functions have to work, the storage limit and so
 2. DONE: `CloudProvider` trait, in-memory provider with faults, `sync::AccountClient`; end-to-end tests
    (tests/two_pcs.rs): PC B sees PC A's library, concurrent index writes, resumed upload, full cloud cleanup,
    corrupt index rebuilt from the files, expired sign-in.
-3. Google Drive provider (REST, resumable upload, appProperties), OAuth + DPAPI token store.
+3. DONE in code (crate lag-cloud-drive, 19 tests on scripted HTTP): Google Drive provider (REST v3, resumable
+   upload that asks Google where it stands, appProperties), OAuth PKCE + loopback, DPAPI token store.
+   Live check: `cargo run -p lag-cloud-drive --example drive_live --release` (opens the browser).
 4. Engine: queue worker thread, file-stable check, pause-while-gaming, speed limit.
 5. UI: Settings > Cloud page, library badges + menus, download on play, first-run flow on a new PC.
 6. Dropbox, OneDrive providers (same trait).

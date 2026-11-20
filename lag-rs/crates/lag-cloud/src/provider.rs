@@ -4,7 +4,11 @@
 use crate::queue::UploadSession;
 use crate::quota::ProviderSpace;
 use std::collections::BTreeMap;
-use std::io::{Read, Write};
+use std::io::{Read, Seek, Write};
+
+/// A file being uploaded: read from the start, or from wherever the cloud says a resumed upload stands.
+pub trait ReadSeek: Read + Seek {}
+impl<T: Read + Seek> ReadSeek for T {}
 
 /// Provider-side metadata Lag stores on each file (Drive `appProperties`), so a rescan of the cloud finds
 /// Lag's clips even after the user moved or renamed them, and can rebuild a lost index.
@@ -102,7 +106,8 @@ pub trait CloudProvider: Send + Sync {
     fn write_small(&self, path: &[String], bytes: &[u8], expected: Option<&Revision>) -> CloudResult<WriteOutcome>;
 
     /// Uploads `size` bytes from `source` as `name` into folder `folder_id`. `session` resumes an earlier
-    /// attempt (source is then positioned at its offset by the caller); `on_session` is told every new
+    /// attempt: the provider asks the cloud how much it really has and seeks `source` there itself (it may
+    /// differ from the stored offset when the connection dropped mid-chunk). `on_session` is told every new
     /// session/offset so the queue can persist it.
     #[allow(clippy::too_many_arguments)]
     fn upload(
@@ -110,7 +115,7 @@ pub trait CloudProvider: Send + Sync {
         folder_id: &str,
         name: &str,
         size: u64,
-        source: &mut dyn Read,
+        source: &mut dyn ReadSeek,
         props: &FileProps,
         session: Option<&UploadSession>,
         on_session: &mut dyn FnMut(UploadSession),

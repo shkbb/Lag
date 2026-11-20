@@ -10,6 +10,7 @@ use lag_cloud::queue::UploadSession;
 use lag_cloud::sync::{AccountClient, UploadRequest};
 use lag_cloud::{AccountId, ClipId, ProviderKind};
 use std::collections::HashMap;
+use std::io::Cursor;
 
 fn pc<'a>(cloud: &'a MemoryCloud, device: &str) -> AccountClient<'a> {
     AccountClient { provider: cloud, root: "Lag".into(), sort: SortMode::ByGame, device: device.into() }
@@ -27,7 +28,7 @@ fn clip(name: &str, game: Option<&str>, size: u64, minute: u32) -> IndexEntry {
 }
 
 fn upload(client: &AccountClient, id: ClipId, entry: IndexEntry, bytes: &[u8]) -> Result<IndexEntry, CloudError> {
-    let mut source = bytes;
+    let mut source = Cursor::new(bytes);
     let req = UploadRequest { id, entry, source: &mut source, thumbnail_jpeg: Some(b"jpg".to_vec()) };
     client.upload_clip(req, None, &mut |_| {}, &mut |_| true)
 }
@@ -108,15 +109,15 @@ fn a_dropped_connection_resumes_where_it_stopped() {
     let data = b"0123456789abcdef";
     cloud.inject(Fault::DropUploadAfter(8));
     let mut session: Option<UploadSession> = None;
-    let mut source: &[u8] = data;
+    let mut source = Cursor::new(&data[..]);
     let req = UploadRequest { id, entry: clip("r.mp4", None, 16, 1), source: &mut source, thumbnail_jpeg: None };
     let err = a.upload_clip(req, None, &mut |s| session = Some(s), &mut |_| true).unwrap_err();
     assert!(err.is_retryable());
     let session = session.unwrap();
     assert_eq!(session.offset, 8, "the queue persisted how far it got");
-    // retry: the caller positions the file at the offset and passes the session
-    let mut rest: &[u8] = &data[session.offset as usize..];
-    let req = UploadRequest { id, entry: clip("r.mp4", None, 16, 1), source: &mut rest, thumbnail_jpeg: None };
+    // retry with the stored session: the provider seeks the file to where the cloud stands
+    let mut again = Cursor::new(&data[..]);
+    let req = UploadRequest { id, entry: clip("r.mp4", None, 16, 1), source: &mut again, thumbnail_jpeg: None };
     let stored = a.upload_clip(req, Some(&session), &mut |_| {}, &mut |_| true).unwrap();
     assert_eq!(cloud.file_bytes(stored.remote_id.as_deref().unwrap()).unwrap(), data);
     assert_eq!(cloud.file_count(), 1, "one file, not a half and a whole");
