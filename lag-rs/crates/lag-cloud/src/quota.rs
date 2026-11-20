@@ -6,12 +6,13 @@
 //! library as "in the cloud"). Only if that is not enough are local-only clips deleted, as before. A clip
 //! that is being uploaded or downloaded is never touched.
 //!
-//! Cloud auto-cleanup (per account, owner 2026-11-20: "the cloud needs a limit too"): when a clip does not fit
-//! (the user's own limit for Lag in that cloud, or the cloud itself is full), either the oldest non-favorite
-//! clips are removed from that cloud (default, like the local cleanup), or new uploads wait.
+//! Cloud auto-cleanup (per account, owner 2026-11-20: "the cloud needs a limit too") works exactly like the
+//! local one: OFF unless the user switches it on, and then only against the user's own limit for Lag in that
+//! cloud (oldest first, never favorites). A cloud that is full for any other reason (the user's own files on
+//! Google Drive) never makes Lag delete anything: the upload fails with "not enough space in <cloud>", and
+//! Settings shows how much room each cloud has left.
 use crate::ids::ClipId;
 use crate::index::CloudIndex;
-use crate::settings::WhenFull;
 
 /// One local file as the limit sees it.
 #[derive(Debug, Clone, PartialEq)]
@@ -69,45 +70,49 @@ pub fn plan_free_space(files: &[LocalFile], cutoff: i64) -> Vec<LocalAction> {
         .collect()
 }
 
+/// Why a clip cannot go up right now.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum NoRoom {
+    /// Over the user's own limit for Lag in this cloud, and auto-cleanup cannot (or may not) free enough.
+    OwnLimit,
+    /// The cloud itself has no space left (Lag never deletes anything for this).
+    CloudFull,
+}
+
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct CloudLimitPlan {
-    /// Clips to remove from this cloud, oldest first, never favorites (auto-cleanup).
+    /// Clips the auto-cleanup removes from this cloud first: oldest, never favorites.
     pub delete: Vec<ClipId>,
-    /// Still does not fit after that (or cleanup is off): uploads to this account wait ("cloud is full").
-    pub full: bool,
+    /// Set = the clip does not fit even after `delete`: the upload fails with this reason.
+    pub no_room: Option<NoRoom>,
 }
 
-/// The provider's own storage, as it reports it (Drive `about.storageQuota`).
+/// The provider's own storage, as it reports it (Drive `about.storageQuota`). Shown in Settings per cloud.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ProviderSpace {
-    /// Free bytes in the whole account (other files of the user count against it too).
+    /// Free bytes in the whole account (the user's other files count against it too).
     pub free: u64,
+    /// Size of the account's storage; None = unlimited (some business plans).
+    pub total: Option<u64>,
 }
 
-const GIB: u64 = 1 << 30;
+pub const GIB: u64 = 1 << 30;
 
-/// The cloud's auto-cleanup: make room for `incoming` bytes in one account. The room Lag may use is the
-/// smaller of the user's own limit (`max_size_gb`, 0 = none) and what the cloud itself has left; so cleanup
-/// also runs when the user's Google Drive fills up with other files, not only at Lag's own limit.
+/// Room for `incoming` bytes in one account. Auto-cleanup (`auto_cleanup` + `max_size_gb`, the cloud's
+/// "library size limit") removes the oldest non-favorite clips until Lag's clips fit the user's limit; the
+/// cloud's own free space is only CHECKED, never cleaned for.
 pub fn plan_cloud_limit(
     index: &CloudIndex,
+    auto_cleanup: bool,
     max_size_gb: u32,
     provider: Option<ProviderSpace>,
-    when_full: WhenFull,
     incoming: u64,
 ) -> CloudLimitPlan {
-    let used = index.live_bytes();
-    let own = (max_size_gb > 0).then(|| u64::from(max_size_gb) * GIB);
-    let cloud = provider.map(|p| used + p.free);
-    let Some(limit) = own.into_iter().chain(cloud).min() else {
-        return CloudLimitPlan::default();
-    };
-    let mut total = used + incoming;
-    if total <= limit {
-        return CloudLimitPlan::default();
-    }
     let mut plan = CloudLimitPlan::default();
-    if when_full == WhenFull::RemoveOldest {
+    let mut freed = 0u64;
+    if auto_cleanup && max_size_gb > 0 {
+        let limit = u64::from(max_size_gb) * GIB;
+        let mut total = index.live_bytes() + incoming;
         let mut oldest: Vec<_> = index.live().filter(|(_, e)| !e.favorite).collect();
         oldest.sort_by_key(|(_, e)| e.created);
         for (id, e) in oldest {
@@ -115,10 +120,17 @@ pub fn plan_cloud_limit(
                 break;
             }
             total -= e.size;
+            freed += e.size;
             plan.delete.push(*id);
         }
+        if total > limit {
+            plan.no_room = Some(NoRoom::OwnLimit);
+            return plan;
+        }
     }
-    plan.full = total > limit;
+    if provider.is_some_and(|p| incoming > p.free + freed) {
+        plan.no_room = Some(NoRoom::CloudFull);
+    }
     plan
 }
 
@@ -162,7 +174,7 @@ mod tests {
     }
 
     #[test]
-    fn the_cloud_auto_cleanup_frees_room_or_stops_uploads() {
+    fn the_cloud_auto_cleanup_is_like_the_local_one() {
         // 3 clips of 1 GB in the cloud, the oldest one a favorite
         let mut index = CloudIndex::default();
         let mut ids = Vec::new();
@@ -172,22 +184,33 @@ mod tests {
             index.upsert(id, IndexEntry { size: GIB, created, favorite, ..Default::default() }, Utc::now());
             ids.push(id);
         }
-        let remove = WhenFull::RemoveOldest;
-        // limit 3 GB, 1 GB coming: the oldest NON-favorite goes
-        let plan = plan_cloud_limit(&index, 3, None, remove, GIB);
-        assert_eq!((plan.delete, plan.full), (vec![ids[1]], false));
-        // favorites are never removed: limit 1 GB cannot be met
-        let plan = plan_cloud_limit(&index, 1, None, remove, GIB);
-        assert_eq!((plan.delete.len(), plan.full), (2, true));
-        // "stop uploads": nothing removed, the cloud is full
-        assert_eq!(plan_cloud_limit(&index, 3, None, WhenFull::StopUploads, GIB), CloudLimitPlan { delete: vec![], full: true });
-        // no limit of our own and the cloud has room: nothing to do
-        assert_eq!(plan_cloud_limit(&index, 0, Some(ProviderSpace { free: 5 * GIB }), remove, GIB), CloudLimitPlan::default());
-        // no own limit, but the user's Drive itself is full (other files): cleanup still makes room
-        let plan = plan_cloud_limit(&index, 0, Some(ProviderSpace { free: GIB / 2 }), remove, GIB);
-        assert_eq!((plan.delete, plan.full), (vec![ids[1]], false));
-        // the smaller of the two limits wins
-        let plan = plan_cloud_limit(&index, 100, Some(ProviderSpace { free: 0 }), remove, GIB);
-        assert_eq!(plan.delete, [ids[1]]);
+        let roomy = Some(ProviderSpace { free: 100 * GIB, total: Some(200 * GIB) });
+        // on, limit 3 GB, 1 GB coming: the oldest NON-favorite goes
+        let plan = plan_cloud_limit(&index, true, 3, roomy, GIB);
+        assert_eq!((plan.delete, plan.no_room), (vec![ids[1]], None));
+        // favorites are never removed: a 1 GB limit cannot be met
+        let plan = plan_cloud_limit(&index, true, 1, roomy, GIB);
+        assert_eq!((plan.delete.len(), plan.no_room), (2, Some(NoRoom::OwnLimit)));
+        // off (the default): the limit does nothing, nothing is removed
+        assert_eq!(plan_cloud_limit(&index, false, 3, roomy, GIB), CloudLimitPlan::default());
+    }
+
+    #[test]
+    fn a_full_cloud_never_makes_lag_delete_anything() {
+        let mut index = CloudIndex::default();
+        index.upsert(ClipId::new_random(), IndexEntry { size: GIB, ..Default::default() }, Utc::now());
+        let full = Some(ProviderSpace { free: GIB / 2, total: Some(15 * GIB) });
+        // the user's Drive is full of other files: an error, no cleanup - whether auto-cleanup is on or off
+        for auto in [false, true] {
+            let plan = plan_cloud_limit(&index, auto, 100, full, GIB);
+            assert_eq!(plan, CloudLimitPlan { delete: vec![], no_room: Some(NoRoom::CloudFull) }, "auto-cleanup {auto}");
+        }
+        // what the user's own limit freed counts toward the cloud's space
+        let mut two = index.clone();
+        two.upsert(ClipId::new_random(), IndexEntry { size: GIB, ..Default::default() }, Utc::now());
+        let plan = plan_cloud_limit(&two, true, 2, full, GIB);
+        assert_eq!((plan.delete.len(), plan.no_room), (1, None));
+        // unknown provider space: only our own rule
+        assert_eq!(plan_cloud_limit(&index, false, 0, None, GIB), CloudLimitPlan::default());
     }
 }

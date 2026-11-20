@@ -253,7 +253,7 @@ impl CloudProvider for MemoryCloud {
     fn space(&self) -> CloudResult<ProviderSpace> {
         let mut s = self.state.lock().unwrap();
         Self::take_fault(&mut s)?;
-        Ok(ProviderSpace { free: s.capacity.saturating_sub(Self::used(&s)) })
+        Ok(ProviderSpace { free: s.capacity.saturating_sub(Self::used(&s)), total: Some(s.capacity) })
     }
 
     fn stream(&self, file_id: &str) -> CloudResult<StreamSource> {

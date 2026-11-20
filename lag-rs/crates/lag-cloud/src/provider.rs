@@ -53,8 +53,10 @@ pub enum CloudError {
     Transient(String),
     /// Sign-in expired or revoked: the account's jobs wait for the user.
     SignIn,
-    /// No room in the cloud.
+    /// No room left in the cloud itself (the upload fails; Lag deletes nothing for it).
     Full,
+    /// Over the user's own limit for Lag in this cloud and auto-cleanup is off or cannot free enough.
+    OverLimit,
     NotFound,
     /// The transfer was cancelled by Lag (clip deleted meanwhile, app closing).
     Cancelled,
@@ -73,7 +75,8 @@ impl std::fmt::Display for CloudError {
         match self {
             Self::Transient(e) => write!(f, "temporary cloud error: {e}"),
             Self::SignIn => f.write_str("sign-in needed"),
-            Self::Full => f.write_str("cloud is full"),
+            Self::Full => f.write_str("not enough space in the cloud"),
+            Self::OverLimit => f.write_str("over the cloud limit set in Lag"),
             Self::NotFound => f.write_str("not found in the cloud"),
             Self::Cancelled => f.write_str("cancelled"),
             Self::Permanent(e) => write!(f, "cloud error: {e}"),

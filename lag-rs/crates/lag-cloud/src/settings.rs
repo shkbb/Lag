@@ -75,21 +75,11 @@ pub struct AccountSettings {
     pub display_name: String,
     pub role: Role,
     pub mirror: MirrorSelection,
-    /// Cloud auto-cleanup, the cloud's own "library size limit": GB Lag's clips may take in this account;
-    /// 0 = no limit of our own (the provider's free space still counts, quota.rs).
+    /// Cloud auto-cleanup, the cloud's own "library size limit" (like Settings > Library): off by default;
+    /// when on, Lag's clips in this account are kept within `max_size_gb` by removing the oldest
+    /// non-favorite ones. A cloud full of other files never triggers it (quota.rs).
+    pub auto_cleanup: bool,
     pub max_size_gb: u32,
-    /// What happens when a clip does not fit (own limit or the cloud itself is full).
-    pub when_full: WhenFull,
-}
-
-/// The cloud's auto-cleanup behaviour (spec §11).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
-pub enum WhenFull {
-    /// Remove the oldest clips from this cloud, never favorites (like the local auto-cleanup).
-    #[default]
-    RemoveOldest,
-    /// Remove nothing; new uploads to this cloud wait ("cloud is full" on the cards).
-    StopUploads,
 }
 
 impl Default for AccountSettings {
@@ -100,8 +90,8 @@ impl Default for AccountSettings {
             display_name: String::new(),
             role: Role::Primary,
             mirror: MirrorSelection::Everything,
-            max_size_gb: 0,
-            when_full: WhenFull::default(),
+            auto_cleanup: false,
+            max_size_gb: 50,
         }
     }
 }

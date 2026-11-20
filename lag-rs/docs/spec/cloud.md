@@ -123,14 +123,14 @@ Owner, 2026-11-20: "all library functions have to work, the storage limit and so
 | feature | with the cloud |
 |---|---|
 | **Library size limit** (auto-cleanup, oldest first, screenshots not counted) | Same limit, local files only (cloud-only clips take no disk). First removes the LOCAL COPIES of the oldest clips already in a cloud (lossless: they stay in the library as cloud-only); only then deletes the oldest local-only clips, as today. Never a clip in transfer. (`quota::plan_local_limit`) |
-| **Cloud auto-cleanup** (new, per account; owner: "the cloud needs a limit too") | The cloud's own "library size limit": GB Lag's clips may take in that account (0 = none). The room is the smaller of that limit and what the cloud itself has left, so cleanup also runs when the user's Drive fills up with other files. When a clip does not fit: `RemoveOldest` (default, like the local cleanup: oldest first, never favorites) or `StopUploads` ("cloud is full" on the cards). Runs before every upload. (`quota::plan_cloud_limit`, `sync::make_room`) |
+| **Cloud auto-cleanup** (new, per account; owner: "the cloud needs a limit too") | Exactly like the local one: a switch (OFF by default) + a GB limit for Lag's clips in that cloud. On: before each upload the oldest clips (never favorites) are removed from that cloud until the new one fits the limit; if it still cannot fit, the upload fails with "over the cloud limit". A cloud that is full for any other reason (the user's own files) NEVER makes Lag delete anything (owner, 2026-11-20): the upload fails with "not enough space in <cloud>". (`quota::plan_cloud_limit`, `sync::prepare_upload`) |
 | **Free local space after N days** (new, off by default) | Local copies older than N days that are in a cloud are removed; they stay playable from the cloud. (`quota::plan_free_space`) |
-| **Disk usage bar** | Unchanged for the disk; a second line per account: used by Lag / limit / provider quota. |
+| **Disk usage bar** | Unchanged for the disk. Settings > Cloud shows per account: Lag's clips (count, GB), free / total in that cloud, the auto-cleanup switch and limit. (`sync::usage`) |
 | **Favorites** (star, favorites-only filter) | Toggling writes the index (`SyncMeta`), so other PCs see it; with "upload favorites" it also queues the upload; favorite mirrors receive it. Filter works on cloud-only clips too. |
 | **Game filter chips, search, date groups** | Run on the joined library: cloud-only clips have game, file name and date from the index. Chips count both. |
 | **Play** | Local: as today. Cloud-only: plays straight from the cloud (stream, seeking works); "Save to this PC" downloads it into the library folder (owner, 2026-11-20). (`sync::stream`) |
 | **Edit / montage** | Needs local files: missing ones are downloaded first. The export is a NEW clip (new id) and follows the upload rule. |
-| **Delete** (one, selected, context menu) | Delete mode: this PC only (a synced clip becomes cloud-only), everywhere (local file + cloud file + tombstone), from the cloud only (menu item on synced clips). Default: ask. Selection delete asks once for all. |
+| **Delete** (one, selected, context menu) | See §12. |
 | **Show in folder** | Local: as today. Cloud-only: "Open in <cloud>" (web link to the file). |
 | **Open library folder** | Unchanged. |
 | **Thumbnails** | Local: as today. Cloud-only: `.lag/thumbs/<id>.jpg` downloaded into the thumbnail cache. Uploaded together with the clip. |
@@ -152,7 +152,19 @@ Owner, 2026-11-20: "all library functions have to work, the storage limit and so
 - Cloud-only clips play from the cloud; the user can save them locally.
 - Screenshots are uploaded too (default on), into the same game folders.
 - Free local space after N days: off by default.
-- Cloud auto-cleanup per account, default RemoveOldest, favorites never removed.
+- Cloud auto-cleanup per account: OFF by default, only the user's own limit, never favorites; a full cloud is an
+  upload error, never a reason to delete.
+
+## 12. Delete (proposal, waiting for the owner)
+What "Delete" offers depends on where the clip is, so the user never has to know the setting:
+- **Only on this PC**: as today (confirm, delete).
+- **Here and in a cloud**: the confirmation offers three buttons: "Delete from this PC" (stays in the cloud,
+  becomes cloud-only, frees disk), "Delete from the cloud" (stays here), "Delete everywhere". A "Remember my
+  choice" box stores it (`DeleteMode`); Settings > Cloud can reset it.
+- **Only in the cloud**: "Delete from the cloud" with a warning that it is gone for good.
+- **Several selected**: one confirmation; each clip gets what it can (a local-only clip ignores "from the cloud").
+- Deleting "everywhere" or "from the cloud" removes the clip from every connected cloud that has it, and other
+  PCs drop it (tombstone).
 
 ## Open questions (owner)
-- Deleting a clip that is both here and in the cloud: ask every time (default), or a fixed choice?
+- §12 delete flow: OK as proposed?

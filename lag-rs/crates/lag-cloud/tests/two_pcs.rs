@@ -7,7 +7,6 @@ use lag_cloud::memory::{Fault, MemoryCloud};
 use lag_cloud::presence::{join_library, Badge, LocalClip};
 use lag_cloud::provider::{CloudError, CloudProvider};
 use lag_cloud::queue::UploadSession;
-use lag_cloud::settings::WhenFull;
 use lag_cloud::sync::{AccountClient, UploadRequest};
 use lag_cloud::{AccountId, ClipId, ProviderKind};
 use std::collections::HashMap;
@@ -124,26 +123,27 @@ fn a_dropped_connection_resumes_where_it_stopped() {
 }
 
 #[test]
-fn a_full_cloud_cleans_up_its_oldest_clips_but_never_favorites() {
+fn a_full_cloud_is_an_upload_error_and_lag_deletes_nothing() {
     let cloud = MemoryCloud::new(40);
     let a = pc(&cloud, "A");
-    let ids: Vec<ClipId> = (0..3).map(|_| ClipId::new_random()).collect();
-    for (i, id) in ids.iter().enumerate() {
-        upload(&a, *id, clip(&format!("{i}.mp4"), None, 10, i as u32), b"0123456789").unwrap();
+    for i in 0..3u32 {
+        upload(&a, ClipId::new_random(), clip(&format!("{i}.mp4"), None, 10, i), b"0123456789").unwrap();
     }
-    a.sync_meta(ids[0], &|e| e.favorite = true).unwrap();
-    // 30 bytes of clips + 3 thumbnails of 3 bytes = 39 of 40: a 10-byte clip does not fit
+    // 30 bytes of clips + 3 thumbnails of 3 bytes = 39 of 40: Settings shows it
+    let usage = a.usage().unwrap();
+    assert_eq!((usage.lag_bytes, usage.clips, usage.space.free, usage.space.total), (30, 3, 1, Some(40)));
+    // a 10-byte clip does not fit: an error before the upload starts, whether auto-cleanup is on or off,
+    // and nothing in the cloud is touched (the user's own files may be what fills it)
+    let files = cloud.file_count();
+    assert_eq!(a.prepare_upload(false, 0, 10).unwrap_err(), CloudError::Full);
+    assert_eq!(a.prepare_upload(true, 50, 10).unwrap_err(), CloudError::Full);
+    assert_eq!(cloud.file_count(), files);
+    assert_eq!(a.load_index().unwrap().0.live().count(), 3);
+    // and if it races past the check, the provider refuses it the same way
     let big = ClipId::new_random();
     assert_eq!(upload(&a, big, clip("big.mp4", None, 10, 9), b"0123456789").unwrap_err(), CloudError::Full);
-    // "stop uploads": nothing removed
-    assert!(a.make_room(0, WhenFull::StopUploads, 10).unwrap().full);
-    // auto-cleanup: the oldest NON-favorite goes, then it fits
-    let plan = a.make_room(0, WhenFull::RemoveOldest, 10).unwrap();
-    assert_eq!((plan.delete, plan.full), (vec![ids[1]], false));
-    upload(&a, big, clip("big.mp4", None, 10, 9), b"0123456789").unwrap();
-    let (index, _) = a.load_index().unwrap();
-    assert!(index.entries[&ids[0]].is_live(), "the favorite stays");
-    assert!(!index.entries[&ids[1]].is_live());
+    // a small clip still fits
+    a.prepare_upload(false, 0, 1).unwrap();
 }
 
 #[test]

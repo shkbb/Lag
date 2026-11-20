@@ -6,8 +6,7 @@ use crate::index::{CloudIndex, IndexEntry, IndexError};
 use crate::layout::{self, SortMode};
 use crate::provider::*;
 use crate::queue::UploadSession;
-use crate::quota::{plan_cloud_limit, CloudLimitPlan};
-use crate::settings::WhenFull;
+use crate::quota::{plan_cloud_limit, CloudLimitPlan, NoRoom, ProviderSpace};
 use chrono::{DateTime, Utc};
 use std::io::Read;
 
@@ -20,6 +19,16 @@ mod meta {
     pub const CREATED: &str = "lagCreated";
     pub const DURATION: &str = "lagDuration";
     pub const IMAGE: &str = "lagImage";
+}
+
+/// One cloud's numbers for Settings > Cloud.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Usage {
+    /// Bytes Lag's clips take there.
+    pub lag_bytes: u64,
+    pub clips: usize,
+    /// The cloud's own free / total space (the user's other files included).
+    pub space: ProviderSpace,
 }
 
 pub struct AccountClient<'a> {
@@ -164,17 +173,29 @@ impl AccountClient<'_> {
         Ok(())
     }
 
-    /// The cloud's auto-cleanup before uploading `incoming` bytes: removes what the plan says and reports
-    /// whether the clip fits now.
-    pub fn make_room(&self, max_size_gb: u32, when_full: WhenFull, incoming: u64) -> CloudResult<CloudLimitPlan> {
+    /// Before uploading `incoming` bytes: the cloud's auto-cleanup (only if the user switched it on, only
+    /// for their own limit) and the space check. Err(OverLimit / Full) = the upload fails with that message;
+    /// a cloud full of other files never makes Lag delete anything.
+    pub fn prepare_upload(&self, auto_cleanup: bool, max_size_gb: u32, incoming: u64) -> CloudResult<CloudLimitPlan> {
         let (index, _) = self.load_index()?;
         let space = self.provider.space()?;
-        let plan = plan_cloud_limit(&index, max_size_gb, Some(space), when_full, incoming);
+        let plan = plan_cloud_limit(&index, auto_cleanup, max_size_gb, Some(space), incoming);
+        match plan.no_room {
+            Some(NoRoom::OwnLimit) => return Err(CloudError::OverLimit),
+            Some(NoRoom::CloudFull) => return Err(CloudError::Full),
+            None => {}
+        }
         for id in &plan.delete {
             log::info!("[Cloud] auto-cleanup: removing {id} from the cloud");
             self.delete_clip(*id)?;
         }
         Ok(plan)
+    }
+
+    /// For Settings > Cloud: what Lag's clips take in this account, and the cloud's own free / total space.
+    pub fn usage(&self) -> CloudResult<Usage> {
+        let (index, _) = self.load_index()?;
+        Ok(Usage { lag_bytes: index.live_bytes(), clips: index.live().count(), space: self.provider.space()? })
     }
 
     /// A clip that is only in the cloud plays from there; "Save to this PC" downloads it.
