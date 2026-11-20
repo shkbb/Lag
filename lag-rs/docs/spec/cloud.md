@@ -155,7 +155,7 @@ Owner, 2026-11-20: "all library functions have to work, the storage limit and so
 - Cloud auto-cleanup per account: OFF by default, only the user's own limit, never favorites; a full cloud is an
   upload error, never a reason to delete.
 
-## 12. Delete (proposal, waiting for the owner)
+## 12. Delete (approved by the owner, 2026-11-20)
 What "Delete" offers depends on where the clip is, so the user never has to know the setting:
 - **Only on this PC**: as today (confirm, delete).
 - **Here and in a cloud**: the confirmation offers three buttons: "Delete from this PC" (stays in the cloud,
@@ -167,4 +167,4 @@ What "Delete" offers depends on where the clip is, so the user never has to know
   PCs drop it (tombstone).
 
 ## Open questions (owner)
-- §12 delete flow: OK as proposed?
+- none right now
