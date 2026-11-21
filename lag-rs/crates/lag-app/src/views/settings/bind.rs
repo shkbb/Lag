@@ -190,6 +190,26 @@ pub(super) fn bind_controls(ui: &AppWindow, ctx: &Rc<AppCtx>, state: &Rc<RefCell
                     }
                 }
             }
+            // the graphical editor for the chosen theme; Lag's own cannot be changed: a new copy of it is made first
+            "theme-edit" => {
+                let chosen = st.borrow().settings.ui_theme.clone().unwrap_or_else(|| crate::themes::BUILTIN.into());
+                let theme = match crate::themes::list().into_iter().find(|t| t.id == chosen && !t.builtin) {
+                    Some(t) => Some(t),
+                    None => crate::themes::user_dir().and_then(|root| {
+                        crate::themes::write_reference(&root);
+                        let t = crate::themes::new_from_builtin(&root, &tr("Theme_NewName")).ok()?;
+                        save(&ui, &c, &st, "ui-theme", |s| s.settings.ui_theme = Some(t.id.clone()));
+                        Some(t)
+                    }),
+                };
+                if let Some(t) = theme {
+                    let spawned = std::env::current_exe()
+                        .and_then(|exe| std::process::Command::new(exe).arg("--theme-editor").arg(&t.dir).spawn());
+                    if let Err(e) = spawned {
+                        log::warn!("[Theme] editor did not start: {e}");
+                    }
+                }
+            }
             // the chosen theme in its own live-reloading window (Lag.exe --theme-preview <folder>)
             "theme-preview" => {
                 let chosen = st.borrow().settings.ui_theme.clone().unwrap_or_else(|| crate::themes::BUILTIN.into());

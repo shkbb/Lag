@@ -36,7 +36,7 @@ component PropRow {
         padding-top: 3px;
         padding-bottom: 3px;
         VerticalLayout {
-            width: 112px;
+            width: 150px;
             alignment: center;
             Text {
                 text: root.prop.name;
@@ -115,6 +115,13 @@ export component ThemeEditorWindow inherits Window {
     callback redo();
     callback page(int);
     callback filter-changed(string);
+    // "delete", "duplicate", "up", "down", "add-rect", "add-text"
+    callback structure(string);
+    // the selected element dragged by (dx, dy)
+    callback drag-end(length, length);
+    property <length> drag-dx;
+    property <length> drag-dy;
+    property <bool> dragging;
 
     VerticalLayout {
         padding: 12px;
@@ -153,13 +160,32 @@ export component ThemeEditorWindow inherits Window {
                         height: parent.height;
                         component-factory: root.canvas;
                     }
-                    // edit mode: clicks pick elements instead of pressing them
+                    // edit mode: a click picks the element under it, a drag moves the selected one
                     TouchArea {
-                        clicked => { root.pick(self.pressed-x, self.pressed-y); }
+                        moved => {
+                            if (self.pressed && root.selected-name != ""
+                                && (abs(self.mouse-x - self.pressed-x) > 4px || abs(self.mouse-y - self.pressed-y) > 4px || root.dragging)) {
+                                root.dragging = true;
+                                root.drag-dx = self.mouse-x - self.pressed-x;
+                                root.drag-dy = self.mouse-y - self.pressed-y;
+                            }
+                        }
+                        pointer-event(e) => {
+                            if (e.kind == PointerEventKind.up && e.button == PointerEventButton.left) {
+                                if (root.dragging) {
+                                    root.dragging = false;
+                                    root.drag-end(root.drag-dx, root.drag-dy);
+                                    root.drag-dx = 0;
+                                    root.drag-dy = 0;
+                                } else {
+                                    root.pick(self.pressed-x, self.pressed-y);
+                                }
+                            }
+                        }
                     }
                     for r in root.selection: Rectangle {
-                        x: r.x - 2px;
-                        y: r.y - 2px;
+                        x: r.x - 2px + (root.dragging ? root.drag-dx : 0);
+                        y: r.y - 2px + (root.dragging ? root.drag-dy : 0);
                         width: r.width + 4px;
                         height: r.height + 4px;
                         border-width: 2px;
@@ -170,7 +196,7 @@ export component ThemeEditorWindow inherits Window {
             }
             // properties
             Rectangle {
-                width: 380px;
+                width: 440px;
                 background: Theme.surface-card;
                 border-radius: 10px;
                 border-width: 1px;
@@ -198,6 +224,18 @@ export component ThemeEditorWindow inherits Window {
                                 crumb-ta := TouchArea { clicked => { root.select-crumb(c.index); } }
                             }
                         }
+                    }
+                    if root.selected-name != "": HorizontalLayout {
+                        spacing: 4px;
+                        RChipButton { text: "↑"; clicked => { root.structure("up"); } }
+                        RChipButton { text: "↓"; clicked => { root.structure("down"); } }
+                        RChipButton { text: Tr.t("ThemeEditor_Duplicate", Tr.rev); clicked => { root.structure("duplicate"); } }
+                        RChipButton { text: Tr.t("ThemeEditor_Delete", Tr.rev); danger: true; clicked => { root.structure("delete"); } }
+                    }
+                    if root.selected-name != "": HorizontalLayout {
+                        spacing: 4px;
+                        RChipButton { text: Tr.t("ThemeEditor_AddRect", Tr.rev); clicked => { root.structure("add-rect"); } }
+                        RChipButton { text: Tr.t("ThemeEditor_AddText", Tr.rev); clicked => { root.structure("add-text"); } }
                     }
                     if root.selected-name != "": LagTextInput {
                         text <=> root.filter;

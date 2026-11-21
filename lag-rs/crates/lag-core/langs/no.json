@@ -368,5 +368,11 @@
   "ThemeEditor_PickHint": "Klikk på hva som helst i temaet for å endre det",
   "ThemeEditor_Search": "Finn en egenskap…",
   "ThemeEditor_Undo": "Angre",
-  "ThemeEditor_Redo": "Gjør om"
+  "ThemeEditor_Redo": "Gjør om",
+  "Theme_Edit": "Rediger",
+  "ThemeEditor_Delete": "Slett",
+  "ThemeEditor_Duplicate": "Dupliser",
+  "ThemeEditor_AddRect": "+ Figur",
+  "ThemeEditor_AddText": "+ Tekst",
+  "ThemeEditor_InLayout": "Elementet står i en rad eller kolonne: flytt det med ↑ ↓"
 }

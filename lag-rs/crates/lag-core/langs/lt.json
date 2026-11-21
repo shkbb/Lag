@@ -368,5 +368,11 @@
   "ThemeEditor_PickHint": "Spustelėkite bet ką temoje, kad pakeistumėte",
   "ThemeEditor_Search": "Rasti savybę…",
   "ThemeEditor_Undo": "Atšaukti",
-  "ThemeEditor_Redo": "Pakartoti"
+  "ThemeEditor_Redo": "Pakartoti",
+  "Theme_Edit": "Redaguoti",
+  "ThemeEditor_Delete": "Ištrinti",
+  "ThemeEditor_Duplicate": "Dubliuoti",
+  "ThemeEditor_AddRect": "+ Figūra",
+  "ThemeEditor_AddText": "+ Tekstas",
+  "ThemeEditor_InLayout": "Šis elementas yra eilutėje ar stulpelyje: perkelkite jį mygtukais ↑ ↓"
 }

@@ -368,5 +368,11 @@
   "ThemeEditor_PickHint": "Клацніть будь-що в темі, щоб змінити",
   "ThemeEditor_Search": "Знайти властивість…",
   "ThemeEditor_Undo": "Скасувати",
-  "ThemeEditor_Redo": "Повторити"
+  "ThemeEditor_Redo": "Повторити",
+  "Theme_Edit": "Редагувати",
+  "ThemeEditor_Delete": "Видалити",
+  "ThemeEditor_Duplicate": "Дублювати",
+  "ThemeEditor_AddRect": "+ Фігура",
+  "ThemeEditor_AddText": "+ Текст",
+  "ThemeEditor_InLayout": "Цей елемент стоїть у ряду чи колонці: пересувайте його кнопками ↑ ↓"
 }

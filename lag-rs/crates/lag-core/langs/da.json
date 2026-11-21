@@ -368,5 +368,11 @@
   "ThemeEditor_PickHint": "Klik på hvad som helst i temaet for at ændre det",
   "ThemeEditor_Search": "Find en egenskab…",
   "ThemeEditor_Undo": "Fortryd",
-  "ThemeEditor_Redo": "Gentag"
+  "ThemeEditor_Redo": "Gentag",
+  "Theme_Edit": "Rediger",
+  "ThemeEditor_Delete": "Slet",
+  "ThemeEditor_Duplicate": "Dupliker",
+  "ThemeEditor_AddRect": "+ Figur",
+  "ThemeEditor_AddText": "+ Tekst",
+  "ThemeEditor_InLayout": "Elementet står i en række eller kolonne: flyt det med ↑ ↓"
 }

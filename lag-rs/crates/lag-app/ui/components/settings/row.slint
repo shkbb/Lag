@@ -178,6 +178,7 @@ export component SettingsRow {
             RChipButton { text: Tr.t("Theme_Export", Tr.rev); clicked => { root.action("theme-export"); } }
             RChipButton { text: Tr.t("Theme_OpenFolder", Tr.rev); clicked => { root.action("theme-folder"); } }
             RChipButton { text: Tr.t("Theme_Preview", Tr.rev); clicked => { root.action("theme-preview"); } }
+            RChipButton { text: Tr.t("Theme_Edit", Tr.rev); clicked => { root.action("theme-edit"); } }
             if root.data.custom: RChipButton { text: Tr.t("Theme_Restart", Tr.rev); active: true; clicked => { root.action("theme-restart"); } }
         }
         if root.data.kind == 18 && root.data.description != "": Text {

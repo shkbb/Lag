@@ -368,5 +368,11 @@
   "ThemeEditor_PickHint": "テーマ内のどこかをクリックして変更します",
   "ThemeEditor_Search": "プロパティを検索…",
   "ThemeEditor_Undo": "元に戻す",
-  "ThemeEditor_Redo": "やり直す"
+  "ThemeEditor_Redo": "やり直す",
+  "Theme_Edit": "編集",
+  "ThemeEditor_Delete": "削除",
+  "ThemeEditor_Duplicate": "複製",
+  "ThemeEditor_AddRect": "+ 図形",
+  "ThemeEditor_AddText": "+ テキスト",
+  "ThemeEditor_InLayout": "この要素は行や列の中にあります: ↑ ↓ で移動します"
 }

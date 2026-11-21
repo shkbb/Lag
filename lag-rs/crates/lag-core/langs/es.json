@@ -368,5 +368,11 @@
   "ThemeEditor_PickHint": "Haz clic en cualquier cosa del tema para cambiarla",
   "ThemeEditor_Search": "Buscar una propiedad…",
   "ThemeEditor_Undo": "Deshacer",
-  "ThemeEditor_Redo": "Rehacer"
+  "ThemeEditor_Redo": "Rehacer",
+  "Theme_Edit": "Editar",
+  "ThemeEditor_Delete": "Eliminar",
+  "ThemeEditor_Duplicate": "Duplicar",
+  "ThemeEditor_AddRect": "+ Forma",
+  "ThemeEditor_AddText": "+ Texto",
+  "ThemeEditor_InLayout": "Este elemento está en una fila o columna: muévelo con ↑ ↓"
 }

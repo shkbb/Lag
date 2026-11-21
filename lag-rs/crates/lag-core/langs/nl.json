@@ -368,5 +368,11 @@
   "ThemeEditor_PickHint": "Klik op iets in het thema om het te wijzigen",
   "ThemeEditor_Search": "Eigenschap zoeken…",
   "ThemeEditor_Undo": "Ongedaan maken",
-  "ThemeEditor_Redo": "Opnieuw"
+  "ThemeEditor_Redo": "Opnieuw",
+  "Theme_Edit": "Bewerken",
+  "ThemeEditor_Delete": "Verwijderen",
+  "ThemeEditor_Duplicate": "Dupliceren",
+  "ThemeEditor_AddRect": "+ Vorm",
+  "ThemeEditor_AddText": "+ Tekst",
+  "ThemeEditor_InLayout": "Dit element staat in een rij of kolom: verplaats het met ↑ ↓"
 }

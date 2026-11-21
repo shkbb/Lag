@@ -42,6 +42,12 @@ fn name_offset(el: &SyntaxNode) -> Option<u32> {
 }
 
 fn label_of(el: &SyntaxNode) -> String {
+    // the root of `component AppWindow inherits Window`: its name, not the base type's
+    if let Some(c) = el.parent().filter(|p| p.kind() == SyntaxKind::Component) {
+        if let Some(id) = c.child_node(SyntaxKind::DeclaredIdentifier) {
+            return id.text().to_string().trim().to_owned();
+        }
+    }
     let name = el.child_node(SyntaxKind::QualifiedName).map(|q| q.text().to_string()).unwrap_or_default();
     let id = el
         .parent()
@@ -125,6 +131,146 @@ pub(crate) fn remove_binding(text: &str, path: &Path, offset: u32, name: &str) -
     let mut out = text.to_owned();
     out.replace_range(s..e, "");
     Ok(out)
+}
+
+/// The text block an element occupies among its siblings: `id := X { }`, `for ..: X { }`, `if ..: X { }`, or the
+/// element itself. None for a component's root (it cannot be moved or removed).
+fn block_of(el: &SyntaxNode) -> Option<SyntaxNode> {
+    let mut b = el.parent().filter(|p| p.kind() == SyntaxKind::SubElement)?;
+    while let Some(p) = b.parent().filter(|p| matches!(p.kind(), SyntaxKind::RepeatedElement | SyntaxKind::ConditionalElement)) {
+        b = p;
+    }
+    Some(b)
+}
+
+fn is_block(n: &SyntaxNode) -> bool {
+    matches!(n.kind(), SyntaxKind::SubElement | SyntaxKind::RepeatedElement | SyntaxKind::ConditionalElement)
+}
+
+fn range(n: &SyntaxNode) -> (usize, usize) {
+    (usize::from(n.text_range().start()), usize::from(n.text_range().end()))
+}
+
+fn indent_at(text: &str, at: usize) -> String {
+    let line_start = text[..at].rfind('\n').map_or(0, |i| i + 1);
+    text[line_start..].chars().take_while(|c| c.is_whitespace() && *c != '\n').collect()
+}
+
+/// A structural change to the element at `offset`. Returns the new text and the offset of the element to select
+/// afterwards (None = its parent).
+pub(crate) fn restructure(text: &str, path: &Path, offset: u32, op: &str) -> Result<(String, Option<u32>), String> {
+    let root = parse_text(text, path);
+    let el = find_element(&root, offset).ok_or("the element moved in its file; pick it again")?;
+    let mut out = text.to_owned();
+    match op {
+        "delete" => {
+            let b = block_of(&el).ok_or("the root of the window cannot be removed")?;
+            let (mut s, mut e) = range(&b);
+            let line_start = text[..s].rfind('\n').map_or(0, |i| i + 1);
+            let line_end = text[e..].find('\n').map_or(text.len(), |i| e + i);
+            if text[line_start..s].trim().is_empty() && text[e..line_end].trim().is_empty() {
+                s = line_start.saturating_sub(1);
+                e = line_end;
+            }
+            out.replace_range(s..e, "");
+            Ok((out, None))
+        }
+        "duplicate" => {
+            let b = block_of(&el).ok_or("the root of the window cannot be copied")?;
+            let (s, e) = range(&b);
+            // the copy without the `id :=` (two elements cannot share an id)
+            let (cs, ce) = if b.kind() == SyntaxKind::SubElement { range(&el) } else { (s, e) };
+            let copy = rename_ids(&text[cs..ce], text);
+            let indent = indent_at(text, s);
+            out.insert_str(e, &format!("\n{indent}{copy}"));
+            let new_at = e + 1 + indent.len() + (offset as usize - cs);
+            Ok((out, Some(new_at as u32)))
+        }
+        "up" | "down" => {
+            let b = block_of(&el).ok_or("the root of the window has no neighbours")?;
+            let parent = b.parent().ok_or("no parent")?;
+            let siblings: Vec<SyntaxNode> = parent.children().filter(is_block).collect();
+            let i = siblings.iter().position(|n| n.text_range() == b.text_range()).ok_or("not found")?;
+            let j = if op == "up" { i.checked_sub(1) } else { (i + 1 < siblings.len()).then_some(i + 1) };
+            let j = j.ok_or(if op == "up" { "already the first" } else { "already the last" })?;
+            let (first, second) = if i < j { (&siblings[i], &siblings[j]) } else { (&siblings[j], &siblings[i]) };
+            let ((a0, a1), (b0, b1)) = (range(first), range(second));
+            let (ta, mid, tb) = (&text[a0..a1], &text[a1..b0], &text[b0..b1]);
+            out = format!("{}{tb}{mid}{ta}{}", &text[..a0], &text[b1..]);
+            // where the moved element's name sits now
+            let (bs, _) = range(&b);
+            let inside = offset as usize - bs;
+            let new_block_start = if i < j { a0 + tb.len() + mid.len() } else { a0 };
+            Ok((out, Some((new_block_start + inside) as u32)))
+        }
+        "add-rect" | "add-text" => {
+            let close = el.child_token(SyntaxKind::RBrace).ok_or("no } in the element")?;
+            let at = usize::from(close.text_range().start());
+            let indent = indent_at(text, offset as usize);
+            let snippet = if op == "add-rect" {
+                "Rectangle { x: 24px; y: 24px; width: 180px; height: 90px; background: #FF4FA3; border-radius: 14px; }"
+            } else {
+                "Text { x: 24px; y: 24px; text: \"Text\"; color: #FFFFFF; font-size: 20px; font-weight: 700; }"
+            };
+            // keep `}` on its own line where it was
+            let before_close = text[..at].trim_end_matches([' ', '\t']);
+            let ins = format!("{indent}    {snippet}\n{indent}");
+            let start = before_close.len();
+            let lead = if before_close.ends_with('\n') { "" } else { "\n" };
+            out.replace_range(start..at, &format!("{lead}{ins}"));
+            let name_at = start + lead.len() + indent.len() + 4;
+            Ok((out, Some(name_at as u32)))
+        }
+        _ => Err(format!("unknown change {op}")),
+    }
+}
+
+fn ident_char(c: char) -> bool {
+    c.is_alphanumeric() || c == '_' || c == '-'
+}
+
+/// A copy of an element: every `id :=` inside it gets a new id that the file does not use yet (`touch` ->
+/// `touch-2`), and the copy's own references to those ids follow (`touch.pressed` -> `touch-2.pressed`).
+fn rename_ids(copy: &str, whole: &str) -> String {
+    let mut ids: Vec<String> = Vec::new();
+    for (i, _) in copy.match_indices(":=") {
+        let before = copy[..i].trim_end();
+        let start = before.rfind(|c: char| !ident_char(c)).map_or(0, |j| j + before[j..].chars().next().map_or(1, char::len_utf8));
+        let id = &before[start..];
+        if !id.is_empty() && !ids.iter().any(|x| x == id) {
+            ids.push(id.to_owned());
+        }
+    }
+    let mut out = copy.to_owned();
+    for id in ids {
+        let used = |cand: &str| whole.contains(&format!("{cand} :=")) || whole.contains(&format!("{cand}:="));
+        let new = (2..).map(|n| format!("{id}-{n}")).find(|c| !used(c)).unwrap_or_default();
+        // whole-word replacement
+        let mut res = String::with_capacity(out.len());
+        let mut rest = out.as_str();
+        while let Some(i) = rest.find(&id) {
+            let before_ok = rest[..i].chars().last().is_none_or(|c| !ident_char(c));
+            let after_ok = rest[i + id.len()..].chars().next().is_none_or(|c| !ident_char(c));
+            res.push_str(&rest[..i]);
+            res.push_str(if before_ok && after_ok { &new } else { &id });
+            rest = &rest[i + id.len()..];
+        }
+        res.push_str(rest);
+        out = res;
+    }
+    out
+}
+
+/// Whether the element's place is decided by a layout (its parent is a `...Layout`): it moves by order there.
+fn in_layout(el: &SyntaxNode) -> bool {
+    let mut p = el.parent();
+    while let Some(n) = p {
+        if n.kind() == SyntaxKind::Element {
+            return n.child_node(SyntaxKind::QualifiedName).is_some_and(|q| q.text().to_string().trim().ends_with("Layout"));
+        }
+        p = n.parent();
+    }
+    false
 }
 
 fn binding_node(el: &SyntaxNode, name: &str) -> Option<SyntaxNode> {
@@ -562,6 +708,56 @@ pub fn run(dir: PathBuf) {
         }
     }
     let (s, weak) = (st.clone(), ui.as_weak());
+    ui.on_structure(move |op| {
+        let Some(ui) = weak.upgrade() else { return };
+        let result = {
+            let mut st = s.borrow_mut();
+            let Some(sel) = st.selected.clone() else { return };
+            let r = std::fs::read_to_string(&sel.path)
+                .map_err(|e| e.to_string())
+                .and_then(|t| restructure(&t, &sel.path, sel.offset, &op))
+                .and_then(|(after, next)| change(&ui, &mut st, &sel.path, after, true).map(|_| next));
+            match r {
+                Ok(next) => {
+                    let parent = crumbs(&sel).into_iter().rev().nth(1);
+                    st.selected = match next {
+                        Some(at) => st.sources.iter().find(|x| x.path == sel.path && x.offset == at).cloned(),
+                        None => parent.and_then(|p| st.sources.iter().find(|x| x.path == p.path && x.label == p.label).cloned()),
+                    };
+                    Ok(format!("{}: {op}", sel.label))
+                }
+                Err(e) => {
+                    reselect(&mut st, &sel);
+                    Err(e)
+                }
+            }
+        };
+        report(&ui, result);
+        refresh_soon(&ui, &s);
+    });
+    let (s, weak) = (st.clone(), ui.as_weak());
+    ui.on_drag_end(move |dx, dy| {
+        let Some(ui) = weak.upgrade() else { return };
+        let target = {
+            let st = s.borrow();
+            let (Some(sel), Some(inst)) = (st.selected.clone(), live(&st)) else { return };
+            let text = std::fs::read_to_string(&sel.path).unwrap_or_default();
+            let layout = find_element(&parse_text(&text, &sel.path), sel.offset).is_some_and(|e| in_layout(&e));
+            let first = inst.component_positions(&sel.path, sel.offset).into_iter().next();
+            (layout, first.map(|h| (h.rect.origin.x - h.parent_origin().x, h.rect.origin.y - h.parent_origin().y)))
+        };
+        match target {
+            (true, _) => report(&ui, Err(lag_core::i18n::tr("ThemeEditor_InLayout").to_owned())),
+            (false, Some((x, y))) => edit_selected(&ui, &s, |_, sel, text| {
+                let (nx, ny) = ((x + dx).round(), (y + dy).round());
+                let t = set_binding(text, &sel.path, sel.offset, "x", &format!("{nx}px"))?;
+                let t = set_binding(&t, &sel.path, sel.offset, "y", &format!("{ny}px"))?;
+                Ok((t, format!("{}: x = {nx}px, y = {ny}px", sel.label)))
+            }),
+            _ => {}
+        }
+    });
+    let (s, weak) = (st.clone(), ui.as_weak());
     ui.on_page(move |p| {
         let Some(ui) = weak.upgrade() else { return };
         s.borrow().page.set(p);
@@ -607,6 +803,11 @@ fn script(ui: &ThemeEditorWindow) {
                 ui.invoke_set_prop(n.into(), v.into());
             }
             "reset" => ui.invoke_reset_prop(rest.into()),
+            "do" => ui.invoke_structure(rest.trim().into()),
+            "drag" => {
+                let n: Vec<f32> = rest.split_whitespace().filter_map(|v| v.parse().ok()).collect();
+                ui.invoke_drag_end(n.first().copied().unwrap_or(0.0), n.get(1).copied().unwrap_or(0.0));
+            }
             "crumb" => ui.invoke_select_crumb(rest.trim().parse().unwrap_or(0)),
             "page" => ui.invoke_page(rest.trim().parse().unwrap_or(1)),
             "undo" => ui.invoke_undo(),
@@ -647,6 +848,46 @@ mod tests {
         assert!(!back.contains("border-radius") && back.contains("r := Rectangle {\n        background: #3DDCFF;"), "{back}");
         let root = parse_text(&back, p);
         assert_eq!(binding_text(&find_element(&root, rect_at).unwrap(), "background").as_deref(), Some("#3DDCFF"));
+    }
+
+    #[test]
+    fn elements_are_removed_copied_reordered_and_added() {
+        let p = Path::new("t.slint");
+        let text = "export component W inherits Window {\n    HorizontalLayout {\n        a := Rectangle { }\n        Text { text: \"b\"; }\n    }\n}\n";
+        let a_at = text.find("Rectangle").unwrap() as u32;
+        let b_at = text.find("Text").unwrap() as u32;
+        // down: a goes after b, and its new place is returned
+        let (moved, at) = restructure(text, p, a_at, "down").unwrap();
+        assert!(moved.find("Text").unwrap() < moved.find("Rectangle").unwrap(), "{moved}");
+        assert_eq!(&moved[at.unwrap() as usize..at.unwrap() as usize + 9], "Rectangle");
+        let (back, _) = restructure(&moved, p, at.unwrap(), "up").unwrap();
+        assert_eq!(back, text);
+        assert!(restructure(text, p, a_at, "up").is_err(), "already first");
+        // the ids inside a copy are renamed, with the references to them
+        let inner = "export component W inherits Window {\n    Rectangle {\n        background: t.pressed ? red : blue;\n        t := TouchArea { }\n    }\n}\n";
+        let (dup2, _) = restructure(inner, p, inner.find("Rectangle").unwrap() as u32, "duplicate").unwrap();
+        assert!(dup2.contains("t-2 := TouchArea") && dup2.contains("t-2.pressed") && dup2.matches("t := TouchArea").count() == 1, "{dup2}");
+        // duplicate without the id
+        let (dup, at) = restructure(text, p, a_at, "duplicate").unwrap();
+        assert_eq!(dup.matches("Rectangle { }").count(), 2);
+        assert_eq!(dup.matches("a :=").count(), 1);
+        assert_eq!(&dup[at.unwrap() as usize..at.unwrap() as usize + 9], "Rectangle");
+        // delete takes the whole line
+        let (del, next) = restructure(text, p, b_at, "delete").unwrap();
+        assert!(!del.contains("Text") && del.contains("a := Rectangle { }\n    }"), "{del}");
+        assert_eq!(next, None);
+        // the window's root stays
+        assert!(restructure(text, p, text.find("Window").unwrap() as u32, "delete").is_err());
+        // add a rectangle inside the layout, on its own line, `}` kept on its line
+        let lay_at = text.find("HorizontalLayout").unwrap() as u32;
+        let (added, at) = restructure(text, p, lay_at, "add-rect").unwrap();
+        assert!(added.contains("Text { text: \"b\"; }\n        Rectangle { x: 24px;"), "{added}");
+        assert!(added.contains("border-radius: 14px; }\n    }\n}"), "{added}");
+        assert_eq!(&added[at.unwrap() as usize..at.unwrap() as usize + 9], "Rectangle");
+        let root = parse_text(text, p);
+        assert!(in_layout(&find_element(&root, a_at).unwrap()));
+        assert!(!in_layout(&find_element(&root, lay_at).unwrap()));
+        assert_eq!(label_of(&find_element(&root, text.find("Window").unwrap() as u32).unwrap()), "W");
     }
 
     #[test]

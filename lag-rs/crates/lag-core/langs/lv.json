@@ -368,5 +368,11 @@
   "ThemeEditor_PickHint": "Noklikšķiniet uz jebkā tēmā, lai to mainītu",
   "ThemeEditor_Search": "Meklēt īpašību…",
   "ThemeEditor_Undo": "Atsaukt",
-  "ThemeEditor_Redo": "Atkārtot"
+  "ThemeEditor_Redo": "Atkārtot",
+  "Theme_Edit": "Rediģēt",
+  "ThemeEditor_Delete": "Dzēst",
+  "ThemeEditor_Duplicate": "Dublēt",
+  "ThemeEditor_AddRect": "+ Figūra",
+  "ThemeEditor_AddText": "+ Teksts",
+  "ThemeEditor_InLayout": "Šis elements ir rindā vai kolonnā: pārvietojiet to ar ↑ ↓"
 }

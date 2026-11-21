@@ -368,5 +368,11 @@
   "ThemeEditor_PickHint": "Napsauta mitä tahansa teemassa muuttaaksesi sitä",
   "ThemeEditor_Search": "Etsi ominaisuus…",
   "ThemeEditor_Undo": "Kumoa",
-  "ThemeEditor_Redo": "Tee uudelleen"
+  "ThemeEditor_Redo": "Tee uudelleen",
+  "Theme_Edit": "Muokkaa",
+  "ThemeEditor_Delete": "Poista",
+  "ThemeEditor_Duplicate": "Monista",
+  "ThemeEditor_AddRect": "+ Muoto",
+  "ThemeEditor_AddText": "+ Teksti",
+  "ThemeEditor_InLayout": "Elementti on rivissä tai sarakkeessa: siirrä sitä painikkeilla ↑ ↓"
 }

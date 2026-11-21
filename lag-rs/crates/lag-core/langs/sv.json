@@ -368,5 +368,11 @@
   "ThemeEditor_PickHint": "Klicka på vad som helst i temat för att ändra det",
   "ThemeEditor_Search": "Sök en egenskap…",
   "ThemeEditor_Undo": "Ångra",
-  "ThemeEditor_Redo": "Gör om"
+  "ThemeEditor_Redo": "Gör om",
+  "Theme_Edit": "Redigera",
+  "ThemeEditor_Delete": "Ta bort",
+  "ThemeEditor_Duplicate": "Duplicera",
+  "ThemeEditor_AddRect": "+ Form",
+  "ThemeEditor_AddText": "+ Text",
+  "ThemeEditor_InLayout": "Elementet står i en rad eller kolumn: flytta det med ↑ ↓"
 }

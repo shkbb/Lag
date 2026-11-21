@@ -368,5 +368,11 @@
   "ThemeEditor_PickHint": "Klõpsa teemas ükskõik millel, et seda muuta",
   "ThemeEditor_Search": "Otsi omadust…",
   "ThemeEditor_Undo": "Võta tagasi",
-  "ThemeEditor_Redo": "Tee uuesti"
+  "ThemeEditor_Redo": "Tee uuesti",
+  "Theme_Edit": "Muuda",
+  "ThemeEditor_Delete": "Kustuta",
+  "ThemeEditor_Duplicate": "Tee koopia",
+  "ThemeEditor_AddRect": "+ Kujund",
+  "ThemeEditor_AddText": "+ Tekst",
+  "ThemeEditor_InLayout": "See element on reas või veerus: liiguta seda nuppudega ↑ ↓"
 }

@@ -368,5 +368,11 @@
   "ThemeEditor_PickHint": "Clique em qualquer coisa no tema para a alterar",
   "ThemeEditor_Search": "Procurar uma propriedade…",
   "ThemeEditor_Undo": "Anular",
-  "ThemeEditor_Redo": "Refazer"
+  "ThemeEditor_Redo": "Refazer",
+  "Theme_Edit": "Editar",
+  "ThemeEditor_Delete": "Eliminar",
+  "ThemeEditor_Duplicate": "Duplicar",
+  "ThemeEditor_AddRect": "+ Forma",
+  "ThemeEditor_AddText": "+ Texto",
+  "ThemeEditor_InLayout": "Este elemento está numa linha ou coluna: mova-o com ↑ ↓"
 }

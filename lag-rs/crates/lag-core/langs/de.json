@@ -368,5 +368,11 @@
   "ThemeEditor_PickHint": "Klicke auf etwas im Theme, um es zu ändern",
   "ThemeEditor_Search": "Eigenschaft suchen…",
   "ThemeEditor_Undo": "Rückgängig",
-  "ThemeEditor_Redo": "Wiederholen"
+  "ThemeEditor_Redo": "Wiederholen",
+  "Theme_Edit": "Bearbeiten",
+  "ThemeEditor_Delete": "Löschen",
+  "ThemeEditor_Duplicate": "Duplizieren",
+  "ThemeEditor_AddRect": "+ Form",
+  "ThemeEditor_AddText": "+ Text",
+  "ThemeEditor_InLayout": "Dieses Element steht in einer Zeile oder Spalte: verschiebe es mit ↑ ↓"
 }
