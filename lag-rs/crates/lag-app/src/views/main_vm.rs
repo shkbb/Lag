@@ -627,7 +627,8 @@ pub fn init(ui: &AppWindow, ctx: &Rc<AppCtx>) {
         slint::CloseRequestResponse::KeepWindowShown
     });
     let me = Rc::downgrade(&runtime);
-    let autoscroll = crate::shell::autoscroll::State::default();
+    let autoscroll = Rc::new(crate::shell::autoscroll::State::default());
+    crate::shell::autoscroll::install(ui, autoscroll.clone());
     // Player keys at window level (owner, 2026-11-17: none worked): Slint's inner focus on the player page could
     // be lost, so Space / M / arrows / Esc are handled here whenever the player page is up, then swallowed.
     ui.window().on_winit_window_event(move |_, event| {

@@ -195,6 +195,11 @@ impl Snapshot {
                 // middle-button autoscroll from a press point (window px): start, pointer, stop
                 "autoscroll" => {
                     use crate::shell::autoscroll::{apply, Ui};
+                    if a.first().copied() == Some("step") {
+                        let g = ui.global::<crate::AutoScroll>();
+                        g.set_pending(g.get_pending() + num(&a, 1));
+                        continue;
+                    }
                     let ui_state = match a.first().copied() {
                         Some("stop") => Ui::Stop,
                         Some("move") => Ui::Move(num(&a, 1), num(&a, 2)),

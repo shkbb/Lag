@@ -17,7 +17,10 @@ scroll 700 500 3000
 # middle-button autoscroll: held 250 px below the press point -> the page runs down, the mark is shown
 autoscroll start 700 400
 autoscroll move 700 650
-wait 500
+autoscroll step 150
+wait 50
+autoscroll step 150
+wait 300
 shot s-autoscroll-down
 autoscroll stop
 wait 200

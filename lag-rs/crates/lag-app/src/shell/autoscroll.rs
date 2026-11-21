@@ -3,8 +3,12 @@
 //! goes; let go to stop. A short click without moving keeps it on ("free" mode, like Chrome) until the next click.
 //!
 //! The middle button is taken at window level (winit), before Slint, so a button under the cursor never gets it;
-//! the press point and the pointer go to the `AutoScroll` global, and the `LagScrollView` under the press point
-//! claims it and scrolls itself (components/scrollbar.slint). Pure state machine here, testable without a window.
+//! the press point goes to the `AutoScroll` global and the `LagScrollView` under it claims it
+//! (components/scrollbar.slint). The motion is driven HERE, once per rendered frame (rendering notifier): the
+//! pointer is read from Windows itself (so it keeps working outside the window; 2.1.1 stopped there), the distance
+//! for this frame = speed x the real time since the last frame, added to `AutoScroll.pending`, which the list
+//! consumes. 2.1.0 / 2.1.1 stepped inside the UI on a timer / the animation clock and looked "torn" (owner).
+//! Each run logs its frame timing ("[AutoScroll] ...") so a slow renderer shows up in the log.
 use crate::{AppWindow, AutoScroll};
 use slint::winit_030::{winit, EventResult};
 use slint::ComponentHandle;
@@ -136,6 +140,7 @@ pub fn apply(window: &AppWindow, ui: Ui) {
             g.set_origin_y(y);
             g.set_mouse_x(x);
             g.set_mouse_y(y);
+            g.set_pending(0.0);
             g.set_active(true);
         }
         Ui::Move(x, y) => {
@@ -161,7 +166,8 @@ pub fn on_event(window: &AppWindow, state: &State, event: &WindowEvent) -> Event
         {
             Input::Escape
         }
-        WindowEvent::Focused(false) | WindowEvent::CursorLeft { .. } => Input::Lost,
+        // leaving the window does NOT stop it (owner, 2.1.1: it stopped when the cursor left Lag)
+        WindowEvent::Focused(false) => Input::Lost,
         _ => return EventResult::Propagate,
     };
     let (verdict, ui) = state.step(input, Instant::now(), || window.global::<AutoScroll>().get_owner_area() > 0.0);
@@ -170,6 +176,96 @@ pub fn on_event(window: &AppWindow, state: &State, event: &WindowEvent) -> Event
         Verdict::Pass => EventResult::Propagate,
         Verdict::Swallow => EventResult::PreventDefault,
     }
+}
+
+/// Scroll speed (px per ms) for a pointer `off` px below (+) / above (-) the press point: a 10 px dead zone, gentle
+/// near it, fast further away (~800 px/s at 100 px, ~5000 px/s at 400 px).
+pub fn speed(off: f32) -> f32 {
+    let d = (off.abs() - 10.0).max(0.0);
+    (d / 10.0 + d * d / 4000.0) / 16.0 * off.signum()
+}
+
+/// Frame timing of one autoscroll run, for the log.
+#[derive(Default)]
+struct Frames {
+    last: Option<Instant>,
+    gaps_ms: Vec<f32>,
+}
+
+/// Drives the scrolling from the main window's rendering: call once at start-up.
+pub fn install(ui: &AppWindow, state: std::rc::Rc<State>) {
+    let frames = std::cell::RefCell::new(Frames::default());
+    let weak = ui.as_weak();
+    let result = ui.window().set_rendering_notifier(move |rendering, _| {
+        let Some(ui) = weak.upgrade() else { return };
+        let g = ui.global::<AutoScroll>();
+        let mut f = frames.borrow_mut();
+        match rendering {
+            slint::RenderingState::BeforeRendering if g.get_active() => {
+                // the pointer from Windows: valid outside the window too
+                if let Some((x, y)) = cursor_in_window(&ui) {
+                    state.pointer.set((x, y));
+                    g.set_mouse_x(x);
+                    g.set_mouse_y(y);
+                }
+                let now = Instant::now();
+                if let Some(last) = f.last {
+                    let dt = now.duration_since(last).as_secs_f32() * 1000.0;
+                    f.gaps_ms.push(dt);
+                    let (_, oy) = state.origin.get();
+                    let step = speed(state.pointer.get().1 - oy) * dt.min(100.0);
+                    if step != 0.0 && g.get_owner_area() > 0.0 {
+                        g.set_pending(g.get_pending() + step);
+                    }
+                }
+                f.last = Some(now);
+            }
+            // keep frames coming while it runs (a still pointer outside the window sends no events)
+            slint::RenderingState::AfterRendering if g.get_active() => ui.window().request_redraw(),
+            slint::RenderingState::BeforeRendering | slint::RenderingState::AfterRendering if f.last.is_some() => {
+                log_run(&f.gaps_ms);
+                *f = Frames::default();
+            }
+            _ => {}
+        }
+    });
+    if let Err(e) = result {
+        log::warn!("[AutoScroll] no rendering notifier: {e:?}");
+    }
+}
+
+fn log_run(gaps: &[f32]) {
+    if gaps.len() < 2 {
+        return;
+    }
+    let mut sorted = gaps.to_vec();
+    sorted.sort_by(f32::total_cmp);
+    let avg = gaps.iter().sum::<f32>() / gaps.len() as f32;
+    let p95 = sorted[(sorted.len() * 95 / 100).min(sorted.len() - 1)];
+    let long = gaps.iter().filter(|g| **g > avg * 1.8).count();
+    log::info!(
+        "[AutoScroll] {} frames, avg {avg:.1} ms ({:.0} fps), p95 {p95:.1} ms, max {:.1} ms, {long} long gaps",
+        gaps.len(),
+        1000.0 / avg.max(0.01),
+        sorted[sorted.len() - 1]
+    );
+}
+
+/// The cursor in the window's logical coordinates (may be outside it).
+fn cursor_in_window(ui: &AppWindow) -> Option<(f32, f32)> {
+    use windows::Win32::Foundation::POINT;
+    use windows::Win32::Graphics::Gdi::ScreenToClient;
+    use windows::Win32::UI::WindowsAndMessaging::GetCursorPos;
+    let hwnd = crate::shell::nofocus::hwnd(ui.window())?;
+    let mut p = POINT::default();
+    unsafe {
+        GetCursorPos(&mut p).ok()?;
+        if !ScreenToClient(hwnd, &mut p).as_bool() {
+            return None;
+        }
+    }
+    let scale = ui.window().scale_factor().max(0.01);
+    Some((p.x as f32 / scale, p.y as f32 / scale))
 }
 
 #[cfg(test)]
@@ -221,6 +317,15 @@ mod tests {
         s.step(Input::MiddleDown, t0, || false);
         assert_eq!(s.step(Input::MiddleUp, at(100, t0), || false), (Verdict::Swallow, Ui::Stop));
         assert_eq!(s.step(Input::OtherDown, at(200, t0), || false), (Verdict::Pass, Ui::Nothing), "clicks are not eaten");
+    }
+
+    #[test]
+    fn speed_has_a_dead_zone_and_grows_with_distance() {
+        assert_eq!(speed(8.0), 0.0);
+        assert_eq!(speed(-8.0), 0.0);
+        assert!(speed(110.0) > 0.0 && speed(-110.0) < 0.0, "down / up");
+        assert!((speed(110.0) * 1000.0 - 781.0).abs() < 5.0, "~800 px/s at 100 px out");
+        assert!(speed(410.0) > 4.0 * speed(110.0));
     }
 
     #[test]

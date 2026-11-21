@@ -1,6 +1,6 @@
 # Custom interface (themes) — plan
 
-Status: PLAN + working spike (2026-11-22). Nothing user-visible yet.
+Status: PLAN + working spike (2026-11-22), owner's answers in §11. Next: phase 1.
 
 ## 1. What the owner wants
 "Let people change the interface completely: move everything (buttons, indicators), remove, add, make their own —
@@ -98,3 +98,14 @@ The Linux port benefits: the interpreter and the theme system are platform-indep
 3. Sharing: files only (import / export `.lagtheme`), or later a gallery inside Lag to browse and install themes?
 4. Should themes also restyle the separate windows (in-game HUD, toasts, tray menu, player fullscreen overlay)?
 5. Order: code + live reload first (fast, the editor builds on it), then the graphical editor — or editor first?
+
+## 11. Owner's answers (2026-11-22)
+1. A theme replaces **every** page.
+2. Yes: Dark / Light / System / GTA VI become variants of the built-in theme. And **System is the main theme now**,
+   GTA VI is no longer the default (done in 2.1.2: `SettingsData::introduce_system_theme`, once; users on GTA VI
+   because of 2.0's switch go to System, later choices stick).
+3. Sharing by **files only** for now (`.lagtheme`): there is no server or budget for a hosted gallery. Keep the
+   format ready for a gallery later (manifest has name / author / version / preview).
+4. **Yes**: themes restyle the separate windows too (in-game HUD, toasts, tray menu, fullscreen player overlay) —
+   moved from "later" into phase 3.
+5. **Code + live reload first**, the graphical editor after (phases as in §8).

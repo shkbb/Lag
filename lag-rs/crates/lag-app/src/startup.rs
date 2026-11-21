@@ -45,11 +45,11 @@ pub fn load_settings() -> SettingsData {
     let loaded = path.as_deref().and_then(|p| SettingsData::load(p).ok().flatten());
     let existed = loaded.is_some();
     let mut settings = loaded.unwrap_or_default();
-    // 2.0: GTA VI becomes the theme once, for new and updating users alike; any later choice sticks
-    if settings.introduce_gta_theme() && existed {
+    // 2.1.2: System becomes the main theme once (new users, and users 2.0 put on GTA VI); later choices stick
+    if settings.introduce_system_theme(!existed) && existed {
         if let Some(p) = path.as_deref() {
             if let Err(e) = settings.save(p) {
-                log::warn!("[Settings] could not save the GTA VI theme switch: {e}");
+                log::warn!("[Settings] could not save the System theme switch: {e}");
             }
         }
     }

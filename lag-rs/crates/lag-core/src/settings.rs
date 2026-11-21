@@ -262,6 +262,11 @@ pub struct SettingsData {
     /// switch, so a user who picks another theme keeps it.
     #[serde(default)]
     pub gta_theme_introduced: bool,
+    /// NEW in 2.1.2: "System" (follows Windows light / dark) is the main theme now (owner, 2026-11-22: "make GTA
+    /// not the main one, System becomes main"). Once: a user on the default or on GTA VI (switched there by 2.0)
+    /// goes to System; any later choice sticks.
+    #[serde(default)]
+    pub system_theme_introduced: bool,
 }
 
 fn d_game_focus() -> Option<String> {
@@ -277,6 +282,7 @@ pub const RUST_ONLY_KEYS: &[&str] = &[
     "WindowHeight",
     "WindowMaximized",
     "GtaThemeIntroduced",
+    "SystemThemeIntroduced",
 ];
 
 impl Default for SettingsData {
@@ -296,13 +302,19 @@ fn dirs_roaming_appdata() -> Option<PathBuf> {
 }
 
 impl SettingsData {
-    /// One time only (2.0): switches to the GTA VI theme ("neon"). Returns whether it changed anything.
-    pub fn introduce_gta_theme(&mut self) -> bool {
-        if self.gta_theme_introduced {
+    /// One time only (2.1.2): "System" becomes the theme for new users and for users on GTA VI (which 2.0 switched
+    /// everyone to); a user on Dark or Light keeps it. `fresh` = no settings file yet (the defaults say "dark", as in
+    /// C#). Returns whether it changed anything.
+    pub fn introduce_system_theme(&mut self, fresh: bool) -> bool {
+        if self.system_theme_introduced {
             return false;
         }
+        self.system_theme_introduced = true;
+        // 2.0's one-time GTA switch is over for good
         self.gta_theme_introduced = true;
-        self.theme = Some("neon".to_owned());
+        if fresh || matches!(self.theme.as_deref(), None | Some("") | Some("neon")) {
+            self.theme = Some("system".to_owned());
+        }
         true
     }
 
@@ -394,7 +406,7 @@ mod tests {
         assert!(j.contains("\"KeysY\": 1,\r\n"));
         assert!(j.contains("\"WebcamScale\": 0.19130434782608696,"));
         assert!(j.starts_with("{\r\n  \"BufferSeconds\": 0,\r\n"));
-        assert!(j.ends_with("\"FileFormat\": \"mp4\",\r\n  \"GameFocusMode\": \"game\",\r\n  \"SlowmoInterpolation\": true,\r\n  \"WebcamMode\": 0,\r\n  \"WindowWidth\": 0,\r\n  \"WindowHeight\": 0,\r\n  \"WindowMaximized\": false,\r\n  \"GtaThemeIntroduced\": false\r\n}"));
+        assert!(j.ends_with("\"FileFormat\": \"mp4\",\r\n  \"GameFocusMode\": \"game\",\r\n  \"SlowmoInterpolation\": true,\r\n  \"WebcamMode\": 0,\r\n  \"WindowWidth\": 0,\r\n  \"WindowHeight\": 0,\r\n  \"WindowMaximized\": false,\r\n  \"GtaThemeIntroduced\": false,\r\n  \"SystemThemeIntroduced\": false\r\n}"));
         assert!(j.contains("\"AudioApps\": [],"));
     }
 
@@ -431,13 +443,21 @@ mod tests {
     }
 
     #[test]
-    fn gta_theme_is_switched_on_once_then_left_to_the_user() {
-        let mut s = SettingsData::from_json(r#"{"Theme":"light"}"#).unwrap();
-        assert!(s.introduce_gta_theme());
-        assert_eq!(s.theme.as_deref(), Some("neon"));
-        s.theme = Some("dark".to_owned()); // the user switches back
+    fn system_theme_becomes_main_once_then_left_to_the_user() {
+        // new user, and a user 2.0 put on GTA VI: System
+        for (json, fresh) in [("{}", true), (r#"{"Theme":"neon","GtaThemeIntroduced":true}"#, false)] {
+            let mut s = SettingsData::from_json(json).unwrap();
+            assert!(s.introduce_system_theme(fresh));
+            assert_eq!(s.theme.as_deref(), Some("system"), "{json}");
+        }
+        // a user on Dark keeps it
+        let mut s = SettingsData::from_json(r#"{"Theme":"dark"}"#).unwrap();
+        assert!(s.introduce_system_theme(false));
+        assert_eq!(s.theme.as_deref(), Some("dark"));
+        // later picks GTA VI again: it sticks
+        s.theme = Some("neon".to_owned());
         let mut again = SettingsData::from_json(&s.to_json()).unwrap();
-        assert!(!again.introduce_gta_theme());
-        assert_eq!(again.theme.as_deref(), Some("dark"));
+        assert!(!again.introduce_system_theme(false));
+        assert_eq!(again.theme.as_deref(), Some("neon"));
     }
 }
