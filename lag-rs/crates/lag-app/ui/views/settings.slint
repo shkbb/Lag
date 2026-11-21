@@ -1,6 +1,6 @@
 // Mirrors Views/SettingsView.axaml(.cs), SettingsViewModel.cs and Controls/SegmentedListBox.cs.
 import { Theme } from "../theme/tokens.slint";
-import { Tr, MainVM } from "../globals.slint";
+import { Tr, MainVM, Page } from "../globals.slint";
 import { SegmentedControl } from "../components/segmented_control.slint";
 import { RCard, RGroupLabel, PresetCard, HintBanner, RDivider } from "../components/cards.slint";
 import { RChipButton } from "../components/buttons.slint";
@@ -58,6 +58,7 @@ export component SettingsPage inherits Rectangle {
     changed active-tab => { scroll.content-y = 0px; root.tab-start = animation-tick(); }
     scroll := LagScrollView {
         width: parent.width; height: parent.height;
+        live: MainVM.current-page == Page.settings;
         content-height: column.preferred-height + 34px;
         column := VerticalLayout {
             x: (scroll.width - 800px) / 2; y: 34px; width: 800px; height: self.preferred-height;

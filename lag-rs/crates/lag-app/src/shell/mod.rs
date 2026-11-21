@@ -3,6 +3,7 @@ use crate::app_ctx::AppCtx;
 use slint::ComponentHandle;
 use std::{cell::RefCell, rc::Rc};
 
+pub mod autoscroll;
 pub mod autostart;
 pub mod hotkeys;
 pub mod hud;

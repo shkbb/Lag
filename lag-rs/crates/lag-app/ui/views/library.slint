@@ -1,7 +1,7 @@
 // Library page (Views/LibraryView.axaml). Owned by the library work package (docs/AGENTS.md, docs/WORKPACKAGES.md).
 import { Theme } from "../theme/tokens.slint";
 import { Icons, MaterialIcon, LagLogoMark } from "../theme/icons.slint";
-import { Tr } from "../globals.slint";
+import { Tr, MainVM, Page } from "../globals.slint";
 import { RChipButton, GameChipButton, PressFx } from "../components/buttons.slint";
 import { LagSearchBox } from "../components/text_input.slint";
 import { RKbdChip } from "../components/badges.slint";
@@ -436,6 +436,7 @@ export component LibraryPage inherits Rectangle {
                     }
 
                     scroll-area := LagScrollView {
+                        live: MainVM.current-page == Page.library;
                         width: 100%;
                         height: 100%;
                         content-height: max(self.height, LibraryVM.total-content-height * 1px);

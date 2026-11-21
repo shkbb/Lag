@@ -144,6 +144,7 @@ export component PlayerPage inherits Rectangle {
         Text { x: 18px; y: 18px; text: Tr.t("Player_Replays", Tr.rev); color: Theme.text-faintest; font-family: Theme.font-mono; font-size: 11px; }
         Text { x: parent.width - self.width - 18px; y: 18px; text: "\{PlayerVM.clips.length}"; color: Theme.text-faintest; font-family: Theme.font-mono; font-size: 11px; }
         sidebar-scroll := LagScrollView {
+            live: root.active;
             x: 10px; y: 46px; width: parent.width - 20px; height: max(0px, parent.height - 176px);
             content-height: PlayerVM.clips.length * 54px;
             for clip[index] in PlayerVM.clips: Rectangle {

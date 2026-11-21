@@ -6,6 +6,7 @@ import { TbarAccentButton, TbarButton, WindowCtlButton, RailItemButton } from "c
 import { StatusPill, CaptureFlyoutCard } from "components/cards.slint";
 import { BufferProgressBar } from "components/meters_and_bars.slint";
 import { Tr, MainVM, Page, WindowMetrics } from "globals.slint";
+import { AutoScroll } from "components/scrollbar.slint";
 import { SettingsPage, SettingsVM } from "views/settings.slint";
 import { LibraryPage, LibraryVM } from "views/library.slint";
 import { PlayerPage, PlayerVM } from "views/player.slint";
@@ -16,7 +17,7 @@ import { PlayerOverlayWindow, PlayerOverlayVM } from "player_overlay.slint";
 import { EditorOverlayWindow, EditorOverlayVM } from "editor_overlay.slint";
 import { SplashWindow } from "splash.slint";
 import { TrayMenuWindow } from "tray_menu.slint";
-export { Tr, MainVM, Page, SettingsVM, LibraryVM, PlayerVM, EditorVM, ToastWindow, PlayerOverlayWindow, PlayerOverlayVM, EditorOverlayWindow, EditorOverlayVM, SplashWindow, TrayMenuWindow }
+export { AutoScroll, Tr, MainVM, Page, SettingsVM, LibraryVM, PlayerVM, EditorVM, ToastWindow, PlayerOverlayWindow, PlayerOverlayVM, EditorOverlayWindow, EditorOverlayVM, SplashWindow, TrayMenuWindow }
 
 component PageLayer inherits Rectangle {
     in property <bool> active;

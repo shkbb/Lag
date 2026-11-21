@@ -1,7 +1,7 @@
 // Ported from Views/EditorView.axaml:444-644
 import { Theme } from "../../theme/tokens.slint";
 import { Icons, MaterialIcon } from "../../theme/icons.slint";
-import { Tr } from "../../globals.slint";
+import { Tr, MainVM, Page } from "../../globals.slint";
 import { CtaButton, ChipButton, TransportButton } from "../buttons.slint";
 import { LagComboBox, ComboBoxItemData } from "../combobox.slint";
 import { SegmentedControl, SegmentedOption } from "../segmented_control.slint";
@@ -120,6 +120,7 @@ export component EditorToolsPanel {
                 // TAB 0 · CLIP
                 if root.selected-tab == 0: LagScrollView {
                     width: parent.width; height: parent.height;
+                    live: MainVM.current-page == Page.editor;
                     content-height: tab0-col.preferred-height;
                     tab0-col := VerticalLayout {
                         width: parent.width;
@@ -251,6 +252,7 @@ export component EditorToolsPanel {
                 // TAB 1 · FILTERS
                 if root.selected-tab == 1: LagScrollView {
                     width: parent.width; height: parent.height;
+                    live: MainVM.current-page == Page.editor;
                     content-height: tab1-col.preferred-height;
                     tab1-col := VerticalLayout {
                         width: parent.width;
@@ -412,6 +414,7 @@ export component EditorToolsPanel {
                 // TAB 2 · TEXT
                 if root.selected-tab == 2: LagScrollView {
                     width: parent.width; height: parent.height;
+                    live: MainVM.current-page == Page.editor;
                     content-height: tab2-col.preferred-height;
                     tab2-col := VerticalLayout {
                         width: parent.width;

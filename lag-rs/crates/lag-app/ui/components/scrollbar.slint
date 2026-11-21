@@ -1,9 +1,26 @@
 import { Theme } from "../theme/tokens.slint";
 
+// Middle-button autoscroll, as in a browser (owner, 2026-11-21: "hold the wheel and scroll fast in Settings").
+// Rust (shell/autoscroll.rs) sees the middle button at window level, before any button under the cursor, and
+// fills this global in window coordinates; the scroll view under the press point claims it and scrolls itself.
+export global AutoScroll {
+    in-out property <bool> active;
+    in-out property <length> origin-x;
+    in-out property <length> origin-y;
+    in-out property <length> mouse-x;
+    in-out property <length> mouse-y;
+    // the claiming view: the smallest live, scrollable one that contains the origin (0 = nobody yet)
+    in-out property <float> owner-area;
+    in-out property <length> owner-x;
+    in-out property <length> owner-y;
+}
+
 // Ported from DarkTheme.axaml:703-742 (ScrollViewer + custom slim 10px vertical ScrollBar)
 export component LagScrollView {
     in-out property <length> content-y <=> flick.content-y;
     in property <length> content-height <=> flick.content-height;
+    // false while the view is on a page that is not shown (pages stay alive under each other)
+    in property <bool> live: true;
 
     property <bool> scrollable: flick.content-height > flick.height;
     property <length> max-scroll: max(1px, flick.content-height - flick.height);
@@ -19,12 +36,43 @@ export component LagScrollView {
         max(0px, track-h - thumb-h)
     );
 
+    // --- autoscroll ---
+    property <bool> auto-started: AutoScroll.active;
+    property <float> my-area: (root.width / 1px) * (root.height / 1px);
+    property <bool> under-origin: AutoScroll.origin-x >= root.absolute-position.x
+        && AutoScroll.origin-x < root.absolute-position.x + root.width
+        && AutoScroll.origin-y >= root.absolute-position.y
+        && AutoScroll.origin-y < root.absolute-position.y + root.height;
+    property <bool> auto-mine: AutoScroll.active && AutoScroll.owner-area == root.my-area
+        && AutoScroll.owner-x == root.absolute-position.x && AutoScroll.owner-y == root.absolute-position.y;
+    // the pointer's distance from the press point, outside a small dead zone
+    property <length> auto-off: AutoScroll.mouse-y - AutoScroll.origin-y;
+    property <float> auto-d: max(0, abs(root.auto-off / 1px) - 10);
+    changed auto-started => {
+        if (root.auto-started && root.live && root.scrollable && root.under-origin
+            && (AutoScroll.owner-area == 0 || root.my-area < AutoScroll.owner-area)) {
+            AutoScroll.owner-area = root.my-area;
+            AutoScroll.owner-x = root.absolute-position.x;
+            AutoScroll.owner-y = root.absolute-position.y;
+        }
+    }
+
     flick := Flickable {
         width: parent.width;
         height: parent.height;
         interactive: true;
 
         @children
+    }
+
+    Timer {
+        interval: 16ms;
+        running: root.auto-mine && root.auto-d > 0;
+        triggered => {
+            // gentle near the press point, fast further away: ~600 px/s at 100 px, ~5000 px/s at 400 px
+            let step = (root.auto-d / 10 + root.auto-d * root.auto-d / 4000) * 1px;
+            flick.content-y = clamp(flick.content-y - (root.auto-off > 0 ? step : -step), -root.max-scroll, 0px);
+        }
     }
 
     // Slim 10px scrollbar overlay on the right edge; 6px thumb invisible at rest,
@@ -45,7 +93,7 @@ export component LagScrollView {
             width: Theme.scrollbar-thumb-width;
             height: root.thumb-h;
             border-radius: Theme.rad-scroll-thumb;
-            background: sb-ta.pressed
+            background: sb-ta.pressed || root.auto-mine
                 ? Theme.scroll-thumb-pressed-brush
                 : (sb-ta.has-hover ? Theme.scroll-thumb-brush : transparent);
             animate background { duration: Theme.dur-base; }
@@ -66,6 +114,32 @@ export component LagScrollView {
                     flick.content-y = clamp(parent.drag-start-scroll-y - scroll-delta, -root.max-scroll, 0px);
                 }
             }
+        }
+    }
+
+    // the browser's autoscroll mark at the press point: a round badge with an up and a down arrow
+    if root.auto-mine: Rectangle {
+        x: AutoScroll.origin-x - root.absolute-position.x - self.width / 2;
+        y: AutoScroll.origin-y - root.absolute-position.y - self.height / 2;
+        width: 30px;
+        height: 30px;
+        border-radius: self.width / 2;
+        background: Theme.surface-card;
+        border-width: 1px;
+        border-color: Theme.border-strong;
+        drop-shadow-blur: 8px;
+        drop-shadow-color: #00000055;
+
+        Path {
+            x: 0px;
+            y: 0px;
+            width: parent.width;
+            height: parent.height;
+            viewbox-width: 30;
+            viewbox-height: 30;
+            fill: Theme.text-primary-brush;
+            // up arrow, dot, down arrow
+            commands: "M 15 6 L 20 11.5 L 10 11.5 Z M 15 13.2 A 1.8 1.8 0 1 1 15 16.8 A 1.8 1.8 0 1 1 15 13.2 Z M 15 24 L 20 18.5 L 10 18.5 Z";
         }
     }
 }
