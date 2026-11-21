@@ -52,3 +52,7 @@ release-publish-rs/
 
 # Google / cloud OAuth client of the owner (read at build time; never committed)
 lag-rs/cloud-secrets.env
+
+# local test / per-version packaging folders (lag-rs/tools/package.ps1 -Out ...)
+release-publish-rs-*/
+lag-test-*/
