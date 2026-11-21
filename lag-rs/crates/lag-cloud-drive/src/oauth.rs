@@ -248,8 +248,28 @@ fn net(e: std::io::Error) -> SignInError {
     SignInError::Network(e.to_string())
 }
 
-fn json_get(http: &dyn HttpClient, request: Request) -> Result<serde_json::Value, SignInError> {
-    let (response, body) = send_collect(http, request).map_err(net)?;
+/// Pauses before each retry of a busy answer (none in tests).
+#[cfg(not(test))]
+const BUSY_PAUSES_MS: [u64; 4] = [1_000, 2_000, 4_000, 8_000];
+#[cfg(test)]
+const BUSY_PAUSES_MS: [u64; 4] = [0; 4];
+
+/// Sends a sign-in request, again after a pause while the provider answers "busy" (429 / 5xx). Dropbox does
+/// this on a first sign-in while it creates the app folder ("Concurrency limit exceeded - fs_mount_transition").
+fn send_patient<'a>(http: &dyn HttpClient, build: &dyn Fn() -> Request<'a>) -> Result<(crate::http::Response, Vec<u8>), SignInError> {
+    let mut pauses = BUSY_PAUSES_MS.iter();
+    loop {
+        let (response, body) = send_collect(http, build()).map_err(net)?;
+        let busy = response.status == 429 || response.status >= 500;
+        match pauses.next() {
+            Some(&ms) if busy => std::thread::sleep(std::time::Duration::from_millis(ms)),
+            _ => return Ok((response, body)),
+        }
+    }
+}
+
+fn json_get(http: &dyn HttpClient, build: &dyn Fn() -> Request<'static>) -> Result<serde_json::Value, SignInError> {
+    let (response, body) = send_patient(http, build)?;
     if !response.ok() {
         return Err(SignInError::Google(provider_error(&body)));
     }
@@ -257,22 +277,23 @@ fn json_get(http: &dyn HttpClient, request: Request) -> Result<serde_json::Value
 }
 
 fn google_identity(http: &dyn HttpClient, access: &str) -> Result<(String, String), SignInError> {
-    let v = json_get(http, Request::new(Method::Get, USERINFO_URL).bearer(access))?;
+    let v = json_get(http, &|| Request::new(Method::Get, USERINFO_URL).bearer(access))?;
     let sub = v["sub"].as_str().ok_or_else(|| SignInError::Google("no user id".into()))?.to_owned();
     Ok((sub, v["email"].as_str().unwrap_or_default().to_owned()))
 }
 
 fn dropbox_identity(http: &dyn HttpClient, access: &str) -> Result<(String, String), SignInError> {
-    let request = Request::new(Method::Post, "https://api.dropboxapi.com/2/users/get_current_account")
-        .bearer(access)
-        .bytes("application/json", b"null".to_vec());
-    let v = json_get(http, request)?;
+    let v = json_get(http, &|| {
+        Request::new(Method::Post, "https://api.dropboxapi.com/2/users/get_current_account")
+            .bearer(access)
+            .bytes("application/json", b"null".to_vec())
+    })?;
     let id = v["account_id"].as_str().ok_or_else(|| SignInError::Google("no account id".into()))?.to_owned();
     Ok((id, v["email"].as_str().unwrap_or_default().to_owned()))
 }
 
 fn microsoft_identity(http: &dyn HttpClient, access: &str) -> Result<(String, String), SignInError> {
-    let v = json_get(http, Request::new(Method::Get, "https://graph.microsoft.com/v1.0/me").bearer(access))?;
+    let v = json_get(http, &|| Request::new(Method::Get, "https://graph.microsoft.com/v1.0/me").bearer(access))?;
     let id = v["id"].as_str().ok_or_else(|| SignInError::Google("no user id".into()))?.to_owned();
     let name = v["mail"].as_str().or_else(|| v["userPrincipalName"].as_str()).unwrap_or_default().to_owned();
     Ok((id, name))
@@ -302,7 +323,7 @@ pub fn exchange_code_for(
         ("code_verifier", pkce.verifier.as_str()),
     ];
     client_pairs(client, &mut pairs);
-    let (response, body) = send_collect(http, Request::new(Method::Post, service.token_url).form(&pairs)).map_err(net)?;
+    let (response, body) = send_patient(http, &|| Request::new(Method::Post, service.token_url).form(&pairs))?;
     if !response.ok() {
         return Err(SignInError::Google(provider_error(&body)));
     }
@@ -625,6 +646,37 @@ mod tests {
         });
         let tokens = exchange_code_for(&MICROSOFT, &http, &public, "c", "http://localhost:1", &Pkce::new()).unwrap();
         assert_eq!((tokens.sub.as_str(), tokens.email.as_str()), ("ms-7", "me@outlook.com"));
+        assert_eq!(http.remaining(), 0);
+    }
+
+    #[test]
+    fn a_busy_provider_is_asked_again_then_given_up_on() {
+        // Dropbox's first sign-in (2026-11-21, live): the token call answered "Concurrency limit exceeded -
+        // fs_mount_transition" while it made the app folder
+        let public = ClientConfig { id: "app-key".into(), secret: String::new() };
+        let http = FakeHttp::default();
+        let busy = || (429, vec![], b"Request has been rate limited! Concurrency limit exceeded - fs_mount_transition".to_vec());
+        http.expect(move |_| busy());
+        http.expect(|_| (503, vec![], b"unavailable".to_vec()));
+        http.expect(|_| (200, vec![], br#"{"access_token":"at","expires_in":14400,"refresh_token":"rt"}"#.to_vec()));
+        http.expect(move |_| busy());
+        http.expect(|_| (200, vec![], br#"{"account_id":"dbid:42","email":"me@example.com"}"#.to_vec()));
+        let tokens = exchange_code_for(&DROPBOX, &http, &public, "c", "http://localhost:53982", &Pkce::new()).unwrap();
+        assert_eq!(tokens.sub, "dbid:42");
+        assert_eq!(http.remaining(), 0);
+
+        // busy every time: five tries, then the provider's own words
+        for _ in 0..5 {
+            http.expect(move |_| busy());
+        }
+        let e = exchange_code_for(&DROPBOX, &http, &public, "c", "http://localhost:53982", &Pkce::new()).unwrap_err();
+        assert!(e.to_string().contains("rate limited"), "{e}");
+        assert_eq!(http.remaining(), 0);
+
+        // a real refusal is not retried
+        http.expect(|_| (400, vec![], br#"{"error":"invalid_grant","error_description":"code expired"}"#.to_vec()));
+        let e = exchange_code_for(&DROPBOX, &http, &public, "c", "http://localhost:53982", &Pkce::new()).unwrap_err();
+        assert!(e.to_string().contains("invalid_grant"), "{e}");
         assert_eq!(http.remaining(), 0);
     }
 }
