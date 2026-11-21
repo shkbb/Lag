@@ -35,6 +35,50 @@ pub(super) fn browse_folder(current: &str) -> Option<String> {
         result
     }
 }
+/// System Open (`save` = None) or Save As (`save` = Some(default file name)) dialog for one `.lagtheme` file.
+/// None = cancelled.
+pub(super) fn pick_theme_file(save: Option<&str>) -> Option<String> {
+    use windows::{
+        core::{Interface, PCWSTR},
+        Win32::{System::Com::*, UI::Shell::Common::COMDLG_FILTERSPEC, UI::Shell::*},
+    };
+    unsafe {
+        CoInitializeEx(None, COINIT_APARTMENTTHREADED).ok().ok()?;
+        struct Apartment;
+        impl Drop for Apartment {
+            fn drop(&mut self) {
+                unsafe { CoUninitialize() };
+            }
+        }
+        let _com = Apartment;
+        let wide = |s: &str| s.encode_utf16().chain(Some(0)).collect::<Vec<u16>>();
+        let (name, pattern) = (wide(&tr("Theme_FileFilter")), wide("*.lagtheme"));
+        let spec = [COMDLG_FILTERSPEC { pszName: PCWSTR(name.as_ptr()), pszSpec: PCWSTR(pattern.as_ptr()) }];
+        let dialog: IFileDialog = match save {
+            Some(default) => {
+                let d: IFileSaveDialog = CoCreateInstance(&FileSaveDialog, None, CLSCTX_INPROC_SERVER).ok()?;
+                let file = wide(default);
+                let _ = d.SetFileName(PCWSTR(file.as_ptr()));
+                let ext = wide("lagtheme");
+                let _ = d.SetDefaultExtension(PCWSTR(ext.as_ptr()));
+                d.cast().ok()?
+            }
+            None => {
+                let d: IFileOpenDialog = CoCreateInstance(&FileOpenDialog, None, CLSCTX_INPROC_SERVER).ok()?;
+                let _ = d.SetOptions(FOS_FORCEFILESYSTEM | FOS_FILEMUSTEXIST | FOS_PATHMUSTEXIST | FOS_NOCHANGEDIR);
+                d.cast().ok()?
+            }
+        };
+        let _ = dialog.SetFileTypes(&spec);
+        dialog.Show(None).ok()?;
+        let item = dialog.GetResult().ok()?;
+        let path = item.GetDisplayName(SIGDN_FILESYSPATH).ok()?;
+        let result = path.to_string().ok();
+        CoTaskMemFree(Some(path.0.cast()));
+        result
+    }
+}
+
 pub(super) fn open_in_explorer(path: &Path, select: bool) {
     use std::os::windows::process::CommandExt;
     let mut command = std::process::Command::new("explorer.exe");

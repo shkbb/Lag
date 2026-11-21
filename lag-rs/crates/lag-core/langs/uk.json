@@ -344,5 +344,19 @@
   "Cloud_Error_Folder": "Lag не може писати в цю папку. Виберіть іншу або перевірте права доступу.",
   "Cloud_Error_WebDavUrl": "Адреса має починатися з https:// (або http://).",
   "Cloud_Error_WebDavLogin": "Невірний логін або пароль.",
-  "Cloud_Error_WebDavServer": "Сервер не відповів як WebDAV. Перевірте адресу."
+  "Cloud_Error_WebDavServer": "Сервер не відповів як WebDAV. Перевірте адресу.",
+  "Settings_UiTheme": "Інтерфейс",
+  "Settings_UiTheme_Desc": "Тема може змінити весь вигляд і розташування Lag",
+  "Settings_UiTheme_Restart": "Перезапустіть Lag, щоб застосувати новий інтерфейс",
+  "Theme_Builtin": "Lag (вбудований)",
+  "Theme_Import": "Імпортувати…",
+  "Theme_Export": "Експортувати…",
+  "Theme_OpenFolder": "Папка тем",
+  "Theme_Restart": "Перезапустити",
+  "Theme_Imported": "Тему «{0}» встановлено",
+  "Theme_Exported": "Збережено: {0}",
+  "Theme_Failed": "Тема не завантажилась, працює вбудована: {0}",
+  "Theme_ImportFailed": "Не вдалося імпортувати: {0}",
+  "Theme_FileFilter": "Тема Lag",
+  "Tray_DefaultUi": "Стандартний інтерфейс Lag"
 }

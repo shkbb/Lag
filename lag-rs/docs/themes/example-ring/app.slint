@@ -1,0 +1,61 @@
+// Example theme (docs/spec/themes.md): nothing in common with Lag's own layout - a replay-buffer ring and a
+// sticker-shaped Save button - driven by the same API (@lag/api.slint). Install: copy this folder into
+// %APPDATA%\Lag\themes\, or pack it as a .lagtheme and use Settings > General > Interface > Import.
+import { MainVM, Tr } from "@lag/api.slint";
+
+export component AppWindow inherits Window {
+    width: 900px;
+    height: 560px;
+    background: #0B0F14;
+
+    // a big ring: the replay buffer filling up
+    property <float> fill: MainVM.buffer-fill-percent / 100;
+    Rectangle {
+        x: 60px; y: 80px; width: 360px; height: 360px;
+        border-radius: self.width / 2;
+        border-width: 18px;
+        border-color: #1E2A36;
+    }
+    Path {
+        x: 60px; y: 80px; width: 360px; height: 360px;
+        viewbox-width: 360; viewbox-height: 360;
+        stroke: MainVM.is-recording ? #7CFFB2 : #FF5C8A;
+        stroke-width: 18px;
+        MoveTo { x: 180; y: 9; }
+        ArcTo {
+            x: 180 + 171 * sin(360deg * min(0.999, root.fill));
+            y: 180 - 171 * cos(360deg * min(0.999, root.fill));
+            radius-x: 171; radius-y: 171;
+            large-arc: root.fill > 0.5; sweep: true;
+        }
+    }
+    Text {
+        x: 60px; y: 220px; width: 360px;
+        horizontal-alignment: center;
+        text: MainVM.buffer-status;
+        font-size: 64px; font-weight: 800; color: #E8F0F8;
+    }
+    Text {
+        x: 60px; y: 300px; width: 360px;
+        horizontal-alignment: center;
+        text: MainVM.is-recording ? "● REC  " + MainVM.capture-target-name : "idle";
+        font-size: 18px; color: MainVM.is-recording ? #7CFFB2 : #8899AA;
+    }
+
+    // a tilted sticker-style button: any shape, any place
+    save := Rectangle {
+        x: 500px; y: 190px; width: 320px; height: 120px;
+        border-top-left-radius: 60px; border-top-right-radius: 8px;
+        border-bottom-right-radius: 60px; border-bottom-left-radius: 8px;
+        background: touch.pressed ? #FFD84D : #FFC300;
+        drop-shadow-blur: 30px; drop-shadow-color: #FFC30066;
+        Text { text: Tr.t("Btn_SaveReplay", Tr.rev); font-size: 30px; font-weight: 900; color: #101010; }
+        touch := TouchArea { clicked => { MainVM.save-replay(); } }
+    }
+    Text {
+        x: 500px; y: 330px; width: 320px;
+        horizontal-alignment: center;
+        text: MainVM.status-text;
+        font-size: 16px; color: #8899AA;
+    }
+}

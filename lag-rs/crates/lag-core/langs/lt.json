@@ -344,5 +344,19 @@
   "Cloud_Error_Folder": "Lag negali rašyti į šį aplanką. Pasirinkite kitą arba patikrinkite teises.",
   "Cloud_Error_WebDavUrl": "Adresas turi prasidėti https:// (arba http://).",
   "Cloud_Error_WebDavLogin": "Neteisingas prisijungimo vardas arba slaptažodis.",
-  "Cloud_Error_WebDavServer": "Serveris neatsakė kaip WebDAV. Patikrinkite adresą."
+  "Cloud_Error_WebDavServer": "Serveris neatsakė kaip WebDAV. Patikrinkite adresą.",
+  "Settings_UiTheme": "Sąsaja",
+  "Settings_UiTheme_Desc": "Tema gali pakeisti visą Lag išvaizdą ir išdėstymą",
+  "Settings_UiTheme_Restart": "Paleiskite Lag iš naujo, kad būtų pritaikyta nauja sąsaja",
+  "Theme_Builtin": "Lag (įtaisyta)",
+  "Theme_Import": "Importuoti…",
+  "Theme_Export": "Eksportuoti…",
+  "Theme_OpenFolder": "Temų aplankas",
+  "Theme_Restart": "Paleisti iš naujo",
+  "Theme_Imported": "Tema „{0}“ įdiegta",
+  "Theme_Exported": "Išsaugota: {0}",
+  "Theme_Failed": "Tema neįkelta, naudojama Lag tema: {0}",
+  "Theme_ImportFailed": "Nepavyko importuoti: {0}",
+  "Theme_FileFilter": "Lag tema",
+  "Tray_DefaultUi": "Įprasta Lag sąsaja"
 }

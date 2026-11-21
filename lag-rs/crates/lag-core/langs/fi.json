@@ -344,5 +344,19 @@
   "Cloud_Error_Folder": "Lag ei voi kirjoittaa tähän kansioon. Valitse toinen tai tarkista oikeudet.",
   "Cloud_Error_WebDavUrl": "Osoitteen täytyy alkaa https:// (tai http://).",
   "Cloud_Error_WebDavLogin": "Väärä käyttäjätunnus tai salasana.",
-  "Cloud_Error_WebDavServer": "Palvelin ei vastannut WebDAV-palvelimena. Tarkista osoite."
+  "Cloud_Error_WebDavServer": "Palvelin ei vastannut WebDAV-palvelimena. Tarkista osoite.",
+  "Settings_UiTheme": "Käyttöliittymä",
+  "Settings_UiTheme_Desc": "Teema voi muuttaa Lagin koko ulkoasun ja asettelun",
+  "Settings_UiTheme_Restart": "Käynnistä Lag uudelleen ottaaksesi uuden käyttöliittymän käyttöön",
+  "Theme_Builtin": "Lag (sisäänrakennettu)",
+  "Theme_Import": "Tuo…",
+  "Theme_Export": "Vie…",
+  "Theme_OpenFolder": "Teemakansio",
+  "Theme_Restart": "Käynnistä uudelleen",
+  "Theme_Imported": "Teema ”{0}” asennettu",
+  "Theme_Exported": "Tallennettu: {0}",
+  "Theme_Failed": "Teema ei latautunut, käytössä on Lagin oma: {0}",
+  "Theme_ImportFailed": "Tuonti epäonnistui: {0}",
+  "Theme_FileFilter": "Lag-teema",
+  "Tray_DefaultUi": "Lagin oma käyttöliittymä"
 }

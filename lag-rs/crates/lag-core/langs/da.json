@@ -344,5 +344,19 @@
   "Cloud_Error_Folder": "Lag kan ikke skrive til denne mappe. Vælg en anden, eller tjek tilladelserne.",
   "Cloud_Error_WebDavUrl": "Adressen skal starte med https:// (eller http://).",
   "Cloud_Error_WebDavLogin": "Forkert brugernavn eller adgangskode.",
-  "Cloud_Error_WebDavServer": "Serveren svarede ikke som WebDAV. Tjek adressen."
+  "Cloud_Error_WebDavServer": "Serveren svarede ikke som WebDAV. Tjek adressen.",
+  "Settings_UiTheme": "Brugerflade",
+  "Settings_UiTheme_Desc": "Et tema kan ændre hele Lags udseende og layout",
+  "Settings_UiTheme_Restart": "Genstart Lag for at bruge den nye brugerflade",
+  "Theme_Builtin": "Lag (indbygget)",
+  "Theme_Import": "Importér…",
+  "Theme_Export": "Eksportér…",
+  "Theme_OpenFolder": "Temamappe",
+  "Theme_Restart": "Genstart",
+  "Theme_Imported": "Temaet “{0}” er installeret",
+  "Theme_Exported": "Gemt: {0}",
+  "Theme_Failed": "Temaet kunne ikke indlæses, Lags eget bruges: {0}",
+  "Theme_ImportFailed": "Kunne ikke importere: {0}",
+  "Theme_FileFilter": "Lag-tema",
+  "Tray_DefaultUi": "Lags egen brugerflade"
 }

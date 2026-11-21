@@ -204,9 +204,9 @@ fn spin_on<F: std::future::Future>(f: F) -> F::Output {
     }
 }
 
-/// Compiles a UI (Lag's own, or a theme's entry file) and makes its windows available to `new()`.
-/// `api` = the folder `@lag/...` imports resolve to. Returns the error text (file:line: message) on failure.
-pub fn load(entry: &Path, api: &Path) -> Result<(), String> {
+/// Compiles a `.slint` entry file; `api` = the folder `@lag/...` imports resolve to. The error text is
+/// "file:line: message" lines.
+pub fn compile(entry: &Path, api: &Path) -> Result<Vec<ComponentDefinition>, String> {
     let mut c = slint_interpreter::Compiler::default();
     c.set_library_paths([("lag".to_string(), api.to_path_buf())].into_iter().collect());
     let result = spin_on(c.build_from_path(entry));
@@ -218,12 +218,29 @@ pub fn load(entry: &Path, api: &Path) -> Result<(), String> {
     if !errors.is_empty() {
         return Err(errors.join("\n"));
     }
+    Ok(result.components().collect())
+}
+
+/// Compiles a UI and makes its windows available to `new()`, replacing everything loaded before.
+pub fn load(entry: &Path, api: &Path) -> Result<(), String> {
+    let defs = compile(entry, api)?;
+    DEFINITIONS.with(|d| d.borrow_mut().clear());
+    install(defs);
+    Ok(())
+}
+
+/// Makes these windows available to `new()`, replacing same-named ones (a theme over Lag's own UI: a window the
+/// theme does not draw stays Lag's).
+pub fn install(defs: Vec<ComponentDefinition>) {
     DEFINITIONS.with(|d| {
         let mut d = d.borrow_mut();
-        d.clear();
-        for c in result.components() {
+        for c in defs {
             d.insert(c.name().to_owned(), c);
         }
     });
-    Ok(())
+}
+
+/// The windows loaded now.
+pub fn loaded() -> Vec<String> {
+    DEFINITIONS.with(|d| d.borrow().keys().cloned().collect())
 }

@@ -40,6 +40,18 @@ pub fn acquire_single_instance() -> Option<SingleInstance> {
     }
 }
 
+/// Like `acquire_single_instance`, but with `wait` keeps trying for up to 10 s (a restart: the old Lag is still
+/// shutting down).
+pub fn acquire_single_instance_waiting(wait: bool) -> Option<SingleInstance> {
+    for _ in 0..if wait { 50 } else { 1 } {
+        if let Some(i) = acquire_single_instance() {
+            return Some(i);
+        }
+        std::thread::sleep(std::time::Duration::from_millis(200));
+    }
+    None
+}
+
 pub fn load_settings() -> SettingsData {
     let path = lag_core::settings::default_path();
     let loaded = path.as_deref().and_then(|p| SettingsData::load(p).ok().flatten());

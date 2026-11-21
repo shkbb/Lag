@@ -344,5 +344,19 @@
   "Cloud_Error_Folder": "Lag kan ikke skrive til denne mappen. Velg en annen eller sjekk tilgangene.",
   "Cloud_Error_WebDavUrl": "Adressen må begynne med https:// (eller http://).",
   "Cloud_Error_WebDavLogin": "Feil brukernavn eller passord.",
-  "Cloud_Error_WebDavServer": "Serveren svarte ikke som WebDAV. Sjekk adressen."
+  "Cloud_Error_WebDavServer": "Serveren svarte ikke som WebDAV. Sjekk adressen.",
+  "Settings_UiTheme": "Grensesnitt",
+  "Settings_UiTheme_Desc": "Et tema kan endre hele utseendet og oppsettet til Lag",
+  "Settings_UiTheme_Restart": "Start Lag på nytt for å bruke det nye grensesnittet",
+  "Theme_Builtin": "Lag (innebygd)",
+  "Theme_Import": "Importer…",
+  "Theme_Export": "Eksporter…",
+  "Theme_OpenFolder": "Temamappe",
+  "Theme_Restart": "Start på nytt",
+  "Theme_Imported": "Temaet «{0}» er installert",
+  "Theme_Exported": "Lagret: {0}",
+  "Theme_Failed": "Temaet ble ikke lastet, Lags eget brukes: {0}",
+  "Theme_ImportFailed": "Kunne ikke importere: {0}",
+  "Theme_FileFilter": "Lag-tema",
+  "Tray_DefaultUi": "Lags eget grensesnitt"
 }

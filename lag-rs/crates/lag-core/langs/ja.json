@@ -344,5 +344,19 @@
   "Cloud_Error_Folder": "このフォルダーに書き込めません。別のフォルダーを選ぶか、アクセス権を確認してください。",
   "Cloud_Error_WebDavUrl": "アドレスは https://（または http://）で始めてください。",
   "Cloud_Error_WebDavLogin": "ログイン名またはパスワードが違います。",
-  "Cloud_Error_WebDavServer": "サーバーが WebDAV として応答しませんでした。アドレスを確認してください。"
+  "Cloud_Error_WebDavServer": "サーバーが WebDAV として応答しませんでした。アドレスを確認してください。",
+  "Settings_UiTheme": "インターフェイス",
+  "Settings_UiTheme_Desc": "テーマで Lag の見た目と配置をすべて変えられます",
+  "Settings_UiTheme_Restart": "新しいインターフェイスを使うには Lag を再起動してください",
+  "Theme_Builtin": "Lag (内蔵)",
+  "Theme_Import": "インポート…",
+  "Theme_Export": "エクスポート…",
+  "Theme_OpenFolder": "テーマフォルダー",
+  "Theme_Restart": "再起動",
+  "Theme_Imported": "テーマ「{0}」をインストールしました",
+  "Theme_Exported": "保存しました: {0}",
+  "Theme_Failed": "テーマを読み込めなかったため、内蔵のものを使っています: {0}",
+  "Theme_ImportFailed": "インポートできませんでした: {0}",
+  "Theme_FileFilter": "Lag テーマ",
+  "Tray_DefaultUi": "Lag 標準のインターフェイス"
 }

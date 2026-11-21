@@ -344,5 +344,19 @@
   "Cloud_Error_Folder": "Lag ei saa sellesse kausta kirjutada. Vali teine kaust või kontrolli õigusi.",
   "Cloud_Error_WebDavUrl": "Aadress peab algama https:// (või http://).",
   "Cloud_Error_WebDavLogin": "Vale kasutajanimi või parool.",
-  "Cloud_Error_WebDavServer": "Server ei vastanud WebDAV-ina. Kontrolli aadressi."
+  "Cloud_Error_WebDavServer": "Server ei vastanud WebDAV-ina. Kontrolli aadressi.",
+  "Settings_UiTheme": "Liides",
+  "Settings_UiTheme_Desc": "Teema võib muuta kogu Lagi välimust ja paigutust",
+  "Settings_UiTheme_Restart": "Uue liidese kasutamiseks taaskäivita Lag",
+  "Theme_Builtin": "Lag (sisseehitatud)",
+  "Theme_Import": "Impordi…",
+  "Theme_Export": "Ekspordi…",
+  "Theme_OpenFolder": "Teemade kaust",
+  "Theme_Restart": "Taaskäivita",
+  "Theme_Imported": "Teema „{0}“ paigaldatud",
+  "Theme_Exported": "Salvestatud: {0}",
+  "Theme_Failed": "Teema ei laadinud, kasutusel on Lagi oma: {0}",
+  "Theme_ImportFailed": "Importimine ebaõnnestus: {0}",
+  "Theme_FileFilter": "Lagi teema",
+  "Tray_DefaultUi": "Lagi oma liides"
 }

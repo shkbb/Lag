@@ -344,5 +344,19 @@
   "Cloud_Error_Folder": "Lag kann nicht in diesen Ordner schreiben. Wähle einen anderen oder prüfe die Berechtigungen.",
   "Cloud_Error_WebDavUrl": "Die Adresse muss mit https:// (oder http://) beginnen.",
   "Cloud_Error_WebDavLogin": "Falscher Benutzername oder falsches Passwort.",
-  "Cloud_Error_WebDavServer": "Der Server hat nicht als WebDAV geantwortet. Prüfe die Adresse."
+  "Cloud_Error_WebDavServer": "Der Server hat nicht als WebDAV geantwortet. Prüfe die Adresse.",
+  "Settings_UiTheme": "Oberfläche",
+  "Settings_UiTheme_Desc": "Ein Theme kann das gesamte Aussehen und Layout von Lag ändern",
+  "Settings_UiTheme_Restart": "Starte Lag neu, um die neue Oberfläche zu verwenden",
+  "Theme_Builtin": "Lag (integriert)",
+  "Theme_Import": "Importieren…",
+  "Theme_Export": "Exportieren…",
+  "Theme_OpenFolder": "Theme-Ordner",
+  "Theme_Restart": "Neu starten",
+  "Theme_Imported": "Theme „{0}“ installiert",
+  "Theme_Exported": "Gespeichert: {0}",
+  "Theme_Failed": "Das Theme wurde nicht geladen, Lags eigenes wird verwendet: {0}",
+  "Theme_ImportFailed": "Import fehlgeschlagen: {0}",
+  "Theme_FileFilter": "Lag-Theme",
+  "Tray_DefaultUi": "Lags eigene Oberfläche"
 }

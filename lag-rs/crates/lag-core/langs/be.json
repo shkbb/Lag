@@ -344,5 +344,19 @@
   "Cloud_Error_Folder": "Lag не можа пісаць у гэтую папку. Выберыце іншую або праверце правы доступу.",
   "Cloud_Error_WebDavUrl": "Адрас мусіць пачынацца з https:// (або http://).",
   "Cloud_Error_WebDavLogin": "Няправільны лагін або пароль.",
-  "Cloud_Error_WebDavServer": "Сервер не адказаў як WebDAV. Праверце адрас."
+  "Cloud_Error_WebDavServer": "Сервер не адказаў як WebDAV. Праверце адрас.",
+  "Settings_UiTheme": "Інтэрфейс",
+  "Settings_UiTheme_Desc": "Тэма можа змяніць увесь выгляд і размяшчэнне Lag",
+  "Settings_UiTheme_Restart": "Перазапусціце Lag, каб ужыць новы інтэрфейс",
+  "Theme_Builtin": "Lag (убудаваны)",
+  "Theme_Import": "Імпартаваць…",
+  "Theme_Export": "Экспартаваць…",
+  "Theme_OpenFolder": "Папка тэм",
+  "Theme_Restart": "Перазапусціць",
+  "Theme_Imported": "Тэму «{0}» усталявана",
+  "Theme_Exported": "Захавана: {0}",
+  "Theme_Failed": "Тэма не загрузілася, працуе ўбудаваная: {0}",
+  "Theme_ImportFailed": "Не ўдалося імпартаваць: {0}",
+  "Theme_FileFilter": "Тэма Lag",
+  "Tray_DefaultUi": "Стандартны інтэрфейс Lag"
 }

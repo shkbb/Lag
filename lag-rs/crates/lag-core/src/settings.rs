@@ -267,6 +267,10 @@ pub struct SettingsData {
     /// goes to System; any later choice sticks.
     #[serde(default)]
     pub system_theme_introduced: bool,
+    /// NEW in 2.2: the interface theme (a folder in `%APPDATA%\Lag\themes`, docs/spec/themes.md); None / "lag" =
+    /// Lag's own. `theme` above stays the colour variant of Lag's own theme (dark / light / system / GTA VI).
+    #[serde(default)]
+    pub ui_theme: Option<String>,
 }
 
 fn d_game_focus() -> Option<String> {
@@ -283,6 +287,7 @@ pub const RUST_ONLY_KEYS: &[&str] = &[
     "WindowMaximized",
     "GtaThemeIntroduced",
     "SystemThemeIntroduced",
+    "UiTheme",
 ];
 
 impl Default for SettingsData {
@@ -406,7 +411,7 @@ mod tests {
         assert!(j.contains("\"KeysY\": 1,\r\n"));
         assert!(j.contains("\"WebcamScale\": 0.19130434782608696,"));
         assert!(j.starts_with("{\r\n  \"BufferSeconds\": 0,\r\n"));
-        assert!(j.ends_with("\"FileFormat\": \"mp4\",\r\n  \"GameFocusMode\": \"game\",\r\n  \"SlowmoInterpolation\": true,\r\n  \"WebcamMode\": 0,\r\n  \"WindowWidth\": 0,\r\n  \"WindowHeight\": 0,\r\n  \"WindowMaximized\": false,\r\n  \"GtaThemeIntroduced\": false,\r\n  \"SystemThemeIntroduced\": false\r\n}"));
+        assert!(j.ends_with("\"FileFormat\": \"mp4\",\r\n  \"GameFocusMode\": \"game\",\r\n  \"SlowmoInterpolation\": true,\r\n  \"WebcamMode\": 0,\r\n  \"WindowWidth\": 0,\r\n  \"WindowHeight\": 0,\r\n  \"WindowMaximized\": false,\r\n  \"GtaThemeIntroduced\": false,\r\n  \"SystemThemeIntroduced\": false,\r\n  \"UiTheme\": null\r\n}"));
         assert!(j.contains("\"AudioApps\": [],"));
     }
 

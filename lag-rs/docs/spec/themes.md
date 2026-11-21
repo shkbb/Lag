@@ -148,3 +148,31 @@ Next steps of phase 1:
   own `ui\`.
 - Step 3 (measure on the owner's PC): the log line `[Startup] UI loaded from ... in N ms` on a real launch.
 - Step 4 is done together with step 1 (no compiled path left).
+
+## 13. Phase 2: theme packages (2026-11-22, first cut DONE)
+- `ui/api.slint`: the theme API v1 = re-exports of the globals Lag drives (`Tr, MainVM, Page, WindowMetrics,
+  SettingsVM, LibraryVM, PlayerVM, EditorVM, PlayerOverlayVM, EditorOverlayVM, AutoScroll`) and the data structs.
+  Themes `import { ... } from "@lag/api.slint"`; Lag's building blocks are reachable as `@lag/components/...`,
+  tokens as `@lag/theme/tokens.slint`.
+- `src/themes.rs`: a theme = `%APPDATA%\Lag\themes\<id>\theme.toml` (`name`, `author`, `version`, `api`,
+  `entry` = app.slint) + files. `activate(id)` loads Lag's own UI first, then the theme's windows over it (two
+  passes: find the windows the theme exports, then compile a generated wrapper that also re-exports the API
+  globals). A window the theme does not draw stays Lag's. Any failure -> Lag's own UI + `last_error()` (shown in
+  Settings in orange, full text in the log). `api` newer than Lag's -> refused with a clear message.
+- Safety (`validate`): only theme file types (.slint .toml .md .txt .png .jpg .jpeg .svg .gif .webp .ttf .otf),
+  no links, every path in a `.slint` (`import ... from`, `import "font"`, `@image-url`) is `@lag/...` or inside
+  the package (no `..`, no drive, no absolute), size limits (32 MB a file, 96 MB, 2000 files). `.lagtheme` = zip;
+  `unpack` refuses zip-slip (`enclosed_name`). Tests: path rules, package check, export -> import round trip,
+  a crafted `../../evil.slint` refused, a theme replacing only `AppWindow` while the API globals stay reachable.
+- Settings > General: "Interface" (Lag (built-in) + installed themes), buttons Import... / Export... / Themes
+  folder, and Restart when the chosen theme is not the running one (`shell::restart`: a new Lag waits up to 10 s
+  for the old one's single-instance lock, `--after-restart`). Settings key `UiTheme` (None = Lag's own).
+- The way back always exists: the tray menu stays Lag's (themes cannot replace `TrayMenuWindow` for now) and shows
+  "Lag's own interface" while a custom theme runs (resets `UiTheme`, restarts); holding Shift while Lag starts
+  uses Lag's own interface for that run.
+- Example theme: `lag-rs/docs/themes/example-ring/` (a buffer ring + a sticker-shaped Save button). Verified: with
+  it installed and chosen, Lag starts drawing it (`--snapshot`); `Tr.t` and `MainVM` work; Lag logs once that the
+  theme lacks `theme-mode` (not an error).
+- Not yet: live reload without a restart (needs a hot swap of the main window: re-run `views::init_all` on the
+  new window, drop the old one's callbacks), the tray menu theming (owner wants it: phase 3, keeping a mandatory
+  way back), API reference docs, more example themes.

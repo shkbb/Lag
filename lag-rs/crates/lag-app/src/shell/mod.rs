@@ -125,6 +125,14 @@ pub fn shutdown() {
     });
 }
 
+/// Starts a new Lag (it waits for this one to close) and exits this one: a new interface theme takes effect.
+pub fn restart() {
+    match std::env::current_exe().and_then(|exe| std::process::Command::new(exe).arg("--after-restart").spawn()) {
+        Ok(_) => exit(),
+        Err(e) => log::warn!("[Shutdown] restart failed: {e}"),
+    }
+}
+
 /// C# TrayIcon_ExitClicked / ExitWatchdog. Also used after an updater handoff.
 pub fn exit() {
     // Watchdog (C# ExitWatchdog): only for a hung teardown. Longer than the bounded recorder stop (3 s) in

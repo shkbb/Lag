@@ -195,6 +195,7 @@ fn state_with_hardware(settings: SettingsData) -> State {
         apps: Vec::new(),
         app_icons: Default::default(),
         cloud: Default::default(),
+        theme_note: String::new(),
     }
 }
 #[test]

@@ -195,7 +195,9 @@ impl Tray {
         let menu = TrayMenuWindow::new()?;
         menu.global::<Tr>().on_t(|key, _rev| lag_core::i18n::tr(&key).into());
         menu.set_theme_mode(ctx.settings().theme.as_deref().unwrap_or("dark").into());
+        menu.set_custom_theme(crate::themes::active() != crate::themes::BUILTIN);
         {
+            let ctx = ctx.clone();
             let weak = ui.as_weak();
             let menu_w = menu.as_weak();
             menu.on_activate(move |action| {
@@ -212,6 +214,11 @@ impl Tray {
                     }
                     2 => vm.invoke_show_main_window(),
                     3 => super::exit(),
+                    4 => {
+                        ctx.update_settings(|s| s.ui_theme = None);
+                        ctx.flush_settings();
+                        super::restart();
+                    }
                     _ => {}
                 }
             });

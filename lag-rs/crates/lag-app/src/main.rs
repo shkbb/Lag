@@ -11,6 +11,7 @@ mod services;
 mod shell;
 mod snapshot;
 mod startup;
+mod themes;
 mod ui_twin;
 mod views;
 
@@ -24,8 +25,14 @@ fn main() {
     // The UI is read from ui\*.slint now (themes): compiled before any window exists. Dev modes load it here;
     // the app after the single-instance check (a second launch must not spend ~0.25 s on it).
     let dev_load = || {
-        if let Err(e) = ui_twin::load_builtin() {
-            eprintln!("UI failed to load: {e}");
+        let s = startup::load_settings();
+        match themes::activate(s.ui_theme.as_deref().unwrap_or(themes::BUILTIN)) {
+            Ok(_) => {
+                if let Some(e) = themes::last_error() {
+                    eprintln!("theme failed, Lag's own UI is used: {e}");
+                }
+            }
+            Err(e) => eprintln!("UI failed to load: {e}"),
         }
     };
     // Real-window GPU render check (dev tool): `--gpu-check <script> <out-dir>`.
@@ -45,22 +52,28 @@ fn main() {
     // 2. 1 ms timer resolution (Program.cs:68).
     startup::raise_timer_resolution();
     // 3. Single instance ("LagAppSingleInstanceMutex"): a second launch exits immediately.
-    let Some(_instance) = startup::acquire_single_instance() else {
+    // after "Restart" (a theme change) the old Lag is still closing: wait for it instead of exiting
+    let Some(_instance) = startup::acquire_single_instance_waiting(std::env::args().any(|a| a == "--after-restart")) else {
         log::info!("[Startup] another Lag instance is running \u{2014} exiting.");
         return;
     };
-    // 3b. The UI from ui\*.slint (themes).
-    match &ui_twin::load_builtin() {
-        Ok(took) => log::info!("[Startup] UI loaded from {} in {} ms", ui_twin::builtin_dir().display(), took.as_millis()),
+    // 4. Settings + language before any UI string is built.
+    let settings = startup::load_settings();
+    lag_core::i18n::set_language(settings.language.as_deref().unwrap_or("en"));
+    // 4b. The UI from ui\*.slint, and the chosen interface theme over it (docs/spec/themes.md).
+    match themes::activate(settings.ui_theme.as_deref().unwrap_or(themes::BUILTIN)) {
+        Ok(took) => log::info!(
+            "[Startup] UI loaded from {} (theme \"{}\") in {} ms",
+            ui_twin::builtin_dir().display(),
+            themes::active(),
+            took.as_millis()
+        ),
         Err(e) => {
             log::error!("[Startup] UI failed to load: {e}");
             startup::fatal_message(&format!("Lag could not load its interface:\n\n{e}"));
             return;
         }
     }
-    // 4. Settings + language before any UI string is built.
-    let settings = startup::load_settings();
-    lag_core::i18n::set_language(settings.language.as_deref().unwrap_or("en"));
 
     // The app (main window + context) lives here; built either right away (start minimized: straight to the
     // tray) or behind the startup splash on a manual launch.

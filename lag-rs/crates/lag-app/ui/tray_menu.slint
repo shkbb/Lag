@@ -14,7 +14,9 @@ export component TrayMenuWindow inherits Window {
     in property <string> theme-mode: "dark";
     changed theme-mode => { Theme.mode = root.theme-mode; }
     init => { Theme.mode = root.theme-mode; }
-    callback activate(int); // 0 save replay, 1 open library, 2 open, 3 exit
+    callback activate(int); // 0 save replay, 1 open library, 2 open, 3 exit, 4 back to Lag's own interface
+    // a custom interface theme is active: the way back must always exist (the theme may have no Settings page)
+    in property <bool> custom-theme: false;
 
     LagContextMenuContainer {
         x: 4px;
@@ -28,6 +30,7 @@ export component TrayMenuWindow inherits Window {
             LagMenuItem { text: Tr.t("Tray_OpenLibrary", Tr.rev); clicked => { root.activate(1); } }
             LagMenuSeparator { }
             LagMenuItem { text: Tr.t("Tray_Open", Tr.rev); clicked => { root.activate(2); } }
+            if root.custom-theme: LagMenuItem { text: Tr.t("Tray_DefaultUi", Tr.rev); clicked => { root.activate(4); } }
             LagMenuItem { text: Tr.t("Tray_Exit", Tr.rev); clicked => { root.activate(3); } }
         }
     }

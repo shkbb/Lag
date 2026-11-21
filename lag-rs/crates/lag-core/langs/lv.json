@@ -344,5 +344,19 @@
   "Cloud_Error_Folder": "Lag nevar rakstīt šajā mapē. Izvēlieties citu vai pārbaudiet atļaujas.",
   "Cloud_Error_WebDavUrl": "Adresei jāsākas ar https:// (vai http://).",
   "Cloud_Error_WebDavLogin": "Nepareizs lietotājvārds vai parole.",
-  "Cloud_Error_WebDavServer": "Serveris neatbildēja kā WebDAV. Pārbaudiet adresi."
+  "Cloud_Error_WebDavServer": "Serveris neatbildēja kā WebDAV. Pārbaudiet adresi.",
+  "Settings_UiTheme": "Saskarne",
+  "Settings_UiTheme_Desc": "Tēma var mainīt visu Lag izskatu un izkārtojumu",
+  "Settings_UiTheme_Restart": "Restartējiet Lag, lai lietotu jauno saskarni",
+  "Theme_Builtin": "Lag (iebūvēts)",
+  "Theme_Import": "Importēt…",
+  "Theme_Export": "Eksportēt…",
+  "Theme_OpenFolder": "Tēmu mape",
+  "Theme_Restart": "Restartēt",
+  "Theme_Imported": "Tēma “{0}” instalēta",
+  "Theme_Exported": "Saglabāts: {0}",
+  "Theme_Failed": "Tēma netika ielādēta, tiek lietota Lag tēma: {0}",
+  "Theme_ImportFailed": "Neizdevās importēt: {0}",
+  "Theme_FileFilter": "Lag tēma",
+  "Tray_DefaultUi": "Lag standarta saskarne"
 }

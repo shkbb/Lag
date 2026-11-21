@@ -164,6 +164,54 @@ pub(super) fn bind_controls(ui: &AppWindow, ctx: &Rc<AppCtx>, state: &Rc<RefCell
                     c.cloud().disconnect(&id);
                 }
             }
+            // interface themes (docs/spec/themes.md)
+            "theme-folder" => {
+                if let Some(dir) = crate::themes::user_dir() {
+                    let _ = std::fs::create_dir_all(&dir);
+                    std::thread::spawn(move || open_in_explorer(&dir, false));
+                }
+            }
+            "theme-restart" => crate::shell::restart(),
+            "theme-import" | "theme-export" => {
+                let export = id.as_str() == "theme-export";
+                let chosen = st.borrow().settings.ui_theme.clone().unwrap_or_else(|| crate::themes::BUILTIN.into());
+                let theme = crate::themes::list().into_iter().find(|t| t.id == chosen);
+                let default = theme.as_ref().map(|t| format!("{}.lagtheme", t.id)).unwrap_or_default();
+                let (sender, receiver) = mpsc::channel();
+                std::thread::spawn(move || {
+                    let _ = sender.send(pick_theme_file(export.then_some(default.as_str())));
+                });
+                let (st, c, weak) = (st.clone(), c.clone(), ui.as_weak());
+                let timer = Rc::new(slint::Timer::default());
+                let keep = timer.clone();
+                timer.start(slint::TimerMode::Repeated, Duration::from_millis(50), move || {
+                    let Ok(result) = receiver.try_recv() else { return };
+                    keep.stop();
+                    let (Some(file), Some(ui)) = (result, weak.upgrade()) else { return };
+                    let path = std::path::PathBuf::from(&file);
+                    if export {
+                        let note = match theme.as_ref().map(|t| crate::themes::export(t, &path)) {
+                            Some(Ok(())) => i18n::format("Theme_Exported", &[&file]).unwrap_or(file),
+                            Some(Err(e)) => e,
+                            None => String::new(),
+                        };
+                        st.borrow_mut().theme_note = note;
+                        st.borrow().refresh(&ui);
+                        return;
+                    }
+                    match crate::themes::import(&path) {
+                        Ok(t) => {
+                            st.borrow_mut().theme_note = i18n::format("Theme_Imported", &[&t.name]).unwrap_or_default();
+                            save(&ui, &c, &st, "ui-theme", |s| s.settings.ui_theme = Some(t.id.clone()));
+                        }
+                        Err(e) => {
+                            log::warn!("[Theme] import of {file} failed: {e}");
+                            st.borrow_mut().theme_note = i18n::format("Theme_ImportFailed", &[&e]).unwrap_or(e);
+                            st.borrow().refresh(&ui);
+                        }
+                    }
+                });
+            }
             "logs" => {
                 std::thread::spawn(|| {
                     if let Some(path) = lag_core::filelog::log_directory() {
