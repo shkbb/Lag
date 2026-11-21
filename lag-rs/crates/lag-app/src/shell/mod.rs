@@ -1,6 +1,6 @@
 //! Port of `App.axaml.cs`: tray, hotkey, HUD and startup service wiring.
 use crate::app_ctx::AppCtx;
-use slint::ComponentHandle;
+use crate::ComponentHandle;
 use std::{cell::RefCell, rc::Rc};
 
 pub mod autoscroll;

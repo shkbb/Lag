@@ -1,7 +1,7 @@
 //! Frame shape, crop/reframe, rotation/flips, speed, filters and colour.
 use super::{export::*, geometry::*, runtime::*};
 use crate::{AppWindow, EditorVM};
-use slint::ComponentHandle;
+use crate::ComponentHandle;
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::time::{Duration, Instant};

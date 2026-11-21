@@ -15,7 +15,8 @@ use lag_core::{
     i18n,
     presets::{self},
 };
-use slint::{ComponentHandle, VecModel};
+use crate::ComponentHandle;
+use slint::VecModel;
 use std::{
     cell::RefCell,
     rc::Rc,

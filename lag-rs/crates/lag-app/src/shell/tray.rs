@@ -1,7 +1,7 @@
 //! Port of `App.axaml` tray menu and `App.axaml.cs` tray handlers/localization. The menu is our own Slint
 //! window (ui/tray_menu.slint) styled like the app, as C#'s Avalonia-rendered tray menu was.
 use crate::{app_ctx::AppCtx, AppWindow, MainVM, Page, Tr, TrayMenuWindow};
-use slint::ComponentHandle;
+use crate::ComponentHandle;
 use std::{
     cell::RefCell,
     io::Cursor,

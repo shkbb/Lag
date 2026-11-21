@@ -5,7 +5,8 @@
 use super::EditorRuntime;
 use crate::services::clip_merge;
 use crate::{AppWindow, EditorClipItem, EditorVM};
-use slint::{ComponentHandle, Model};
+use crate::ComponentHandle;
+use slint::Model;
 use std::cell::RefCell;
 use std::rc::Rc;
 

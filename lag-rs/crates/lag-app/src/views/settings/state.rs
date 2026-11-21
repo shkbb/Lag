@@ -8,7 +8,8 @@ use lag_core::{
     presets::{self, RecordingIntent},
     settings::SettingsData,
 };
-use slint::{ComponentHandle, Model, VecModel};
+use crate::ComponentHandle;
+use slint::{Model, VecModel};
 use std::{rc::Rc, time::Instant};
 
 pub(super) struct State {

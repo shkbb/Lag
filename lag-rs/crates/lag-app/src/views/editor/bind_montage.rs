@@ -3,7 +3,7 @@
 use super::import::ask_for_video;
 use super::runtime::EditorRuntime;
 use crate::{AppWindow, EditorVM};
-use slint::ComponentHandle;
+use crate::ComponentHandle;
 use std::cell::RefCell;
 use std::rc::Rc;
 

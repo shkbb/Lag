@@ -5,7 +5,8 @@ use crate::app_ctx::AppCtx;
 use crate::{GameChipData, LibraryCardData, LibraryRowData, LibraryVM};
 use chrono::Local;
 use lag_core::metadata::ClipMetadataStore;
-use slint::{ComponentHandle, Image, Model, ModelRc, SharedString, VecModel};
+use crate::ComponentHandle;
+use slint::{Image, Model, ModelRc, SharedString, VecModel};
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -43,7 +44,7 @@ pub(super) fn with_registered_state(id: u64, f: impl FnOnce(&mut LibraryState)) 
 pub(super) struct LibraryState {
     pub(super) registry_id: u64,
     pub(super) ctx: Rc<AppCtx>,
-    pub(super) ui: slint::Weak<crate::AppWindow>,
+    pub(super) ui: crate::Weak<crate::AppWindow>,
     pub(super) meta_store: Option<ClipMetadataStore>,
     pub(super) thumb_cache_dir: PathBuf,
     pub(super) mem_cache: Arc<Mutex<ThumbnailMemCache>>,

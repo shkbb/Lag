@@ -8,7 +8,7 @@ use crate::app_ctx::AppCtx;
 use crate::services::cloud::{stream, LibraryEvent};
 use crate::LibraryVM;
 use lag_cloud::settings::DeleteMode;
-use slint::ComponentHandle;
+use crate::ComponentHandle;
 use std::cell::RefCell;
 use std::rc::Rc;
 

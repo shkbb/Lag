@@ -146,7 +146,8 @@ impl Snapshot {
     ///   scroll X Y DY | key esc|left|right|space|<text> | wait MS | shot <name>  (-> <out-dir>/<name>.png)
     pub fn run_script(&self, ui: &crate::AppWindow) {
         use slint::platform::{Key, PointerEventButton, WindowEvent};
-        use slint::{ComponentHandle, LogicalPosition};
+        use crate::ComponentHandle;
+        use slint::LogicalPosition;
         let Some((script, dir)) = &self.script else { return };
         crate::views::player::mark_scripted_input();
         let text = match std::fs::read_to_string(script) {

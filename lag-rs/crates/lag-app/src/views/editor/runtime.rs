@@ -9,7 +9,8 @@ use crate::{
     AppWindow, ComboBoxItemData, EditorAudioTrackData, EditorClipItem, EditorCutBand, EditorFilterData,
     EditorTextOverlayData, EditorVM, SegmentedOption,
 };
-use slint::{Color, ComponentHandle, Image, Model, ModelRc, Timer, TimerMode, VecModel};
+use crate::ComponentHandle;
+use slint::{Color, Image, Model, ModelRc, Timer, TimerMode, VecModel};
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::process::Child;
@@ -31,7 +32,7 @@ pub(super) fn parse_hex_color(hex: &str) -> Color {
 }
 
 pub(super) struct EditorRuntime {
-    pub(super) ui: slint::Weak<AppWindow>,
+    pub(super) ui: crate::Weak<AppWindow>,
     pub(super) ctx: Rc<AppCtx>,
     pub(super) model: EditModel,
     pub(super) commands: mpsc::Sender<MpvCommand>,

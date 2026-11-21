@@ -3,7 +3,7 @@
 
 use super::host::*;
 use crate::PlayerOverlayVM;
-use slint::ComponentHandle;
+use crate::ComponentHandle;
 use std::{
     cell::{Cell, RefCell},
     rc::Rc,

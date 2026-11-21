@@ -1,7 +1,9 @@
 //! Lag.exe: port of `Program.cs` + `App.axaml.cs` (startup sequence, spec shell.md §4.1).
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-slint::include_modules!();
+// The UI comes from .slint files at run time (themes, docs/spec/themes.md): the typed API is the generated twin.
+pub use ui_twin::*;
+pub use ui_twin::TwinComponent as ComponentHandle;
 
 mod app_ctx;
 mod gpucheck;
@@ -19,6 +21,11 @@ fn main() {
         use windows::Win32::UI::HiDpi::{SetProcessDpiAwarenessContext, DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2};
         let _ = SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
     }
+    // The UI is read from ui\*.slint now (themes): compiled here, before any window exists.
+    let ui_loaded = ui_twin::load_builtin();
+    if let Err(e) = &ui_loaded {
+        eprintln!("UI failed to load: {e}");
+    }
     // Real-window GPU render check (dev tool): `--gpu-check <script> <out-dir>`.
     if let Some((script, dir)) = gpucheck::args() {
         gpucheck::run(script, dir);
@@ -31,6 +38,14 @@ fn main() {
     }
     // 1. Log first, so everything below is captured (FileLog.Initialize).
     let _log = startup::init_logging();
+    match &ui_loaded {
+        Ok(took) => log::info!("[Startup] UI loaded from {} in {} ms", ui_twin::builtin_dir().display(), took.as_millis()),
+        Err(e) => {
+            log::error!("[Startup] UI failed to load: {e}");
+            startup::fatal_message(&format!("Lag could not load its interface:\n\n{e}"));
+            return;
+        }
+    }
     // 2. 1 ms timer resolution (Program.cs:68).
     startup::raise_timer_resolution();
     // 3. Single instance ("LagAppSingleInstanceMutex"): a second launch exits immediately.

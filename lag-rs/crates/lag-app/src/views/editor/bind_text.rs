@@ -1,7 +1,7 @@
 //! Captions.
 use super::{model::*, runtime::*, tr};
 use crate::{AppWindow, EditorVM};
-use slint::ComponentHandle;
+use crate::ComponentHandle;
 use std::cell::RefCell;
 use std::rc::Rc;
 

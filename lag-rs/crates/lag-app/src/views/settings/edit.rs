@@ -9,7 +9,7 @@ use lag_core::{
     presets::{self, RecommendedSettings, RecordingIntent},
     settings::{AppAudioSetting, SettingsData},
 };
-use slint::ComponentHandle;
+use crate::ComponentHandle;
 use std::{cell::RefCell, rc::Rc};
 
 pub(super) const INTENTS: [RecordingIntent; 3] =

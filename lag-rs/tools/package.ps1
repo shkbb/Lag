@@ -1,4 +1,4 @@
-# Lag (Rust) release folder + installer.
+﻿# Lag (Rust) release folder + installer.
 #
 #   powershell -ExecutionPolicy Bypass -File lag-rs\tools\package.ps1 -Version 2.0.0 [-Out <dir>] [-NoBuild] [-Installer]
 #
@@ -43,6 +43,8 @@ foreach ($f in "icon.ico", "save.wav", "screenshot.wav") {
     Copy-Item (Join-Path $repo "InstantReplay\Assets\$f") (Join-Path $Out "Assets")
 }
 Copy-Item (Join-Path $repo "LICENSE") $Out
+# Lag's interface is read from ui\*.slint at run time since 2.2 (themes, lag-rs/docs/spec/themes.md)
+Copy-Item -Recurse (Join-Path $repo "lag-rs\crates\lag-app\ui") (Join-Path $Out "ui")
 
 $required = @(
     "Lag.exe", "libmpv-2.dll",
@@ -50,7 +52,8 @@ $required = @(
     "postproc-58.dll", "swresample-5.dll", "swscale-8.dll",
     "ffmpeg\ffmpeg.exe", "ffmpeg\ffprobe.exe", "ffmpeg\LICENSE.txt",
     "rnnoise\std.rnnn", "rnnoise\LICENSE-rnnoise.txt",
-    "Assets\save.wav", "Assets\screenshot.wav", "Assets\icon.ico", "LICENSE"
+    "Assets\save.wav", "Assets\screenshot.wav", "Assets\icon.ico", "LICENSE",
+    "ui\app.slint", "ui\globals.slint", "ui\theme\tokens.slint", "ui\hud.slint"
 )
 $missing = $required | Where-Object { -not (Test-Path (Join-Path $Out $_)) }
 if ($missing) { throw "release folder is incomplete, missing: $($missing -join ', ')" }

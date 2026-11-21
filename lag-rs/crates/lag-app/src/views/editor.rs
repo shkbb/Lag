@@ -8,7 +8,7 @@
 use crate::app_ctx::AppCtx;
 use crate::{AppWindow, EditorVM};
 use lag_player::MpvPlayer;
-use slint::ComponentHandle;
+use crate::ComponentHandle;
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::sync::atomic::Ordering;

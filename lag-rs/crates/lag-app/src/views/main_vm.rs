@@ -9,7 +9,8 @@ use crate::{
     AppWindow, MainVM, Page,
 };
 use slint::winit_030::{winit, EventResult, WinitWindowAccessor};
-use slint::{ComponentHandle, Timer, TimerMode};
+use crate::ComponentHandle;
+use slint::{Timer, TimerMode};
 use std::{
     cell::{Cell, RefCell},
     rc::{Rc, Weak},
@@ -95,7 +96,7 @@ fn target_toast(previous: &mut Option<(bool, String)>, target: (bool, String), p
 }
 
 struct Runtime {
-    ui: slint::Weak<AppWindow>,
+    ui: crate::Weak<AppWindow>,
     ctx: Weak<AppCtx>,
     recorder: RefCell<Option<RecorderService>>,
     starting: Cell<bool>,

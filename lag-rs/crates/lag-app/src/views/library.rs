@@ -9,7 +9,8 @@
 use crate::app_ctx::AppCtx;
 use crate::LibraryVM;
 use lag_core::settings::SettingsData;
-use slint::{ComponentHandle, ModelRc, SharedString, VecModel};
+use crate::ComponentHandle;
+use slint::{ModelRc, SharedString, VecModel};
 use std::cell::RefCell;
 use std::rc::Rc;
 

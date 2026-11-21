@@ -11,7 +11,7 @@
 //! Each run logs its frame timing ("[AutoScroll] ...") so a slow renderer shows up in the log.
 use crate::{AppWindow, AutoScroll};
 use slint::winit_030::{winit, EventResult};
-use slint::ComponentHandle;
+use crate::ComponentHandle;
 use std::cell::Cell;
 use std::time::{Duration, Instant};
 use winit::event::{ElementState, MouseButton, WindowEvent};

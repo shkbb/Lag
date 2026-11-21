@@ -44,7 +44,6 @@ lag-player = { workspace = true }
 slint-interpreter = "=1.18.1"
 
 [build-dependencies]
-slint-build = "1.18.1"
 # the UI twin generator (build_twin.rs) reads the .slint types; "internal" = full type info, pinned exactly
 slint-interpreter = { version = "=1.18.1", features = ["internal"] }
 i-slint-compiler = "=1.18.1"

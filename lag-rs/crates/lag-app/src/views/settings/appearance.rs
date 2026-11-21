@@ -3,7 +3,7 @@
 use super::rows::*;
 use crate::{AppWindow, SettingsVM, Tr};
 use lag_core::{i18n, settings::SettingsData};
-use slint::ComponentHandle;
+use crate::ComponentHandle;
 
 pub(super) fn flag_svg(code: &str) -> String {
     let mut svg =

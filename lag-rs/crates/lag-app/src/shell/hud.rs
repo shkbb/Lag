@@ -2,7 +2,7 @@
 use crate::{app_ctx::AppCtx, shell::nofocus};
 use lag_capture::overlay::stats::{Snapshot, SystemStatsSampler};
 use lag_core::settings::SettingsData;
-use slint::ComponentHandle;
+use crate::ComponentHandle;
 use std::{
     cell::RefCell,
     rc::Rc,
@@ -14,10 +14,8 @@ use windows::Win32::{
     Graphics::Gdi::{GetMonitorInfoW, MonitorFromPoint, MONITORINFO, MONITOR_DEFAULTTOPRIMARY},
 };
 
-mod markup {
-    slint::slint! {export { StatsHud } from "../../ui/hud.slint";}
-}
-use markup::StatsHud;
+// part of the themed UI now (exported from ui/app.slint): a theme restyles the in-game HUD too
+use crate::StatsHud;
 
 static ENGINE_FRAMES: AtomicU64 = AtomicU64::new(0);
 thread_local! {static FRAMES: RefCell<Box<dyn Fn() -> u64>> = RefCell::new(Box::new(||ENGINE_FRAMES.load(Ordering::Acquire)));}

@@ -9,7 +9,7 @@
 use crate::app_ctx::AppCtx;
 use crate::AppWindow;
 use lag_core::settings::SettingsData;
-use slint::ComponentHandle;
+use crate::ComponentHandle;
 use std::cell::{Cell, RefCell};
 use std::rc::{Rc, Weak};
 use std::time::Duration;

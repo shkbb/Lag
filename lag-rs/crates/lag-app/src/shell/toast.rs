@@ -2,7 +2,8 @@
 //! 2400ms visible, 220/260ms fade; primary monitor work area, 24 physical-pixel inset.
 use super::nofocus;
 use crate::ToastWindow;
-use slint::{ComponentHandle, Timer, TimerMode};
+use crate::ComponentHandle;
+use slint::{Timer, TimerMode};
 use std::{cell::RefCell, collections::VecDeque, rc::Rc, time::Duration};
 use windows::Win32::{
     Foundation::{POINT, RECT},

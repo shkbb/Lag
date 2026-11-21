@@ -1,7 +1,7 @@
 //! The clip list next to the player: rows, totals, header text.
 
 use crate::{AppWindow, PlayerClip, PlayerOverlayVM, PlayerOverlayWindow, PlayerVM};
-use slint::ComponentHandle;
+use crate::ComponentHandle;
 use std::rc::Rc;
 
 pub(super) fn sidebar_totals(clips: &[crate::app_ctx::SharedClip]) -> (u64, u64) {

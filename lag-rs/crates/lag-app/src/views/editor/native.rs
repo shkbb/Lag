@@ -10,7 +10,7 @@ use super::model::EditModel;
 use crate::shell::nofocus;
 use crate::{AppWindow, EditorOverlayVM, EditorOverlayWindow, EditorVM, MainVM, Page, Tr};
 use lag_player::NativeVideoWindow;
-use slint::ComponentHandle;
+use crate::ComponentHandle;
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use windows::Win32::{
@@ -32,7 +32,7 @@ thread_local! {
     /// Re-sync right away when the main window moves/resizes (the 33 ms tick would lag one frame behind).
     static EDITOR_SYNC: RefCell<Option<Rc<dyn Fn()>>> = const { RefCell::new(None) };
     /// The overlay window, for `--gpu-check` scripts (events dispatched to it, never to the OS).
-    static OVERLAY: RefCell<Option<slint::Weak<EditorOverlayWindow>>> = const { RefCell::new(None) };
+    static OVERLAY: RefCell<Option<crate::Weak<EditorOverlayWindow>>> = const { RefCell::new(None) };
 }
 
 /// The live overlay window (gpu-check only).

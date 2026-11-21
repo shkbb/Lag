@@ -3,7 +3,7 @@
 use crate::{app_ctx::AppCtx, AppWindow, MainVM};
 use crossbeam_channel::{bounded, Sender};
 use lag_core::settings::SettingsData;
-use slint::ComponentHandle;
+use crate::ComponentHandle;
 use std::{
     cell::{OnceCell, RefCell},
     rc::Rc,
@@ -279,7 +279,7 @@ pub fn probe_hook(label: &'static str) {
         }
     });
 }
-fn dispatch(ui: &slint::Weak<AppWindow>, action: usize) {
+fn dispatch(ui: &crate::Weak<AppWindow>, action: usize) {
     let ui = ui.clone();
     let _ = slint::invoke_from_event_loop(move || {
         if are_suppressed() {

@@ -2,7 +2,8 @@
 
 use super::tr;
 use crate::AppWindow;
-use slint::{ComponentHandle, Timer, TimerMode};
+use crate::ComponentHandle;
+use slint::{Timer, TimerMode};
 use std::cell::Cell;
 use std::rc::Rc;
 use std::sync::mpsc;

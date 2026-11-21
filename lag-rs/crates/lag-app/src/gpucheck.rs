@@ -16,7 +16,8 @@
 //!           F13-F24 + left Ctrl/Shift/Alt: keys no app reacts to, so the owner's game/apps are unaffected
 use crate::{app_ctx, startup, views, AppWindow, MainVM, Page, SettingsVM, Tr};
 use slint::platform::{PointerEventButton, WindowEvent};
-use slint::{ComponentHandle, LogicalPosition};
+use crate::ComponentHandle;
+use slint::LogicalPosition;
 use std::{cell::RefCell, collections::VecDeque, rc::Rc, time::Duration};
 
 pub fn args() -> Option<(String, String)> {
@@ -65,7 +66,7 @@ pub fn run(script: String, dir: String) {
     }
 }
 
-fn step(weak: slint::Weak<AppWindow>, queue: Rc<RefCell<VecDeque<String>>>, dir: String) {
+fn step(weak: crate::Weak<AppWindow>, queue: Rc<RefCell<VecDeque<String>>>, dir: String) {
     let Some(ui) = weak.upgrade() else { return };
     let Some(line) = queue.borrow_mut().pop_front() else {
         let _ = slint::quit_event_loop();

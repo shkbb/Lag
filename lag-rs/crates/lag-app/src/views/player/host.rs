@@ -5,7 +5,7 @@ use super::{globals::*, session::*, sidebar::*};
 use crate::shell::nofocus;
 use crate::{app_ctx::AppCtx, AppWindow, LibraryVM, MainVM, Page, PlayerOverlayVM, PlayerOverlayWindow, PlayerVM, Tr};
 use lag_player::NativeVideoWindow;
-use slint::ComponentHandle;
+use crate::ComponentHandle;
 use std::{
     cell::{Cell, RefCell},
     rc::Rc,

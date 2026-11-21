@@ -1,7 +1,7 @@
 //! Play/pause, undo, trim and cuts, timeline drags, audio tracks.
 use super::{model::*, runtime::*, worker::*};
 use crate::{AppWindow, EditorVM};
-use slint::ComponentHandle;
+use crate::ComponentHandle;
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::time::Instant;

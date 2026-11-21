@@ -2,7 +2,7 @@
 use super::montage_export::{montage_output_path, spawn_montage_export};
 use super::{export::*, model::*, runtime::*, tr_fmt};
 use crate::{AppWindow, EditorVM};
-use slint::ComponentHandle;
+use crate::ComponentHandle;
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::sync::atomic::{AtomicBool, Ordering};

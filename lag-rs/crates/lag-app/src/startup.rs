@@ -58,7 +58,7 @@ pub fn load_settings() -> SettingsData {
 
 /// Startup splash (ui/splash.slint), centred on the monitor under the cursor. None if it cannot be created.
 pub fn show_splash(settings: &lag_core::settings::SettingsData) -> Option<crate::SplashWindow> {
-    use slint::ComponentHandle;
+    use crate::ComponentHandle;
     let splash = crate::SplashWindow::new().ok()?;
     splash.set_theme_mode(settings.theme.as_deref().unwrap_or("dark").into());
     splash.set_text(lag_core::i18n::tr("Splash_Starting").into());
@@ -87,4 +87,13 @@ pub fn show_splash(settings: &lag_core::settings::SettingsData) -> Option<crate:
         return None;
     }
     Some(splash)
+}
+
+/// A blocking error box for the few failures Lag cannot start without (no window of its own exists yet).
+pub fn fatal_message(text: &str) {
+    use windows::core::HSTRING;
+    use windows::Win32::UI::WindowsAndMessaging::{MessageBoxW, MB_ICONERROR, MB_OK};
+    unsafe {
+        MessageBoxW(None, &HSTRING::from(text), &HSTRING::from("Lag"), MB_OK | MB_ICONERROR);
+    }
 }

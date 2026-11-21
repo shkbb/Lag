@@ -6,8 +6,8 @@ mod build_twin;
 fn main() {
     // The app root. ui/gallery.slint (design-system showcase) is type-checked by `cargo test -p lag-app`
     // via the gallery_compiles test instead of being compiled into the exe.
-    slint_build::compile("ui/app.slint").expect("slint compile app");
-    // the same UI as a typed API over the interpreter, for themes (docs/spec/themes.md, phase 1)
+    // Lag's UI is loaded from ui/*.slint at run time (themes, docs/spec/themes.md); this generates its typed
+    // API (the "twin") and type-checks every .slint file.
     let out = PathBuf::from(env::var("OUT_DIR").unwrap());
     build_twin::generate(std::path::Path::new("ui/app.slint"), &out.join("ui_twin.rs"));
     println!("cargo:rerun-if-changed=build_twin.rs");

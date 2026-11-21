@@ -232,7 +232,7 @@ pub(super) struct HydrationJob {
 
 pub(super) fn start_phase2_hydration(
     job: HydrationJob,
-    ui_weak: slint::Weak<crate::AppWindow>,
+    ui_weak: crate::Weak<crate::AppWindow>,
     state: Rc<RefCell<LibraryState>>,
 ) {
     let HydrationJob {

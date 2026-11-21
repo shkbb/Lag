@@ -4,7 +4,7 @@ use super::{runtime::*, worker::*};
 use crate::app_ctx::AppCtx;
 use crate::services::AppCtxPlaybackExt;
 use crate::{AppWindow, EditorVM, MainVM, Page};
-use slint::ComponentHandle;
+use crate::ComponentHandle;
 use std::cell::RefCell;
 use std::rc::Rc;
 

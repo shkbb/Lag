@@ -134,3 +134,17 @@ Next steps of phase 1:
 2. `--ui-check` / `--gpu-check` on the twin; every screenshot identical to the compiled build.
 3. Measure start-up time and memory, compiled vs interpreted, on the owner's PC; decide on caching if needed.
 4. Remove the compiled path (`slint-build`) once the twin is the only one.
+
+### Status 2026-11-22 (later)
+- DONE step 1: the app runs on the twin. `slint::include_modules!()` and `slint-build` are gone; `main.rs`
+  re-exports the twin (`pub use ui_twin::*`, `TwinComponent as ComponentHandle`, `crate::Weak`), 37 files changed
+  only their imports. `ui_twin::load_builtin()` compiles `ui\app.slint` first thing in `main` (also for
+  `--ui-check` / `--snapshot` / `--gpu-check`); a failure shows an error box and logs `[Startup] UI failed to load`.
+  The in-game stats HUD (`StatsHud`, was a separate `slint!` macro) is part of the themed UI now.
+  `tools/package.ps1` ships `ui\` (111 files, 3 MB) next to Lag.exe; the exe shrank 31.2 -> 27.8 MB.
+- DONE step 2: `--ui-check` full (53) + languages (119) on the twin, compared pixel by pixel with the compiled
+  build's shots at the same theme: every difference is data (cloud preview cards created "now" swap places, the
+  disk usage grew, audio levels), no layout / colour / text / font difference. A packaged folder renders from its
+  own `ui\`.
+- Step 3 (measure on the owner's PC): the log line `[Startup] UI loaded from ... in N ms` on a real launch.
+- Step 4 is done together with step 1 (no compiled path left).

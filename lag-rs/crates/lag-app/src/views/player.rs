@@ -10,7 +10,8 @@
 use crate::services::AppCtxPlaybackExt;
 use crate::shell::nofocus;
 use crate::{app_ctx::AppCtx, AppWindow, MainVM, Page, PlayerOverlayVM, PlayerVM, Tr};
-use slint::{ComponentHandle, Model};
+use crate::ComponentHandle;
+use slint::Model;
 use std::{
     cell::{Cell, RefCell},
     path::Path,

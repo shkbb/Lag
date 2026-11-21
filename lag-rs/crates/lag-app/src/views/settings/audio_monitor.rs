@@ -1,7 +1,7 @@
 //! The microphone level meter and "hear yourself" on a worker thread.
 
 use crate::AppWindow;
-use slint::ComponentHandle;
+use crate::ComponentHandle;
 use std::{
     sync::{mpsc, Arc, Mutex},
     time::Duration,
