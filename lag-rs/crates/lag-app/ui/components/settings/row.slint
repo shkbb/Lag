@@ -152,32 +152,31 @@ export component SettingsRow {
                     clicked => { root.action("cloud-disconnect:" + root.data.toggle-id); }
                 }
             }
-            // kind 17: add a storage. custom = a sign-in / check is running; enabled = Google sign-in is available
-            if root.data.kind == 17: HorizontalLayout {
-                horizontal-stretch: 0; spacing: 6px;
-                if root.data.custom: Text { text: Tr.t("Cloud_Connecting", Tr.rev); color: Theme.text-faint; font-size: 12.5px; vertical-alignment: center; }
-                if root.data.custom: VerticalLayout { alignment: center;
-                    RChipButton { text: Tr.t("Cloud_Cancel", Tr.rev); clicked => { root.action("cloud-cancel"); } }
-                }
-                if !root.data.custom: VerticalLayout { alignment: center;
-                    RChipButton { text: Tr.t("Cloud_GoogleDrive", Tr.rev); active: true; enabled: root.data.enabled;
-                        clicked => { root.action("cloud-add-google"); } }
-                }
-                if !root.data.custom && root.data.checked: VerticalLayout { alignment: center;
-                    RChipButton { text: "Dropbox"; clicked => { root.action("cloud-add-dropbox"); } }
-                }
-                if !root.data.custom && root.data.with-toggle: VerticalLayout { alignment: center;
-                    RChipButton { text: "OneDrive"; clicked => { root.action("cloud-add-onedrive"); } }
-                }
-                if !root.data.custom: VerticalLayout { alignment: center;
-                    RChipButton { text: Tr.t("Cloud_Folder", Tr.rev); clicked => { root.action("cloud-add-folder"); } }
-                }
-                if !root.data.custom: VerticalLayout { alignment: center;
-                    RChipButton { text: "WebDAV"; clicked => { root.action("cloud-add-webdav"); } }
-                }
-            }
             // kind 16: a value read from somewhere (cloud space), shown on the right
             if root.data.kind == 16: Text { text: root.data.display; color: Theme.text-faint; font-size: 12.5px; vertical-alignment: center; horizontal-alignment: right; }
+        }
+        // kind 17: add a storage, on its own line under the title (beside five chips the text was squeezed into
+        // three lines and cut, 2.1.0). custom = a sign-in / check is running. Which sign-ins this build has:
+        // enabled = Google Drive, checked = Dropbox, with-toggle = OneDrive. selected = already connected, as bits:
+        // 1 Google Drive, 2 Dropbox, 4 OneDrive: such a chip shows a check and starts no new sign-in.
+        if root.data.kind == 17: HorizontalLayout {
+            alignment: start; spacing: 6px;
+            property <bool> google-on: mod(root.data.selected, 2) == 1;
+            property <bool> dropbox-on: mod(floor(root.data.selected / 2), 2) == 1;
+            property <bool> onedrive-on: mod(floor(root.data.selected / 4), 2) == 1;
+            if root.data.custom: Text { text: Tr.t("Cloud_Connecting", Tr.rev); color: Theme.text-faint; font-size: 12.5px; vertical-alignment: center; }
+            if root.data.custom: RChipButton { text: Tr.t("Cloud_Cancel", Tr.rev); clicked => { root.action("cloud-cancel"); } }
+            if !root.data.custom: RChipButton { text: Tr.t("Cloud_GoogleDrive", Tr.rev); enabled: root.data.enabled;
+                inert: parent.google-on; has-icon: parent.google-on; icon: Icons.cloud-check-outline;
+                clicked => { root.action("cloud-add-google"); } }
+            if !root.data.custom && root.data.checked: RChipButton { text: "Dropbox";
+                inert: parent.dropbox-on; has-icon: parent.dropbox-on; icon: Icons.cloud-check-outline;
+                clicked => { root.action("cloud-add-dropbox"); } }
+            if !root.data.custom && root.data.with-toggle: RChipButton { text: "OneDrive";
+                inert: parent.onedrive-on; has-icon: parent.onedrive-on; icon: Icons.cloud-check-outline;
+                clicked => { root.action("cloud-add-onedrive"); } }
+            if !root.data.custom: RChipButton { text: Tr.t("Cloud_Folder", Tr.rev); clicked => { root.action("cloud-add-folder"); } }
+            if !root.data.custom: RChipButton { text: "WebDAV"; clicked => { root.action("cloud-add-webdav"); } }
         }
         if root.data.kind == 5: HorizontalLayout {
             NoiseGateBar { auto-mode: root.data.auto-mode; mic-level: root.mic-level; threshold: root.data.value;

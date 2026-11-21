@@ -507,10 +507,12 @@ export component RChipButton {
     in property <bool> active: false;
     in property <bool> danger: false;
     in property <bool> enabled: true;
+    // shows a state, not an action (a storage that is already connected): full colour, no hover, no press
+    in property <bool> inert: false;
     callback clicked();
 
     min-height: 32px;
-    opacity: enabled ? 1.0 : 0.45;
+    opacity: enabled || inert ? 1.0 : 0.45;
 
     property <bool> pressed: ta.pressed && enabled;
     property <bool> hovered: ta.has-hover && enabled;
@@ -541,7 +543,7 @@ export component RChipButton {
                 MaterialIcon {
                     source: root.icon;
                     size: root.icon-size;
-                    tint: root.active ? #FFFFFF : (root.danger ? Theme.danger-stop : Theme.text-hi);
+                    tint: root.active ? #FFFFFF : (root.inert ? Theme.accent : (root.danger ? Theme.danger-stop : Theme.text-hi));
                 }
             }
 
@@ -570,8 +572,8 @@ export component RChipButton {
     }
 
     ta := TouchArea {
-        enabled: root.enabled;
-        mouse-cursor: root.enabled ? pointer : default;
+        enabled: root.enabled && !root.inert;
+        mouse-cursor: root.enabled && !root.inert ? pointer : default;
         clicked => { root.clicked(); }
     }
 }

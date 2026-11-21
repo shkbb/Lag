@@ -65,14 +65,29 @@ export component LagScrollView {
         @children
     }
 
-    Timer {
-        interval: 16ms;
-        running: root.auto-mine && root.auto-d > 0;
-        triggered => {
-            // gentle near the press point, fast further away: ~600 px/s at 100 px, ~5000 px/s at 400 px
-            let step = (root.auto-d / 10 + root.auto-d * root.auto-d / 4000) * 1px;
+    // Moved every frame by speed x real elapsed time (2.1.0 stepped a fixed distance on a 16 ms timer: on a 165 Hz
+    // screen the page jumped every second or third frame, "very choppy"). The clock follows the frame clock
+    // while scrolling, so the change handler runs once per frame; the timer only keeps it going if frames stall.
+    property <bool> auto-running: root.auto-mine && root.auto-d > 0;
+    property <duration> auto-clock: root.auto-running ? animation-tick() : 0ms;
+    property <duration> auto-last: 0ms;
+    // gentle near the press point, fast further away: ~600 px/s at 100 px, ~5000 px/s at 400 px
+    property <float> auto-speed: (root.auto-d / 10 + root.auto-d * root.auto-d / 4000) / 16; // px per ms
+    function auto-step() {
+        let now = animation-tick();
+        let dt = (now - root.auto-last) / 1ms;
+        root.auto-last = now;
+        if (dt > 0 && dt < 100) {
+            let step = root.auto-speed * dt * 1px;
             flick.content-y = clamp(flick.content-y - (root.auto-off > 0 ? step : -step), -root.max-scroll, 0px);
         }
+    }
+    changed auto-running => { root.auto-last = animation-tick(); }
+    changed auto-clock => { if (root.auto-running) { root.auto-step(); } }
+    Timer {
+        interval: 16ms;
+        running: root.auto-running;
+        triggered => { root.auto-step(); }
     }
 
     // Slim 10px scrollbar overlay on the right edge; 6px thumb invisible at rest,

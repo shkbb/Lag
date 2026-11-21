@@ -73,6 +73,15 @@ pub(super) fn rows(view: &CloudView) -> Vec<SettingsRowData> {
     add.enabled = view.configured;
     add.checked = view.dropbox_ready;
     add.with_toggle = view.onedrive_ready;
+    // already connected (bits: 1 Google Drive, 2 Dropbox, 4 OneDrive): no second sign-in for the same storage
+    add.selected = view.accounts.iter().fold(0, |bits, a| {
+        bits | match a.settings.provider {
+            ProviderKind::GoogleDrive => 1,
+            ProviderKind::Dropbox => 2,
+            ProviderKind::OneDrive => 4,
+            _ => 0,
+        }
+    });
     add.description = view.error.unwrap_or(if view.accounts.is_empty() { "Cloud_Desc" } else { "" }).into();
     add.auto_mode = view.error.is_some();
     rows.push(add);
@@ -224,6 +233,18 @@ mod tests {
         assert_eq!((shown[0].kind, shown[0].description.as_str()), (17, "Cloud_Desc"));
         let failed = rows(&CloudView { configured: true, error: Some("Cloud_Error_WebDavLogin"), ..Default::default() });
         assert!(failed[0].auto_mode && failed[0].description == "Cloud_Error_WebDavLogin");
+        assert_eq!(shown[0].selected, 0, "nothing marked connected");
+    }
+
+    #[test]
+    fn connected_storages_are_marked_on_the_add_row() {
+        let shown = rows(&view(vec![
+            account(ProviderKind::GoogleDrive, "g", Role::Primary),
+            account(ProviderKind::Dropbox, "d", Role::Mirror),
+            account(ProviderKind::Folder, "f", Role::Mirror),
+        ]));
+        let add = shown.iter().find(|r| r.kind == 17).unwrap();
+        assert_eq!(add.selected, 1 | 2, "Google Drive + Dropbox; a folder can be added again");
     }
 
     #[test]

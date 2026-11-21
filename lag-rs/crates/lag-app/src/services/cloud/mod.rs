@@ -352,7 +352,9 @@ impl CloudService {
 
     /// Sign-in for a provider that uses OAuth in the browser (Google Drive, Dropbox, OneDrive).
     pub fn connect_oauth(&self, kind: ProviderKind) {
-        if self.connecting.borrow().is_some() {
+        // one sign-in at a time, and none for a storage that is already connected (2.1.0 let the owner press
+        // "Dropbox" again and again: each press opened a new sign-in)
+        if self.connecting.borrow().is_some() || self.settings.borrow().accounts.iter().any(|a| a.provider == kind) {
             return;
         }
         let Some((service, client)) = providers::oauth_of(kind) else {
