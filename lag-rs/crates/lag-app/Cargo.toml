@@ -40,11 +40,16 @@ ico = "0.6"
 # player: libmpv rendering, GNU-compatible OpenGL bindings.
 lag-player = { workspace = true }
 
+# themes: the UI loaded from files at run time (src/ui_twin)
+slint-interpreter = "=1.18.1"
+
 [build-dependencies]
 slint-build = "1.18.1"
+# the UI twin generator (build_twin.rs) reads the .slint types; "internal" = full type info, pinned exactly
+slint-interpreter = { version = "=1.18.1", features = ["internal"] }
+i-slint-compiler = "=1.18.1"
 
 [dev-dependencies]
-slint-interpreter = "1.18.1"
 spin_on = "0.1"
 
 [[bin]]

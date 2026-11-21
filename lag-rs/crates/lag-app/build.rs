@@ -1,9 +1,17 @@
 use std::{env, path::PathBuf, process::Command};
 
+#[path = "build_twin.rs"]
+mod build_twin;
+
 fn main() {
     // The app root. ui/gallery.slint (design-system showcase) is type-checked by `cargo test -p lag-app`
     // via the gallery_compiles test instead of being compiled into the exe.
     slint_build::compile("ui/app.slint").expect("slint compile app");
+    // the same UI as a typed API over the interpreter, for themes (docs/spec/themes.md, phase 1)
+    let out = PathBuf::from(env::var("OUT_DIR").unwrap());
+    build_twin::generate(std::path::Path::new("ui/app.slint"), &out.join("ui_twin.rs"));
+    println!("cargo:rerun-if-changed=build_twin.rs");
+    println!("cargo:rerun-if-changed=ui");
     embed_exe_icon();
 }
 

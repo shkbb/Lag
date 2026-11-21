@@ -109,3 +109,28 @@ The Linux port benefits: the interpreter and the theme system are platform-indep
 4. **Yes**: themes restyle the separate windows too (in-game HUD, toasts, tray menu, fullscreen player overlay) —
    moved from "later" into phase 3.
 5. **Code + live reload first**, the graphical editor after (phases as in §8).
+
+## 12. Phase 1 design: the UI twin (started 2026-11-22)
+Problem: Lag's Rust code reaches the UI through ~270 typed calls that `slint-build` generates at build time
+(`ui.global::<MainVM>().set_is_recording(..)`, `on_save_replay(..)`, structs in models, the `Page` enum). The
+interpreter's API is by name and `Value`. Rewriting 270 call sites by hand would be slow and error-prone.
+
+Solution: `crates/lag-app/build_twin.rs` (build script) compiles `ui/app.slint` with the interpreter's compiler
+(full type info, `slint-interpreter` "internal" feature, pinned `=1.18.1`) and GENERATES `$OUT_DIR/ui_twin.rs`: the
+same typed API, method for method, on top of `slint_interpreter::ComponentInstance`. `src/ui_twin/rt.rs` is the
+hand-written runtime: value conversions (numbers, strings, colours, brushes, images, models of structs both ways),
+`TwinGlobal` / `TwinComponent` (`new`, `global`, `window`, `show`, `hide`, `run`, `as_weak`, `clone_strong`), a
+`Weak` with `upgrade` / `upgrade_in_event_loop`, and `load(entry, api_dir)` which compiles a UI once and makes its
+windows available. A name a theme lacks is logged once (`[Theme] ...`) and returns a default, never a crash.
+
+Generated today: 9 globals, 6 windows, 17 structs, 1 enum, 716 methods (1261 lines). Test
+`ui_twin::tests::the_twin_drives_the_interpreted_ui`: Lag's whole UI loaded at run time and driven through the twin
+(typed properties, the `Page` enum, a UI callback reaching Rust with a typed argument, a pure callback Rust implements
+for translations, a model of structs holding a model of structs, read back).
+
+Next steps of phase 1:
+1. Switch the app: `slint::include_modules!()` -> `pub use ui_twin::*`; `slint::ComponentHandle` / `slint::Weak`
+   uses -> the twin's; `rt::load` at start-up from a `ui` folder shipped next to Lag.exe (dev: the source folder).
+2. `--ui-check` / `--gpu-check` on the twin; every screenshot identical to the compiled build.
+3. Measure start-up time and memory, compiled vs interpreted, on the owner's PC; decide on caching if needed.
+4. Remove the compiled path (`slint-build`) once the twin is the only one.

@@ -9,6 +9,7 @@ mod services;
 mod shell;
 mod snapshot;
 mod startup;
+mod ui_twin;
 mod views;
 
 fn main() {
