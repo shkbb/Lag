@@ -279,6 +279,7 @@
   "Cloud_Space": "Utrymme",
   "Cloud_Space_Value": "Lag: {0} · ledigt {1}",
   "Cloud_Space_Unlimited": "Lag: {0} · obegränsat utrymme",
+  "Cloud_Space_Hidden": "Lag: {0} · ledigt utrymme okänt",
   "Cloud_Space_Loading": "Kontrollerar…",
   "Cloud_Space_Unknown": "Okänt",
   "Cloud_Upload": "Ladda upp",

@@ -279,6 +279,7 @@
   "Cloud_Space": "容量",
   "Cloud_Space_Value": "Lag: {0} · 空き {1}",
   "Cloud_Space_Unlimited": "Lag: {0} · 容量無制限",
+  "Cloud_Space_Hidden": "Lag: {0} · 空き容量は不明",
   "Cloud_Space_Loading": "確認中…",
   "Cloud_Space_Unknown": "不明",
   "Cloud_Upload": "アップロード",

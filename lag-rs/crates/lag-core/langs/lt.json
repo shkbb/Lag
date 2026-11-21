@@ -279,6 +279,7 @@
   "Cloud_Space": "Vieta",
   "Cloud_Space_Value": "Lag: {0} · laisva {1}",
   "Cloud_Space_Unlimited": "Lag: {0} · neribota vieta",
+  "Cloud_Space_Hidden": "Lag: {0} · laisva vieta nežinoma",
   "Cloud_Space_Loading": "Tikrinama…",
   "Cloud_Space_Unknown": "Nežinoma",
   "Cloud_Upload": "Įkelti",

@@ -279,6 +279,7 @@
   "Cloud_Space": "Tila",
   "Cloud_Space_Value": "Lag: {0} · vapaana {1}",
   "Cloud_Space_Unlimited": "Lag: {0} · rajaton tila",
+  "Cloud_Space_Hidden": "Lag: {0} · vapaa tila tuntematon",
   "Cloud_Space_Loading": "Tarkistetaan…",
   "Cloud_Space_Unknown": "Tuntematon",
   "Cloud_Upload": "Lähetä",

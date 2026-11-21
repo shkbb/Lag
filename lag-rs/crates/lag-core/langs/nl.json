@@ -279,6 +279,7 @@
   "Cloud_Space": "Ruimte",
   "Cloud_Space_Value": "Lag: {0} · vrij {1}",
   "Cloud_Space_Unlimited": "Lag: {0} · onbeperkte opslag",
+  "Cloud_Space_Hidden": "Lag: {0} · vrije ruimte onbekend",
   "Cloud_Space_Loading": "Controleren…",
   "Cloud_Space_Unknown": "Onbekend",
   "Cloud_Upload": "Uploaden",

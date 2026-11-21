@@ -279,6 +279,7 @@
   "Cloud_Space": "Plads",
   "Cloud_Space_Value": "Lag: {0} · ledig {1}",
   "Cloud_Space_Unlimited": "Lag: {0} · ubegrænset lagerplads",
+  "Cloud_Space_Hidden": "Lag: {0} · ledig plads ukendt",
   "Cloud_Space_Loading": "Kontrollerer…",
   "Cloud_Space_Unknown": "Ukendt",
   "Cloud_Upload": "Upload",

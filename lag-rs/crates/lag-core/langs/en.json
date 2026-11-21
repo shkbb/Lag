@@ -279,6 +279,7 @@
   "Cloud_Space": "Space",
   "Cloud_Space_Value": "Lag: {0} · free {1}",
   "Cloud_Space_Unlimited": "Lag: {0} · unlimited storage",
+  "Cloud_Space_Hidden": "Lag: {0} · free space unknown",
   "Cloud_Space_Loading": "Checking…",
   "Cloud_Space_Unknown": "Unknown",
   "Cloud_Upload": "Upload",

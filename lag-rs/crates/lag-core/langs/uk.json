@@ -279,6 +279,7 @@
   "Cloud_Space": "Місце",
   "Cloud_Space_Value": "Lag: {0} · вільно {1}",
   "Cloud_Space_Unlimited": "Lag: {0} · місце без обмежень",
+  "Cloud_Space_Hidden": "Lag: {0} · вільне місце невідоме",
   "Cloud_Space_Loading": "Перевіряю…",
   "Cloud_Space_Unknown": "Невідомо",
   "Cloud_Upload": "Вивантажувати",

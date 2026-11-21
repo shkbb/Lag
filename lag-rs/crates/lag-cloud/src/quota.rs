@@ -96,6 +96,16 @@ pub struct ProviderSpace {
     pub total: Option<u64>,
 }
 
+impl ProviderSpace {
+    /// The storage would not say how much is free (OneDrive's app-folder access cannot read the drive's quota):
+    /// nothing is held back for space, Settings says the free space is unknown. Not "unlimited" (`total: None`).
+    pub const UNKNOWN: Self = Self { free: u64::MAX, total: Some(u64::MAX) };
+
+    pub fn is_unknown(&self) -> bool {
+        *self == Self::UNKNOWN
+    }
+}
+
 pub const GIB: u64 = 1 << 30;
 
 /// Room for `incoming` bytes in one account. Auto-cleanup (`auto_cleanup` + `max_size_gb`, the cloud's
@@ -128,7 +138,7 @@ pub fn plan_cloud_limit(
             return plan;
         }
     }
-    if provider.is_some_and(|p| incoming > p.free + freed) {
+    if provider.is_some_and(|p| incoming > p.free.saturating_add(freed)) {
         plan.no_room = Some(NoRoom::CloudFull);
     }
     plan
@@ -193,6 +203,9 @@ mod tests {
         assert_eq!((plan.delete.len(), plan.no_room), (2, Some(NoRoom::OwnLimit)));
         // off (the default): the limit does nothing, nothing is removed
         assert_eq!(plan_cloud_limit(&index, false, 3, roomy, GIB), CloudLimitPlan::default());
+        // a storage that does not report its space (or is unlimited): cleanup frees bytes without overflowing
+        let plan = plan_cloud_limit(&index, true, 3, Some(ProviderSpace::UNKNOWN), GIB);
+        assert_eq!((plan.delete, plan.no_room), (vec![ids[1]], None));
     }
 
     #[test]

@@ -297,7 +297,11 @@ impl CloudProvider for OneDrive {
     }
 
     fn space(&self) -> CloudResult<ProviderSpace> {
-        let drive = self.get("https://graph.microsoft.com/v1.0/me/drive?select=quota")?.ok_or(CloudError::NotFound)?;
+        // app-folder access may not read the drive itself (live, 2026-11-21: 403 accessDenied)
+        let drive = match self.get("https://graph.microsoft.com/v1.0/me/drive?select=quota") {
+            Err(CloudError::Permanent(e)) if e.starts_with("HTTP 403") => return Ok(ProviderSpace::UNKNOWN),
+            other => other?.ok_or(CloudError::NotFound)?,
+        };
         let quota = &drive["quota"];
         Ok(match (quota["remaining"].as_u64(), quota["total"].as_u64()) {
             (Some(free), total) => ProviderSpace { free, total },
@@ -437,6 +441,8 @@ mod tests {
         let d = onedrive(&http);
         http.expect(|_| ok(json!({"quota": {"remaining": 4000, "total": 5000}})));
         assert_eq!(d.space().unwrap(), ProviderSpace { free: 4000, total: Some(5000) });
+        http.expect(|_| (403, vec![], br#"{"error":{"code":"accessDenied","message":"Access denied"}}"#.to_vec()));
+        assert!(d.space().unwrap().is_unknown(), "app-folder access cannot read the quota: unknown, not an error");
         http.expect(|_| ok(json!({"value": [{"name": "x.json", "@microsoft.graph.downloadUrl": "https://dl.example/n"}]})));
         let mut p = FileProps::new();
         p.insert(props::CLIP_ID.into(), "c".into());

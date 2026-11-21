@@ -279,6 +279,7 @@
   "Cloud_Space": "Ruum",
   "Cloud_Space_Value": "Lag: {0} · vaba {1}",
   "Cloud_Space_Unlimited": "Lag: {0} · piiramatu ruum",
+  "Cloud_Space_Hidden": "Lag: {0} · vaba ruum teadmata",
   "Cloud_Space_Loading": "Kontrollin…",
   "Cloud_Space_Unknown": "Teadmata",
   "Cloud_Upload": "Laadi üles",

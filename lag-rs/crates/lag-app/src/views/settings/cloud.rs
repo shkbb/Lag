@@ -119,6 +119,7 @@ fn space_text(a: &AccountView) -> String {
     let lag = size(u.lag_bytes);
     // two placeholders per template at most (i18n tests): "free {1}" gets "4.8 TB of 5 TB" built first
     match u.space.total {
+        _ if u.space.is_unknown() => i18n::format("Cloud_Space_Hidden", &[&lag]),
         Some(total) => i18n::format("Cloud_Space_FreeOf", &[&size(u.space.free), &size(total)])
             .and_then(|free| i18n::format("Cloud_Space_Value", &[&lag, &free])),
         None => i18n::format("Cloud_Space_Unlimited", &[&lag]),

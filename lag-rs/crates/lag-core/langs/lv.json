@@ -279,6 +279,7 @@
   "Cloud_Space": "Vieta",
   "Cloud_Space_Value": "Lag: {0} · brīvs {1}",
   "Cloud_Space_Unlimited": "Lag: {0} · neierobežota vieta",
+  "Cloud_Space_Hidden": "Lag: {0} · brīvā vieta nav zināma",
   "Cloud_Space_Loading": "Pārbauda…",
   "Cloud_Space_Unknown": "Nezināms",
   "Cloud_Upload": "Augšupielādēt",
