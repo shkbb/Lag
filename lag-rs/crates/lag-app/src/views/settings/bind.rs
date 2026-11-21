@@ -130,6 +130,8 @@ pub(super) fn bind_controls(ui: &AppWindow, ctx: &Rc<AppCtx>, state: &Rc<RefCell
                 });
             }
             "cloud-add-google" => c.cloud().connect(),
+            "cloud-add-dropbox" => c.cloud().connect_oauth(lag_cloud::ProviderKind::Dropbox),
+            "cloud-add-onedrive" => c.cloud().connect_oauth(lag_cloud::ProviderKind::OneDrive),
             "cloud-cancel" => c.cloud().cancel_connect(),
             "cloud-add-folder" => {
                 // a folder picker (a NAS share, a network drive, a synced folder), off the UI thread

@@ -1,7 +1,7 @@
 //! The cloud as the app sees it (docs/spec/cloud.md). UI thread only (`Rc`); network work happens on the cloud
 //! worker thread (`worker`) and on short-lived sign-in / usage threads, and comes back through the event loop.
 //! * `mod.rs`    settings (`%APPDATA%\Lag\cloud.json`), accounts, sign-in, space; the cloud's state for the
-//!               library (indexes + transfers) and the commands the library sends (upload, delete, download);
+//!   library (indexes + transfers) and the commands the library sends (upload, delete, download);
 //! * `worker`    the background thread that runs the transfer queue and keeps the index copies;
 //! * `providers` which storage an account is (Google Drive, ...);
 //! * `facts`     what the worker reads / writes about a clip on this PC (metadata, thumbnails, dates);
@@ -55,8 +55,11 @@ pub struct CloudView {
     pub connecting: bool,
     /// i18n key of the last sign-in problem.
     pub error: Option<&'static str>,
-    /// This build has an OAuth client (lag-rs/cloud-secrets.env at build time).
+    /// This build has an OAuth client (lag-rs/cloud-secrets.env at build time) for Google Drive...
     pub configured: bool,
+    /// ... for Dropbox, for OneDrive.
+    pub dropbox_ready: bool,
+    pub onedrive_ready: bool,
 }
 
 /// What the library needs from the cloud: every account's index (primary first) and the transfers.
@@ -156,6 +159,8 @@ impl CloudService {
             connecting: self.connecting.borrow().is_some(),
             error: self.error.get(),
             configured: ClientConfig::built_in().is_some(),
+            dropbox_ready: ClientConfig::dropbox().is_some(),
+            onedrive_ready: ClientConfig::onedrive().is_some(),
         }
     }
 
@@ -288,6 +293,8 @@ impl CloudService {
             ProviderKind::GoogleDrive => Some(format!("https://drive.google.com/file/d/{}/view", entry.remote_id.as_deref()?)),
             // a NAS folder: its path (the library shows it in Explorer)
             ProviderKind::Folder => entry.remote_id.clone(),
+            ProviderKind::Dropbox => Some("https://www.dropbox.com/home/Apps".into()),
+            ProviderKind::OneDrive => Some("https://onedrive.live.com/".into()),
             _ => None,
         }
     }
@@ -340,10 +347,15 @@ impl CloudService {
 
     /// "Connect": opens Google's sign-in in the browser and waits for it on a thread.
     pub fn connect(&self) {
+        self.connect_oauth(ProviderKind::GoogleDrive);
+    }
+
+    /// Sign-in for a provider that uses OAuth in the browser (Google Drive, Dropbox, OneDrive).
+    pub fn connect_oauth(&self, kind: ProviderKind) {
         if self.connecting.borrow().is_some() {
             return;
         }
-        let Some(client) = ClientConfig::built_in() else {
+        let Some((service, client)) = providers::oauth_of(kind) else {
             self.error.set(Some("Cloud_Error_NotConfigured"));
             self.notify();
             return;
@@ -358,8 +370,8 @@ impl CloudService {
         std::thread::spawn(move || {
             let result = WinHttp::new()
                 .map_err(|e| SignInError::Network(e.to_string()))
-                .and_then(|http| oauth::sign_in(&http, &client, &win::open_browser, SIGN_IN_TIMEOUT, &cancel));
-            post(move |s| s.finish_connect(result));
+                .and_then(|http| oauth::sign_in_for(service, &http, &client, &win::open_browser, SIGN_IN_TIMEOUT, &cancel));
+            post(move |s| s.finish_connect(kind, result));
         });
     }
 
@@ -369,20 +381,20 @@ impl CloudService {
         }
     }
 
-    fn finish_connect(&self, result: Result<Tokens, SignInError>) {
+    fn finish_connect(&self, kind: ProviderKind, result: Result<Tokens, SignInError>) {
         *self.connecting.borrow_mut() = None;
         match result {
             Ok(tokens) => {
-                let id = AccountId::new(ProviderKind::GoogleDrive, &tokens.sub);
+                let id = AccountId::new(kind, &tokens.sub);
                 if let Some(store) = TokenStore::for_user() {
                     if let Err(e) = store.save(&id, &tokens) {
                         log::warn!("[Cloud] storing the sign-in failed: {e}");
                     }
                 }
-                log::info!("[Cloud] Google Drive connected ({id})");
+                log::info!("[Cloud] {kind:?} connected ({id})");
                 self.add_account(AccountSettings {
                     id: id.clone(),
-                    provider: ProviderKind::GoogleDrive,
+                    provider: kind,
                     display_name: tokens.email.clone(),
                     ..Default::default()
                 });
@@ -503,11 +515,13 @@ impl CloudService {
     /// "Disconnect": forgets the account here and tells the provider to forget Lag's access. Files stay in the
     /// cloud.
     pub fn disconnect(&self, id: &AccountId) {
+        let kind = self.settings.borrow().accounts.iter().find(|a| &a.id == id).map(|a| a.provider);
         if let Some(store) = TokenStore::for_user() {
-            if let (Some(tokens), true) = (store.load(id), self.online.get()) {
+            let service = kind.and_then(providers::oauth_of).map(|(service, _)| service);
+            if let (Some(tokens), Some(service), true) = (store.load(id), service, self.online.get()) {
                 std::thread::spawn(move || {
                     if let Ok(http) = WinHttp::new() {
-                        oauth::revoke(&http, &tokens);
+                        oauth::revoke_for(service, &http, &tokens);
                     }
                 });
             }
@@ -542,8 +556,31 @@ impl CloudService {
             }];
         }
         let space = lag_cloud::quota::ProviderSpace { free: 4_800 << 30, total: Some(5_120 << 30) };
-        self.status.borrow_mut().insert(id, (Some(Usage { lag_bytes: 37 << 30, clips: 214, space }), None));
+        self.status.borrow_mut().insert(id.clone(), (Some(Usage { lag_bytes: 37 << 30, clips: 214, space }), None));
+        // the library: two clips only in the cloud, one of them coming down to this PC
+        let mut index = CloudIndex::default();
+        let now = chrono::Utc::now();
+        let (only, coming) = (ClipId::new_random(), ClipId::new_random());
+        let entry = |name: &str, game: &str, favorite: bool| lag_cloud::index::IndexEntry {
+            file_name: name.into(),
+            game: Some(game.into()),
+            created: now,
+            duration_seconds: Some(119.5),
+            size: 180 << 20,
+            favorite,
+            remote_id: Some("preview".into()),
+            ..Default::default()
+        };
+        index.upsert(only, entry("Preview-Cloud-Replay.mp4", "Counter-Strike 2", true), now);
+        index.upsert(coming, entry("Preview-Downloading-Replay.mp4", "Grand Theft Auto V", false), now);
+        {
+            let mut lib = self.library.borrow_mut();
+            lib.indexes = vec![(id.clone(), index)];
+            lib.transfers = HashMap::from([((coming, id), Transfer::Downloading(0.42))]);
+            lib.connected = true;
+        }
         self.notify();
+        self.tell_library(LibraryEvent::Changed);
     }
 
     /// Asks every connected account how much space it has (Settings shows it).

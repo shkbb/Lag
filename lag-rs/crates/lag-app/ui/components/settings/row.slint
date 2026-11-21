@@ -36,7 +36,7 @@ export component SettingsRow {
     callback action(string);
     // a row with its own on/off switch stays readable when off: only its dropdown is disabled (owner, 2026-11-17:
     // "webcam" and "stats" looked greyed out while "keyboard & mouse" did not)
-    opacity: data.enabled || data.with-toggle ? 1 : 0.45;
+    opacity: data.enabled || data.with-toggle || data.kind == 17 ? 1 : 0.45;
     VerticalLayout {
         padding-left: 18px; padding-right: 18px;
         padding-top: root.data.kind == 14 ? 2px : root.data.kind == 4 ? 11px : 15px;
@@ -162,6 +162,12 @@ export component SettingsRow {
                 if !root.data.custom: VerticalLayout { alignment: center;
                     RChipButton { text: Tr.t("Cloud_GoogleDrive", Tr.rev); active: true; enabled: root.data.enabled;
                         clicked => { root.action("cloud-add-google"); } }
+                }
+                if !root.data.custom && root.data.checked: VerticalLayout { alignment: center;
+                    RChipButton { text: "Dropbox"; clicked => { root.action("cloud-add-dropbox"); } }
+                }
+                if !root.data.custom && root.data.with-toggle: VerticalLayout { alignment: center;
+                    RChipButton { text: "OneDrive"; clicked => { root.action("cloud-add-onedrive"); } }
                 }
                 if !root.data.custom: VerticalLayout { alignment: center;
                     RChipButton { text: Tr.t("Cloud_Folder", Tr.rev); clicked => { root.action("cloud-add-folder"); } }

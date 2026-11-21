@@ -17,6 +17,8 @@ fn main() {
         match key.trim() {
             "GOOGLE_CLIENT_ID" => println!("cargo:rustc-env=LAG_GOOGLE_CLIENT_ID={value}"),
             "GOOGLE_CLIENT_SECRET" => println!("cargo:rustc-env=LAG_GOOGLE_CLIENT_SECRET={value}"),
+            "DROPBOX_APP_KEY" => println!("cargo:rustc-env=LAG_DROPBOX_APP_KEY={value}"),
+            "ONEDRIVE_CLIENT_ID" => println!("cargo:rustc-env=LAG_ONEDRIVE_CLIENT_ID={value}"),
             _ => {}
         }
     }

@@ -69,7 +69,10 @@ pub(super) fn rows(view: &CloudView) -> Vec<SettingsRowData> {
     // kind 17: add a storage. custom = a sign-in / check is running; enabled = Google sign-in available
     let mut add = row("cloud-add", if view.accounts.is_empty() { "Cloud_Connect_Title" } else { "Cloud_Add" }, 17);
     add.custom = view.connecting;
+    // which sign-ins this build has: enabled = Google Drive, checked = Dropbox, with-toggle = OneDrive
     add.enabled = view.configured;
+    add.checked = view.dropbox_ready;
+    add.with_toggle = view.onedrive_ready;
     add.description = view.error.unwrap_or(if view.accounts.is_empty() { "Cloud_Desc" } else { "" }).into();
     add.auto_mode = view.error.is_some();
     rows.push(add);

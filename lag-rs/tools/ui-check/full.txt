@@ -70,6 +70,12 @@ scroll 700 500 -600
 wait 300
 shot s-library-cloud-bottom
 scroll 700 500 3000
+page library
+wait 700
+shot l-cloud-cards
+page settings
+tab 3
+wait 300
 tab 4
 wait 300
 shot s-general-top

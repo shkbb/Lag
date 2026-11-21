@@ -235,7 +235,7 @@ impl CloudProvider for WebDav {
             let notes = self.notes_url(&url);
             let segments: Vec<String> = self.relative(&notes).trim_end_matches('/').split('/').map(str::to_owned).collect();
             self.ensure_folder(&segments)?;
-            let note = sidecar::Note { path: rel.clone(), size, props: props.clone() };
+            let note = sidecar::Note { path: rel.clone(), name: name.to_owned(), size, props: props.clone() };
             self.put_small(&format!("{notes}{}", sidecar::name(&rel)), &serde_json::to_vec(&note).unwrap_or_default())?;
         }
         Ok(RemoteFile { id: url, name: name.to_owned(), size, hash: None, props: props.clone() })
@@ -429,7 +429,7 @@ mod tests {
         assert_eq!(http.remaining(), 0);
 
         // listing: PROPFIND the notes, GET each
-        let note = serde_json::to_vec(&sidecar::Note { path: "Lag/Desktop/my clip.mp4".into(), size: 10, props: props.clone() }).unwrap();
+        let note = serde_json::to_vec(&sidecar::Note { path: "Lag/Desktop/my clip.mp4".into(), name: "my clip.mp4".into(), size: 10, props: props.clone() }).unwrap();
         http.expect(|r| {
             assert_eq!((r.method, r.header("Depth")), (Method::Propfind, Some("1")));
             let xml = r#"<?xml version="1.0"?><d:multistatus xmlns:d="DAV:">

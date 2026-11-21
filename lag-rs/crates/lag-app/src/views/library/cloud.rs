@@ -105,7 +105,7 @@ pub(super) fn merge(clips: &mut Vec<ClipEntry>, cloud: &CloudLibrary, store: Opt
     }
     if !added.is_empty() {
         clips.extend(added);
-        clips.sort_by(|a, b| b.created_date.cmp(&a.created_date));
+        clips.sort_by_key(|c| std::cmp::Reverse(c.created_date));
     }
     let mut after: Vec<String> = clips.iter().filter(|c| c.is_cloud_only()).map(|c| c.file_path.clone()).collect();
     let mut before = before;

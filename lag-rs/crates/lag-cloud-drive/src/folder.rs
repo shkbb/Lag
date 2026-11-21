@@ -176,7 +176,7 @@ impl CloudProvider for FolderStorage {
             let dir = self.notes_dir(&target);
             std::fs::create_dir_all(&dir).map_err(io)?;
             let rel = self.relative(&target);
-            let note = sidecar::Note { path: rel.clone(), size, props: props.clone() };
+            let note = sidecar::Note { path: rel.clone(), name: name.to_owned(), size, props: props.clone() };
             std::fs::write(dir.join(sidecar::name(&rel)), serde_json::to_vec_pretty(&note).unwrap_or_default()).map_err(io)?;
         }
         Ok(RemoteFile {

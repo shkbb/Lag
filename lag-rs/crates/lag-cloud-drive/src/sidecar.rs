@@ -11,8 +11,12 @@ pub const DIR: [&str; 2] = [".lag", "props"];
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Note {
-    /// The file's path relative to the storage base, '/'-separated.
+    /// Where the provider finds the file: its path relative to the storage base, '/'-separated (folder, WebDAV,
+    /// Dropbox), or its item id (OneDrive).
     pub path: String,
+    /// The file's name (when `path` does not end with it).
+    #[serde(default)]
+    pub name: String,
     pub size: u64,
     pub props: FileProps,
 }

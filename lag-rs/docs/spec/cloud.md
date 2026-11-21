@@ -110,12 +110,22 @@ Persistent (`%LOCALAPPDATA%\Lag\cloud\queue.json`), survives restarts and crashe
 - a clip still being written (the replay is being saved, the editor exports) is not uploaded until the file
   is closed and stable.
 
-## 9. Sign-in and secrets
-OAuth 2 with PKCE and a loopback redirect (`http://127.0.0.1:<port>`): the system browser opens, the user
-signs in, the app receives the code. Google Drive scope `drive.file` (only files Lag created; no Google
-security assessment needed). Tokens stored per account encrypted with Windows DPAPI (user scope), never in
-settings.json. The OAuth client id ships in the exe (desktop apps cannot keep a secret; PKCE is what makes it
-safe). Owner creates the Google Cloud project + desktop OAuth client once.
+## 9. Storages, sign-in and secrets
+| storage | crate module | sign-in | where Lag writes | file properties |
+|---|---|---|---|---|
+| Google Drive | `drive` | OAuth PKCE, loopback `127.0.0.1:<any port>`, client id + secret from `cloud-secrets.env` | `Lag/` in My Drive, scope `drive.file` (only Lag's files) | Drive `appProperties` |
+| Dropbox | `dropbox` | OAuth PKCE (no secret), loopback `http://localhost:53982` (registered exactly) | the app folder `Apps/<app>/Lag/` | notes in `Lag/.lag/props` |
+| OneDrive (personal) | `onedrive` | OAuth PKCE (no secret), loopback `http://localhost:<any port>` | the app folder `Apps/<app>/Lag/` (scope `Files.ReadWrite.AppFolder`) | notes in `.lag-props` (by item id) |
+| Network folder / NAS | `folder` | none: a folder Lag can write to (`\\nas\share`, mapped drive, synced folder) | `<folder>/Lag/` | notes in `Lag/.lag/props` |
+| WebDAV (Nextcloud, ownCloud, Synology, QNAP, TrueNAS, Seafile...) | `webdav` | login + app password, checked by PROPFIND before it is added | `<webdav folder>/Lag/` | notes in `Lag/.lag/props` |
+
+OAuth: the system browser opens, the user signs in, the app receives the code on the loopback (`oauth::Service`
+describes each provider). Tokens and WebDAV passwords are stored per account encrypted with Windows DPAPI (user
+scope, `%LOCALAPPDATA%\Lag\cloud\*.token|*.secret`), never in settings. OAuth client ids come from the gitignored
+`lag-rs/cloud-secrets.env` at build time (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `DROPBOX_APP_KEY`,
+`ONEDRIVE_CLIENT_ID`); a provider without its key is simply not offered. Desktop apps cannot keep a secret; PKCE is
+what makes the flow safe. Index writes are conditional everywhere: Drive `version`, Dropbox `rev` +
+`strict_conflict`, OneDrive / WebDAV `If-Match` ETag, NAS a lock file + modified time.
 
 ## 11. Every library feature with the cloud
 Owner, 2026-11-20: "all library functions have to work, the storage limit and so on". Each one, explicitly:
@@ -148,9 +158,14 @@ Owner, 2026-11-20: "all library functions have to work, the storage limit and so
    Live check: `cargo run -p lag-cloud-drive --example drive_live --release` (opens the browser).
    PASSED on the owner's Drive 2026-11-20: sign-in, 20 MB in 3 chunks (9.9 s), byte-exact download, stream URL,
    rescan without the index, delete + tombstone.
-4. Engine: queue worker thread, file-stable check, pause-while-gaming, speed limit.
-5. UI: Settings > Cloud page, library badges + menus, download on play, first-run flow on a new PC.
-6. Dropbox, OneDrive providers (same trait).
+4. DONE: queue worker (`lag-app/src/services/cloud/worker.rs`): uploads after save by the rules, pause while a
+   game runs (resumes the session), index copies on disk, thumbnails of cloud clips.
+5. DONE: Settings > Library (storages, roles, rules, delete mode), library badges + cloud-only cards + menus,
+   play from the cloud, save to this PC, delete flow (§12), size limit evicting cloud copies first.
+6. DONE in code: Network folder / NAS, WebDAV, Dropbox, OneDrive providers (same trait; 36 provider tests on
+   scripted HTTP and real folders). Live checks: Google Drive passed; NAS / WebDAV / Dropbox / OneDrive need the
+   owner's storages (Dropbox / OneDrive also his app registrations).
+7. NOT YET: speed limit; a speed / bandwidth setting is not in the UI.
 
 ## Decisions (owner, 2026-11-20)
 - Cloud-only clips play from the cloud; the user can save them locally.
