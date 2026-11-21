@@ -1,29 +1,13 @@
-// The Lag theme API, version 1 (docs/spec/themes.md §4). A theme imports what it needs from "@lag/api.slint":
+// The Lag theme API, version 1 (docs/spec/themes.md §4, reference: docs/themes/API.md). A theme imports what it
+// needs from "@lag/api.slint":
 //   import { MainVM, LibraryVM, Tr } from "@lag/api.slint";
 // Lag fills these globals and listens to their callbacks; the theme draws them however it likes. Lag's own
 // building blocks (buttons, cards, the settings rows...) can be imported too, e.g. "@lag/components/buttons.slint",
 // and the design tokens from "@lag/theme/tokens.slint". Names here only grow; nothing is renamed or removed
 // within an API version.
-
-// shell: recording, buffer, status, navigation, window chrome, translations
-export { Tr, MainVM, Page, WindowMetrics } from "globals.slint";
-// pages
-export { SettingsVM } from "views/settings.slint";
-export { LibraryVM, GameChipData, LibraryRowData } from "views/library.slint";
-export { PlayerVM, PlayerClip } from "views/player.slint";
-export { EditorVM } from "views/editor.slint";
-// windows over the video (player fullscreen controls, editor stage)
-export { PlayerOverlayVM } from "player_overlay.slint";
-export { EditorOverlayVM } from "editor_overlay.slint";
-// middle-button autoscroll (a theme's own lists can use LagScrollView, or drive their own)
-export { AutoScroll } from "components/scrollbar.slint";
-// data shapes the globals carry
-export { LibraryCardData } from "components/library/clip_card.slint";
-export { SettingsRowData, SettingsGroup, PresetData } from "components/settings/row.slint";
-export { ComboBoxItemData } from "components/combobox.slint";
-export { SegmentedOption } from "components/segmented_control.slint";
-export { OverlayBoxData } from "components/settings/overlay.slint";
+export { Tr, MainVM, WindowMetrics, SettingsVM, LibraryVM, PlayerVM, EditorVM, PlayerOverlayVM, EditorOverlayVM, AutoScroll } from "api/globals.slint";
 export {
-    EditorClipItem, EditorSegmentData, EditorAudioTrackData, EditorFilterData, EditorCutBand,
-    EditorTextOverlayData, EditorColorSwatch
-} from "components/editor/types.slint";
+    Page, ComboBoxItemData, SegmentedOption, OverlayBoxData, EditorClipItem, EditorSegmentData, EditorAudioTrackData,
+    EditorFilterData, EditorCutBand, EditorTextOverlayData, EditorColorSwatch, LibraryCardData, SettingsRowData,
+    SettingsGroup, PresetData, GameChipData, LibraryRowData, PlayerClip
+} from "api/types.slint";

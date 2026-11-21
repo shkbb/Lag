@@ -1,21 +1,6 @@
 import { Theme } from "../theme/tokens.slint";
-
-// Middle-button autoscroll, as in a browser (owner, 2026-11-21: "hold the wheel and scroll fast in Settings").
-// Rust (shell/autoscroll.rs) sees the middle button at window level, before any button under the cursor, and
-// fills this global in window coordinates; the scroll view under the press point claims it and scrolls itself.
-export global AutoScroll {
-    in-out property <bool> active;
-    in-out property <length> origin-x;
-    in-out property <length> origin-y;
-    in-out property <length> mouse-x;
-    in-out property <length> mouse-y;
-    // the claiming view: the smallest live, scrollable one that contains the origin (0 = nobody yet)
-    in-out property <float> owner-area;
-    in-out property <length> owner-x;
-    in-out property <length> owner-y;
-    // distance (px, + = down) Rust has measured for the owner since it last scrolled; the owner consumes it
-    in-out property <float> pending;
-}
+import { AutoScroll } from "../api/globals.slint";
+export { AutoScroll }
 
 // Ported from DarkTheme.axaml:703-742 (ScrollViewer + custom slim 10px vertical ScrollBar)
 export component LagScrollView {

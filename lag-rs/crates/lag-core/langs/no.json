@@ -361,5 +361,8 @@
   "Tray_DefaultUi": "Lags eget grensesnitt",
   "Theme_Preview": "Forhåndsvis",
   "ThemePreview_Error": "Temaet har en feil",
-  "ThemePreview_Hint": "Rett filen og lagre den: forhåndsvisningen lastes inn på nytt av seg selv."
+  "ThemePreview_Hint": "Rett filen og lagre den: forhåndsvisningen lastes inn på nytt av seg selv.",
+  "Theme_New": "Nytt tema",
+  "Theme_NewName": "Mitt tema",
+  "Theme_Created": "En kopi av Lags grensesnitt er klar til endring: {0}. Trykk Forhåndsvis for å se endringene med en gang."
 }

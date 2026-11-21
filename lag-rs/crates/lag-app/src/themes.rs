@@ -13,6 +13,15 @@ use std::io::{Read, Write};
 use std::path::{Component, Path, PathBuf};
 use std::time::{Duration, Instant};
 
+/// The theme API reference for authors (generated from ui/api at build time; docs/themes/API.md).
+pub const API_REFERENCE: &str = include_str!(concat!(env!("OUT_DIR"), "/theme_api.md"));
+
+/// Puts `API.md` into the themes folder (next to the authors' themes).
+pub fn write_reference(root: &Path) {
+    let _ = std::fs::create_dir_all(root);
+    let _ = std::fs::write(root.join("API.md"), API_REFERENCE);
+}
+
 /// The built-in theme's id.
 pub const BUILTIN: &str = "lag";
 /// The theme API version this Lag provides (`api` in theme.toml).
@@ -102,33 +111,82 @@ pub fn list() -> Vec<ThemeInfo> {
     themes
 }
 
-/// One path written inside a theme file (`import ... from "x"`, `@image-url("x")`, `import "font.ttf"`): either
-/// Lag's API (`@lag/...`) or a file inside the package, never above it or elsewhere on disk.
-fn path_ok(p: &str) -> bool {
-    let rest = p.strip_prefix("@lag/").unwrap_or(p);
-    if rest.is_empty() || p.contains(':') || p.starts_with('/') || p.starts_with('\\') || p.starts_with('@') && !p.starts_with("@lag/") {
-        return false;
+/// Where a path written in a theme file leads, as package-relative parts (`file_dir` = the file's folder inside
+/// the package). None = outside the package (above its root, a drive, an absolute path, another library).
+fn resolve(file_dir: &[String], p: &str) -> Option<Vec<String>> {
+    if p.is_empty() || p.contains(':') || p.starts_with('/') || p.starts_with('\\') || p.starts_with('@') {
+        return None;
     }
-    Path::new(rest).components().all(|c| matches!(c, Component::Normal(_)))
+    let mut at: Vec<String> = file_dir.to_vec();
+    for c in Path::new(p).components() {
+        match c {
+            Component::Normal(n) => at.push(n.to_string_lossy().into_owned()),
+            Component::CurDir => {}
+            Component::ParentDir => {
+                at.pop()?;
+            }
+            _ => return None,
+        }
+    }
+    Some(at)
 }
 
-/// The paths a `.slint` text refers to.
-fn referenced_paths(text: &str) -> Vec<String> {
+/// One path written inside a theme file (`import ... from "x"`, `@image-url("x")`, `import "font.ttf"`): either
+/// Lag's API (`@lag/...`, no way up out of it) or a file inside the package, never above it or elsewhere on disk.
+fn path_ok(file_dir: &[String], p: &str) -> bool {
+    match p.strip_prefix("@lag/") {
+        Some(rest) => !rest.is_empty() && resolve(&[], rest).is_some(),
+        None => resolve(file_dir, p).is_some(),
+    }
+}
+
+/// The text without `//` and `/* */` comments (words in comments are not imports).
+fn strip_comments(text: &str) -> String {
+    let mut out = String::with_capacity(text.len());
+    let (mut rest, mut in_string) = (text, false);
+    while let Some(c) = rest.chars().next() {
+        if !in_string && rest.starts_with("//") {
+            rest = &rest[rest.find('\n').unwrap_or(rest.len())..];
+        } else if !in_string && rest.starts_with("/*") {
+            rest = rest.get(2..).map_or("", |r| r.find("*/").map_or("", |e| &r[e + 2..]));
+        } else {
+            in_string ^= c == '"';
+            out.push(c);
+            rest = &rest[c.len_utf8()..];
+        }
+    }
+    out
+}
+
+/// The paths a `.slint` text refers to, with their byte ranges in the comment-free text.
+fn path_refs(text: &str) -> Vec<(usize, usize)> {
+    let word = |b: Option<u8>| b.is_some_and(|b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-');
+    let bytes = text.as_bytes();
     let mut out = Vec::new();
     for key in ["from", "import", "@image-url("] {
         let mut at = 0;
         while let Some(i) = text[at..].find(key) {
-            let start = at + i + key.len();
-            at = start;
-            let tail = text[start..].trim_start();
-            if let Some(s) = tail.strip_prefix('"') {
-                if let Some(end) = s.find('"') {
-                    out.push(s[..end].to_owned());
+            let (s, e) = (at + i, at + i + key.len());
+            at = e;
+            if key != "@image-url(" && (word(s.checked_sub(1).map(|j| bytes[j])) || word(bytes.get(e).copied())) {
+                continue;
+            }
+            let tail = &text[e..];
+            let skipped = tail.len() - tail.trim_start().len();
+            if tail.trim_start().starts_with('"') {
+                let start = e + skipped + 1;
+                if let Some(len) = text[start..].find('"') {
+                    out.push((start, start + len));
                 }
             }
         }
     }
     out
+}
+
+fn referenced_paths(text: &str) -> Vec<String> {
+    let clean = strip_comments(text);
+    path_refs(&clean).into_iter().map(|(s, e)| clean[s..e].to_owned()).collect()
 }
 
 /// Checks a theme folder before it is loaded or installed.
@@ -158,7 +216,12 @@ pub fn validate(dir: &Path) -> Result<(), String> {
             }
             if ext == "slint" {
                 let text = std::fs::read_to_string(&path).map_err(|e| format!("{rel}: {e}"))?;
-                if let Some(bad) = referenced_paths(&text).into_iter().find(|p| !path_ok(p)) {
+                let file_dir: Vec<String> = path
+                    .parent()
+                    .and_then(|p| p.strip_prefix(dir).ok())
+                    .map(|p| p.components().map(|c| c.as_os_str().to_string_lossy().into_owned()).collect())
+                    .unwrap_or_default();
+                if let Some(bad) = referenced_paths(&text).into_iter().find(|p| !path_ok(&file_dir, p)) {
                     return Err(format!("{rel}: \"{bad}\" points outside the theme"));
                 }
             }
@@ -251,6 +314,84 @@ fn apply_theme(theme: &ThemeInfo) -> Result<(), String> {
     rt::install(defs?);
     log::info!("[Theme] \"{}\" {} by {} draws {}", theme.name, theme.version, theme.author, windows.join(", "));
     Ok(())
+}
+
+/// Files of Lag's own UI that are not part of a theme made from it: the API (a theme uses Lag's, through `@lag/`)
+/// and the developer gallery.
+const NOT_COPIED: &[&str] = &["api", "api.slint", "gallery.slint", "spike.slint"];
+
+/// Rewrites one `.slint` text of a copy of Lag's UI: imports of the API (`api/...`, `api.slint`, relative to
+/// `file_dir`) point at Lag's (`@lag/...`), so the copy shares the globals Lag drives instead of having its own.
+fn point_api_at_lag(text: &str, file_dir: &[String]) -> String {
+    let mut out = text.to_owned();
+    // from the end, so earlier byte ranges stay valid; only real code (comment-free ranges are recomputed on
+    // the original text: comments never contain these keywords followed by a path in Lag's own files)
+    let mut refs = path_refs(text);
+    refs.sort_by_key(|r| std::cmp::Reverse(r.0));
+    for (s, e) in refs {
+        let p = &text[s..e];
+        if let Some(parts) = resolve(file_dir, p) {
+            if parts.first().map(String::as_str) == Some("api") || parts == ["api.slint"] {
+                out.replace_range(s..e, &format!("@lag/{}", parts.join("/")));
+            }
+        }
+    }
+    out
+}
+
+fn unique_id(root: &Path, name: &str) -> String {
+    let base: String = name
+        .to_lowercase()
+        .chars()
+        .map(|c| if c.is_alphanumeric() { c } else { '-' })
+        .collect::<String>()
+        .trim_matches('-')
+        .to_owned();
+    let base = if base.is_empty() || base == BUILTIN { "theme".to_owned() } else { base };
+    (1..).map(|i| if i == 1 { base.clone() } else { format!("{base}-{i}") }).find(|id| !root.join(id).exists()).unwrap_or(base)
+}
+
+/// "New theme": a full copy of Lag's own interface as an installed theme named `name`, ready to be changed
+/// (every page, every window). Returns it. `root` = the themes folder.
+pub fn new_from_builtin(root: &Path, name: &str) -> Result<ThemeInfo, String> {
+    let src = ui_twin::builtin_dir();
+    let id = unique_id(root, name);
+    let target = root.join(&id);
+    let mut stack = vec![(src.clone(), Vec::<String>::new())];
+    while let Some((dir, rel)) = stack.pop() {
+        for e in std::fs::read_dir(&dir).map_err(|e| e.to_string())?.flatten() {
+            let file_name = e.file_name().to_string_lossy().into_owned();
+            if rel.is_empty() && NOT_COPIED.contains(&file_name.as_str()) {
+                continue;
+            }
+            let path = e.path();
+            let mut here = rel.clone();
+            here.push(file_name.clone());
+            if path.is_dir() {
+                stack.push((path, here));
+                continue;
+            }
+            let ext = path.extension().map(|x| x.to_string_lossy().to_lowercase()).unwrap_or_default();
+            if !ALLOWED.contains(&ext.as_str()) {
+                continue;
+            }
+            let out = here.iter().fold(target.clone(), |p, part| p.join(part));
+            std::fs::create_dir_all(out.parent().unwrap_or(&target)).map_err(|e| e.to_string())?;
+            if ext == "slint" {
+                let text = std::fs::read_to_string(&path).map_err(|e| e.to_string())?;
+                std::fs::write(&out, point_api_at_lag(&text, &rel)).map_err(|e| e.to_string())?;
+            } else {
+                std::fs::copy(&path, &out).map_err(|e| e.to_string())?;
+            }
+        }
+    }
+    let manifest = format!(
+        "name = {}\nauthor = \"\"\nversion = \"1.0\"\napi = {API_VERSION}\nentry = \"app.slint\"\n",
+        toml::Value::String(name.to_owned())
+    );
+    std::fs::write(target.join("theme.toml"), manifest).map_err(|e| e.to_string())?;
+    validate(&target)?;
+    read(&target)
 }
 
 /// Installs a `.lagtheme` file into the themes folder (checked first; an installed theme of the same id is
@@ -361,14 +502,65 @@ mod tests {
 
     #[test]
     fn paths_in_a_theme_stay_inside_it() {
+        let root: Vec<String> = vec![];
+        let sub = vec!["views".to_string()];
         for ok in ["@lag/api.slint", "@lag/components/buttons.slint", "parts/clock.slint", "art/bg.png", "font.ttf"] {
-            assert!(path_ok(ok), "{ok}");
+            assert!(path_ok(&root, ok), "{ok}");
         }
+        assert!(path_ok(&sub, "../theme/tokens.slint"), "up, but still inside the package");
         for bad in ["../x.slint", "C:/Windows/x.png", "/etc/x", "\\\\server\\x.png", "@lag/../../x", "parts/../../x", "@other/x"] {
-            assert!(!path_ok(bad), "{bad}");
+            assert!(!path_ok(&root, bad), "{bad}");
         }
-        let text = "import { MainVM } from \"@lag/api.slint\";\nimport \"fonts/a.ttf\";\nImage { source: @image-url(\"../secret.png\"); }";
-        assert_eq!(referenced_paths(text), vec!["@lag/api.slint", "fonts/a.ttf", "../secret.png"]);
+        assert!(!path_ok(&sub, "../../x.png"));
+        let text = "// ported from \"Views/Old.axaml\"\nimport { MainVM } from \"@lag/api.slint\";\nimport \"fonts/a.ttf\";\nImage { source: @image-url(\"../secret.png\"); }";
+        assert_eq!(referenced_paths(text), vec!["@lag/api.slint", "fonts/a.ttf", "../secret.png"], "comments are not imports");
+    }
+
+    /// docs/themes/API.md is the generated reference (LAG_UPDATE_API_DOC=1 rewrites it).
+    #[test]
+    fn the_api_reference_is_current() {
+        let doc = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../docs/themes/API.md");
+        if std::env::var_os("LAG_UPDATE_API_DOC").is_some() {
+            std::fs::write(&doc, API_REFERENCE).unwrap();
+        }
+        let on_disk = std::fs::read_to_string(&doc).unwrap_or_default().replace("\r\n", "\n");
+        assert!(on_disk == API_REFERENCE, "docs/themes/API.md is stale: run the tests with LAG_UPDATE_API_DOC=1");
+        for must in ["### MainVM", "`save-replay`", "### SettingsRowData", "| `is-recording` | in property | `bool` |"] {
+            assert!(API_REFERENCE.contains(must), "{must}");
+        }
+    }
+
+    #[test]
+    fn a_copy_of_lags_ui_points_at_lags_api() {
+        let views = vec!["views".to_string()];
+        let text = "import { Tr } from \"../api/globals.slint\";\nimport { Theme } from \"../theme/tokens.slint\";";
+        assert_eq!(
+            point_api_at_lag(text, &views),
+            "import { Tr } from \"@lag/api/globals.slint\";\nimport { Theme } from \"../theme/tokens.slint\";"
+        );
+        assert_eq!(point_api_at_lag("export { X } from \"api.slint\";", &[]), "export { X } from \"@lag/api.slint\";");
+    }
+
+    /// The whole of Lag's interface as a new theme: it compiles, draws every window except the tray menu, and its
+    /// windows share Lag's globals (not copies of them).
+    #[test]
+    fn a_new_theme_from_lags_ui_works() {
+        // LAG_KEEP_NEW_THEME=<themes folder>: also leave a copy there (for the pixel comparison with Lag's own UI)
+        if let Some(keep) = std::env::var_os("LAG_KEEP_NEW_THEME") {
+            new_from_builtin(Path::new(&keep), "Copy").unwrap();
+        }
+        let root = temp("newtheme");
+        let t = new_from_builtin(&root, "Моя тема").unwrap();
+        assert_eq!((t.id.as_str(), t.name.as_str()), ("моя-тема", "Моя тема"));
+        assert!(!t.dir.join("api").exists() && t.dir.join("views").join("settings.slint").is_file());
+        assert_eq!(new_from_builtin(&root, "Моя тема").unwrap().id, "моя-тема-2", "never over an existing one");
+        ui_twin::load_builtin().unwrap();
+        apply_dir(&t.dir).unwrap();
+        let windows = rt::loaded();
+        for w in ["AppWindow", "ToastWindow", "StatsHud", "TrayMenuWindow"] {
+            assert!(windows.iter().any(|x| x == w), "{w}");
+        }
+        let _ = std::fs::remove_dir_all(root);
     }
 
     #[test]

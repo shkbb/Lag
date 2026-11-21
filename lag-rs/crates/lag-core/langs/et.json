@@ -361,5 +361,8 @@
   "Tray_DefaultUi": "Lagi oma liides",
   "Theme_Preview": "Eelvaade",
   "ThemePreview_Error": "Teemas on viga",
-  "ThemePreview_Hint": "Paranda fail ja salvesta see: eelvaade laadib end ise uuesti."
+  "ThemePreview_Hint": "Paranda fail ja salvesta see: eelvaade laadib end ise uuesti.",
+  "Theme_New": "Uus teema",
+  "Theme_NewName": "Minu teema",
+  "Theme_Created": "Lagi liidese koopia on muutmiseks valmis: {0}. Vajuta Eelvaade, et muudatusi kohe näha."
 }

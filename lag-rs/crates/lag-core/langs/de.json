@@ -361,5 +361,8 @@
   "Tray_DefaultUi": "Lags eigene Oberfläche",
   "Theme_Preview": "Vorschau",
   "ThemePreview_Error": "Das Theme enthält einen Fehler",
-  "ThemePreview_Hint": "Korrigiere die Datei und speichere sie: Die Vorschau lädt sich selbst neu."
+  "ThemePreview_Hint": "Korrigiere die Datei und speichere sie: Die Vorschau lädt sich selbst neu.",
+  "Theme_New": "Neues Theme",
+  "Theme_NewName": "Mein Theme",
+  "Theme_Created": "Eine Kopie von Lags Oberfläche ist bereit: {0}. Drücke Vorschau, um Änderungen live zu sehen."
 }

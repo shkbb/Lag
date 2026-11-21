@@ -361,5 +361,8 @@
   "Tray_DefaultUi": "Lag 標準のインターフェイス",
   "Theme_Preview": "プレビュー",
   "ThemePreview_Error": "テーマにエラーがあります",
-  "ThemePreview_Hint": "ファイルを直して保存すると、プレビューが自動で再読み込みされます。"
+  "ThemePreview_Hint": "ファイルを直して保存すると、プレビューが自動で再読み込みされます。",
+  "Theme_New": "新しいテーマ",
+  "Theme_NewName": "マイテーマ",
+  "Theme_Created": "Lag のインターフェイスのコピーを作成しました: {0}。プレビューで変更をその場で確認できます。"
 }

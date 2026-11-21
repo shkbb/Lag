@@ -361,5 +361,8 @@
   "Tray_DefaultUi": "Interfaz propia de Lag",
   "Theme_Preview": "Vista previa",
   "ThemePreview_Error": "El tema tiene un error",
-  "ThemePreview_Hint": "Corrige el archivo y guárdalo: la vista previa se recarga sola."
+  "ThemePreview_Hint": "Corrige el archivo y guárdalo: la vista previa se recarga sola.",
+  "Theme_New": "Nuevo tema",
+  "Theme_NewName": "Mi tema",
+  "Theme_Created": "Una copia de la interfaz de Lag está lista para cambiar: {0}. Pulsa Vista previa para ver tus cambios en vivo."
 }

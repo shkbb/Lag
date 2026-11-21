@@ -3,26 +3,8 @@ import { Theme } from "../../theme/tokens.slint";
 import { Icons, MaterialIcon } from "../../theme/icons.slint";
 import { Tr } from "../../globals.slint";
 import { EditedBadge, DurationBadge } from "../badges.slint";
-
-export struct LibraryCardData {
-    clip-index: int,
-    file-path: string,
-    title: string,
-    time-text: string,
-    game-name: string,
-    duration-text: string,
-    thumbnail: image,
-    has-thumbnail: bool,
-    is-image: bool,
-    is-favorite: bool,
-    is-edited: bool,
-    is-selected: bool,
-    // cloud (docs/spec/cloud.md §5): 0 only here, 1 here + cloud, 2 only in the cloud, 3 uploading / queued,
-    // 4 downloading, 5 failed; progress 0..1, below 0 = waiting
-    cloud-state: int,
-    cloud-progress: float,
-    cloud-only: bool,
-}
+import { LibraryCardData } from "../../api/types.slint";
+export { LibraryCardData }
 
 export component LibraryClipTile {
     in property <LibraryCardData> data;

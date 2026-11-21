@@ -1,10 +1,7 @@
 import { Theme } from "../theme/tokens.slint";
 import { PressFx } from "buttons.slint";
-
-export struct SegmentedOption {
-    text: string,
-    tier: int, // 0 = default, 1 = caution, >= 2 = extreme
-}
+import { SegmentedOption } from "../api/types.slint";
+export { SegmentedOption }
 
 // Ported from Controls/SegmentedListBox.cs + DarkTheme.axaml:259-307 (ListBox.segctl)
 export component SegmentedControl {

@@ -1,4 +1,4 @@
-﻿// Mirrors Views/PlayerView.axaml(.cs), with native child video surface + owned overlay window.
+// Mirrors Views/PlayerView.axaml(.cs), with native child video surface + owned overlay window.
 import { Theme } from "../theme/tokens.slint";
 import { Icons, LagLogoMark } from "../theme/icons.slint";
 import { Tr, MainVM, Page } from "../globals.slint";
@@ -6,54 +6,10 @@ import { LibraryVM } from "library.slint";
 import { LagScrollView } from "../components/scrollbar.slint";
 import { ReplayListItem } from "../components/list_items.slint";
 import { LagContextMenuContainer, LagMenuItem } from "../components/menu.slint";
-
-export struct PlayerClip {
-    path: string, title: string, meta: string, header-meta: string, thumbnail: image, is-image: bool,
-}
-
-export global PlayerVM {
-    in property <image> image;
-    in property <bool> has-clip: false;
-    in property <bool> is-playing: false;
-    in property <bool> is-loading: false;
-    in property <bool> is-image: false;
-    in property <string> path;
-    in property <string> title;
-    in property <string> meta;
-    in property <string> time-text: "0:00.000 / 0:00.000";
-    in-out property <float> position: 0;
-    in-out property <bool> dragging: false;
-    in-out property <float> volume: 80;
-    in property <bool> muted: false;
-    in property <float> speed: 1;
-    in property <int> audio-track: 0;
-    in property <int> audio-track-count: 0;
-    in property <[PlayerClip]> clips;
-    in property <string> total-duration: "";
-    in property <string> total-size: "0 MB";
-    in property <string> error;
-    in-out property <bool> mute-flash: false;
-    callback toggle();
-    callback stop();
-    callback seek(float, bool);
-    callback skip(float);
-    callback next();
-    callback play-clip(string);
-    callback edit(string);
-    callback volume-changed(float);
-    callback mute();
-    callback speed-changed(float);
-    callback audio-changed(int);
-    callback frame-step();
-    callback active-changed(bool);
-    callback fullscreen-changed(bool);
-    callback video-rect-changed(float, float, float, float);
-    callback pointer-left-video();
-    // fullscreen: mouse moved over the video (the native surface passes hit-testing to this window)
-    callback video-pointer(float, float);
-    in-out property <bool> cursor-hidden: false;   // fullscreen, overlay hidden: cursor hidden after idle
-    callback synthetic-move() -> bool;              // see PlayerOverlayVM.synthetic-move
-}
+import { PlayerClip } from "../api/types.slint";
+export { PlayerClip }
+import { PlayerVM } from "../api/globals.slint";
+export { PlayerVM }
 
 export component PlayerPage inherits Rectangle {
     background: Theme.page-bg;

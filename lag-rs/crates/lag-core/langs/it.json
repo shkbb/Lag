@@ -361,5 +361,8 @@
   "Tray_DefaultUi": "Interfaccia originale di Lag",
   "Theme_Preview": "Anteprima",
   "ThemePreview_Error": "Il tema contiene un errore",
-  "ThemePreview_Hint": "Correggi il file e salvalo: l’anteprima si ricarica da sola."
+  "ThemePreview_Hint": "Correggi il file e salvalo: l’anteprima si ricarica da sola.",
+  "Theme_New": "Nuovo tema",
+  "Theme_NewName": "Il mio tema",
+  "Theme_Created": "Una copia dell’interfaccia di Lag è pronta da modificare: {0}. Premi Anteprima per vedere le modifiche dal vivo."
 }

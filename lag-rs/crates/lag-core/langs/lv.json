@@ -361,5 +361,8 @@
   "Tray_DefaultUi": "Lag standarta saskarne",
   "Theme_Preview": "Priekšskatīt",
   "ThemePreview_Error": "Tēmā ir kļūda",
-  "ThemePreview_Hint": "Izlabojiet failu un saglabājiet to: priekšskatījums atjaunosies pats."
+  "ThemePreview_Hint": "Izlabojiet failu un saglabājiet to: priekšskatījums atjaunosies pats.",
+  "Theme_New": "Jauna tēma",
+  "Theme_NewName": "Mana tēma",
+  "Theme_Created": "Lag saskarnes kopija ir gatava izmaiņām: {0}. Nospiediet Priekšskatīt, lai redzētu labojumus uzreiz."
 }

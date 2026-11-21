@@ -10,6 +10,7 @@ fn main() {
     // API (the "twin") and type-checks every .slint file.
     let out = PathBuf::from(env::var("OUT_DIR").unwrap());
     build_twin::generate(std::path::Path::new("ui/app.slint"), &out.join("ui_twin.rs"));
+    std::fs::write(out.join("theme_api.md"), build_twin::api_reference(std::path::Path::new("ui"))).expect("theme_api.md");
     println!("cargo:rerun-if-changed=build_twin.rs");
     println!("cargo:rerun-if-changed=ui");
     embed_exe_icon();

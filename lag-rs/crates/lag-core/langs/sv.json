@@ -361,5 +361,8 @@
   "Tray_DefaultUi": "Lags eget gränssnitt",
   "Theme_Preview": "Förhandsgranska",
   "ThemePreview_Error": "Temat innehåller ett fel",
-  "ThemePreview_Hint": "Rätta filen och spara den: förhandsgranskningen laddas om av sig själv."
+  "ThemePreview_Hint": "Rätta filen och spara den: förhandsgranskningen laddas om av sig själv.",
+  "Theme_New": "Nytt tema",
+  "Theme_NewName": "Mitt tema",
+  "Theme_Created": "En kopia av Lags gränssnitt är redo att ändras: {0}. Tryck Förhandsgranska för att se ändringarna direkt."
 }

@@ -1,0 +1,132 @@
+// Lag theme API (docs/spec/themes.md): the data shapes Lag's Rust code puts into the globals.
+// Moved here from the views / components so a theme (even a copy of Lag's own UI) shares them with Lag.
+
+export struct ComboBoxItemData {
+    text: string,
+    tier: int, // 0 = normal, 1 = caution (#E5B84C), >= 2 = extreme (#E0564C)
+}
+
+export struct SegmentedOption {
+    text: string,
+    tier: int, // 0 = default, 1 = caution, >= 2 = extreme
+}
+
+export struct OverlayBoxData { xf: float, yf: float, scale: float, shown: bool }
+
+export struct EditorClipItem {
+    path: string,
+    title: string,
+    meta: string,
+    thumbnail: image,
+    has-thumbnail: bool,
+    // position in the clip-merge order (1-based), 0 = not picked
+    merge-number: int,
+}
+
+// one block of the montage strip
+export struct EditorSegmentData {
+    id: int,
+    title: string,
+    duration: string,
+    // block position and width in the strip (computed in Rust: montage::block_widths)
+    x: length,
+    w: length,
+    thumbnail: image,
+    has-thumbnail: bool,
+    selected: bool,
+}
+
+export struct EditorAudioTrackData {
+    stream-index: int,
+    name: string,
+    volume: int,
+    is-muted: bool,
+    is-selected: bool,
+    start-sec: float,
+    end-sec: float,
+    clip-duration-sec: float,
+}
+
+export struct EditorFilterData {
+    name: string,
+    preview: image,
+    has-preview: bool,
+}
+
+export struct EditorCutBand {
+    start-sec: float,
+    end-sec: float,
+    is-pending: bool,
+    cut-index: int, // -1 for pending
+}
+
+export struct EditorTextOverlayData {
+    text: string,
+    nx: float,
+    ny: float,
+    font-percent: int,
+    text-color: color,
+    hex: string,
+    selected: bool,
+}
+
+export struct EditorColorSwatch {
+    hex: string,
+    swatch: color,
+}
+
+export struct LibraryCardData {
+    clip-index: int,
+    file-path: string,
+    title: string,
+    time-text: string,
+    game-name: string,
+    duration-text: string,
+    thumbnail: image,
+    has-thumbnail: bool,
+    is-image: bool,
+    is-favorite: bool,
+    is-edited: bool,
+    is-selected: bool,
+    // cloud (docs/spec/cloud.md §5): 0 only here, 1 here + cloud, 2 only in the cloud, 3 uploading / queued,
+    // 4 downloading, 5 failed; progress 0..1, below 0 = waiting
+    cloud-state: int,
+    cloud-progress: float,
+    cloud-only: bool,
+}
+
+export struct SettingsRowData {
+    id: string, label: string, description: string, kind: int,
+    options: [ComboBoxItemData], segments: [SegmentedOption], selected: int,
+    checked: bool, value: float, maximum: float, display: string,
+    enabled: bool, visible: bool, divider: bool, custom: bool, auto-mode: bool,
+    with-toggle: bool, toggle-id: string, parts: [string],
+    icon: image, // audio app rows (kind 4): the app's own icon (C# AppAudioItem.Icon)
+}
+
+export struct SettingsGroup { title: string, rows: [SettingsRowData] }
+
+export struct PresetData { title: string, description: string, summary: string, active: bool }
+
+export struct GameChipData {
+    label: string,
+    filter-key: string,
+    is-active: bool,
+}
+
+export struct LibraryRowData {
+    kind: int, // 0 = group header, 1 = card row
+    y: float,
+    height: float,
+    header-label: string,
+    header-sub: string,
+    header-count: string,
+    cards: [LibraryCardData],
+}
+
+export struct PlayerClip {
+    path: string, title: string, meta: string, header-meta: string, thumbnail: image, is-image: bool,
+}
+
+// MainViewModel (ViewModels/MainViewModel.cs, spec shell.md §4.2). Rust owns the logic.
+export enum Page { settings, library, player, editor }

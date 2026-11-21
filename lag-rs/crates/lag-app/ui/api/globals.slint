@@ -1,0 +1,434 @@
+// Lag theme API (docs/spec/themes.md): the globals Lag's Rust code drives - state in, actions out. A theme
+// imports them from "@lag/api.slint"; Lag's own UI imports them from here too, so both share one set.
+import { ComboBoxItemData, SegmentedOption, OverlayBoxData, EditorClipItem, EditorSegmentData, EditorAudioTrackData, EditorFilterData, EditorCutBand, EditorTextOverlayData, EditorColorSwatch, LibraryCardData, SettingsRowData, SettingsGroup, PresetData, GameChipData, LibraryRowData, PlayerClip, Page } from "types.slint";
+
+// Localisation. Markup: Tr.t("Btn_SaveReplay", Tr.rev). Rust implements `t` with lag_core::i18n and bumps
+// `rev` on a language change so every bound string re-evaluates. Keys = the C# resource keys.
+export global Tr {
+    in property <int> rev: 0;
+    pure callback t(string, int) -> string;
+}
+
+export global MainVM {
+    in-out property <Page> current-page: Page.settings;
+    // theme switch cross-fade: a snapshot of the old look fades out over the new one (owner, 2026-11-17)
+    in property <image> theme-fade-image;
+    in property <bool> theme-fade-active: false;
+    in property <bool> theme-fade-shown: false;
+    in property <bool> is-recording: false;
+    in property <bool> is-paused: false;
+    in property <bool> is-saving: false;
+    // Start pressed, engine not up yet (the start takes a moment): the button shows it is working.
+    in property <bool> is-starting: false;
+    in property <string> status-text: "";
+    in property <string> buffer-status: "0:00";
+    in property <float> buffer-fill-percent: 0;   // 0..100
+    in-out property <bool> is-fullscreen: false;
+    in property <bool> has-capture-target: false;
+    in property <bool> capture-target-is-game: false;
+    in property <string> capture-target-name: "";
+
+    callback toggle-recording();
+    callback save-replay();
+    callback toggle-pause-recording();
+    callback navigate(Page);
+    callback toggle-fullscreen();
+    callback take-screenshot();
+    callback push-to-talk(bool);        // true = key down (mic open), false = released
+    callback show-main-window();        // tray "Open", second-instance activation
+
+    // window chrome
+    callback minimize-window();
+    callback maximize-window();
+    callback close-window();
+    callback begin-move-drag();
+    // Main-window UI that can float over the player's native video surface (window coords, logical px).
+    // The video gets that rectangle cut out so the UI stays visible (airspace).
+    callback occluder-changed(bool, float, float, float, float);
+}
+
+// Current main-window size, kept up to date by AppWindow. Used by full-window popups (dropdowns) that
+// handle outside clicks themselves.
+export global WindowMetrics {
+    in-out property <length> width: 1360px;
+    in-out property <length> height: 840px;
+}
+
+export global SettingsVM {
+    // Settings > Library > Add storage > WebDAV
+    in-out property <bool> webdav-open: false;
+    in property <bool> webdav-busy: false;
+    // i18n key of the last problem ("" = none)
+    in property <string> webdav-error: "";
+    callback webdav-connect(string /* url */, string /* login */, string /* password */);
+    in-out property <int> tab: 0;
+    in property <[SettingsGroup]> groups;
+    in property <[PresetData]> presets;
+    in property <bool> pending: false;
+    in property <bool> cleanup-hint: false;
+    in property <string> cleanup-text;
+    in-out property <bool> warning: false;
+    in property <string> warning-summary;
+    in property <[OverlayBoxData]> overlay-boxes;
+    in property <bool> overlay-enabled: false;
+    in property <float> mic-level: 0;
+    in property <float> output-level: 0;
+    in property <float> gate-threshold: 0.08;
+    in property <bool> gate-open: false;
+    in property <bool> hear-yourself: false;
+    in property <string> capture-id;
+    in property <bool> hotkeys-suppressed: false;
+    in property <[image]> language-flags;
+    callback select-tab(int);
+    callback choose(string, int);
+    callback toggle(string, bool);
+    callback number(string, float);
+    callback text(string, string);
+    callback action(string);
+    callback apply-preset(int);
+    callback commit-overlay(int, float, float, float);
+    callback acknowledge();
+    // Shell hook seam uses C# KeyCode and ModifierMask names. Escape clears the binding.
+    callback captured(string, string);
+    callback update-status(string);
+    in property <string> theme-mode: "dark";
+}
+
+export global LibraryVM {
+    in property <bool> is-loading: false;
+    in property <string> clip-count-label: "0 CLIPS";
+    in property <string> used-space-display: "—";
+    in property <float> used-space-bar-width: 0;
+    in property <bool> has-clips: false;
+    in property <bool> has-no-results: false;
+    in property <bool> has-selection: false;
+    in property <string> delete-selected-label: "";
+    in-out property <string> search-text: "";
+    in property <bool> favorites-only: false;
+    in property <[GameChipData]> game-chips: [];
+    in property <[string]> hotkey-parts: [];
+    in property <float> total-content-height: 0;
+    in property <[LibraryRowData]> visible-rows: [];
+    // a cloud is connected: the cloud actions are offered
+    in property <bool> cloud-connected: false;
+    // Delete (docs/spec/cloud.md §12): asked when a clip is also, or only, in the cloud
+    in-out property <bool> delete-dialog-open: false;
+    // some of the clips are both here and in the cloud (offer "this PC" / "cloud" / "everywhere")
+    in property <bool> delete-dialog-mixed: false;
+    // every clip is only in the cloud (deleting is for good)
+    in property <bool> delete-dialog-cloud-only: false;
+
+    callback search-changed(string);
+    callback set-game-filter(string);
+    callback toggle-favorites-only();
+    callback open-library-folder();
+    callback delete-selected();
+    callback clear-selection();
+    callback select-all();
+    callback card-pressed(int /* clip-index */, bool /* shift */, bool /* ctrl */);
+    callback card-play(int /* clip-index */);
+    callback card-favorite(int /* clip-index */);
+    callback card-edit(int /* clip-index */);
+    callback card-select-circle(int /* clip-index */);
+    callback context-edit(string /* file-path */);
+    callback context-show-in-folder(string /* file-path */);
+    callback context-delete(string /* file-path */);
+    callback context-upload(string /* file-path */);
+    callback context-save-local(string /* file-path */);
+    callback context-open-cloud(string /* file-path */);
+    callback context-retry();
+    // 0 = this PC, 1 = the cloud, 2 = everywhere; remember = don't ask again
+    callback delete-choose(int, bool);
+    callback delete-cancel();
+    callback viewport-changed(float /* scroll-y */, float /* width */, float /* height */);
+}
+
+export global PlayerVM {
+    in property <image> image;
+    in property <bool> has-clip: false;
+    in property <bool> is-playing: false;
+    in property <bool> is-loading: false;
+    in property <bool> is-image: false;
+    in property <string> path;
+    in property <string> title;
+    in property <string> meta;
+    in property <string> time-text: "0:00.000 / 0:00.000";
+    in-out property <float> position: 0;
+    in-out property <bool> dragging: false;
+    in-out property <float> volume: 80;
+    in property <bool> muted: false;
+    in property <float> speed: 1;
+    in property <int> audio-track: 0;
+    in property <int> audio-track-count: 0;
+    in property <[PlayerClip]> clips;
+    in property <string> total-duration: "";
+    in property <string> total-size: "0 MB";
+    in property <string> error;
+    in-out property <bool> mute-flash: false;
+    callback toggle();
+    callback stop();
+    callback seek(float, bool);
+    callback skip(float);
+    callback next();
+    callback play-clip(string);
+    callback edit(string);
+    callback volume-changed(float);
+    callback mute();
+    callback speed-changed(float);
+    callback audio-changed(int);
+    callback frame-step();
+    callback active-changed(bool);
+    callback fullscreen-changed(bool);
+    callback video-rect-changed(float, float, float, float);
+    callback pointer-left-video();
+    // fullscreen: mouse moved over the video (the native surface passes hit-testing to this window)
+    callback video-pointer(float, float);
+    in-out property <bool> cursor-hidden: false;   // fullscreen, overlay hidden: cursor hidden after idle
+    callback synthetic-move() -> bool;              // see PlayerOverlayVM.synthetic-move
+}
+
+export global EditorVM {
+    // Header & sidebar clips
+    in property <bool> has-clip: false;
+    in property <string> current-clip-path: "";
+    in property <string> clip-name: "";
+    in property <[EditorClipItem]> clips: [];
+
+    // Preview & playback
+    in property <image> video-image;
+    // set by Rust once the native video surface exists: the stage stays empty, the overlay window draws the rest
+    in property <bool> native-video: false;
+    // the stage's rect in the window (logical px): Rust places the native surface + overlay window there
+    callback stage-rect-changed(float, float, float, float);
+    // bumped by Rust when a click in the overlay window must give keyboard focus back to the page
+    in property <int> focus-serial: 0;
+    // caption being edited on the video (-1 = none); the Text tab's field takes the keyboard meanwhile
+    in-out property <int> editing-text-index: -1;
+    in-out property <int> text-focus-serial: 0;
+    in property <bool> is-playing: false;
+    in-out property <float> position: 0.0;
+    in property <string> time-display: "0:00 / 0:00";
+    in property <float> duration-sec: 1.0;
+    in-out property <float> trim-start-sec: 0.0;
+    in-out property <float> trim-end-sec: 1.0;
+    in property <string> trim-start-display: "0:00";
+    in property <string> trim-end-display: "0:00";
+    in property <string> trim-duration-display: "0:00";
+    in property <float> playhead-fraction: 0.0;
+    in-out property <bool> is-video-selected: false;
+    in property <[image]> timeline-thumbs: [];
+    in property <[EditorCutBand]> cut-bands: [];
+    in property <bool> is-marking-cut: false;
+    in property <[EditorAudioTrackData]> audio-tracks: [];
+    in-out property <bool> audio-follows-video: true;
+    callback set-audio-follows-video(bool);
+
+    // Stage reframe / crop / transform
+    in property <float> display-source-aspect-raw: 1.7777778;
+    in property <float> display-frame-aspect: 1.7777778;
+    in-out property <bool> crop-tool-active: false;
+    in-out property <bool> reframe-selected: false;
+    in property <float> edit-nx: 0.0;
+    in property <float> edit-ny: 0.0;
+    in property <float> edit-nw: 1.0;
+    in property <float> edit-nh: 1.0;
+
+    // Tools panel
+    in-out property <int> selected-tools-tab: 0;
+    in property <[ComboBoxItemData]> aspect-options: [];
+    in-out property <int> selected-aspect-index: 0;
+    in property <[SegmentedOption]> speed-options: [];
+    in-out property <int> selected-speed-index: 1;
+    in-out property <string> speed-text: "1";
+
+    in property <[EditorFilterData]> filter-options: [];
+    in-out property <int> selected-filter-index: 0;
+    in-out property <int> color-brightness: 100;
+    in-out property <int> color-contrast: 100;
+    in-out property <int> color-saturation: 100;
+
+    in property <[EditorTextOverlayData]> texts: [];
+    in property <bool> has-texts: false;
+    in property <bool> has-selected-text: false;
+    in-out property <string> selected-text-content: "";
+    in-out property <int> selected-text-font-percent: 8;
+    in property <[EditorColorSwatch]> text-colors: [
+        { hex: "#FFFFFF", swatch: #FFFFFF },
+        { hex: "#000000", swatch: #000000 },
+        { hex: "#FFD43B", swatch: #FFD43B },
+        { hex: "#FF6B6B", swatch: #FF6B6B },
+        { hex: "#4DABF7", swatch: #4DABF7 },
+        { hex: "#51CF66", swatch: #51CF66 },
+    ];
+
+    // Export
+    in property <bool> is-exporting: false;
+    in property <int> export-progress: 0;
+    in property <string> export-status: "";
+    in property <[ComboBoxItemData]> export-resolution-options: [];
+    in-out property <int> selected-export-resolution-index: 0;
+    in property <[ComboBoxItemData]> export-format-options: [];
+    in-out property <int> selected-export-format-index: 0;
+    in-out property <bool> export-as-gif: false;
+    in-out property <bool> export-flyout-open: false;
+
+    // Callbacks (UI -> Rust)
+    callback open-clip(string);
+    callback import-clip();
+    // clip merging: picking mode in the sidebar, picked count, start
+    in-out property <bool> merge-mode: false;
+    in property <int> merge-count: 0;
+    callback toggle-merge-mode();
+    callback merge-pick(string);
+    callback merge-clips();
+    // montage: the strip's segments, shown when there is more than one; total length and the montage clock
+    in property <[EditorSegmentData]> montage-segments: [];
+    in property <bool> montage-active: false;
+    in property <string> montage-total: "";
+    in property <string> montage-time: "";
+    callback select-segment(int);
+    callback segment-dropped(int, length, length);
+    callback split-segment();
+    callback remove-segment();
+    callback play-montage();
+    callback add-to-montage(string);
+    callback add-montage-file();
+    callback strip-resized(length);
+    callback back();
+    callback active-changed(bool);
+    callback play-pause();
+    callback undo();
+    callback push-undo();
+    callback set-trim-start-here();
+    callback set-trim-end-here();
+    callback toggle-cut();
+    callback reset-trim();
+    callback remove-cut-at(float);
+    callback timeline-drag(int, float, float);
+    callback timeline-drag-end();
+    callback toggle-video-selected();
+    callback toggle-audio-selected(int);
+    callback set-audio-muted(int, bool);
+    callback set-audio-volume(int, int);
+    callback set-audio-range(int, float, float);
+    callback select-aspect(int);
+    callback toggle-crop-tool();
+    callback right-click-reset();
+    callback begin-overlay-drag();
+    callback drag-overlay(int, float, float, float, float, float, float, float, float);
+    callback rotate-left();
+    callback rotate-right();
+    callback toggle-flip-h();
+    callback toggle-flip-v();
+    callback select-speed-preset(int);
+    callback speed-text-edited(string);
+    callback select-filter(int);
+    callback color-changed(int, int, int);
+    callback reset-color();
+    callback add-text();
+    callback select-text(int);
+    callback update-selected-text(string);
+    callback update-selected-text-size(int);
+    callback set-text-color(string);
+    callback move-text(int, float, float);
+    callback remove-selected-text();
+    callback select-export-resolution(int);
+    callback select-export-format(int);
+    callback set-export-gif(bool);
+    callback export-clip();
+    callback cancel-export();
+}
+
+export global PlayerOverlayVM {
+    in property <bool> has-clip: false;
+    in property <bool> is-playing: false;
+    in property <bool> is-loading: false;
+    in property <bool> is-image: false;
+    in property <bool> is-fullscreen: false;
+    in property <string> path;
+    in property <string> time-text: "0:00.000 / 0:00.000";
+    in-out property <float> position: 0;
+    in-out property <bool> dragging: false;
+    in-out property <float> volume: 80;
+    in property <bool> muted: false;
+    in property <float> speed: 1;
+    in property <bool> smooth-slowmo: true;
+    in property <int> audio-track: 0;
+    in property <int> audio-track-count: 0;
+    in property <string> error;
+    in-out property <bool> mute-flash: false;
+    in-out property <bool> controls: false;
+    in-out property <bool> cursor-idle: false;
+    in-out property <bool> sidebar: false;
+    in property <[PlayerClip]> clips;
+    in property <string> total-duration: "";
+    in property <string> total-size: "0 MB";
+    in property <bool> library-loading: false;
+
+    callback toggle();
+    callback stop();
+    callback seek(float, bool);
+    callback skip(float);
+    callback next();
+    callback play-clip(string);
+    callback edit(string);
+    callback show-in-folder(string);
+    callback delete-clip(string);
+    callback volume-changed(float);
+    callback mute();
+    callback speed-changed(float);
+    callback smooth-slowmo-changed(bool);
+    callback audio-changed(int);
+    callback toggle-fullscreen();
+    callback exit-fullscreen();
+    callback dragging-changed(bool);
+    callback pinned-changed(bool);
+    // true when the OS cursor did not actually move since the last pointer event (Windows sends a fake
+    // WM_MOUSEMOVE whenever a window under the cursor is shown/hidden/moved): such events must not wake the UI
+    callback synthetic-move() -> bool;
+}
+
+export global EditorOverlayVM {
+    in property <bool> has-clip: false;
+    in property <float> display-source-aspect-raw: 1.7777778;
+    in property <float> display-frame-aspect: 1.7777778;
+    in property <bool> crop-tool-active: false;
+    in property <bool> reframe-selected: false;
+    in property <float> edit-nx: 0.0;
+    in property <float> edit-ny: 0.0;
+    in property <float> edit-nw: 1.0;
+    in property <float> edit-nh: 1.0;
+    in property <[EditorTextOverlayData]> texts: [];
+
+    callback focus-keys();
+    callback play-pause();
+    callback deselect-reframe();
+    callback select-reframe();
+    callback right-click-reset();
+    callback begin-overlay-drag();
+    callback drag-overlay(int, float, float, float, float, float, float, float, float);
+    callback select-text(int);
+    callback move-text(int, float, float);
+    callback push-undo();
+    in-out property <int> editing-index: -1;
+    callback text-edit-started(int);
+    callback text-edit-finished();
+    callback deselect-text();
+}
+
+// Middle-button autoscroll, as in a browser (owner, 2026-11-21: "hold the wheel and scroll fast in Settings").
+// Rust (shell/autoscroll.rs) sees the middle button at window level, before any button under the cursor, and
+// fills this global in window coordinates; the scroll view under the press point claims it and scrolls itself.
+export global AutoScroll {
+    in-out property <bool> active;
+    in-out property <length> origin-x;
+    in-out property <length> origin-y;
+    in-out property <length> mouse-x;
+    in-out property <length> mouse-y;
+    // the claiming view: the smallest live, scrollable one that contains the origin (0 = nobody yet)
+    in-out property <float> owner-area;
+    in-out property <length> owner-x;
+    in-out property <length> owner-y;
+    // distance (px, + = down) Rust has measured for the owner since it last scrolled; the owner consumes it
+    in-out property <float> pending;
+}

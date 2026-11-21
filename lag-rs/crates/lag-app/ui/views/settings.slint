@@ -8,45 +8,8 @@ import { LagScrollView } from "../components/scrollbar.slint";
 import { SettingsGroup, SettingsRow, PresetData } from "../components/settings/row.slint";
 import { OverlayStage, OverlayBoxData } from "../components/settings/overlay.slint";
 import { LagTextInput } from "../components/text_input.slint";
-export global SettingsVM {
-    // Settings > Library > Add storage > WebDAV
-    in-out property <bool> webdav-open: false;
-    in property <bool> webdav-busy: false;
-    // i18n key of the last problem ("" = none)
-    in property <string> webdav-error: "";
-    callback webdav-connect(string /* url */, string /* login */, string /* password */);
-    in-out property <int> tab: 0;
-    in property <[SettingsGroup]> groups;
-    in property <[PresetData]> presets;
-    in property <bool> pending: false;
-    in property <bool> cleanup-hint: false;
-    in property <string> cleanup-text;
-    in-out property <bool> warning: false;
-    in property <string> warning-summary;
-    in property <[OverlayBoxData]> overlay-boxes;
-    in property <bool> overlay-enabled: false;
-    in property <float> mic-level: 0;
-    in property <float> output-level: 0;
-    in property <float> gate-threshold: 0.08;
-    in property <bool> gate-open: false;
-    in property <bool> hear-yourself: false;
-    in property <string> capture-id;
-    in property <bool> hotkeys-suppressed: false;
-    in property <[image]> language-flags;
-    callback select-tab(int);
-    callback choose(string, int);
-    callback toggle(string, bool);
-    callback number(string, float);
-    callback text(string, string);
-    callback action(string);
-    callback apply-preset(int);
-    callback commit-overlay(int, float, float, float);
-    callback acknowledge();
-    // Shell hook seam uses C# KeyCode and ModifierMask names. Escape clears the binding.
-    callback captured(string, string);
-    callback update-status(string);
-    in property <string> theme-mode: "dark";
-}
+import { SettingsVM } from "../api/globals.slint";
+export { SettingsVM }
 export component SettingsPage inherits Rectangle {
     background: Theme.page-bg; clip: true;
     private property <string> selected-theme: SettingsVM.theme-mode;

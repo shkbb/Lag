@@ -145,6 +145,104 @@ impl Gen {
     }
 }
 
+/// The theme API reference (docs/themes/API.md, shipped to theme authors): read straight from `ui/api/globals.slint`
+/// and `ui/api/types.slint`, with the comments written above / beside each line as the description.
+pub fn api_reference(ui: &Path) -> String {
+    let mut out = String::from(
+        "# Lag theme API v1\n\n\
+         _Generated from `ui/api/` - do not edit._ A theme imports these from `\"@lag/api.slint\"`:\n\n\
+         ```slint\nimport { MainVM, LibraryVM, Tr } from \"@lag/api.slint\";\n```\n\n\
+         - **in property**: Lag sets it, the theme shows it.\n\
+         - **in-out property**: either side may change it (e.g. the current page).\n\
+         - **callback**: the theme calls it, Lag does the work (save a replay, open a clip...). A `pure callback` \
+         is answered by Lag (`Tr.t(key, Tr.rev)` = the translated text).\n\n\
+         Lag's own building blocks can be used too: `@lag/components/...` (buttons, cards, settings rows, the clip \
+         card...), `@lag/theme/tokens.slint` (colours, sizes) and `@lag/theme/icons.slint`. The quickest start: \
+         Settings > General > Interface > **New theme** (a full copy of Lag's interface) and **Preview**.\n",
+    );
+    for (file, title) in [("globals.slint", "Globals"), ("types.slint", "Data types")] {
+        let text = std::fs::read_to_string(ui.join("api").join(file)).unwrap_or_default();
+        let _ = write!(out, "\n## {title}\n");
+        let mut comment: Vec<String> = Vec::new();
+        let mut in_block = false;
+        for raw in text.lines() {
+            let line = raw.trim();
+            if let Some(c) = line.strip_prefix("//") {
+                comment.push(c.trim().to_owned());
+                continue;
+            }
+            if line.is_empty() {
+                if !in_block {
+                    comment.clear();
+                }
+                continue;
+            }
+            let (code, trailing) = match line.find("//") {
+                Some(i) => (line[..i].trim(), line[i + 2..].trim()),
+                None => (line, ""),
+            };
+            let mut note = comment.join(" ");
+            if !trailing.is_empty() {
+                if !note.is_empty() {
+                    note.push(' ');
+                }
+                note.push_str(trailing);
+            }
+            comment.clear();
+            let note = note.replace('|', "\\|");
+            if let Some(rest) = code.strip_prefix("export global ").or_else(|| code.strip_prefix("export struct ")).or_else(|| code.strip_prefix("export enum ")) {
+                let name = rest.split(|c: char| c == '{' || c.is_whitespace()).next().unwrap_or("");
+                let _ = write!(out, "\n### {name}\n\n");
+                if !note.is_empty() {
+                    let _ = writeln!(out, "{note}\n");
+                }
+                // a one-line struct / enum: `export struct X { a: t, b: t }`
+                if let (Some(a), Some(b)) = (rest.find('{'), rest.rfind('}')) {
+                    let body = &rest[a + 1..b];
+                    out.push_str("| Name | Type |\n|---|---|\n");
+                    for f in body.split(',').map(str::trim).filter(|f| !f.is_empty()) {
+                        let (n, t) = f.split_once(':').unwrap_or((f, ""));
+                        let _ = writeln!(out, "| `{}` | `{}` |", n.trim(), t.trim());
+                    }
+                    continue;
+                }
+                in_block = true;
+                out.push_str("| Name | Kind | Type | Notes |\n|---|---|---|---|\n");
+                continue;
+            }
+            if code.starts_with('}') {
+                in_block = false;
+                continue;
+            }
+            if !in_block {
+                continue;
+            }
+            let code = code.trim_end_matches([';', ',']);
+            let pure = code.starts_with("pure ");
+            let code = code.trim_start_matches("pure ");
+            let row = if let Some(rest) = ["in-out property", "in property", "out property"].iter().find_map(|k| code.strip_prefix(k).map(|r| (k, r))) {
+                let (kind, rest) = rest;
+                let (ty, rest) = rest.trim().strip_prefix('<').and_then(|r| r.split_once('>')).unwrap_or(("", rest));
+                let name = rest.split(':').next().unwrap_or("").trim();
+                (name.to_owned(), kind.to_string(), ty.to_owned())
+            } else if let Some(rest) = code.strip_prefix("callback ") {
+                let (name, sig) = rest.split_once('(').unwrap_or((rest, ")"));
+                let sig = format!("({sig}");
+                // keep the argument names written as /* comments */
+                (name.trim().to_owned(), if pure { "pure callback".into() } else { "callback".into() }, sig.replace("/*", "").replace("*/", ""))
+            } else if code.contains(':') && !code.contains('(') {
+                // a struct field / an enum value list
+                let (n, t) = code.split_once(':').unwrap_or((code, ""));
+                (n.trim().to_owned(), "field".into(), t.trim().to_owned())
+            } else {
+                continue;
+            };
+            let _ = writeln!(out, "| `{}` | {} | `{}` | {} |", row.0, row.1, row.2.replace('|', "\\|"), note);
+        }
+    }
+    out
+}
+
 pub fn generate(root: &Path, out_file: &Path) {
     let compiler = slint_interpreter::Compiler::default();
     let result = spin_on(compiler.build_from_path(root));

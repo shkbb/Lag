@@ -361,5 +361,8 @@
   "Tray_DefaultUi": "Lag's own interface",
   "Theme_Preview": "Preview",
   "ThemePreview_Error": "The theme has an error",
-  "ThemePreview_Hint": "Fix the file and save it: the preview reloads by itself."
+  "ThemePreview_Hint": "Fix the file and save it: the preview reloads by itself.",
+  "Theme_New": "New theme",
+  "Theme_NewName": "My theme",
+  "Theme_Created": "A copy of Lag's interface is ready to change: {0}. Press Preview to see your edits live."
 }

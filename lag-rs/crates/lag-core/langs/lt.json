@@ -361,5 +361,8 @@
   "Tray_DefaultUi": "Įprasta Lag sąsaja",
   "Theme_Preview": "Peržiūrėti",
   "ThemePreview_Error": "Temoje yra klaida",
-  "ThemePreview_Hint": "Pataisykite failą ir išsaugokite: peržiūra atsinaujins pati."
+  "ThemePreview_Hint": "Pataisykite failą ir išsaugokite: peržiūra atsinaujins pati.",
+  "Theme_New": "Nauja tema",
+  "Theme_NewName": "Mano tema",
+  "Theme_Created": "Lag sąsajos kopija paruošta keisti: {0}. Spauskite Peržiūrėti, kad matytumėte pakeitimus iškart."
 }

@@ -1,7 +1,8 @@
-﻿// Mirrors SettingsView.axaml.cs:90-255. Stage coordinates stay 736 x 414.
+// Mirrors SettingsView.axaml.cs:90-255. Stage coordinates stay 736 x 414.
 import { Theme } from "../../theme/tokens.slint";
 import { Icons, MaterialIcon } from "../../theme/icons.slint";
-export struct OverlayBoxData { xf: float, yf: float, scale: float, shown: bool }
+import { OverlayBoxData } from "../../api/types.slint";
+export { OverlayBoxData }
 component DesignerBox inherits Rectangle {
     in property <OverlayBoxData> data;
     in property <float> aspect;

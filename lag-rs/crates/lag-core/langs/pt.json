@@ -361,5 +361,8 @@
   "Tray_DefaultUi": "Interface original do Lag",
   "Theme_Preview": "Pré-visualizar",
   "ThemePreview_Error": "O tema tem um erro",
-  "ThemePreview_Hint": "Corrija o ficheiro e guarde-o: a pré-visualização recarrega sozinha."
+  "ThemePreview_Hint": "Corrija o ficheiro e guarde-o: a pré-visualização recarrega sozinha.",
+  "Theme_New": "Novo tema",
+  "Theme_NewName": "O meu tema",
+  "Theme_Created": "Uma cópia da interface do Lag está pronta a alterar: {0}. Prima Pré-visualizar para ver as alterações ao vivo."
 }

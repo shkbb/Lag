@@ -361,5 +361,8 @@
   "Tray_DefaultUi": "Interface d’origine de Lag",
   "Theme_Preview": "Aperçu",
   "ThemePreview_Error": "Le thème contient une erreur",
-  "ThemePreview_Hint": "Corrige le fichier et enregistre-le : l’aperçu se recharge tout seul."
+  "ThemePreview_Hint": "Corrige le fichier et enregistre-le : l’aperçu se recharge tout seul.",
+  "Theme_New": "Nouveau thème",
+  "Theme_NewName": "Mon thème",
+  "Theme_Created": "Une copie de l’interface de Lag est prête : {0}. Appuie sur Aperçu pour voir tes modifications en direct."
 }

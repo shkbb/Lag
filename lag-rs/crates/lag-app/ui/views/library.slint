@@ -10,6 +10,10 @@ import { LagContextMenuContainer, LagMenuItem } from "../components/menu.slint";
 import { LagCheckBox } from "../components/checkbox.slint";
 import { LibraryClipTile, LibraryCardData } from "../components/library/clip_card.slint";
 import { IndeterminateBar } from "../components/library/indeterminate_bar.slint";
+import { GameChipData, LibraryRowData } from "../api/types.slint";
+export { GameChipData, LibraryRowData }
+import { LibraryVM } from "../api/globals.slint";
+export { LibraryVM }
 
 // Round scroll button at an end of the game-chip row (shown only when chips are hidden on that side).
 component LibChipArrow {
@@ -47,71 +51,6 @@ component LibChipArrow {
         mouse-cursor: pointer;
         clicked => { root.clicked(); }
     }
-}
-
-export struct GameChipData {
-    label: string,
-    filter-key: string,
-    is-active: bool,
-}
-
-export struct LibraryRowData {
-    kind: int, // 0 = group header, 1 = card row
-    y: float,
-    height: float,
-    header-label: string,
-    header-sub: string,
-    header-count: string,
-    cards: [LibraryCardData],
-}
-
-export global LibraryVM {
-    in property <bool> is-loading: false;
-    in property <string> clip-count-label: "0 CLIPS";
-    in property <string> used-space-display: "—";
-    in property <float> used-space-bar-width: 0;
-    in property <bool> has-clips: false;
-    in property <bool> has-no-results: false;
-    in property <bool> has-selection: false;
-    in property <string> delete-selected-label: "";
-    in-out property <string> search-text: "";
-    in property <bool> favorites-only: false;
-    in property <[GameChipData]> game-chips: [];
-    in property <[string]> hotkey-parts: [];
-    in property <float> total-content-height: 0;
-    in property <[LibraryRowData]> visible-rows: [];
-    // a cloud is connected: the cloud actions are offered
-    in property <bool> cloud-connected: false;
-    // Delete (docs/spec/cloud.md §12): asked when a clip is also, or only, in the cloud
-    in-out property <bool> delete-dialog-open: false;
-    // some of the clips are both here and in the cloud (offer "this PC" / "cloud" / "everywhere")
-    in property <bool> delete-dialog-mixed: false;
-    // every clip is only in the cloud (deleting is for good)
-    in property <bool> delete-dialog-cloud-only: false;
-
-    callback search-changed(string);
-    callback set-game-filter(string);
-    callback toggle-favorites-only();
-    callback open-library-folder();
-    callback delete-selected();
-    callback clear-selection();
-    callback select-all();
-    callback card-pressed(int /* clip-index */, bool /* shift */, bool /* ctrl */);
-    callback card-play(int /* clip-index */);
-    callback card-favorite(int /* clip-index */);
-    callback card-edit(int /* clip-index */);
-    callback card-select-circle(int /* clip-index */);
-    callback context-edit(string /* file-path */);
-    callback context-show-in-folder(string /* file-path */);
-    callback context-delete(string /* file-path */);
-    callback context-upload(string /* file-path */);
-    callback context-save-local(string /* file-path */);
-    callback context-open-cloud(string /* file-path */);
-    callback context-retry();
-    // 0 = this PC, 1 = the cloud, 2 = everywhere; remember = don't ask again
-    callback delete-choose(int, bool);
-    callback delete-cancel();
-    callback viewport-changed(float /* scroll-y */, float /* width */, float /* height */);
 }
 
 export component LibraryPage inherits Rectangle {

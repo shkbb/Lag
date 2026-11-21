@@ -191,3 +191,20 @@ always exactly one preview process, none left after closing; the owner's setting
 Next in phase 3: API globals in their own `ui/api/` files so a copy of Lag's own UI can be a starting theme
 ("New theme from Lag's"), a generated API reference for theme authors, more example themes, hot swap of the main
 window in the running app (no restart), themable tray menu with a mandatory way back.
+
+## 15. Phase 3, part 2 (2026-11-22): API split, "New theme", API reference — DONE
+- Every global Lag drives and every struct they carry now lives in `ui/api/globals.slint` / `ui/api/types.slint`
+  (moved out of the views / components; those files import + re-export them, so nothing else changed). Why: a
+  theme that is a copy of Lag's UI would otherwise get its OWN copies of MainVM, SettingsVM... (a different file =
+  a different global) and Lag's Rust code would drive Lag's, not the theme's: a dead UI.
+- `themes::new_from_builtin(root, name)` (Settings > Interface > **New theme**): copies `ui\` (without `api/`,
+  `api.slint`, the dev gallery) into `%APPDATA%\Lag\themes\<id>\`, rewrites every import that leads into `api/`
+  to `@lag/api/...`, writes theme.toml, validates, selects it and opens the folder. Never over an existing theme
+  (`-2`, `-3`...). Verified: the full ui-check (53 shots) of Lag running such a copy as its theme is pixel-identical
+  to Lag's own UI except data (the theme name in the picker, the record dot's blink phase).
+- Path rules are package-aware now: `../theme/tokens.slint` inside the package is fine, anything resolving above
+  the package root, absolute, a drive or another `@library` is refused; comments are ignored when looking for
+  imports.
+- API reference: `build_twin::api_reference` reads `ui/api/*.slint` (comments as descriptions) at build time ->
+  `docs/themes/API.md` (test `the_api_reference_is_current`, `LAG_UPDATE_API_DOC=1` refreshes it); Lag writes it as
+  `API.md` into the themes folder (New theme / Themes folder).

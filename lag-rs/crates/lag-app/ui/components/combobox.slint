@@ -2,11 +2,8 @@ import { ChevronIcon } from "chevron.slint";
 import { Theme } from "../theme/tokens.slint";
 import { Icons, MaterialIcon } from "../theme/icons.slint";
 import { LagScrollView } from "scrollbar.slint";
-
-export struct ComboBoxItemData {
-    text: string,
-    tier: int, // 0 = normal, 1 = caution (#E5B84C), >= 2 = extreme (#E0564C)
-}
+import { ComboBoxItemData } from "../api/types.slint";
+export { ComboBoxItemData }
 
 // Ported from DarkTheme.axaml:353-407 + App.axaml:226-227 + Core/UiConverters.cs:42-60
 export component LagComboBox {

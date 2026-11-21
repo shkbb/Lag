@@ -167,11 +167,29 @@ pub(super) fn bind_controls(ui: &AppWindow, ctx: &Rc<AppCtx>, state: &Rc<RefCell
             // interface themes (docs/spec/themes.md)
             "theme-folder" => {
                 if let Some(dir) = crate::themes::user_dir() {
-                    let _ = std::fs::create_dir_all(&dir);
+                    crate::themes::write_reference(&dir);
                     std::thread::spawn(move || open_in_explorer(&dir, false));
                 }
             }
             "theme-restart" => crate::shell::restart(),
+            // a full copy of Lag's interface as a new theme, chosen and opened in its folder (docs/spec/themes.md)
+            "theme-new" => {
+                let Some(root) = crate::themes::user_dir() else { return };
+                crate::themes::write_reference(&root);
+                match crate::themes::new_from_builtin(&root, &tr("Theme_NewName")) {
+                    Ok(t) => {
+                        st.borrow_mut().theme_note = i18n::format("Theme_Created", &[&t.dir.display().to_string()]).unwrap_or_default();
+                        let dir = t.dir.clone();
+                        std::thread::spawn(move || open_in_explorer(&dir, false));
+                        save(&ui, &c, &st, "ui-theme", |s| s.settings.ui_theme = Some(t.id.clone()));
+                    }
+                    Err(e) => {
+                        log::warn!("[Theme] new theme failed: {e}");
+                        st.borrow_mut().theme_note = e;
+                        st.borrow().refresh(&ui);
+                    }
+                }
+            }
             // the chosen theme in its own live-reloading window (Lag.exe --theme-preview <folder>)
             "theme-preview" => {
                 let chosen = st.borrow().settings.ui_theme.clone().unwrap_or_else(|| crate::themes::BUILTIN.into());

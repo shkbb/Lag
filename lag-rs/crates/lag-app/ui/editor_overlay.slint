@@ -6,34 +6,8 @@
 import { Theme } from "theme/tokens.slint";
 import { EditorStageOverlay } from "components/editor/preview_stage.slint";
 import { EditorTextOverlayData } from "components/editor/types.slint";
-
-export global EditorOverlayVM {
-    in property <bool> has-clip: false;
-    in property <float> display-source-aspect-raw: 1.7777778;
-    in property <float> display-frame-aspect: 1.7777778;
-    in property <bool> crop-tool-active: false;
-    in property <bool> reframe-selected: false;
-    in property <float> edit-nx: 0.0;
-    in property <float> edit-ny: 0.0;
-    in property <float> edit-nw: 1.0;
-    in property <float> edit-nh: 1.0;
-    in property <[EditorTextOverlayData]> texts: [];
-
-    callback focus-keys();
-    callback play-pause();
-    callback deselect-reframe();
-    callback select-reframe();
-    callback right-click-reset();
-    callback begin-overlay-drag();
-    callback drag-overlay(int, float, float, float, float, float, float, float, float);
-    callback select-text(int);
-    callback move-text(int, float, float);
-    callback push-undo();
-    in-out property <int> editing-index: -1;
-    callback text-edit-started(int);
-    callback text-edit-finished();
-    callback deselect-text();
-}
+import { EditorOverlayVM } from "api/globals.slint";
+export { EditorOverlayVM }
 
 export component EditorOverlayWindow inherits Window {
     title: "Lag Editor Overlay";

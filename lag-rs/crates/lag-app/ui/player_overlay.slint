@@ -9,55 +9,8 @@ import { LagToggleSwitch } from "components/toggle_switch.slint";
 import { LagScrollView } from "components/scrollbar.slint";
 import { ReplayListItem, SpeedListItem } from "components/list_items.slint";
 import { LagContextMenuContainer, LagMenuItem } from "components/menu.slint";
-
-export global PlayerOverlayVM {
-    in property <bool> has-clip: false;
-    in property <bool> is-playing: false;
-    in property <bool> is-loading: false;
-    in property <bool> is-image: false;
-    in property <bool> is-fullscreen: false;
-    in property <string> path;
-    in property <string> time-text: "0:00.000 / 0:00.000";
-    in-out property <float> position: 0;
-    in-out property <bool> dragging: false;
-    in-out property <float> volume: 80;
-    in property <bool> muted: false;
-    in property <float> speed: 1;
-    in property <bool> smooth-slowmo: true;
-    in property <int> audio-track: 0;
-    in property <int> audio-track-count: 0;
-    in property <string> error;
-    in-out property <bool> mute-flash: false;
-    in-out property <bool> controls: false;
-    in-out property <bool> cursor-idle: false;
-    in-out property <bool> sidebar: false;
-    in property <[PlayerClip]> clips;
-    in property <string> total-duration: "";
-    in property <string> total-size: "0 MB";
-    in property <bool> library-loading: false;
-
-    callback toggle();
-    callback stop();
-    callback seek(float, bool);
-    callback skip(float);
-    callback next();
-    callback play-clip(string);
-    callback edit(string);
-    callback show-in-folder(string);
-    callback delete-clip(string);
-    callback volume-changed(float);
-    callback mute();
-    callback speed-changed(float);
-    callback smooth-slowmo-changed(bool);
-    callback audio-changed(int);
-    callback toggle-fullscreen();
-    callback exit-fullscreen();
-    callback dragging-changed(bool);
-    callback pinned-changed(bool);
-    // true when the OS cursor did not actually move since the last pointer event (Windows sends a fake
-    // WM_MOUSEMOVE whenever a window under the cursor is shown/hidden/moved): such events must not wake the UI
-    callback synthetic-move() -> bool;
-}
+import { PlayerOverlayVM } from "api/globals.slint";
+export { PlayerOverlayVM }
 
 component OverlaySeekBar inherits FocusScope {
     function update(px: length, exact: bool) {
