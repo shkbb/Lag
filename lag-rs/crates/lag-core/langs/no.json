@@ -358,5 +358,8 @@
   "Theme_Failed": "Temaet ble ikke lastet, Lags eget brukes: {0}",
   "Theme_ImportFailed": "Kunne ikke importere: {0}",
   "Theme_FileFilter": "Lag-tema",
-  "Tray_DefaultUi": "Lags eget grensesnitt"
+  "Tray_DefaultUi": "Lags eget grensesnitt",
+  "Theme_Preview": "Forhåndsvis",
+  "ThemePreview_Error": "Temaet har en feil",
+  "ThemePreview_Hint": "Rett filen og lagre den: forhåndsvisningen lastes inn på nytt av seg selv."
 }

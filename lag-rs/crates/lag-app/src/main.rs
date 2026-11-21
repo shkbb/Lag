@@ -10,6 +10,7 @@ mod gpucheck;
 mod services;
 mod shell;
 mod snapshot;
+mod preview;
 mod startup;
 mod themes;
 mod ui_twin;
@@ -35,6 +36,11 @@ fn main() {
             Err(e) => eprintln!("UI failed to load: {e}"),
         }
     };
+    // Theme preview with live reload: `--theme-preview <theme folder>` (its own UI loading, its own window).
+    if let Some(args) = preview::args() {
+        preview::run(args);
+        return;
+    }
     // Real-window GPU render check (dev tool): `--gpu-check <script> <out-dir>`.
     if let Some((script, dir)) = gpucheck::args() {
         dev_load();

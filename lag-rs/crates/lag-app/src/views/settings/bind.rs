@@ -172,6 +172,17 @@ pub(super) fn bind_controls(ui: &AppWindow, ctx: &Rc<AppCtx>, state: &Rc<RefCell
                 }
             }
             "theme-restart" => crate::shell::restart(),
+            // the chosen theme in its own live-reloading window (Lag.exe --theme-preview <folder>)
+            "theme-preview" => {
+                let chosen = st.borrow().settings.ui_theme.clone().unwrap_or_else(|| crate::themes::BUILTIN.into());
+                if let Some(t) = crate::themes::list().into_iter().find(|t| t.id == chosen) {
+                    let spawned = std::env::current_exe()
+                        .and_then(|exe| std::process::Command::new(exe).arg("--theme-preview").arg(&t.dir).spawn());
+                    if let Err(e) = spawned {
+                        log::warn!("[Theme] preview did not start: {e}");
+                    }
+                }
+            }
             "theme-import" | "theme-export" => {
                 let export = id.as_str() == "theme-export";
                 let chosen = st.borrow().settings.ui_theme.clone().unwrap_or_else(|| crate::themes::BUILTIN.into());

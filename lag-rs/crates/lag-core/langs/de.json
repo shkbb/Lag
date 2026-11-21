@@ -358,5 +358,8 @@
   "Theme_Failed": "Das Theme wurde nicht geladen, Lags eigenes wird verwendet: {0}",
   "Theme_ImportFailed": "Import fehlgeschlagen: {0}",
   "Theme_FileFilter": "Lag-Theme",
-  "Tray_DefaultUi": "Lags eigene Oberfläche"
+  "Tray_DefaultUi": "Lags eigene Oberfläche",
+  "Theme_Preview": "Vorschau",
+  "ThemePreview_Error": "Das Theme enthält einen Fehler",
+  "ThemePreview_Hint": "Korrigiere die Datei und speichere sie: Die Vorschau lädt sich selbst neu."
 }

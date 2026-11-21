@@ -358,5 +358,8 @@
   "Theme_Failed": "Тэма не загрузілася, працуе ўбудаваная: {0}",
   "Theme_ImportFailed": "Не ўдалося імпартаваць: {0}",
   "Theme_FileFilter": "Тэма Lag",
-  "Tray_DefaultUi": "Стандартны інтэрфейс Lag"
+  "Tray_DefaultUi": "Стандартны інтэрфейс Lag",
+  "Theme_Preview": "Прагледзець",
+  "ThemePreview_Error": "У тэме памылка",
+  "ThemePreview_Hint": "Выпраўце файл і захавайце яго: прагляд абновіцца сам."
 }

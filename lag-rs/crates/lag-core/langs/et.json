@@ -358,5 +358,8 @@
   "Theme_Failed": "Teema ei laadinud, kasutusel on Lagi oma: {0}",
   "Theme_ImportFailed": "Importimine ebaõnnestus: {0}",
   "Theme_FileFilter": "Lagi teema",
-  "Tray_DefaultUi": "Lagi oma liides"
+  "Tray_DefaultUi": "Lagi oma liides",
+  "Theme_Preview": "Eelvaade",
+  "ThemePreview_Error": "Teemas on viga",
+  "ThemePreview_Hint": "Paranda fail ja salvesta see: eelvaade laadib end ise uuesti."
 }

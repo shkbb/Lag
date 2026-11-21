@@ -358,5 +358,8 @@
   "Theme_Failed": "Tēma netika ielādēta, tiek lietota Lag tēma: {0}",
   "Theme_ImportFailed": "Neizdevās importēt: {0}",
   "Theme_FileFilter": "Lag tēma",
-  "Tray_DefaultUi": "Lag standarta saskarne"
+  "Tray_DefaultUi": "Lag standarta saskarne",
+  "Theme_Preview": "Priekšskatīt",
+  "ThemePreview_Error": "Tēmā ir kļūda",
+  "ThemePreview_Hint": "Izlabojiet failu un saglabājiet to: priekšskatījums atjaunosies pats."
 }

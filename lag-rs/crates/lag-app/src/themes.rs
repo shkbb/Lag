@@ -216,6 +216,15 @@ pub fn activate(id: &str) -> Result<Duration, String> {
 /// The theme `id` over the loaded built-in UI.
 fn apply(id: &str) -> Result<(), String> {
     let theme = list().into_iter().find(|t| t.id == id).ok_or_else(|| format!("theme \"{id}\" is not installed"))?;
+    apply_theme(&theme)
+}
+
+/// A theme from any folder (the preview, a theme being written) over the loaded built-in UI.
+pub fn apply_dir(dir: &Path) -> Result<(), String> {
+    apply_theme(&read(dir)?)
+}
+
+fn apply_theme(theme: &ThemeInfo) -> Result<(), String> {
     if theme.api > API_VERSION {
         return Err(format!("\"{}\" needs a newer Lag (theme API {}, this Lag has {API_VERSION})", theme.name, theme.api));
     }

@@ -1,0 +1,55 @@
+// Theme preview (Lag.exe --theme-preview <folder>, docs/spec/themes.md): shown instead of the theme while it does
+// not compile. The text is the compiler's "file:line: message"; saving a fix reloads the preview by itself.
+import { Theme } from "theme/tokens.slint";
+import { Tr } from "globals.slint";
+import { LagScrollView } from "components/scrollbar.slint";
+
+export component ThemeErrorWindow inherits Window {
+    title: "Lag";
+    preferred-width: 860px;
+    preferred-height: 520px;
+    background: Theme.surface-app;
+    in property <string> theme-name;
+    in property <string> message;
+
+    VerticalLayout {
+        padding: 24px;
+        spacing: 12px;
+        Text {
+            text: Tr.t("ThemePreview_Error", Tr.rev) + "  ·  " + root.theme-name;
+            color: #FF6B6B;
+            font-size: 20px;
+            font-weight: 700;
+        }
+        Text {
+            text: Tr.t("ThemePreview_Hint", Tr.rev);
+            color: Theme.text-faint;
+            font-size: 13px;
+            wrap: word-wrap;
+        }
+        Rectangle {
+            vertical-stretch: 1;
+            background: Theme.surface-card;
+            border-radius: 10px;
+            border-width: 1px;
+            border-color: Theme.border-strong;
+            LagScrollView {
+                x: 14px;
+                y: 12px;
+                width: parent.width - 28px;
+                height: parent.height - 24px;
+                content-height: body.preferred-height + 8px;
+                body := Text {
+                    x: 0px;
+                    y: 0px;
+                    width: parent.width - 12px;
+                    text: root.message;
+                    color: Theme.text-hi;
+                    font-family: Theme.font-mono;
+                    font-size: 13px;
+                    wrap: word-wrap;
+                }
+            }
+        }
+    }
+}

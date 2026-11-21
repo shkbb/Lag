@@ -358,5 +358,8 @@
   "Theme_Failed": "O tema não carregou, usa-se o do Lag: {0}",
   "Theme_ImportFailed": "Não foi possível importar: {0}",
   "Theme_FileFilter": "Tema do Lag",
-  "Tray_DefaultUi": "Interface original do Lag"
+  "Tray_DefaultUi": "Interface original do Lag",
+  "Theme_Preview": "Pré-visualizar",
+  "ThemePreview_Error": "O tema tem um erro",
+  "ThemePreview_Hint": "Corrija o ficheiro e guarde-o: a pré-visualização recarrega sozinha."
 }

@@ -358,5 +358,8 @@
   "Theme_Failed": "Het thema laadde niet, dat van Lag wordt gebruikt: {0}",
   "Theme_ImportFailed": "Importeren mislukt: {0}",
   "Theme_FileFilter": "Lag-thema",
-  "Tray_DefaultUi": "Lags eigen interface"
+  "Tray_DefaultUi": "Lags eigen interface",
+  "Theme_Preview": "Voorbeeld",
+  "ThemePreview_Error": "Het thema bevat een fout",
+  "ThemePreview_Hint": "Verbeter het bestand en sla het op: het voorbeeld laadt vanzelf opnieuw."
 }

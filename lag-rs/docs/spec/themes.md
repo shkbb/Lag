@@ -176,3 +176,18 @@ Next steps of phase 1:
 - Not yet: live reload without a restart (needs a hot swap of the main window: re-run `views::init_all` on the
   new window, drop the old one's callbacks), the tray menu theming (owner wants it: phase 3, keeping a mandatory
   way back), API reference docs, more example themes.
+
+## 14. Phase 3 (started 2026-11-22): theme preview with live reload — DONE
+`Lag.exe --theme-preview <theme folder>` (Settings > General > Interface > Preview): a separate Lag window drawing
+the theme over real data, without recording, tray, hotkeys or cloud, never saving settings (safe next to the
+running Lag). It polls the folder (400 ms, size + time of every file); after a save it starts a fresh preview at
+the same place (`--at x,y,w,h`), which, once drawn, takes the old window's place in the z-order and ends the old
+process (`--replace pid,hwnd`): no gap, and it never falls behind other windows (Windows' foreground lock would
+otherwise keep a new background process's window under the editor or browser). A theme that does not compile
+shows `ThemeErrorWindow` (the compiler's "file:line: message", paths relative to the theme); the fix reloads it.
+Verified in real windows: start -> edit (button colour changed) -> syntax error (error window) -> fix (theme back),
+always exactly one preview process, none left after closing; the owner's settings untouched.
+
+Next in phase 3: API globals in their own `ui/api/` files so a copy of Lag's own UI can be a starting theme
+("New theme from Lag's"), a generated API reference for theme authors, more example themes, hot swap of the main
+window in the running app (no restart), themable tray menu with a mandatory way back.

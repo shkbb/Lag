@@ -358,5 +358,8 @@
   "Theme_Failed": "Temat laddades inte, Lags eget används: {0}",
   "Theme_ImportFailed": "Kunde inte importera: {0}",
   "Theme_FileFilter": "Lag-tema",
-  "Tray_DefaultUi": "Lags eget gränssnitt"
+  "Tray_DefaultUi": "Lags eget gränssnitt",
+  "Theme_Preview": "Förhandsgranska",
+  "ThemePreview_Error": "Temat innehåller ett fel",
+  "ThemePreview_Hint": "Rätta filen och spara den: förhandsgranskningen laddas om av sig själv."
 }

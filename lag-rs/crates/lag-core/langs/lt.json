@@ -358,5 +358,8 @@
   "Theme_Failed": "Tema neįkelta, naudojama Lag tema: {0}",
   "Theme_ImportFailed": "Nepavyko importuoti: {0}",
   "Theme_FileFilter": "Lag tema",
-  "Tray_DefaultUi": "Įprasta Lag sąsaja"
+  "Tray_DefaultUi": "Įprasta Lag sąsaja",
+  "Theme_Preview": "Peržiūrėti",
+  "ThemePreview_Error": "Temoje yra klaida",
+  "ThemePreview_Hint": "Pataisykite failą ir išsaugokite: peržiūra atsinaujins pati."
 }

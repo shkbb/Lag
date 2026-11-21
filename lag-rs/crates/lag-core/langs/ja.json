@@ -358,5 +358,8 @@
   "Theme_Failed": "テーマを読み込めなかったため、内蔵のものを使っています: {0}",
   "Theme_ImportFailed": "インポートできませんでした: {0}",
   "Theme_FileFilter": "Lag テーマ",
-  "Tray_DefaultUi": "Lag 標準のインターフェイス"
+  "Tray_DefaultUi": "Lag 標準のインターフェイス",
+  "Theme_Preview": "プレビュー",
+  "ThemePreview_Error": "テーマにエラーがあります",
+  "ThemePreview_Hint": "ファイルを直して保存すると、プレビューが自動で再読み込みされます。"
 }

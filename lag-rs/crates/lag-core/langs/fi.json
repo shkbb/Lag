@@ -358,5 +358,8 @@
   "Theme_Failed": "Teema ei latautunut, käytössä on Lagin oma: {0}",
   "Theme_ImportFailed": "Tuonti epäonnistui: {0}",
   "Theme_FileFilter": "Lag-teema",
-  "Tray_DefaultUi": "Lagin oma käyttöliittymä"
+  "Tray_DefaultUi": "Lagin oma käyttöliittymä",
+  "Theme_Preview": "Esikatsele",
+  "ThemePreview_Error": "Teemassa on virhe",
+  "ThemePreview_Hint": "Korjaa tiedosto ja tallenna se: esikatselu latautuu itsestään."
 }
