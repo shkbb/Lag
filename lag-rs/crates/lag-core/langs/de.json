@@ -375,5 +375,12 @@
   "ThemeEditor_AddRect": "+ Form",
   "ThemeEditor_AddText": "+ Text",
   "ThemeEditor_InLayout": "Dieses Element steht in einer Zeile oder Spalte: verschiebe es mit ↑ ↓",
-  "ThemeEditor_Template": "Teil von {0}: eine Änderung hier ändert alle {0}"
+  "ThemeEditor_Template": "Teil von {0}: eine Änderung hier ändert alle {0}",
+  "ThemeEditor_TabElement": "Element",
+  "ThemeEditor_TabPalette": "Palette",
+  "ThemeEditor_ThisMode": "Eine Farbe ändert sich nur im oben gewählten Modus: die anderen behalten ihre",
+  "ThemeEditor_AllModes": "Eine Farbe ersetzt den ganzen Wert: in jedem Modus gleich",
+  "ThemeEditor_PaletteSearch": "Farbe suchen…",
+  "ThemeEditor_PaletteEmpty": "Dieses Theme hat keine Palette: die Farben stehen direkt in den Elementen (Reiter Element)",
+  "ThemeEditor_PaletteUnknown": "Diese Farbe hängt nicht nur vom Modus ab: „in jedem Modus gleich“ einschalten oder in der Datei ändern"
 }

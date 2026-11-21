@@ -375,5 +375,12 @@
   "ThemeEditor_AddRect": "+ Muoto",
   "ThemeEditor_AddText": "+ Teksti",
   "ThemeEditor_InLayout": "Elementti on rivissä tai sarakkeessa: siirrä sitä painikkeilla ↑ ↓",
-  "ThemeEditor_Template": "Osa komponenttia {0}: muutos tässä muuttaa kaikki {0}"
+  "ThemeEditor_Template": "Osa komponenttia {0}: muutos tässä muuttaa kaikki {0}",
+  "ThemeEditor_TabElement": "Elementti",
+  "ThemeEditor_TabPalette": "Paletti",
+  "ThemeEditor_ThisMode": "Väri muuttuu vain yllä valitussa tilassa: muut tilat pitävät omansa",
+  "ThemeEditor_AllModes": "Väri korvaa koko arvon: sama kaikissa tiloissa",
+  "ThemeEditor_PaletteSearch": "Etsi väriä…",
+  "ThemeEditor_PaletteEmpty": "Tällä teemalla ei ole palettia: värit on kirjoitettu suoraan elementteihin (välilehti Elementti)",
+  "ThemeEditor_PaletteUnknown": "Tämä väri ei riipu vain tilasta: ota käyttöön ”sama kaikissa tiloissa” tai muuta sitä tiedostossa"
 }

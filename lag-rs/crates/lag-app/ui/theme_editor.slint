@@ -26,6 +26,55 @@ export struct EditorProp {
 // The element and the ones around it, for the path above the panel
 export struct EditorCrumb { label: string, index: int, current: bool }
 
+// One colour of the theme's palette: what shows in the chosen mode. header: the section title on the first
+// colour of a section ("" on the others); index: which colour, for set-token
+export struct EditorToken { header: string, name: string, value: string, swatch: color, index: int }
+
+component TokenRow {
+    in property <EditorToken> token;
+    callback set(int, string);
+    VerticalLayout {
+        spacing: 2px;
+        if root.token.header != "": Text {
+            text: root.token.header;
+            color: Theme.text-mid;
+            font-size: 11.5px;
+            font-weight: 700;
+            overflow: elide;
+        }
+        HorizontalLayout {
+            spacing: 8px;
+            padding-top: 2px;
+            padding-bottom: 2px;
+            min-height: 34px;
+            VerticalLayout {
+                alignment: center;
+                Rectangle {
+                    width: 22px;
+                    height: 22px;
+                    border-radius: 5px;
+                    border-width: 1px;
+                    border-color: Theme.border-strong;
+                    background: root.token.swatch;
+                }
+            }
+            Text {
+                width: 150px;
+                text: root.token.name;
+                color: Theme.text-hi;
+                font-size: 12.5px;
+                vertical-alignment: center;
+                overflow: elide;
+            }
+            LagTextInput {
+                horizontal-stretch: 1;
+                text: root.token.value;
+                accepted(t) => { root.set(root.token.index, t); }
+            }
+        }
+    }
+}
+
 component PropRow {
     in property <EditorProp> prop;
     callback set(string, string);
@@ -107,6 +156,18 @@ export component ThemeEditorWindow inherits Window {
     in property <bool> can-undo;
     in property <bool> can-redo;
     in-out property <string> filter;
+    // the right panel: 0 the picked element, 1 the theme's palette
+    in-out property <int> tab: 0;
+    in property <[EditorToken]> tokens;
+    // the theme has Lag's colour modes (then a colour changes in the chosen one only, unless all-modes)
+    in property <bool> has-modes;
+    in property <string> palette-mode: "dark";
+    in property <bool> all-modes;
+    in-out property <string> token-filter;
+    callback set-token(int, string);
+    callback palette-mode-changed(string);
+    callback all-modes-changed(bool);
+    callback token-filter-changed(string);
     callback pick(length, length);
     callback set-prop(string, string);
     callback reset-prop(string);
@@ -151,6 +212,8 @@ export component ThemeEditorWindow inherits Window {
                     y: 0px;
                     width: root.canvas-width;
                     height: root.canvas-height;
+                    // selection frames of repeats below the theme's window stay out of sight
+                    clip: true;
                     border-width: 1px;
                     border-color: Theme.border-strong;
                     ComponentContainer {
@@ -204,6 +267,15 @@ export component ThemeEditorWindow inherits Window {
                 VerticalLayout {
                     padding: 12px;
                     spacing: 8px;
+                    HorizontalLayout {
+                        spacing: 4px;
+                        RChipButton { text: Tr.t("ThemeEditor_TabElement", Tr.rev); active: root.tab == 0; clicked => { root.tab = 0; } }
+                        RChipButton { text: Tr.t("ThemeEditor_TabPalette", Tr.rev); active: root.tab == 1; clicked => { root.tab = 1; } }
+                        Rectangle { horizontal-stretch: 1; }
+                    }
+                    if root.tab == 0: VerticalLayout {
+                    spacing: 8px;
+                    vertical-stretch: 1;
                     Text {
                         text: root.selected-name == "" ? Tr.t("ThemeEditor_PickHint", Tr.rev) : root.selected-name;
                         color: Theme.text-hi; font-size: 17px; font-weight: 700; wrap: word-wrap;
@@ -252,6 +324,56 @@ export component ThemeEditorWindow inherits Window {
                                 prop: p;
                                 set(n, v) => { root.set-prop(n, v); }
                                 reset(n) => { root.reset-prop(n); }
+                            }
+                        }
+                    }
+                    }
+                    if root.tab == 1: VerticalLayout {
+                        spacing: 8px;
+                        vertical-stretch: 1;
+                        if root.has-modes: HorizontalLayout {
+                            spacing: 4px;
+                            RChipButton { text: Tr.t("Theme_Dark", Tr.rev); active: root.palette-mode == "dark"; clicked => { root.palette-mode-changed("dark"); } }
+                            RChipButton { text: Tr.t("Theme_Light", Tr.rev); active: root.palette-mode == "light"; clicked => { root.palette-mode-changed("light"); } }
+                            RChipButton { text: Tr.t("Theme_Neon", Tr.rev); active: root.palette-mode == "neon"; clicked => { root.palette-mode-changed("neon"); } }
+                            Rectangle { horizontal-stretch: 1; }
+                        }
+                        if root.has-modes: HorizontalLayout {
+                            spacing: 8px;
+                            LagToggleSwitch {
+                                checked: root.all-modes;
+                                toggled(v) => { root.all-modes-changed(v); }
+                            }
+                            Text {
+                                horizontal-stretch: 1;
+                                text: root.all-modes ? Tr.t("ThemeEditor_AllModes", Tr.rev) : Tr.t("ThemeEditor_ThisMode", Tr.rev);
+                                color: Theme.text-mid;
+                                font-size: 11.5px;
+                                wrap: word-wrap;
+                                vertical-alignment: center;
+                            }
+                        }
+                        if root.tokens.length > 0 || root.token-filter != "": LagTextInput {
+                            text <=> root.token-filter;
+                            placeholder: Tr.t("ThemeEditor_PaletteSearch", Tr.rev);
+                            edited(t) => { root.token-filter-changed(t); }
+                        }
+                        if root.tokens.length == 0 && root.token-filter == "": Text {
+                            text: Tr.t("ThemeEditor_PaletteEmpty", Tr.rev);
+                            color: Theme.text-faint;
+                            font-size: 12.5px;
+                            wrap: word-wrap;
+                        }
+                        LagScrollView {
+                            vertical-stretch: 1;
+                            content-height: token-col.preferred-height;
+                            token-col := VerticalLayout {
+                                width: parent.width - 12px;
+                                spacing: 4px;
+                                for t in root.tokens: TokenRow {
+                                    token: t;
+                                    set(i, v) => { root.set-token(i, v); }
+                                }
                             }
                         }
                     }

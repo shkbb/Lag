@@ -375,5 +375,12 @@
   "ThemeEditor_AddRect": "+ Shape",
   "ThemeEditor_AddText": "+ Text",
   "ThemeEditor_InLayout": "This element sits in a row or column: move it with ↑ ↓, or give its parent a free layout",
-  "ThemeEditor_Template": "Part of {0}: a change here changes every {0}"
+  "ThemeEditor_Template": "Part of {0}: a change here changes every {0}",
+  "ThemeEditor_TabElement": "Element",
+  "ThemeEditor_TabPalette": "Palette",
+  "ThemeEditor_ThisMode": "A colour changes only in the mode chosen above: the other modes keep theirs",
+  "ThemeEditor_AllModes": "A colour replaces the whole value: the same in every mode",
+  "ThemeEditor_PaletteSearch": "Find a colour…",
+  "ThemeEditor_PaletteEmpty": "This theme has no palette: its colours are written in the elements themselves (Element tab)",
+  "ThemeEditor_PaletteUnknown": "This colour depends on more than the mode: turn on “same in every mode” or edit it in the file"
 }

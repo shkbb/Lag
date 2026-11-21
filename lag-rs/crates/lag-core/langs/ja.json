@@ -375,5 +375,12 @@
   "ThemeEditor_AddRect": "+ 図形",
   "ThemeEditor_AddText": "+ テキスト",
   "ThemeEditor_InLayout": "この要素は行や列の中にあります: ↑ ↓ で移動します",
-  "ThemeEditor_Template": "{0} の一部: ここを変えるとすべての {0} が変わります"
+  "ThemeEditor_Template": "{0} の一部: ここを変えるとすべての {0} が変わります",
+  "ThemeEditor_TabElement": "要素",
+  "ThemeEditor_TabPalette": "パレット",
+  "ThemeEditor_ThisMode": "色は上で選んだモードでのみ変わります。他のモードはそのままです",
+  "ThemeEditor_AllModes": "色が値全体を置き換えます。すべてのモードで同じになります",
+  "ThemeEditor_PaletteSearch": "色を検索…",
+  "ThemeEditor_PaletteEmpty": "このテーマにはパレットがありません。色は各要素に直接書かれています（「要素」タブ）",
+  "ThemeEditor_PaletteUnknown": "この色はモード以外にも依存しています。「すべてのモードで同じ」をオンにするか、ファイルで編集してください"
 }

@@ -375,5 +375,12 @@
   "ThemeEditor_AddRect": "+ Forma",
   "ThemeEditor_AddText": "+ Testo",
   "ThemeEditor_InLayout": "Questo elemento è in una riga o colonna: spostalo con ↑ ↓",
-  "ThemeEditor_Template": "Parte di {0}: una modifica qui cambia tutti i {0}"
+  "ThemeEditor_Template": "Parte di {0}: una modifica qui cambia tutti i {0}",
+  "ThemeEditor_TabElement": "Elemento",
+  "ThemeEditor_TabPalette": "Tavolozza",
+  "ThemeEditor_ThisMode": "Un colore cambia solo nella modalità scelta sopra: le altre mantengono il proprio",
+  "ThemeEditor_AllModes": "Un colore sostituisce l'intero valore: uguale in ogni modalità",
+  "ThemeEditor_PaletteSearch": "Trova un colore…",
+  "ThemeEditor_PaletteEmpty": "Questo tema non ha una tavolozza: i colori sono scritti negli elementi stessi (scheda Elemento)",
+  "ThemeEditor_PaletteUnknown": "Questo colore non dipende solo dalla modalità: attiva «uguale in ogni modalità» o modificalo nel file"
 }

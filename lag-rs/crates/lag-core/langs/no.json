@@ -375,5 +375,12 @@
   "ThemeEditor_AddRect": "+ Figur",
   "ThemeEditor_AddText": "+ Tekst",
   "ThemeEditor_InLayout": "Elementet står i en rad eller kolonne: flytt det med ↑ ↓",
-  "ThemeEditor_Template": "Del av {0}: en endring her endrer alle {0}"
+  "ThemeEditor_Template": "Del av {0}: en endring her endrer alle {0}",
+  "ThemeEditor_TabElement": "Element",
+  "ThemeEditor_TabPalette": "Palett",
+  "ThemeEditor_ThisMode": "En farge endres bare i modusen valgt over: de andre beholder sin",
+  "ThemeEditor_AllModes": "En farge erstatter hele verdien: den samme i alle moduser",
+  "ThemeEditor_PaletteSearch": "Finn en farge…",
+  "ThemeEditor_PaletteEmpty": "Dette temaet har ingen palett: fargene står direkte i elementene (fanen Element)",
+  "ThemeEditor_PaletteUnknown": "Denne fargen avhenger av mer enn modusen: slå på «lik i alle moduser» eller endre den i filen"
 }

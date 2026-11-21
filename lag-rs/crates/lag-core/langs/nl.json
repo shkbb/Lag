@@ -375,5 +375,12 @@
   "ThemeEditor_AddRect": "+ Vorm",
   "ThemeEditor_AddText": "+ Tekst",
   "ThemeEditor_InLayout": "Dit element staat in een rij of kolom: verplaats het met ↑ ↓",
-  "ThemeEditor_Template": "Deel van {0}: een wijziging hier verandert alle {0}"
+  "ThemeEditor_Template": "Deel van {0}: een wijziging hier verandert alle {0}",
+  "ThemeEditor_TabElement": "Element",
+  "ThemeEditor_TabPalette": "Palet",
+  "ThemeEditor_ThisMode": "Een kleur verandert alleen in de modus die hierboven is gekozen: de andere houden de hunne",
+  "ThemeEditor_AllModes": "Een kleur vervangt de hele waarde: in elke modus hetzelfde",
+  "ThemeEditor_PaletteSearch": "Kleur zoeken…",
+  "ThemeEditor_PaletteEmpty": "Dit thema heeft geen palet: de kleuren staan in de elementen zelf (tabblad Element)",
+  "ThemeEditor_PaletteUnknown": "Deze kleur hangt van meer af dan de modus: zet ‘in elke modus hetzelfde’ aan of wijzig hem in het bestand"
 }

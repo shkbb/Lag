@@ -375,5 +375,12 @@
   "ThemeEditor_AddRect": "+ Forma",
   "ThemeEditor_AddText": "+ Texto",
   "ThemeEditor_InLayout": "Este elemento está en una fila o columna: muévelo con ↑ ↓",
-  "ThemeEditor_Template": "Parte de {0}: un cambio aquí cambia todos los {0}"
+  "ThemeEditor_Template": "Parte de {0}: un cambio aquí cambia todos los {0}",
+  "ThemeEditor_TabElement": "Elemento",
+  "ThemeEditor_TabPalette": "Paleta",
+  "ThemeEditor_ThisMode": "Un color cambia solo en el modo elegido arriba: los demás conservan el suyo",
+  "ThemeEditor_AllModes": "Un color sustituye todo el valor: el mismo en todos los modos",
+  "ThemeEditor_PaletteSearch": "Buscar un color…",
+  "ThemeEditor_PaletteEmpty": "Este tema no tiene paleta: sus colores están en los propios elementos (pestaña Elemento)",
+  "ThemeEditor_PaletteUnknown": "Este color depende de algo más que el modo: activa «igual en todos los modos» o cámbialo en el archivo"
 }

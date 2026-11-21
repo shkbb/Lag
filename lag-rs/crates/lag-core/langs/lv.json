@@ -375,5 +375,12 @@
   "ThemeEditor_AddRect": "+ Figūra",
   "ThemeEditor_AddText": "+ Teksts",
   "ThemeEditor_InLayout": "Šis elements ir rindā vai kolonnā: pārvietojiet to ar ↑ ↓",
-  "ThemeEditor_Template": "{0} daļa: izmaiņas šeit mainīs visus {0}"
+  "ThemeEditor_Template": "{0} daļa: izmaiņas šeit mainīs visus {0}",
+  "ThemeEditor_TabElement": "Elements",
+  "ThemeEditor_TabPalette": "Palete",
+  "ThemeEditor_ThisMode": "Krāsa mainās tikai augšā izvēlētajā režīmā: pārējie saglabā savējo",
+  "ThemeEditor_AllModes": "Krāsa aizstāj visu vērtību: vienāda katrā režīmā",
+  "ThemeEditor_PaletteSearch": "Meklēt krāsu…",
+  "ThemeEditor_PaletteEmpty": "Šai tēmai nav paletes: krāsas ir ierakstītas pašos elementos (cilne “Elements”)",
+  "ThemeEditor_PaletteUnknown": "Šī krāsa atkarīga ne tikai no režīma: ieslēdziet “vienāda katrā režīmā” vai mainiet to failā"
 }

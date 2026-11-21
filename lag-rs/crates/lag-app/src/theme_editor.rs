@@ -4,7 +4,7 @@
 //! has (from the compiler's type of it) with what the file says now; a change is written into the theme's `.slint`
 //! file as a text edit, compiled, and swapped in. An edit that does not compile is undone in the file at once and
 //! the compiler's message is shown. Undo / redo keep whole-file texts.
-use crate::{app_ctx, startup, themes, ui_twin, views, AppWindow, ComponentHandle, EditorCrumb, EditorProp, EditorRect, ThemeEditorWindow, Tr};
+use crate::{app_ctx, startup, themes, ui_twin, views, AppWindow, ComponentHandle, EditorCrumb, EditorProp, EditorRect, EditorToken, ThemeEditorWindow, Tr};
 use i_slint_compiler::langtype::Type;
 use i_slint_compiler::object_tree::ElementRc;
 use i_slint_compiler::parser::{SyntaxKind, SyntaxNode};
@@ -14,6 +14,8 @@ use std::cell::RefCell;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::time::Duration;
+
+mod palette;
 
 pub fn args() -> Option<PathBuf> {
     let a: Vec<String> = std::env::args().collect();
@@ -307,6 +309,12 @@ struct State {
     filter: String,
     undo: Vec<Edit>,
     redo: Vec<Edit>,
+    /// the theme's colours (palette tab)
+    tokens: Vec<palette::Token>,
+    /// the colour mode on the canvas, which the palette edits ("dark" | "light" | "neon")
+    mode: Rc<RefCell<String>>,
+    all_modes: bool,
+    token_filter: String,
 }
 
 const PAGES: [&str; 4] = ["settings", "library", "player", "editor"];
@@ -371,10 +379,17 @@ fn mirror(to: &ComponentInstance) {
     });
 }
 
-fn factory(def: ComponentDefinition, slot: Rc<RefCell<Option<ComponentInstance>>>, page: Rc<std::cell::Cell<i32>>) -> Value {
+fn factory(
+    def: ComponentDefinition,
+    slot: Rc<RefCell<Option<ComponentInstance>>>,
+    page: Rc<std::cell::Cell<i32>>,
+    mode: Rc<RefCell<String>>,
+) -> Value {
     Value::ComponentFactory(ComponentFactory::new(move |ctx| {
         let inst = def.create_embedded(ctx).ok()?;
         fill(&inst, page.get());
+        // a theme without Lag's colour modes has no such property: nothing to set
+        let _ = inst.set_property("theme-mode", Value::String(mode.borrow().as_str().into()));
         mirror(&inst);
         *slot.borrow_mut() = Some(slint::ComponentHandle::clone_strong(&inst));
         Some(inst)
@@ -387,7 +402,9 @@ fn load(ui: &ThemeEditorWindow, st: &mut State) -> Result<(), String> {
     let def = defs.into_iter().find(|d| d.name() == "AppWindow").ok_or("the theme has no AppWindow")?;
     st.raw = def.raw_type_loader();
     st.sources = sources(&st.dir);
-    ui.instance().set_property("canvas", factory(def, st.instance.clone(), st.page.clone())).map_err(|e| format!("{e:?}"))?;
+    st.tokens = palette::tokens(&st.dir);
+    let slot = factory(def, st.instance.clone(), st.page.clone(), st.mode.clone());
+    ui.instance().set_property("canvas", slot).map_err(|e| format!("{e:?}"))?;
     Ok(())
 }
 
@@ -527,7 +544,10 @@ fn props_of(st: &State, s: &Source) -> Vec<EditorProp> {
         .filter_map(|(name, t)| {
             let (kind, label, options) = kind_of(&t)?;
             let value = node.as_ref().and_then(|n| binding_text(n, &name)).unwrap_or_default();
-            let swatch = parse_color(&value).unwrap_or(Color::from_argb_u8(0, 0, 0, 0));
+            // a literal colour, or a colour of the theme's palette (`Theme.on-accent`) as the chosen mode shows it
+            let swatch = parse_color(&value)
+                .or_else(|| palette::colour_named(&value, &st.tokens, &st.mode.borrow()))
+                .unwrap_or(Color::from_argb_u8(0, 0, 0, 0));
             Some(EditorProp {
                 name: name.to_string().into(),
                 kind,
@@ -612,7 +632,43 @@ fn reselect(st: &mut State, old: &Source) {
         .cloned();
 }
 
+/// The palette tab: the theme's colours as the chosen mode shows them, a section title on the first of each.
+fn palette_rows(st: &State) -> Vec<EditorToken> {
+    let mode = st.mode.borrow().clone();
+    let f = st.token_filter.trim().to_lowercase();
+    let mut last = None;
+    st.tokens
+        .iter()
+        .enumerate()
+        .filter(|(_, t)| f.is_empty() || t.name.to_lowercase().contains(&f) || t.section.to_lowercase().contains(&f))
+        .map(|(i, t)| {
+            let value = match palette::active_branch(&t.expr, &mode) {
+                Some((a, b)) if !st.all_modes => t.expr[a..b].trim().to_owned(),
+                _ => t.expr.clone(),
+            };
+            let group = (t.global.as_str(), t.section.as_str());
+            let header = if last != Some(group) {
+                last = Some(group);
+                if t.section.is_empty() { t.global.clone() } else { t.section.clone() }
+            } else {
+                String::new()
+            };
+            EditorToken {
+                header: header.into(),
+                name: t.name.clone().into(),
+                value: value.into(),
+                swatch: palette::colour_of(t, &st.tokens, &mode).unwrap_or(Color::from_argb_u8(0, 0, 0, 0)),
+                index: i as i32,
+            }
+        })
+        .collect()
+}
+
 fn refresh(ui: &ThemeEditorWindow, st: &State) {
+    ui.set_tokens(ModelRc::new(VecModel::from(palette_rows(st))));
+    ui.set_has_modes(st.tokens.iter().any(|t| t.expr.contains("is-dark") || t.expr.contains("is-neon")));
+    ui.set_palette_mode(st.mode.borrow().as_str().into());
+    ui.set_all_modes(st.all_modes);
     let inst = live(st);
     match (&st.selected, inst) {
         (Some(s), Some(i)) => {
@@ -698,10 +754,19 @@ fn edit_selected(
     refresh_soon(ui, s);
 }
 
+/// `--editor-shots <out-dir>`: the editor runs in memory, the `--editor-script` runs to its end, `shot NAME` saves
+/// `<out-dir>/NAME.png`.
+fn shots_dir() -> Option<PathBuf> {
+    let a: Vec<String> = std::env::args().collect();
+    a.iter().position(|x| x == "--editor-shots").and_then(|i| a.get(i + 1)).map(PathBuf::from)
+}
+
 pub fn run(dir: PathBuf) {
     if log::set_logger(&crate::STDERR_LOG).is_ok() {
         log::set_max_level(log::LevelFilter::Info);
     }
+    // before any window exists
+    let headless = shots_dir().and_then(|_| crate::snapshot::install_for_editor(1640, 960));
     let settings = startup::load_settings();
     lag_core::i18n::set_language(settings.language.as_deref().unwrap_or("en"));
     if let Err(e) = ui_twin::load_builtin() {
@@ -730,10 +795,18 @@ pub fn run(dir: PathBuf) {
         filter: String::new(),
         undo: Vec::new(),
         redo: Vec::new(),
+        tokens: Vec::new(),
+        mode: Rc::new(RefCell::new(match settings.theme.as_deref() {
+            Some(m @ ("light" | "neon")) => m.to_owned(),
+            _ => "dark".to_owned(),
+        })),
+        all_modes: false,
+        token_filter: String::new(),
     }));
     if let Err(e) = load(&ui, &mut st.borrow_mut()) {
         report(&ui, Err(e));
     }
+    refresh(&ui, &st.borrow());
 
     let (s, weak) = (st.clone(), ui.as_weak());
     ui.on_pick(move |x, y| {
@@ -795,6 +868,8 @@ pub fn run(dir: PathBuf) {
                     reselect(&mut st, &old);
                 }
             }
+            // the last change's message no longer says what is in the file
+            report(&ui, Ok(String::new()));
             refresh_soon(&ui, &s);
         };
         if redo {
@@ -862,6 +937,44 @@ pub fn run(dir: PathBuf) {
         }
         refresh_soon(&ui, &s);
     });
+    let (s, weak) = (st.clone(), ui.as_weak());
+    ui.on_set_token(move |index, input| {
+        let Some(ui) = weak.upgrade() else { return };
+        let result = {
+            let mut st = s.borrow_mut();
+            let Some(t) = st.tokens.get(index as usize).cloned() else { return };
+            let (mode, all) = (st.mode.borrow().clone(), st.all_modes);
+            let value = palette::colour_input(&input);
+            std::fs::read_to_string(&t.path)
+                .map_err(|e| e.to_string())
+                .and_then(|text| palette::set_token(&text, &t.path, t.offset, &mode, all, &value))
+                .and_then(|after| change(&ui, &mut st, &t.path, after, true))
+                .map(|_| format!("{}.{} = {value}", t.global, t.name))
+        };
+        report(&ui, result);
+        refresh_soon(&ui, &s);
+    });
+    let (s, weak) = (st.clone(), ui.as_weak());
+    ui.on_palette_mode_changed(move |m| {
+        let Some(ui) = weak.upgrade() else { return };
+        *s.borrow().mode.borrow_mut() = m.to_string();
+        if let Some(i) = live(&s.borrow()) {
+            let _ = i.set_property("theme-mode", Value::String(m));
+        }
+        refresh_soon(&ui, &s);
+    });
+    let (s, weak) = (st.clone(), ui.as_weak());
+    ui.on_all_modes_changed(move |v| {
+        let Some(ui) = weak.upgrade() else { return };
+        s.borrow_mut().all_modes = v;
+        refresh(&ui, &s.borrow());
+    });
+    let (s, weak) = (st.clone(), ui.as_weak());
+    ui.on_token_filter_changed(move |f| {
+        let Some(ui) = weak.upgrade() else { return };
+        s.borrow_mut().token_filter = f.to_string();
+        refresh(&ui, &s.borrow());
+    });
     ui.window().on_close_requested(|| {
         let _ = slint::quit_event_loop();
         slint::CloseRequestResponse::HideWindow
@@ -896,6 +1009,28 @@ pub fn run(dir: PathBuf) {
             }
         }
     });
+    if let (Some(snap), Some(out)) = (headless, shots_dir()) {
+        let _ = std::fs::create_dir_all(&out);
+        snap.pump_drawing(Duration::from_millis(1500));
+        for line in script_lines() {
+            match command(&ui, &line) {
+                Command::Quit => break,
+                Command::Shot(name) => {
+                    snap.pump_drawing(Duration::from_millis(200));
+                    let file = out.join(format!("{name}.png"));
+                    match snap.shot(&file.to_string_lossy()) {
+                        Ok(()) => println!("shot {}", file.display()),
+                        Err(e) => eprintln!("editor-shots: {e}"),
+                    }
+                }
+                Command::Wait(ms) => snap.pump_drawing(Duration::from_millis(ms)),
+            }
+        }
+        unsafe {
+            use windows::Win32::System::Threading::{GetCurrentProcess, TerminateProcess};
+            let _ = TerminateProcess(GetCurrentProcess(), 0);
+        }
+    }
     script(&ui);
     let _ = slint::run_event_loop_until_quit();
     unsafe {
@@ -904,51 +1039,94 @@ pub fn run(dir: PathBuf) {
     }
 }
 
-/// `--editor-script <file>`: commands run one by one (checks without the mouse): `pick X Y`, `set NAME VALUE`,
-/// `reset NAME`, `crumb N`, `page N`, `undo`, `redo`, `filter TEXT`, `wait MS`, `quit`.
-fn script(ui: &ThemeEditorWindow) {
+enum Command {
+    Wait(u64),
+    Shot(String),
+    Quit,
+}
+
+fn script_lines() -> Vec<String> {
     let a: Vec<String> = std::env::args().collect();
-    let Some(file) = a.iter().position(|x| x == "--editor-script").and_then(|i| a.get(i + 1)) else { return };
-    let lines: Vec<String> = std::fs::read_to_string(file).unwrap_or_default().lines().map(str::to_owned).collect();
+    let Some(file) = a.iter().position(|x| x == "--editor-script").and_then(|i| a.get(i + 1)) else { return Vec::new() };
+    std::fs::read_to_string(file).unwrap_or_default().lines().map(str::to_owned).collect()
+}
+
+/// One line of an `--editor-script` (checks without the mouse): `pick X Y`, `set NAME VALUE`, `reset NAME`,
+/// `crumb N`, `page N`, `undo`, `redo`, `filter TEXT`, `do OP`, `drag DX DY`, `tab N`, `mode dark|light|neon`,
+/// `allmodes 0|1`, `token NAME VALUE`, `wait MS`, `shot NAME` (with `--editor-shots`), `quit`.
+fn command(ui: &ThemeEditorWindow, line: &str) -> Command {
+    if std::env::var_os("LAG_EDITOR_DEBUG").is_some() {
+        log::info!("[ThemeEditor] script: {line}");
+    }
+    // `#` starts a comment only at the start of a line (`token accent #C0392B` keeps its colour)
+    let line = line.trim();
+    let line = if line.starts_with('#') { "" } else { line };
+    let (cmd, rest) = line.split_once(' ').unwrap_or((line, ""));
+    let nums = || -> Vec<f32> { rest.split_whitespace().filter_map(|v| v.parse().ok()).collect() };
+    match cmd {
+        "pick" => {
+            let n = nums();
+            ui.invoke_pick(n.first().copied().unwrap_or(0.0), n.get(1).copied().unwrap_or(0.0));
+        }
+        "set" => {
+            let (n, v) = rest.split_once(' ').unwrap_or((rest, ""));
+            ui.invoke_set_prop(n.into(), v.into());
+        }
+        "reset" => ui.invoke_reset_prop(rest.into()),
+        "do" => ui.invoke_structure(rest.trim().into()),
+        "drag" => {
+            let n = nums();
+            ui.invoke_drag_end(n.first().copied().unwrap_or(0.0), n.get(1).copied().unwrap_or(0.0));
+        }
+        "crumb" => ui.invoke_select_crumb(rest.trim().parse().unwrap_or(0)),
+        "page" => ui.invoke_page(rest.trim().parse().unwrap_or(1)),
+        "undo" => ui.invoke_undo(),
+        "redo" => ui.invoke_redo(),
+        "filter" => ui.invoke_filter_changed(rest.into()),
+        "tab" => ui.set_tab(rest.trim().parse().unwrap_or(0)),
+        "mode" => ui.invoke_palette_mode_changed(rest.trim().into()),
+        "allmodes" => ui.invoke_all_modes_changed(rest.trim() == "1"),
+        "tokens" => {
+            ui.set_token_filter(rest.into());
+            ui.invoke_token_filter_changed(rest.into());
+        }
+        // `token NAME VALUE`: the first colour of that name in the palette
+        "token" => {
+            let (n, v) = rest.split_once(' ').unwrap_or((rest, ""));
+            use slint::Model;
+            if let Some(t) = ui.get_tokens().iter().find(|t| t.name == n) {
+                ui.invoke_set_token(t.index, v.into());
+            }
+        }
+        "wait" => return Command::Wait(rest.trim().parse().unwrap_or(500)),
+        "shot" => return Command::Shot(rest.trim().to_owned()),
+        "quit" => return Command::Quit,
+        "" => return Command::Wait(0),
+        other => log::warn!("[ThemeEditor] script: unknown command `{other}`"),
+    }
+    Command::Wait(700)
+}
+
+/// `--editor-script <file>` in the real window: one line after another, on timers.
+fn script(ui: &ThemeEditorWindow) {
+    let lines = script_lines();
+    if lines.is_empty() {
+        return;
+    }
     fn step(weak: crate::ui_twin::Weak<ThemeEditorWindow>, lines: Rc<Vec<String>>, i: usize) {
         let Some(line) = lines.get(i) else { return };
         let Some(ui) = weak.upgrade() else {
             log::warn!("[ThemeEditor] script: the window is gone");
             return;
         };
-        if std::env::var_os("LAG_EDITOR_DEBUG").is_some() {
-            log::info!("[ThemeEditor] script: {line}");
-        }
-        let line = line.trim();
-        let (cmd, rest) = line.split_once(' ').unwrap_or((line, ""));
-        let mut delay = 700u64;
-        match cmd {
-            "pick" => {
-                let n: Vec<f32> = rest.split_whitespace().filter_map(|v| v.parse().ok()).collect();
-                ui.invoke_pick(n.first().copied().unwrap_or(0.0), n.get(1).copied().unwrap_or(0.0));
-            }
-            "set" => {
-                let (n, v) = rest.split_once(' ').unwrap_or((rest, ""));
-                ui.invoke_set_prop(n.into(), v.into());
-            }
-            "reset" => ui.invoke_reset_prop(rest.into()),
-            "do" => ui.invoke_structure(rest.trim().into()),
-            "drag" => {
-                let n: Vec<f32> = rest.split_whitespace().filter_map(|v| v.parse().ok()).collect();
-                ui.invoke_drag_end(n.first().copied().unwrap_or(0.0), n.get(1).copied().unwrap_or(0.0));
-            }
-            "crumb" => ui.invoke_select_crumb(rest.trim().parse().unwrap_or(0)),
-            "page" => ui.invoke_page(rest.trim().parse().unwrap_or(1)),
-            "undo" => ui.invoke_undo(),
-            "redo" => ui.invoke_redo(),
-            "filter" => ui.invoke_filter_changed(rest.into()),
-            "wait" => delay = rest.trim().parse().unwrap_or(500),
-            "quit" => {
+        let delay = match command(&ui, line) {
+            Command::Quit => {
                 let _ = slint::quit_event_loop();
                 return;
             }
-            _ => delay = 0,
-        }
+            Command::Wait(ms) => ms,
+            Command::Shot(_) => 0,
+        };
         slint::Timer::single_shot(Duration::from_millis(delay), move || step(weak, lines, i + 1));
     }
     let (weak, lines) = (ui.as_weak(), Rc::new(lines));

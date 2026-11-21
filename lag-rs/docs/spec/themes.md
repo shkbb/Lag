@@ -208,3 +208,29 @@ window in the running app (no restart), themable tray menu with a mandatory way 
 - API reference: `build_twin::api_reference` reads `ui/api/*.slint` (comments as descriptions) at build time ->
   `docs/themes/API.md` (test `the_api_reference_is_current`, `LAG_UPDATE_API_DOC=1` refreshes it); Lag writes it as
   `API.md` into the themes folder (New theme / Themes folder).
+
+## 16. Phase 4 (2026-11-22): graphical editor — in progress, ships together with themes in 2.2.0
+Owner: "ми робимо і вносимо редактор в одне оновлення" — no themes release without the editor.
+- `Lag.exe --theme-editor <theme folder>` (Settings > Interface > **Edit**): the theme runs live in the middle (a
+  `ComponentFactory` into a `ComponentContainer`), with Lag's real data: a hidden "donor" AppWindow driven by Lag's
+  own code (`never_save`) whose API globals are mirrored into the theme every 700 ms (the page stays the editor's).
+- **Element tab.** A click picks the innermost element of the theme's files under the pointer, a second click on
+  the same spot the one around it. Picking uses a vendored slint-interpreter 1.18.1 (`vendor/slint-interpreter`,
+  `LAG PATCH`: `element_sources_at(x, y)`, one pass over what is on screen, ~25 ms on Lag's whole UI instead of
+  ~75 s through the public per-element API). The panel shows where the element is written, "part of X: changes
+  every X" for component bodies, the path to it, every property its type has with what the file says, and
+  ↑ ↓ / duplicate (inner ids renamed) / delete / + shape / + text; dragging moves it (not inside layouts).
+- **Palette tab.** Every `color` / `brush` property of a global in the theme's own files (Lag's copy: `Theme` in
+  `theme/tokens.slint`, 150+ colours), grouped by the `// ── Section ──` comments. A mode switch (dark / light /
+  GTA VI) sets the canvas' mode; a change goes only into the branch of `is-neon ? A : is-dark ? B : C` that mode
+  shows, so a theme keeps its light and dark looks apart. "Same in every mode" puts one colour in place of the
+  whole expression. References are followed for the swatch (`page-bg: surface-app`), gradients show their first
+  colour; a colour that hangs on something other than the mode is refused with a hint. Element properties that
+  name a palette colour (`Theme.on-accent`) show its swatch too.
+- Every change is a text edit of the `.slint` file, compiled at once; a change that does not compile is put back
+  and the compiler's message shown. Undo / redo keep whole-file texts.
+- Checks without the mouse: `--editor-script <file>` (`pick X Y`, `set`, `reset`, `do OP`, `drag`, `tab`, `mode`,
+  `allmodes`, `token NAME VALUE`, `tokens FILTER`, `undo`, `redo`, `wait`, `shot`, `quit`); with
+  `--editor-shots <dir>` the editor runs in memory (software renderer, no window — safe while a game runs) and
+  `shot NAME` writes PNGs.
+- Still to do before 2.2.0: enum dropdowns, a colour picker, an image picker, then the full UI check.

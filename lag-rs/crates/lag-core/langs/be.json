@@ -375,5 +375,12 @@
   "ThemeEditor_AddRect": "+ Фігура",
   "ThemeEditor_AddText": "+ Тэкст",
   "ThemeEditor_InLayout": "Гэты элемент стаіць у радзе ці калонцы: перамяшчайце яго кнопкамі ↑ ↓",
-  "ThemeEditor_Template": "Частка {0}: змена тут зменіць усе {0}"
+  "ThemeEditor_Template": "Частка {0}: змена тут зменіць усе {0}",
+  "ThemeEditor_TabElement": "Элемент",
+  "ThemeEditor_TabPalette": "Палітра",
+  "ThemeEditor_ThisMode": "Колер змяняецца толькі ў рэжыме, абраным уверсе: іншыя рэжымы захоўваюць свае",
+  "ThemeEditor_AllModes": "Колер замяняе ўсё значэнне: аднолькавы ў кожным рэжыме",
+  "ThemeEditor_PaletteSearch": "Знайсці колер…",
+  "ThemeEditor_PaletteEmpty": "У гэтай тэмы няма палітры: яе колеры запісаныя проста ў элементах (укладка «Элемент»)",
+  "ThemeEditor_PaletteUnknown": "Гэты колер залежыць не толькі ад рэжыму: уключыце «аднолькавы ў кожным рэжыме» або змяніце яго ў файле"
 }

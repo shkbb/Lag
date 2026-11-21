@@ -30,10 +30,19 @@ struct Headless {
     window: Rc<MinimalSoftwareWindow>,
     start: Instant,
     jobs: Arc<Mutex<Vec<Job>>>,
+    /// the first window gets `window`, every later one a window of its own (the theme editor and its hidden
+    /// donor AppWindow); off: every window shares `window` (the UI checks)
+    separate: bool,
+    given: std::cell::Cell<bool>,
 }
 
 impl Platform for Headless {
     fn create_window_adapter(&self) -> Result<Rc<dyn WindowAdapter>, slint::PlatformError> {
+        if self.separate && self.given.replace(true) {
+            let w = MinimalSoftwareWindow::new(RepaintBufferType::NewBuffer);
+            w.set_size(PhysicalSize::new(1360, 840));
+            return Ok(w);
+        }
         Ok(self.window.clone())
     }
     fn duration_since_start(&self) -> Duration {
@@ -97,6 +106,8 @@ pub fn install_from_args() -> Option<Snapshot> {
         window: window.clone(),
         start: Instant::now(),
         jobs: jobs.clone(),
+        separate: false,
+        given: std::cell::Cell::new(false),
     }))
     .ok()?;
     let size = if script.is_some() { (1360, 840) } else { size };
@@ -105,7 +116,48 @@ pub fn install_from_args() -> Option<Snapshot> {
     Some(Snapshot { out, page, script, cur: std::cell::Cell::new(size), window, jobs })
 }
 
+/// The theme editor in memory (`--theme-editor <dir> --editor-shots <out-dir>`): its window is drawn by the
+/// software renderer, the script's `shot NAME` writes PNGs. No native window: safe while a game runs.
+pub fn install_for_editor(w: u32, h: u32) -> Option<Snapshot> {
+    let window = MinimalSoftwareWindow::new(RepaintBufferType::NewBuffer);
+    window.set_size(PhysicalSize::new(w, h));
+    let jobs = Arc::new(Mutex::new(Vec::new()));
+    slint::platform::set_platform(Box::new(Headless {
+        window: window.clone(),
+        start: Instant::now(),
+        jobs: jobs.clone(),
+        separate: true,
+        given: std::cell::Cell::new(false),
+    }))
+    .ok()?;
+    Some(Snapshot { out: String::new(), page: String::new(), script: None, cur: std::cell::Cell::new((w, h)), window, jobs })
+}
+
 impl Snapshot {
+    /// Writes what the first window shows now into a PNG.
+    pub fn shot(&self, out: &str) -> Result<(), String> {
+        self.write_png(out)
+    }
+
+    /// `pump` that also draws a frame every 100 ms, as a shown window does: a component made while drawing (the
+    /// theme in the editor's ComponentContainer) starts its timers and animations only then.
+    pub fn pump_drawing(&self, dur: Duration) {
+        let until = Instant::now() + dur;
+        let (w, h) = self.cur.get();
+        let mut buf = vec![Rgba::default(); (w * h) as usize];
+        loop {
+            self.window.request_redraw();
+            self.window.draw_if_needed(|renderer| {
+                renderer.render(&mut buf, w as usize);
+            });
+            let now = Instant::now();
+            if now >= until {
+                break;
+            }
+            self.pump(Duration::from_millis(100).min(until - now));
+        }
+    }
+
     /// Runs queued jobs/timers for `settle` (lets background loads land), renders once and writes the PNG.
     pub fn render(&self, settle: Duration) -> Result<(), String> {
         self.pump(settle);

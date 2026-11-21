@@ -375,5 +375,12 @@
   "ThemeEditor_AddRect": "+ Kujund",
   "ThemeEditor_AddText": "+ Tekst",
   "ThemeEditor_InLayout": "See element on reas või veerus: liiguta seda nuppudega ↑ ↓",
-  "ThemeEditor_Template": "Osa komponendist {0}: muudatus siin muudab kõiki {0}"
+  "ThemeEditor_Template": "Osa komponendist {0}: muudatus siin muudab kõiki {0}",
+  "ThemeEditor_TabElement": "Element",
+  "ThemeEditor_TabPalette": "Palett",
+  "ThemeEditor_ThisMode": "Värv muutub ainult ülal valitud režiimis: teised jäävad endiseks",
+  "ThemeEditor_AllModes": "Värv asendab kogu väärtuse: sama igas režiimis",
+  "ThemeEditor_PaletteSearch": "Otsi värvi…",
+  "ThemeEditor_PaletteEmpty": "Sellel teemal pole paletti: värvid on kirjas elementides endis (vaheleht Element)",
+  "ThemeEditor_PaletteUnknown": "See värv ei sõltu ainult režiimist: lülita sisse „sama igas režiimis“ või muuda seda failis"
 }
