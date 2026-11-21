@@ -131,10 +131,16 @@ impl CloudProvider for OneDrive {
             let id = match self.get(&format!("{}?select=id", by_path(&key)))? {
                 Some(item) => item["id"].as_str().unwrap_or_default().to_owned(),
                 None => {
-                    let url = match &parent {
-                        None => format!("{APPROOT}/children"),
-                        Some(p) => format!("{ITEMS}/{p}/children"),
+                    // by id: Graph answers 400 invalidRequest to a POST on `special/approot/children` (live,
+                    // 2026-11-21), while reading and uploading by an approot path work
+                    let parent_id = match &parent {
+                        Some(p) => p.clone(),
+                        None => self.get(&format!("{APPROOT}?select=id"))?.ok_or(CloudError::NotFound)?["id"]
+                            .as_str()
+                            .unwrap_or_default()
+                            .to_owned(),
                     };
+                    let url = format!("{ITEMS}/{parent_id}/children");
                     let body = json!({"name": key[depth - 1], "folder": {}, "@microsoft.graph.conflictBehavior": "fail"});
                     let mut answer = Vec::new();
                     let r = self.session.call(&|t| Request::new(Method::Post, url.clone()).bearer(t).json(&body), &mut answer)?;
@@ -348,9 +354,18 @@ mod tests {
     fn folders_are_found_or_made_in_the_app_folder() {
         let http = Arc::new(FakeHttp::default());
         let d = onedrive(&http);
+        // the top folder is new: made under the app folder's id, never on `special/approot/children`
         http.expect(|r| {
             assert!(r.url.starts_with(&format!("{APPROOT}:/Lag:")), "{}", r.url);
-            ok(json!({"id": "LAG"}))
+            (404, vec![], vec![])
+        });
+        http.expect(|r| {
+            assert!(r.url.starts_with(&format!("{APPROOT}?select=id")), "{}", r.url);
+            ok(json!({"id": "ROOT!s1"}))
+        });
+        http.expect(|r| {
+            assert_eq!((r.method, r.url.as_str()), (Method::Post, format!("{ITEMS}/ROOT!s1/children").as_str()));
+            (201, vec![], json!({"id": "LAG"}).to_string().into_bytes())
         });
         http.expect(|r| {
             assert!(r.url.contains(":/Lag/Counter-Strike%202:"), "{}", r.url);

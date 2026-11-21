@@ -163,12 +163,14 @@ Owner, 2026-11-20: "all library functions have to work, the storage limit and so
 5. DONE: Settings > Library (storages, roles, rules, delete mode), library badges + cloud-only cards + menus,
    play from the cloud, save to this PC, delete flow (§12), size limit evicting cloud copies first.
 6. DONE in code: Network folder / NAS, WebDAV, Dropbox, OneDrive providers (same trait; 36 provider tests on
-   scripted HTTP and real folders). Live checks (`examples/drive_live.rs`, `examples/oauth_live.rs`): Google Drive
-   and Dropbox passed (sign-in, refresh, 20 MB in chunks, byte-exact download, stream link, rescan by notes,
-   delete + tombstone). A first Dropbox sign-in can answer "busy" while it makes the app folder: sign-in calls
-   retry 429 / 5xx with pauses. NAS / WebDAV need the owner's storages; OneDrive needs an app registration, which
-   Microsoft no longer allows from a personal account without an Azure directory (deferred; a synced OneDrive
-   folder works as a Network folder meanwhile).
+   scripted HTTP and real folders). Live checks (`examples/drive_live.rs`, `examples/oauth_live.rs`): Google
+   Drive, Dropbox and OneDrive passed (sign-in, refresh, 20 MB in chunks, byte-exact download, stream link,
+   rescan by notes, delete + tombstone). Found live and fixed: a first Dropbox sign-in answers "busy" while it
+   makes the app folder (sign-in calls retry 429 / 5xx); Graph refuses a POST on `special/approot/children`
+   (folders are made under the app folder's id); a full OneDrive answers 507 even on the app folder (shown as
+   "cloud full"); app-folder access may get 403 on the drive quota (space shown as unknown). OneDrive needed an
+   Azure directory for the app registration (personal accounts alone can no longer register apps). NAS /
+   WebDAV need the owner's storages.
 7. NOT YET: speed limit; a speed / bandwidth setting is not in the UI.
 
 ## Decisions (owner, 2026-11-20)

@@ -32,8 +32,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let client = client.ok_or("no app key for this storage in lag-rs/cloud-secrets.env at build time")?;
     let http = Arc::new(WinHttp::new()?);
 
-    println!("1. sign-in: the browser opens {}'s page (5 min to finish)...", service.name);
-    let tokens = oauth::sign_in_for(service, http.as_ref(), &client, &win::open_browser, Duration::from_secs(300), &AtomicBool::new(false))?;
+    // a second argument = the user id of tokens stored by an earlier run: no browser
+    let tokens = match std::env::args().nth(2) {
+        Some(user) => {
+            println!("1. stored sign-in of {kind:?} user {user}");
+            TokenStore::for_user().ok_or("no LOCALAPPDATA")?.load(&AccountId::new(kind, &user)).ok_or("no stored tokens")?
+        }
+        None => {
+            println!("1. sign-in: the browser opens {}'s page (5 min to finish)...", service.name);
+            oauth::sign_in_for(service, http.as_ref(), &client, &win::open_browser, Duration::from_secs(300), &AtomicBool::new(false))?
+        }
+    };
     let account = AccountId::new(kind, &tokens.sub);
     println!("   signed in as {} ({account})", tokens.email);
     assert!(!tokens.refresh_token.is_empty(), "a refresh token came back (offline access)");
