@@ -4,7 +4,7 @@
 //! has (from the compiler's type of it) with what the file says now; a change is written into the theme's `.slint`
 //! file as a text edit, compiled, and swapped in. An edit that does not compile is undone in the file at once and
 //! the compiler's message is shown. Undo / redo keep whole-file texts.
-use crate::{startup, themes, ui_twin, ComponentHandle, EditorCrumb, EditorProp, EditorRect, ThemeEditorWindow, Tr};
+use crate::{app_ctx, startup, themes, ui_twin, views, AppWindow, ComponentHandle, EditorCrumb, EditorProp, EditorRect, ThemeEditorWindow, Tr};
 use i_slint_compiler::langtype::Type;
 use i_slint_compiler::object_tree::ElementRc;
 use i_slint_compiler::parser::{SyntaxKind, SyntaxNode};
@@ -326,10 +326,56 @@ fn fill(i: &ComponentInstance, page: i32) {
     set("current-page", Value::EnumerationValue("Page".into(), PAGES[page.clamp(0, 3) as usize].into()));
 }
 
+/// The API globals the theme reads (what Lag shows: clips, settings, the player...).
+const DATA_GLOBALS: &[&str] = &["Tr", "MainVM", "LibraryVM", "PlayerVM", "SettingsVM", "EditorVM"];
+
+thread_local! {
+    /// A hidden Lag window driven by Lag's own code (library scan, settings, player), never shown and never
+    /// saving: the theme on the canvas shows its data, so there are real clip cards, settings rows... to edit.
+    static DONOR: RefCell<Option<(AppWindow, Rc<app_ctx::AppCtx>)>> = const { RefCell::new(None) };
+}
+
+fn start_donor(settings: &lag_core::settings::SettingsData) {
+    let Ok(ui) = AppWindow::new() else { return };
+    ui.global::<Tr>().on_t(|key, _| lag_core::i18n::tr(&key).into());
+    let mut s = settings.clone();
+    s.auto_start_recording = false;
+    s.start_minimized = false;
+    s.stats_shown = false;
+    let ctx = app_ctx::AppCtx::new(s);
+    ctx.never_save();
+    views::init_all(&ui, &ctx);
+    DONOR.with(|d| *d.borrow_mut() = Some((ui, ctx)));
+}
+
+/// Copies Lag's live data into the theme on the canvas (the page stays the editor's choice).
+fn mirror(to: &ComponentInstance) {
+    DONOR.with(|d| {
+        let d = d.borrow();
+        let Some((donor, _)) = d.as_ref() else { return };
+        let from = donor.instance();
+        let def = slint_interpreter::ComponentHandle::clone_strong(from).definition();
+        for g in DATA_GLOBALS {
+            let Some(props) = def.global_properties(g) else { continue };
+            for (name, _) in props {
+                if *g == "MainVM" && name == "current-page" {
+                    continue;
+                }
+                if let Ok(v) = from.get_global_property(g, &name) {
+                    if to.get_global_property(g, &name).ok().as_ref() != Some(&v) {
+                        let _ = to.set_global_property(g, &name, v);
+                    }
+                }
+            }
+        }
+    });
+}
+
 fn factory(def: ComponentDefinition, slot: Rc<RefCell<Option<ComponentInstance>>>, page: Rc<std::cell::Cell<i32>>) -> Value {
     Value::ComponentFactory(ComponentFactory::new(move |ctx| {
         let inst = def.create_embedded(ctx).ok()?;
         fill(&inst, page.get());
+        mirror(&inst);
         *slot.borrow_mut() = Some(slint::ComponentHandle::clone_strong(&inst));
         Some(inst)
     }))
@@ -357,21 +403,56 @@ fn rects(inst: &ComponentInstance, s: &Source) -> Vec<EditorRect> {
         .collect()
 }
 
+/// Every element of the theme's files under (x, y), innermost first (one pass over what is on screen; elements
+/// from Lag's own files, reached through `@lag/`, are not the theme's and are left out).
+fn hits(st: &State, x: f32, y: f32) -> Vec<Source> {
+    let Some(inst) = live(st) else { return Vec::new() };
+    let mut found: Vec<(f32, bool, Source)> = Vec::new();
+    for (path, offset, rect, use_site) in inst.element_sources_at(x, y) {
+        let Some(s) = st.sources.iter().find(|s| s.offset == offset && s.path == path) else { continue };
+        let area = rect.rect.size.width * rect.rect.size.height;
+        match found.iter_mut().find(|(_, _, f)| f == s) {
+            Some(f) if area < f.0 => f.0 = area,
+            Some(_) => {}
+            None => found.push((area, use_site, s.clone())),
+        }
+    }
+    // innermost first; for the same size, the use of a component (this button) before its body (every button)
+    found.sort_by(|a, b| a.0.total_cmp(&b.0).then(b.1.cmp(&a.1)));
+    found.into_iter().map(|(_, _, s)| s).collect()
+}
+
 /// The innermost element under (x, y); a second click on the same spot picks the one around it.
 fn pick(st: &State, x: f32, y: f32) -> Option<Source> {
-    let inst = live(st)?;
-    let mut hits: Vec<(f32, Source)> = st
-        .sources
-        .iter()
-        .filter_map(|s| {
-            let r = rects(&inst, s).into_iter().find(|r| x >= r.x && y >= r.y && x < r.x + r.width && y < r.y + r.height)?;
-            Some((r.width * r.height, s.clone()))
-        })
-        .collect();
-    hits.sort_by(|a, b| a.0.total_cmp(&b.0));
-    let current = st.selected.as_ref().and_then(|c| hits.iter().position(|(_, s)| s == c));
+    let started = std::time::Instant::now();
+    let hits = hits(st, x, y);
+    log::debug!("[ThemeEditor] pick {x},{y}: {} hits in {} ms", hits.len(), started.elapsed().as_millis());
+    if std::env::var_os("LAG_EDITOR_DEBUG").is_some() {
+        log::info!("[ThemeEditor] pick {x},{y}: {} hits in {} ms", hits.len(), started.elapsed().as_millis());
+    }
+    let current = st.selected.as_ref().and_then(|c| hits.iter().position(|s| s == c));
     let i = current.map_or(0, |i| (i + 1) % hits.len().max(1));
-    hits.into_iter().nth(i).map(|(_, s)| s)
+    hits.into_iter().nth(i)
+}
+
+/// The component an element is written in, when it is not the window itself: changing it changes every place
+/// that component is used.
+fn template_of(s: &Source) -> Option<String> {
+    let text = std::fs::read_to_string(&s.path).ok()?;
+    let root = parse_text(&text, &s.path);
+    let mut n = find_element(&root, s.offset)?.parent();
+    while let Some(p) = n {
+        if p.kind() == SyntaxKind::Component {
+            let name = p.child_node(SyntaxKind::DeclaredIdentifier)?.text().to_string().trim().to_owned();
+            let window = p
+                .child_node(SyntaxKind::Element)
+                .and_then(|e| e.child_node(SyntaxKind::QualifiedName))
+                .is_some_and(|q| q.text().to_string().trim() == "Window");
+            return (!window).then_some(name);
+        }
+        n = p.parent();
+    }
+    None
 }
 
 /// The compiler's element for a source element (its type knows every property).
@@ -535,10 +616,22 @@ fn refresh(ui: &ThemeEditorWindow, st: &State) {
     let inst = live(st);
     match (&st.selected, inst) {
         (Some(s), Some(i)) => {
+            let dbg = std::env::var_os("LAG_EDITOR_DEBUG").is_some();
+            let t0 = std::time::Instant::now();
+            let lap = |what: &str| {
+                if dbg {
+                    log::info!("[ThemeEditor] refresh {what}: {} ms", t0.elapsed().as_millis());
+                }
+            };
             let rel = s.path.strip_prefix(i_slint_compiler::pathutils::clean_path(&st.dir)).unwrap_or(&s.path).display().to_string();
             ui.set_selection(ModelRc::new(VecModel::from(rects(&i, s))));
+            lap("rects");
             ui.set_selected_name(s.label.clone().into());
-            ui.set_selected_where(format!("{rel}:{}", s.line).into());
+            let template = template_of(s)
+                .map(|c| format!("\n{}", lag_core::i18n::format("ThemeEditor_Template", &[&c]).unwrap_or(c)))
+                .unwrap_or_default();
+            ui.set_selected_where(format!("{rel}:{}{template}", s.line).into());
+            lap("template");
             let chain = crumbs(s);
             let crumbs: Vec<EditorCrumb> = chain
                 .iter()
@@ -546,7 +639,9 @@ fn refresh(ui: &ThemeEditorWindow, st: &State) {
                 .map(|(i, c)| EditorCrumb { label: c.label.clone().into(), index: i as i32, current: c == s })
                 .collect();
             ui.set_crumbs(ModelRc::new(VecModel::from(crumbs)));
+            lap("crumbs");
             ui.set_props(ModelRc::new(VecModel::from(props_of(st, s))));
+            lap("props");
         }
         _ => {
             ui.set_selection(ModelRc::default());
@@ -623,6 +718,7 @@ pub fn run(dir: PathBuf) {
     let Ok(ui) = ThemeEditorWindow::new() else { return };
     ui.global::<Tr>().on_t(|key, _| lag_core::i18n::tr(&key).into());
     ui.set_theme_name(theme.name.clone().into());
+    start_donor(&settings);
     let st = Rc::new(RefCell::new(State {
         dir,
         theme,
@@ -773,6 +869,33 @@ pub fn run(dir: PathBuf) {
     if ui.show().is_err() {
         return;
     }
+    if std::env::var_os("LAG_EDITOR_DEBUG").is_some() {
+        let start = std::cell::Cell::new(None::<std::time::Instant>);
+        let _ = ui.window().set_rendering_notifier(move |state, _| match state {
+            slint::RenderingState::BeforeRendering => start.set(Some(std::time::Instant::now())),
+            slint::RenderingState::AfterRendering => {
+                if let Some(t) = start.take() {
+                    let ms = t.elapsed().as_millis();
+                    if ms > 40 {
+                        log::info!("[ThemeEditor] frame {ms} ms");
+                    }
+                }
+            }
+            _ => {}
+        });
+    }
+    // Lag's data keeps arriving (thumbnails, durations, the settings' hardware probe): follow it
+    let follow = slint::Timer::default();
+    let s = st.clone();
+    follow.start(slint::TimerMode::Repeated, Duration::from_millis(700), move || {
+        if let Some(i) = live(&s.borrow()) {
+            let t = std::time::Instant::now();
+            mirror(&i);
+            if std::env::var_os("LAG_EDITOR_DEBUG").is_some() {
+                log::info!("[ThemeEditor] mirror {} ms", t.elapsed().as_millis());
+            }
+        }
+    });
     script(&ui);
     let _ = slint::run_event_loop_until_quit();
     unsafe {
@@ -789,7 +912,13 @@ fn script(ui: &ThemeEditorWindow) {
     let lines: Vec<String> = std::fs::read_to_string(file).unwrap_or_default().lines().map(str::to_owned).collect();
     fn step(weak: crate::ui_twin::Weak<ThemeEditorWindow>, lines: Rc<Vec<String>>, i: usize) {
         let Some(line) = lines.get(i) else { return };
-        let Some(ui) = weak.upgrade() else { return };
+        let Some(ui) = weak.upgrade() else {
+            log::warn!("[ThemeEditor] script: the window is gone");
+            return;
+        };
+        if std::env::var_os("LAG_EDITOR_DEBUG").is_some() {
+            log::info!("[ThemeEditor] script: {line}");
+        }
         let line = line.trim();
         let (cmd, rest) = line.split_once(' ').unwrap_or((line, ""));
         let mut delay = 700u64;

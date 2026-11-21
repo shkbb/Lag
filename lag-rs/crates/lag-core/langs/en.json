@@ -374,5 +374,6 @@
   "ThemeEditor_Duplicate": "Duplicate",
   "ThemeEditor_AddRect": "+ Shape",
   "ThemeEditor_AddText": "+ Text",
-  "ThemeEditor_InLayout": "This element sits in a row or column: move it with ↑ ↓, or give its parent a free layout"
+  "ThemeEditor_InLayout": "This element sits in a row or column: move it with ↑ ↓, or give its parent a free layout",
+  "ThemeEditor_Template": "Part of {0}: a change here changes every {0}"
 }

@@ -374,5 +374,6 @@
   "ThemeEditor_Duplicate": "Monista",
   "ThemeEditor_AddRect": "+ Muoto",
   "ThemeEditor_AddText": "+ Teksti",
-  "ThemeEditor_InLayout": "Elementti on rivissä tai sarakkeessa: siirrä sitä painikkeilla ↑ ↓"
+  "ThemeEditor_InLayout": "Elementti on rivissä tai sarakkeessa: siirrä sitä painikkeilla ↑ ↓",
+  "ThemeEditor_Template": "Osa komponenttia {0}: muutos tässä muuttaa kaikki {0}"
 }

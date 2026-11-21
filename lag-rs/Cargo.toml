@@ -26,3 +26,8 @@ serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["float_roundtrip"] }
 crossbeam-channel = "0.5"
 log = "0.4"
+
+# The theme editor needs one fast hit-test function slint-interpreter does not expose: a copy with that one
+# addition (lag-rs/vendor/README.md). Remove when Slint offers it upstream.
+[patch.crates-io]
+slint-interpreter = { path = "vendor/slint-interpreter" }

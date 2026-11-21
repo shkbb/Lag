@@ -374,5 +374,6 @@
   "ThemeEditor_Duplicate": "Duplica",
   "ThemeEditor_AddRect": "+ Forma",
   "ThemeEditor_AddText": "+ Testo",
-  "ThemeEditor_InLayout": "Questo elemento è in una riga o colonna: spostalo con ↑ ↓"
+  "ThemeEditor_InLayout": "Questo elemento è in una riga o colonna: spostalo con ↑ ↓",
+  "ThemeEditor_Template": "Parte di {0}: una modifica qui cambia tutti i {0}"
 }

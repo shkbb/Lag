@@ -374,5 +374,6 @@
   "ThemeEditor_Duplicate": "Dubliuoti",
   "ThemeEditor_AddRect": "+ Figūra",
   "ThemeEditor_AddText": "+ Tekstas",
-  "ThemeEditor_InLayout": "Šis elementas yra eilutėje ar stulpelyje: perkelkite jį mygtukais ↑ ↓"
+  "ThemeEditor_InLayout": "Šis elementas yra eilutėje ar stulpelyje: perkelkite jį mygtukais ↑ ↓",
+  "ThemeEditor_Template": "{0} dalis: pakeitimas čia pakeis visus {0}"
 }

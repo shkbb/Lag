@@ -374,5 +374,6 @@
   "ThemeEditor_Duplicate": "Tee koopia",
   "ThemeEditor_AddRect": "+ Kujund",
   "ThemeEditor_AddText": "+ Tekst",
-  "ThemeEditor_InLayout": "See element on reas või veerus: liiguta seda nuppudega ↑ ↓"
+  "ThemeEditor_InLayout": "See element on reas või veerus: liiguta seda nuppudega ↑ ↓",
+  "ThemeEditor_Template": "Osa komponendist {0}: muudatus siin muudab kõiki {0}"
 }

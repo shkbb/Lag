@@ -374,5 +374,6 @@
   "ThemeEditor_Duplicate": "Дубляваць",
   "ThemeEditor_AddRect": "+ Фігура",
   "ThemeEditor_AddText": "+ Тэкст",
-  "ThemeEditor_InLayout": "Гэты элемент стаіць у радзе ці калонцы: перамяшчайце яго кнопкамі ↑ ↓"
+  "ThemeEditor_InLayout": "Гэты элемент стаіць у радзе ці калонцы: перамяшчайце яго кнопкамі ↑ ↓",
+  "ThemeEditor_Template": "Частка {0}: змена тут зменіць усе {0}"
 }

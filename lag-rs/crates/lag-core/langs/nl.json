@@ -374,5 +374,6 @@
   "ThemeEditor_Duplicate": "Dupliceren",
   "ThemeEditor_AddRect": "+ Vorm",
   "ThemeEditor_AddText": "+ Tekst",
-  "ThemeEditor_InLayout": "Dit element staat in een rij of kolom: verplaats het met ↑ ↓"
+  "ThemeEditor_InLayout": "Dit element staat in een rij of kolom: verplaats het met ↑ ↓",
+  "ThemeEditor_Template": "Deel van {0}: een wijziging hier verandert alle {0}"
 }

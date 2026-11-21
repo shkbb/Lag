@@ -374,5 +374,6 @@
   "ThemeEditor_Duplicate": "Duplicera",
   "ThemeEditor_AddRect": "+ Form",
   "ThemeEditor_AddText": "+ Text",
-  "ThemeEditor_InLayout": "Elementet står i en rad eller kolumn: flytta det med ↑ ↓"
+  "ThemeEditor_InLayout": "Elementet står i en rad eller kolumn: flytta det med ↑ ↓",
+  "ThemeEditor_Template": "Del av {0}: en ändring här ändrar alla {0}"
 }

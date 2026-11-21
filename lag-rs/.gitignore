@@ -1,3 +1,5 @@
 target/
-vendor/
+vendor/*
+!vendor/slint-interpreter/
+!vendor/README.md
 tools/bin/

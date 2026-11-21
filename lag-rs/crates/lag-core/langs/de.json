@@ -374,5 +374,6 @@
   "ThemeEditor_Duplicate": "Duplizieren",
   "ThemeEditor_AddRect": "+ Form",
   "ThemeEditor_AddText": "+ Text",
-  "ThemeEditor_InLayout": "Dieses Element steht in einer Zeile oder Spalte: verschiebe es mit ↑ ↓"
+  "ThemeEditor_InLayout": "Dieses Element steht in einer Zeile oder Spalte: verschiebe es mit ↑ ↓",
+  "ThemeEditor_Template": "Teil von {0}: eine Änderung hier ändert alle {0}"
 }

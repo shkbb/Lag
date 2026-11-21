@@ -374,5 +374,6 @@
   "ThemeEditor_Duplicate": "Dublēt",
   "ThemeEditor_AddRect": "+ Figūra",
   "ThemeEditor_AddText": "+ Teksts",
-  "ThemeEditor_InLayout": "Šis elements ir rindā vai kolonnā: pārvietojiet to ar ↑ ↓"
+  "ThemeEditor_InLayout": "Šis elements ir rindā vai kolonnā: pārvietojiet to ar ↑ ↓",
+  "ThemeEditor_Template": "{0} daļa: izmaiņas šeit mainīs visus {0}"
 }

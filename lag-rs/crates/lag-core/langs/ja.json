@@ -374,5 +374,6 @@
   "ThemeEditor_Duplicate": "複製",
   "ThemeEditor_AddRect": "+ 図形",
   "ThemeEditor_AddText": "+ テキスト",
-  "ThemeEditor_InLayout": "この要素は行や列の中にあります: ↑ ↓ で移動します"
+  "ThemeEditor_InLayout": "この要素は行や列の中にあります: ↑ ↓ で移動します",
+  "ThemeEditor_Template": "{0} の一部: ここを変えるとすべての {0} が変わります"
 }
