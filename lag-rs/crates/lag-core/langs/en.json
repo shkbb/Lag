@@ -364,5 +364,9 @@
   "ThemePreview_Hint": "Fix the file and save it: the preview reloads by itself.",
   "Theme_New": "New theme",
   "Theme_NewName": "My theme",
-  "Theme_Created": "A copy of Lag's interface is ready to change: {0}. Press Preview to see your edits live."
+  "Theme_Created": "A copy of Lag's interface is ready to change: {0}. Press Preview to see your edits live.",
+  "ThemeEditor_PickHint": "Click anything in the theme to change it",
+  "ThemeEditor_Search": "Find a property…",
+  "ThemeEditor_Undo": "Undo",
+  "ThemeEditor_Redo": "Redo"
 }

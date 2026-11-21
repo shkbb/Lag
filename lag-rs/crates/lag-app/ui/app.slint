@@ -19,7 +19,8 @@ import { SplashWindow } from "splash.slint";
 import { TrayMenuWindow } from "tray_menu.slint";
 import { StatsHud } from "hud.slint";
 import { ThemeErrorWindow } from "theme_error.slint";
-export { AutoScroll, Tr, MainVM, Page, SettingsVM, LibraryVM, PlayerVM, EditorVM, ToastWindow, PlayerOverlayWindow, PlayerOverlayVM, EditorOverlayWindow, EditorOverlayVM, SplashWindow, TrayMenuWindow, StatsHud, ThemeErrorWindow }
+import { ThemeEditorWindow, EditorRect, EditorProp, EditorCrumb } from "theme_editor.slint";
+export { AutoScroll, Tr, MainVM, Page, SettingsVM, LibraryVM, PlayerVM, EditorVM, ToastWindow, PlayerOverlayWindow, PlayerOverlayVM, EditorOverlayWindow, EditorOverlayVM, SplashWindow, TrayMenuWindow, StatsHud, ThemeErrorWindow, ThemeEditorWindow, EditorRect, EditorProp, EditorCrumb }
 
 component PageLayer inherits Rectangle {
     in property <bool> active;

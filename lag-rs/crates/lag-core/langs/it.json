@@ -364,5 +364,9 @@
   "ThemePreview_Hint": "Correggi il file e salvalo: l’anteprima si ricarica da sola.",
   "Theme_New": "Nuovo tema",
   "Theme_NewName": "Il mio tema",
-  "Theme_Created": "Una copia dell’interfaccia di Lag è pronta da modificare: {0}. Premi Anteprima per vedere le modifiche dal vivo."
+  "Theme_Created": "Una copia dell’interfaccia di Lag è pronta da modificare: {0}. Premi Anteprima per vedere le modifiche dal vivo.",
+  "ThemeEditor_PickHint": "Fai clic su qualsiasi cosa nel tema per modificarla",
+  "ThemeEditor_Search": "Cerca una proprietà…",
+  "ThemeEditor_Undo": "Annulla",
+  "ThemeEditor_Redo": "Ripeti"
 }

@@ -364,5 +364,9 @@
   "ThemePreview_Hint": "Corrija o ficheiro e guarde-o: a pré-visualização recarrega sozinha.",
   "Theme_New": "Novo tema",
   "Theme_NewName": "O meu tema",
-  "Theme_Created": "Uma cópia da interface do Lag está pronta a alterar: {0}. Prima Pré-visualizar para ver as alterações ao vivo."
+  "Theme_Created": "Uma cópia da interface do Lag está pronta a alterar: {0}. Prima Pré-visualizar para ver as alterações ao vivo.",
+  "ThemeEditor_PickHint": "Clique em qualquer coisa no tema para a alterar",
+  "ThemeEditor_Search": "Procurar uma propriedade…",
+  "ThemeEditor_Undo": "Anular",
+  "ThemeEditor_Redo": "Refazer"
 }

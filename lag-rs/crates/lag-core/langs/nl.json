@@ -364,5 +364,9 @@
   "ThemePreview_Hint": "Verbeter het bestand en sla het op: het voorbeeld laadt vanzelf opnieuw.",
   "Theme_New": "Nieuw thema",
   "Theme_NewName": "Mijn thema",
-  "Theme_Created": "Een kopie van Lags interface staat klaar: {0}. Druk op Voorbeeld om je wijzigingen live te zien."
+  "Theme_Created": "Een kopie van Lags interface staat klaar: {0}. Druk op Voorbeeld om je wijzigingen live te zien.",
+  "ThemeEditor_PickHint": "Klik op iets in het thema om het te wijzigen",
+  "ThemeEditor_Search": "Eigenschap zoeken…",
+  "ThemeEditor_Undo": "Ongedaan maken",
+  "ThemeEditor_Redo": "Opnieuw"
 }

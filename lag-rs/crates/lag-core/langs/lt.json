@@ -364,5 +364,9 @@
   "ThemePreview_Hint": "Pataisykite failą ir išsaugokite: peržiūra atsinaujins pati.",
   "Theme_New": "Nauja tema",
   "Theme_NewName": "Mano tema",
-  "Theme_Created": "Lag sąsajos kopija paruošta keisti: {0}. Spauskite Peržiūrėti, kad matytumėte pakeitimus iškart."
+  "Theme_Created": "Lag sąsajos kopija paruošta keisti: {0}. Spauskite Peržiūrėti, kad matytumėte pakeitimus iškart.",
+  "ThemeEditor_PickHint": "Spustelėkite bet ką temoje, kad pakeistumėte",
+  "ThemeEditor_Search": "Rasti savybę…",
+  "ThemeEditor_Undo": "Atšaukti",
+  "ThemeEditor_Redo": "Pakartoti"
 }

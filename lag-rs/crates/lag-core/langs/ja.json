@@ -364,5 +364,9 @@
   "ThemePreview_Hint": "ファイルを直して保存すると、プレビューが自動で再読み込みされます。",
   "Theme_New": "新しいテーマ",
   "Theme_NewName": "マイテーマ",
-  "Theme_Created": "Lag のインターフェイスのコピーを作成しました: {0}。プレビューで変更をその場で確認できます。"
+  "Theme_Created": "Lag のインターフェイスのコピーを作成しました: {0}。プレビューで変更をその場で確認できます。",
+  "ThemeEditor_PickHint": "テーマ内のどこかをクリックして変更します",
+  "ThemeEditor_Search": "プロパティを検索…",
+  "ThemeEditor_Undo": "元に戻す",
+  "ThemeEditor_Redo": "やり直す"
 }

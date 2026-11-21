@@ -364,5 +364,9 @@
   "ThemePreview_Hint": "Rett filen og lagre den: forhåndsvisningen lastes inn på nytt av seg selv.",
   "Theme_New": "Nytt tema",
   "Theme_NewName": "Mitt tema",
-  "Theme_Created": "En kopi av Lags grensesnitt er klar til endring: {0}. Trykk Forhåndsvis for å se endringene med en gang."
+  "Theme_Created": "En kopi av Lags grensesnitt er klar til endring: {0}. Trykk Forhåndsvis for å se endringene med en gang.",
+  "ThemeEditor_PickHint": "Klikk på hva som helst i temaet for å endre det",
+  "ThemeEditor_Search": "Finn en egenskap…",
+  "ThemeEditor_Undo": "Angre",
+  "ThemeEditor_Redo": "Gjør om"
 }

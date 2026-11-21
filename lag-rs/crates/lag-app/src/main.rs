@@ -12,6 +12,7 @@ mod shell;
 mod snapshot;
 mod preview;
 mod startup;
+mod theme_editor;
 mod themes;
 mod ui_twin;
 mod views;
@@ -37,6 +38,11 @@ fn main() {
         }
     };
     // Theme preview with live reload: `--theme-preview <theme folder>` (its own UI loading, its own window).
+    // Theme editor: `--theme-editor <theme folder>`.
+    if let Some(dir) = theme_editor::args() {
+        theme_editor::run(dir);
+        return;
+    }
     if let Some(args) = preview::args() {
         preview::run(args);
         return;

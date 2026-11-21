@@ -364,5 +364,9 @@
   "ThemePreview_Hint": "Korjaa tiedosto ja tallenna se: esikatselu latautuu itsestään.",
   "Theme_New": "Uusi teema",
   "Theme_NewName": "Oma teema",
-  "Theme_Created": "Kopio Lagin käyttöliittymästä on valmis muutettavaksi: {0}. Paina Esikatsele nähdäksesi muutokset heti."
+  "Theme_Created": "Kopio Lagin käyttöliittymästä on valmis muutettavaksi: {0}. Paina Esikatsele nähdäksesi muutokset heti.",
+  "ThemeEditor_PickHint": "Napsauta mitä tahansa teemassa muuttaaksesi sitä",
+  "ThemeEditor_Search": "Etsi ominaisuus…",
+  "ThemeEditor_Undo": "Kumoa",
+  "ThemeEditor_Redo": "Tee uudelleen"
 }

@@ -288,6 +288,15 @@ pub fn apply_dir(dir: &Path) -> Result<(), String> {
 }
 
 fn apply_theme(theme: &ThemeInfo) -> Result<(), String> {
+    let (defs, windows) = compile_theme(theme)?;
+    rt::install(defs);
+    log::info!("[Theme] \"{}\" {} by {} draws {}", theme.name, theme.version, theme.author, windows.join(", "));
+    Ok(())
+}
+
+/// Compiles a theme the way Lag runs it: its windows (not the tray menu) plus the API globals. Returns the window
+/// definitions and their names.
+pub fn compile_theme(theme: &ThemeInfo) -> Result<(Vec<slint_interpreter::ComponentDefinition>, Vec<String>), String> {
     if theme.api > API_VERSION {
         return Err(format!("\"{}\" needs a newer Lag (theme API {}, this Lag has {API_VERSION})", theme.name, theme.api));
     }
@@ -311,9 +320,7 @@ fn apply_theme(theme: &ThemeInfo) -> Result<(), String> {
     std::fs::write(&wrapper, text).map_err(|e| e.to_string())?;
     let defs = rt::compile(&wrapper, &api);
     let _ = std::fs::remove_file(&wrapper);
-    rt::install(defs?);
-    log::info!("[Theme] \"{}\" {} by {} draws {}", theme.name, theme.version, theme.author, windows.join(", "));
-    Ok(())
+    Ok((defs?, windows))
 }
 
 /// Files of Lag's own UI that are not part of a theme made from it: the API (a theme uses Lag's, through `@lag/`)

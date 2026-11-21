@@ -244,7 +244,8 @@ pub fn api_reference(ui: &Path) -> String {
 }
 
 pub fn generate(root: &Path, out_file: &Path) {
-    let compiler = slint_interpreter::Compiler::default();
+    let mut compiler = slint_interpreter::Compiler::default();
+    compiler.compiler_configuration(i_slint_core::InternalToken).enable_experimental = true;
     let result = spin_on(compiler.build_from_path(root));
     let errors: Vec<String> = result
         .diagnostics()

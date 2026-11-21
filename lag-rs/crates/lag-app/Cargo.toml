@@ -41,7 +41,10 @@ ico = "0.6"
 lag-player = { workspace = true }
 
 # themes: the UI loaded from files at run time (src/ui_twin)
-slint-interpreter = "=1.18.1"
+slint-interpreter = { version = "=1.18.1", features = ["internal", "internal-highlight"] }
+# the theme editor reads and edits .slint sources (element nodes, bindings)
+i-slint-compiler = "=1.18.1"
+i-slint-core = "=1.18.1"
 # theme packages: theme.toml manifests, .lagtheme files (zip)
 toml = "1"
 zip = { version = "2", default-features = false, features = ["deflate"] }
@@ -51,6 +54,7 @@ serde = { workspace = true }
 # the UI twin generator (build_twin.rs) reads the .slint types; "internal" = full type info, pinned exactly
 slint-interpreter = { version = "=1.18.1", features = ["internal"] }
 i-slint-compiler = "=1.18.1"
+i-slint-core = "=1.18.1"
 
 [dev-dependencies]
 spin_on = "0.1"

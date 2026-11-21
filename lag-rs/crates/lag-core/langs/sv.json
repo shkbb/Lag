@@ -364,5 +364,9 @@
   "ThemePreview_Hint": "Rätta filen och spara den: förhandsgranskningen laddas om av sig själv.",
   "Theme_New": "Nytt tema",
   "Theme_NewName": "Mitt tema",
-  "Theme_Created": "En kopia av Lags gränssnitt är redo att ändras: {0}. Tryck Förhandsgranska för att se ändringarna direkt."
+  "Theme_Created": "En kopia av Lags gränssnitt är redo att ändras: {0}. Tryck Förhandsgranska för att se ändringarna direkt.",
+  "ThemeEditor_PickHint": "Klicka på vad som helst i temat för att ändra det",
+  "ThemeEditor_Search": "Sök en egenskap…",
+  "ThemeEditor_Undo": "Ångra",
+  "ThemeEditor_Redo": "Gör om"
 }

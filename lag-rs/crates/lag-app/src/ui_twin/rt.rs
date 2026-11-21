@@ -208,6 +208,8 @@ fn spin_on<F: std::future::Future>(f: F) -> F::Output {
 /// "file:line: message" lines.
 pub fn compile(entry: &Path, api: &Path) -> Result<Vec<ComponentDefinition>, String> {
     let mut c = slint_interpreter::Compiler::default();
+    // `component-factory` (the theme editor embeds the theme it edits) is still marked experimental in Slint 1.18
+    c.compiler_configuration(i_slint_core::InternalToken).enable_experimental = true;
     c.set_library_paths([("lag".to_string(), api.to_path_buf())].into_iter().collect());
     let result = spin_on(c.build_from_path(entry));
     let errors: Vec<String> = result

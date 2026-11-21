@@ -364,5 +364,9 @@
   "ThemePreview_Hint": "Korrigiere die Datei und speichere sie: Die Vorschau lädt sich selbst neu.",
   "Theme_New": "Neues Theme",
   "Theme_NewName": "Mein Theme",
-  "Theme_Created": "Eine Kopie von Lags Oberfläche ist bereit: {0}. Drücke Vorschau, um Änderungen live zu sehen."
+  "Theme_Created": "Eine Kopie von Lags Oberfläche ist bereit: {0}. Drücke Vorschau, um Änderungen live zu sehen.",
+  "ThemeEditor_PickHint": "Klicke auf etwas im Theme, um es zu ändern",
+  "ThemeEditor_Search": "Eigenschaft suchen…",
+  "ThemeEditor_Undo": "Rückgängig",
+  "ThemeEditor_Redo": "Wiederholen"
 }

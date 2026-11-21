@@ -1,0 +1,230 @@
+// Theme editor (docs/spec/themes.md, phase 4): the theme being edited runs live in the middle (embedded through a
+// component factory), a click picks the element under the pointer, the panel on the right changes it, and every
+// change is written into the theme's own .slint files. Lag's own window, not themable.
+import { Theme } from "theme/tokens.slint";
+import { Tr } from "api/globals.slint";
+import { RChipButton } from "components/buttons.slint";
+import { LagTextInput } from "components/text_input.slint";
+import { LagToggleSwitch } from "components/toggle_switch.slint";
+import { LagScrollView } from "components/scrollbar.slint";
+
+export struct EditorRect { x: length, y: length, width: length, height: length }
+
+// One property of the selected element. kind: 0 any expression, 1 colour / brush, 2 length, 3 number, 4 on/off,
+// 5 text, 6 one of `options`, 7 picture
+export struct EditorProp {
+    name: string,
+    kind: int,
+    type-label: string,
+    // what the theme's file says now ("" = not set: the element's default)
+    value: string,
+    bound: bool,
+    options: [string],
+    swatch: color,
+}
+
+// The element and the ones around it, for the path above the panel
+export struct EditorCrumb { label: string, index: int, current: bool }
+
+component PropRow {
+    in property <EditorProp> prop;
+    callback set(string, string);
+    callback reset(string);
+    min-height: 38px;
+    HorizontalLayout {
+        spacing: 8px;
+        padding-top: 3px;
+        padding-bottom: 3px;
+        VerticalLayout {
+            width: 112px;
+            alignment: center;
+            Text {
+                text: root.prop.name;
+                color: root.prop.bound ? Theme.text-hi : Theme.text-faint;
+                font-size: 12.5px;
+                font-weight: root.prop.bound ? 600 : 400;
+                overflow: elide;
+            }
+            Text { text: root.prop.type-label; color: Theme.text-faintest; font-size: 10.5px; overflow: elide; }
+        }
+        if root.prop.kind == 1: VerticalLayout {
+            alignment: center;
+            Rectangle {
+                width: 22px;
+                height: 22px;
+                border-radius: 5px;
+                border-width: 1px;
+                border-color: Theme.border-strong;
+                background: root.prop.swatch;
+            }
+        }
+        if root.prop.kind == 4: VerticalLayout {
+            alignment: center;
+            LagToggleSwitch {
+                checked: root.prop.value == "true";
+                toggled(v) => { root.set(root.prop.name, v ? "true" : "false"); }
+            }
+        }
+        if root.prop.kind != 4: input := LagTextInput {
+            horizontal-stretch: 1;
+            text: root.prop.value;
+            placeholder: root.prop.kind == 6 ? root.prop.options[0] + " …" : "";
+            accepted(t) => { root.set(root.prop.name, t); }
+        }
+        if root.prop.kind == 4: Rectangle { horizontal-stretch: 1; }
+        VerticalLayout {
+            alignment: center;
+            Text {
+                text: "×";
+                color: root.prop.bound ? (reset-ta.has-hover ? Theme.text-hi : Theme.text-faint) : transparent;
+                font-size: 16px;
+                reset-ta := TouchArea { enabled: root.prop.bound; clicked => { root.reset(root.prop.name); } }
+            }
+        }
+    }
+}
+
+export component ThemeEditorWindow inherits Window {
+    title: "Lag";
+    preferred-width: 1640px;
+    preferred-height: 960px;
+    background: Theme.surface-app;
+    default-font-family: Theme.font-ui;
+
+    // the theme, live
+    in property <component-factory> canvas;
+    in property <length> canvas-width: 1360px;
+    in property <length> canvas-height: 840px;
+    in property <string> theme-name;
+    // the selected element (canvas coordinates) and what it is
+    in property <[EditorRect]> selection;
+    in property <string> selected-name;
+    in property <string> selected-where;
+    in property <[EditorCrumb]> crumbs;
+    in property <[EditorProp]> props;
+    in property <string> status;
+    in property <bool> status-error;
+    in property <bool> can-undo;
+    in property <bool> can-redo;
+    in-out property <string> filter;
+    callback pick(length, length);
+    callback set-prop(string, string);
+    callback reset-prop(string);
+    callback select-crumb(int);
+    callback undo();
+    callback redo();
+    callback page(int);
+    callback filter-changed(string);
+
+    VerticalLayout {
+        padding: 12px;
+        spacing: 10px;
+        // toolbar
+        HorizontalLayout {
+            spacing: 8px;
+            Text { text: root.theme-name; color: Theme.text-hi; font-size: 16px; font-weight: 700; vertical-alignment: center; }
+            Rectangle { width: 10px; }
+            RChipButton { text: Tr.t("Nav_Library", Tr.rev); clicked => { root.page(1); } }
+            RChipButton { text: Tr.t("Nav_Player", Tr.rev); clicked => { root.page(2); } }
+            RChipButton { text: Tr.t("Editor_Title", Tr.rev); clicked => { root.page(3); } }
+            RChipButton { text: Tr.t("Nav_Settings", Tr.rev); clicked => { root.page(0); } }
+            Rectangle { horizontal-stretch: 1; }
+            RChipButton { text: Tr.t("ThemeEditor_Undo", Tr.rev); enabled: root.can-undo; clicked => { root.undo(); } }
+            RChipButton { text: Tr.t("ThemeEditor_Redo", Tr.rev); enabled: root.can-redo; clicked => { root.redo(); } }
+        }
+        HorizontalLayout {
+            spacing: 12px;
+            vertical-stretch: 1;
+            // canvas
+            Rectangle {
+                horizontal-stretch: 1;
+                clip: true;
+                stage := Rectangle {
+                    x: 0px;
+                    y: 0px;
+                    width: root.canvas-width;
+                    height: root.canvas-height;
+                    border-width: 1px;
+                    border-color: Theme.border-strong;
+                    ComponentContainer {
+                        x: 0px;
+                        y: 0px;
+                        width: parent.width;
+                        height: parent.height;
+                        component-factory: root.canvas;
+                    }
+                    // edit mode: clicks pick elements instead of pressing them
+                    TouchArea {
+                        clicked => { root.pick(self.pressed-x, self.pressed-y); }
+                    }
+                    for r in root.selection: Rectangle {
+                        x: r.x - 2px;
+                        y: r.y - 2px;
+                        width: r.width + 4px;
+                        height: r.height + 4px;
+                        border-width: 2px;
+                        border-color: #3DDCFF;
+                        border-radius: 3px;
+                    }
+                }
+            }
+            // properties
+            Rectangle {
+                width: 380px;
+                background: Theme.surface-card;
+                border-radius: 10px;
+                border-width: 1px;
+                border-color: Theme.border-card;
+                VerticalLayout {
+                    padding: 12px;
+                    spacing: 8px;
+                    Text {
+                        text: root.selected-name == "" ? Tr.t("ThemeEditor_PickHint", Tr.rev) : root.selected-name;
+                        color: Theme.text-hi; font-size: 17px; font-weight: 700; wrap: word-wrap;
+                    }
+                    if root.selected-where != "": Text { text: root.selected-where; color: Theme.text-faint; font-size: 11.5px; }
+                    // the element and the ones around it
+                    if root.crumbs.length > 1: Flickable {
+                        height: 30px;
+                        viewport-width: crumb-row.preferred-width;
+                        crumb-row := HorizontalLayout {
+                            spacing: 4px;
+                            for c in root.crumbs: Rectangle {
+                                height: 26px;
+                                width: crumb-text.preferred-width + 14px;
+                                border-radius: 6px;
+                                background: c.current ? Theme.accent : (crumb-ta.has-hover ? Theme.surface-hover-2 : Theme.surface-input);
+                                crumb-text := Text { text: c.label; color: c.current ? #FFFFFF : Theme.text-mid; font-size: 11.5px; }
+                                crumb-ta := TouchArea { clicked => { root.select-crumb(c.index); } }
+                            }
+                        }
+                    }
+                    if root.selected-name != "": LagTextInput {
+                        text <=> root.filter;
+                        placeholder: Tr.t("ThemeEditor_Search", Tr.rev);
+                        edited(t) => { root.filter-changed(t); }
+                    }
+                    LagScrollView {
+                        vertical-stretch: 1;
+                        content-height: prop-col.preferred-height;
+                        prop-col := VerticalLayout {
+                            width: parent.width - 12px;
+                            spacing: 2px;
+                            for p in root.props: PropRow {
+                                prop: p;
+                                set(n, v) => { root.set-prop(n, v); }
+                                reset(n) => { root.reset-prop(n); }
+                            }
+                        }
+                    }
+                    if root.status != "": Text {
+                        text: root.status;
+                        color: root.status-error ? #FF6B6B : Theme.text-faint;
+                        font-size: 11.5px;
+                        wrap: word-wrap;
+                    }
+                }
+            }
+        }
+    }
+}

@@ -364,5 +364,9 @@
   "ThemePreview_Hint": "Ret filen og gem den: forhåndsvisningen genindlæses af sig selv.",
   "Theme_New": "Nyt tema",
   "Theme_NewName": "Mit tema",
-  "Theme_Created": "En kopi af Lags brugerflade er klar til ændringer: {0}. Tryk Forhåndsvis for at se dine rettelser live."
+  "Theme_Created": "En kopi af Lags brugerflade er klar til ændringer: {0}. Tryk Forhåndsvis for at se dine rettelser live.",
+  "ThemeEditor_PickHint": "Klik på hvad som helst i temaet for at ændre det",
+  "ThemeEditor_Search": "Find en egenskab…",
+  "ThemeEditor_Undo": "Fortryd",
+  "ThemeEditor_Redo": "Gentag"
 }

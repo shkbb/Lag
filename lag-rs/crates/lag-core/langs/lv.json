@@ -364,5 +364,9 @@
   "ThemePreview_Hint": "Izlabojiet failu un saglabājiet to: priekšskatījums atjaunosies pats.",
   "Theme_New": "Jauna tēma",
   "Theme_NewName": "Mana tēma",
-  "Theme_Created": "Lag saskarnes kopija ir gatava izmaiņām: {0}. Nospiediet Priekšskatīt, lai redzētu labojumus uzreiz."
+  "Theme_Created": "Lag saskarnes kopija ir gatava izmaiņām: {0}. Nospiediet Priekšskatīt, lai redzētu labojumus uzreiz.",
+  "ThemeEditor_PickHint": "Noklikšķiniet uz jebkā tēmā, lai to mainītu",
+  "ThemeEditor_Search": "Meklēt īpašību…",
+  "ThemeEditor_Undo": "Atsaukt",
+  "ThemeEditor_Redo": "Atkārtot"
 }

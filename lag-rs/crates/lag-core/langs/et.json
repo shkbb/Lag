@@ -364,5 +364,9 @@
   "ThemePreview_Hint": "Paranda fail ja salvesta see: eelvaade laadib end ise uuesti.",
   "Theme_New": "Uus teema",
   "Theme_NewName": "Minu teema",
-  "Theme_Created": "Lagi liidese koopia on muutmiseks valmis: {0}. Vajuta Eelvaade, et muudatusi kohe näha."
+  "Theme_Created": "Lagi liidese koopia on muutmiseks valmis: {0}. Vajuta Eelvaade, et muudatusi kohe näha.",
+  "ThemeEditor_PickHint": "Klõpsa teemas ükskõik millel, et seda muuta",
+  "ThemeEditor_Search": "Otsi omadust…",
+  "ThemeEditor_Undo": "Võta tagasi",
+  "ThemeEditor_Redo": "Tee uuesti"
 }
