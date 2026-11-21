@@ -7,7 +7,14 @@ import { RChipButton } from "../components/buttons.slint";
 import { LagScrollView } from "../components/scrollbar.slint";
 import { SettingsGroup, SettingsRow, PresetData } from "../components/settings/row.slint";
 import { OverlayStage, OverlayBoxData } from "../components/settings/overlay.slint";
+import { LagTextInput } from "../components/text_input.slint";
 export global SettingsVM {
+    // Settings > Library > Add storage > WebDAV
+    in-out property <bool> webdav-open: false;
+    in property <bool> webdav-busy: false;
+    // i18n key of the last problem ("" = none)
+    in property <string> webdav-error: "";
+    callback webdav-connect(string /* url */, string /* login */, string /* password */);
     in-out property <int> tab: 0;
     in property <[SettingsGroup]> groups;
     in property <[PresetData]> presets;
@@ -150,6 +157,36 @@ export component SettingsPage inherits Rectangle {
                 Text { text: SettingsVM.warning-summary; font-size: 13px; color: #E5B84C; wrap: word-wrap; }
                 Text { text: Tr.t("Settings_IntensiveBody", Tr.rev); font-size: 13px; color: Theme.text-mid; wrap: word-wrap; }
                 HorizontalLayout { alignment: end; RChipButton { text: Tr.t("Settings_IntensiveOk", Tr.rev); clicked => { SettingsVM.acknowledge(); } } }
+            }
+        }
+    }
+    // Add storage > WebDAV: address, login, app password (checked against the server before it is added)
+    if SettingsVM.webdav-open: Rectangle {
+        background: #000000B0; TouchArea { }
+        Rectangle {
+            width: 520px; height: dav-layout.preferred-height;
+            x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2;
+            background: Theme.surface-card; border-radius: 14px; border-width: 1px; border-color: Theme.border-strong;
+            drop-shadow-offset-y: 12px; drop-shadow-blur: 40px; drop-shadow-color: #00000080;
+            dav-layout := VerticalLayout {
+                padding: 26px; spacing: 12px;
+                Text { text: Tr.t("Cloud_WebDav_Title", Tr.rev); font-size: 18px; font-weight: 700; color: Theme.text-hi; }
+                Text { text: Tr.t("Cloud_WebDav_Hint", Tr.rev); font-size: 12.5px; color: Theme.text-faint; wrap: word-wrap; }
+                dav-url := LagTextInput { placeholder: "https://cloud.example.com/remote.php/dav/files/me/"; enabled: !SettingsVM.webdav-busy; }
+                dav-user := LagTextInput { placeholder: Tr.t("Cloud_WebDav_User", Tr.rev); enabled: !SettingsVM.webdav-busy; }
+                dav-pass := LagTextInput { placeholder: Tr.t("Cloud_WebDav_Password", Tr.rev); input-type: password; enabled: !SettingsVM.webdav-busy; }
+                if SettingsVM.webdav-error != "": Text {
+                    text: Tr.t(SettingsVM.webdav-error, Tr.rev); font-size: 12.5px; color: #F0B45A; wrap: word-wrap;
+                }
+                HorizontalLayout {
+                    alignment: end; spacing: 8px;
+                    if SettingsVM.webdav-busy: Text { text: Tr.t("Cloud_Checking", Tr.rev); font-size: 12.5px; color: Theme.text-faint; vertical-alignment: center; }
+                    RChipButton { text: Tr.t("Editor_CancelExport", Tr.rev); clicked => { SettingsVM.webdav-open = false; } }
+                    RChipButton {
+                        text: Tr.t("Cloud_Connect", Tr.rev); active: true; enabled: !SettingsVM.webdav-busy && dav-url.text != "";
+                        clicked => { SettingsVM.webdav-connect(dav-url.text, dav-user.text, dav-pass.text); }
+                    }
+                }
             }
         }
     }

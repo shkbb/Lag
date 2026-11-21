@@ -24,6 +24,18 @@ pub(crate) fn open(account: &AccountSettings) -> Result<Arc<dyn CloudProvider>, 
                 }
             })))
         }
+        ProviderKind::Folder => {
+            if account.location.trim().is_empty() {
+                return Err(CloudError::Permanent("no folder".into()));
+            }
+            Ok(Arc::new(lag_cloud_drive::folder::FolderStorage::new(account.location.trim())))
+        }
+        ProviderKind::WebDav => {
+            let store = TokenStore::for_user().ok_or(CloudError::SignIn)?;
+            let password = store.load_secret(&account.id).ok_or(CloudError::SignIn)?;
+            let http = Arc::new(WinHttp::new().map_err(|e| CloudError::Transient(e.to_string()))?);
+            Ok(Arc::new(lag_cloud_drive::webdav::WebDav::new(http, &account.location, &account.user, &password)))
+        }
         other => Err(CloudError::Permanent(format!("{other:?} is not supported yet"))),
     }
 }

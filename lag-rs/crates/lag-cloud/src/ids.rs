@@ -30,6 +30,10 @@ pub enum ProviderKind {
     GoogleDrive,
     Dropbox,
     OneDrive,
+    /// A folder: a NAS share (`\\nas\share`), a mapped network drive, a synced folder (Syncthing...).
+    Folder,
+    /// A WebDAV server: Nextcloud, ownCloud, Synology, QNAP, TrueNAS, Seafile...
+    WebDav,
 }
 
 impl ProviderKind {
@@ -38,6 +42,8 @@ impl ProviderKind {
             Self::GoogleDrive => "gdrive",
             Self::Dropbox => "dropbox",
             Self::OneDrive => "onedrive",
+            Self::Folder => "folder",
+            Self::WebDav => "webdav",
         }
     }
 }

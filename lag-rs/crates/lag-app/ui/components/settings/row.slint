@@ -62,7 +62,7 @@ export component SettingsRow {
                 // kind 15 (cloud account): the signed-in e-mail under the provider's name
                 if root.data.kind == 15 && root.data.display != "": Text { text: root.data.display; color: Theme.text-mid; font-size: 12.5px; overflow: elide; }
                 if root.data.description != "": Text { text: Tr.t(root.data.description, Tr.rev);
-                    color: root.data.kind == 15 && root.data.auto-mode ? #F0B45A : Theme.text-faint; font-size: 12.5px; wrap: word-wrap; }
+                    color: (root.data.kind == 15 || root.data.kind == 17) && root.data.auto-mode ? #F0B45A : Theme.text-faint; font-size: 12.5px; wrap: word-wrap; }
             }
             if root.data.kind == 0: HorizontalLayout {
                 horizontal-stretch: 0;
@@ -145,16 +145,29 @@ export component SettingsRow {
                 RChipButton { text: Tr.t("Settings_SaveDiagnostics", Tr.rev); clicked => { root.action("diagnostics"); } }
             }
             if root.data.kind == 13: LevelMeterBar { level: root.output-level; }
-            // kind 15: a cloud account. checked = connected, custom = signing in (in the browser)
-            if root.data.kind == 15: HorizontalLayout {
-                horizontal-stretch: 0; spacing: 10px;
+            // kind 15: a connected storage (toggle-id = its index): Disconnect
+            if root.data.kind == 15: VerticalLayout { alignment: center; horizontal-stretch: 0;
+                RChipButton {
+                    text: Tr.t("Cloud_Disconnect", Tr.rev);
+                    clicked => { root.action("cloud-disconnect:" + root.data.toggle-id); }
+                }
+            }
+            // kind 17: add a storage. custom = a sign-in / check is running; enabled = Google sign-in is available
+            if root.data.kind == 17: HorizontalLayout {
+                horizontal-stretch: 0; spacing: 6px;
                 if root.data.custom: Text { text: Tr.t("Cloud_Connecting", Tr.rev); color: Theme.text-faint; font-size: 12.5px; vertical-alignment: center; }
-                VerticalLayout { alignment: center;
-                    RChipButton {
-                        text: Tr.t(root.data.custom ? "Cloud_Cancel" : root.data.checked ? "Cloud_Disconnect" : "Cloud_Connect", Tr.rev);
-                        active: !root.data.checked && !root.data.custom; enabled: root.data.enabled;
-                        clicked => { root.action(root.data.custom ? "cloud-cancel" : root.data.checked ? "cloud-disconnect" : "cloud-connect"); }
-                    }
+                if root.data.custom: VerticalLayout { alignment: center;
+                    RChipButton { text: Tr.t("Cloud_Cancel", Tr.rev); clicked => { root.action("cloud-cancel"); } }
+                }
+                if !root.data.custom: VerticalLayout { alignment: center;
+                    RChipButton { text: Tr.t("Cloud_GoogleDrive", Tr.rev); active: true; enabled: root.data.enabled;
+                        clicked => { root.action("cloud-add-google"); } }
+                }
+                if !root.data.custom: VerticalLayout { alignment: center;
+                    RChipButton { text: Tr.t("Cloud_Folder", Tr.rev); clicked => { root.action("cloud-add-folder"); } }
+                }
+                if !root.data.custom: VerticalLayout { alignment: center;
+                    RChipButton { text: "WebDAV"; clicked => { root.action("cloud-add-webdav"); } }
                 }
             }
             // kind 16: a value read from somewhere (cloud space), shown on the right

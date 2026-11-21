@@ -62,10 +62,15 @@ pub(super) fn bind(ui: &crate::AppWindow, ctx: &Rc<AppCtx>, state: &Rc<RefCell<L
                 let s = st.borrow();
                 s.clip_path_to_idx.get(path.as_str()).and_then(|&i| s.clips.get(i)).and_then(|c| c.cloud_id)
             };
-            if let Some(link) = id.and_then(|id| c.cloud().web_link(id)) {
-                std::thread::spawn(move || {
-                    let _ = lag_cloud_drive::win::open_browser(&link);
-                });
+            match id.and_then(|id| c.cloud().web_link(id)) {
+                Some(link) if link.starts_with("http") => {
+                    std::thread::spawn(move || {
+                        let _ = lag_cloud_drive::win::open_browser(&link);
+                    });
+                }
+                // a NAS folder: the file in Explorer
+                Some(path) => super::os::show_in_folder(&path),
+                None => {}
             }
         });
     }

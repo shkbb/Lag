@@ -1,42 +1,82 @@
-//! The cloud rows of the Library tab (docs/spec/cloud.md §7, §11) and what each one changes. The account row
-//! is always there (connect / disconnect); the rest appears once a cloud is connected.
+//! The cloud rows of the Library tab (docs/spec/cloud.md §6, §7, §11) and what each one changes. Every
+//! connected storage has its own rows (name, space, role when there are several, its auto-cleanup and limit);
+//! "Add storage" offers Google Drive, a network folder / NAS and WebDAV; the rules for all of them (what and
+//! when to upload, folders, screenshots, delete) follow once any storage is connected.
+//! Row ids of a storage carry its index: `cloud-role:1`, `cloud-limit:0`...
 use super::*;
 use crate::services::cloud::{AccountView, CloudView};
 use crate::SettingsRowData;
 use lag_cloud::layout::SortMode;
-use lag_cloud::settings::{CloudSettings, DeleteMode, UploadWhat, UploadWhen, LIMIT_RUNGS_GB};
+use lag_cloud::settings::{CloudSettings, DeleteMode, Role, UploadWhat, UploadWhen, LIMIT_RUNGS_GB};
+use lag_cloud::ProviderKind;
 
 const UPLOAD: [UploadWhat; 3] = [UploadWhat::All, UploadWhat::Favorites, UploadWhat::Manual];
 const WHEN: [UploadWhen; 2] = [UploadWhen::Immediately, UploadWhen::NoGameRunning];
 const SORT: [SortMode; 4] = [SortMode::ByGame, SortMode::ByGameMonth, SortMode::ByMonth, SortMode::Flat];
 const DELETE: [DeleteMode; 3] = [DeleteMode::Ask, DeleteMode::ThisPcOnly, DeleteMode::Everywhere];
+const ROLE: [Role; 3] = [Role::Primary, Role::Mirror, Role::Paused];
+
+fn provider_label(kind: ProviderKind) -> &'static str {
+    match kind {
+        ProviderKind::GoogleDrive => "Cloud_GoogleDrive",
+        ProviderKind::Dropbox => "Cloud_Dropbox",
+        ProviderKind::OneDrive => "Cloud_OneDrive",
+        ProviderKind::Folder => "Cloud_Folder",
+        ProviderKind::WebDav => "Cloud_WebDav",
+    }
+}
+
+fn limit_options() -> Vec<(String, i32)> {
+    LIMIT_RUNGS_GB.iter().map(|g| (if *g >= 1000 { format!("{} TB", g / 1000) } else { format!("{g} GB") }, 0)).collect()
+}
+
+/// The rows of one connected storage.
+fn account_rows(i: usize, a: &AccountView, several: bool) -> Vec<SettingsRowData> {
+    let mut acc = row(&format!("cloud-account:{i}"), provider_label(a.settings.provider), 15);
+    acc.toggle_id = i.to_string().into();
+    acc.display = a.settings.display_name.clone().into();
+    if let Some(e) = a.error {
+        acc.description = e.into();
+        acc.auto_mode = true;
+    }
+    let mut space = row(&format!("cloud-space:{i}"), "Cloud_Space", 16);
+    space.display = space_text(a).into();
+    let mut rows = vec![acc, space];
+    if several {
+        let mut role = choice(
+            &format!("cloud-role:{i}"),
+            "Cloud_Role",
+            1,
+            simple_options(&["Cloud_Role_Primary", "Cloud_Role_Mirror", "Cloud_Role_Paused"]),
+            pos(&ROLE, &a.settings.role),
+        );
+        role.description = "Cloud_Role_Desc".into();
+        rows.push(role);
+    }
+    let cleanup = super::rows::toggle(&format!("cloud-cleanup:{i}"), "Cloud_AutoCleanup", "Cloud_AutoCleanup_Desc", a.settings.auto_cleanup);
+    let mut limit = choice(&format!("cloud-limit:{i}"), "Cloud_Limit", 0, limit_options(), pos(LIMIT_RUNGS_GB, &a.settings.max_size_gb));
+    limit.enabled = a.settings.auto_cleanup;
+    rows.extend([cleanup, limit]);
+    rows
+}
 
 pub(super) fn rows(view: &CloudView) -> Vec<SettingsRowData> {
     let s = &view.settings;
-    let account = view.accounts.first();
+    let several = view.accounts.len() > 1;
+    let mut rows: Vec<SettingsRowData> =
+        view.accounts.iter().enumerate().flat_map(|(i, a)| account_rows(i, a, several)).collect();
 
-    // kind 15: the account. checked = connected, custom = signing in, auto-mode = description is a problem
-    let mut acc = row("cloud-account", "Cloud_GoogleDrive", 15);
-    acc.checked = account.is_some();
-    acc.custom = view.connecting;
-    acc.enabled = view.configured || account.is_some();
-    match account {
-        Some(a) => {
-            acc.display = a.settings.display_name.clone().into();
-            if let Some(e) = a.error {
-                acc.description = e.into();
-                acc.auto_mode = true;
-            }
-        }
-        None => {
-            acc.description = view.error.unwrap_or("Cloud_Desc").into();
-            acc.auto_mode = view.error.is_some();
-        }
+    // kind 17: add a storage. custom = a sign-in / check is running; enabled = Google sign-in available
+    let mut add = row("cloud-add", if view.accounts.is_empty() { "Cloud_Connect_Title" } else { "Cloud_Add" }, 17);
+    add.custom = view.connecting;
+    add.enabled = view.configured;
+    add.description = view.error.unwrap_or(if view.accounts.is_empty() { "Cloud_Desc" } else { "" }).into();
+    add.auto_mode = view.error.is_some();
+    rows.push(add);
+
+    if view.accounts.is_empty() {
+        return rows;
     }
-
-    let mut space = row("cloud-space", "Cloud_Space", 16);
-    space.display = account.map_or_else(String::new, space_text).into();
-
     let segmented = |id: &str, label: &str, keys: &[&str], selected: usize| choice(id, label, 1, simple_options(keys), selected);
     let upload = segmented(
         "cloud-upload",
@@ -56,26 +96,15 @@ pub(super) fn rows(view: &CloudView) -> Vec<SettingsRowData> {
     );
     sort.description = "Cloud_Sort_Desc".into();
     let shots = super::rows::toggle("cloud-shots", "Cloud_Screenshots", "", s.upload_screenshots);
-
-    let (auto_cleanup, max_gb) = account.map_or((false, 50), |a| (a.settings.auto_cleanup, a.settings.max_size_gb));
-    let cleanup = super::rows::toggle("cloud-cleanup", "Cloud_AutoCleanup", "Cloud_AutoCleanup_Desc", auto_cleanup);
-    let mut limit = choice(
-        "cloud-limit",
-        "Cloud_Limit",
-        0,
-        LIMIT_RUNGS_GB.iter().map(|g| (if *g >= 1000 { format!("{} TB", g / 1000) } else { format!("{g} GB") }, 0)).collect(),
-        pos(LIMIT_RUNGS_GB, &max_gb),
-    );
-    limit.enabled = auto_cleanup;
-
     // what Delete in the library does with a clip that is also in the cloud ("remember my choice" lands here)
-    let mut delete = segmented("cloud-delete", "Cloud_DeleteMode", &["Cloud_Delete_Ask", "Delete_ThisPc", "Delete_Everywhere"], pos(&DELETE, &s.delete_mode));
+    let mut delete = segmented(
+        "cloud-delete",
+        "Cloud_DeleteMode",
+        &["Cloud_Delete_Ask", "Delete_ThisPc", "Delete_Everywhere"],
+        pos(&DELETE, &s.delete_mode),
+    );
     delete.description = "Cloud_DeleteMode_Desc".into();
-
-    let mut rows = vec![acc, space, upload, when, sort, shots, cleanup, limit, delete];
-    for r in rows.iter_mut().skip(1) {
-        r.visible = account.is_some();
-    }
+    rows.extend([upload, when, sort, shots, delete]);
     rows
 }
 
@@ -106,16 +135,39 @@ fn size(bytes: u64) -> String {
     }
 }
 
+/// `cloud-role:2` -> ("cloud-role", Some(2)).
+fn split(id: &str) -> (&str, Option<usize>) {
+    match id.split_once(':') {
+        Some((name, i)) => (name, i.parse().ok()),
+        None => (id, None),
+    }
+}
+
 /// A choice on a cloud row.
 pub(super) fn choose(cs: &mut CloudSettings, id: &str, index: usize) {
-    match id {
-        "cloud-upload" => cs.upload_what = UPLOAD.get(index).copied().unwrap_or_default(),
-        "cloud-when" => cs.upload_when = WHEN.get(index).copied().unwrap_or_default(),
-        "cloud-sort" => cs.sort = SORT.get(index).copied().unwrap_or_default(),
-        "cloud-delete" => cs.delete_mode = DELETE.get(index).copied().unwrap_or_default(),
-        "cloud-limit" => {
-            if let (Some(a), Some(gb)) = (cs.accounts.first_mut(), LIMIT_RUNGS_GB.get(index)) {
+    let (name, account) = split(id);
+    let account = account.and_then(|i| cs.accounts.get_mut(i));
+    match (name, account) {
+        ("cloud-upload", _) => cs.upload_what = UPLOAD.get(index).copied().unwrap_or_default(),
+        ("cloud-when", _) => cs.upload_when = WHEN.get(index).copied().unwrap_or_default(),
+        ("cloud-sort", _) => cs.sort = SORT.get(index).copied().unwrap_or_default(),
+        ("cloud-delete", _) => cs.delete_mode = DELETE.get(index).copied().unwrap_or_default(),
+        ("cloud-limit", Some(a)) => {
+            if let Some(gb) = LIMIT_RUNGS_GB.get(index) {
                 a.max_size_gb = *gb;
+            }
+        }
+        ("cloud-role", Some(a)) => {
+            let role = ROLE.get(index).copied().unwrap_or_default();
+            let id = a.id.clone();
+            // one primary: choosing a new one makes the old one a mirror
+            if role == Role::Primary {
+                for other in cs.accounts.iter_mut().filter(|o| o.id != id && o.role == Role::Primary) {
+                    other.role = Role::Mirror;
+                }
+            }
+            if let Some(a) = cs.accounts.iter_mut().find(|o| o.id == id) {
+                a.role = role;
             }
         }
         _ => {}
@@ -124,13 +176,10 @@ pub(super) fn choose(cs: &mut CloudSettings, id: &str, index: usize) {
 
 /// A switch on a cloud row.
 pub(super) fn toggle(cs: &mut CloudSettings, id: &str, value: bool) {
-    match id {
-        "cloud-shots" => cs.upload_screenshots = value,
-        "cloud-cleanup" => {
-            if let Some(a) = cs.accounts.first_mut() {
-                a.auto_cleanup = value;
-            }
-        }
+    let (name, account) = split(id);
+    match (name, account.and_then(|i| cs.accounts.get_mut(i))) {
+        ("cloud-shots", _) => cs.upload_screenshots = value,
+        ("cloud-cleanup", Some(a)) => a.auto_cleanup = value,
         _ => {}
     }
 }
@@ -141,67 +190,79 @@ mod tests {
     use lag_cloud::quota::ProviderSpace;
     use lag_cloud::settings::AccountSettings;
     use lag_cloud::sync::Usage;
+    use lag_cloud::AccountId;
     use slint::Model;
 
-    fn connected() -> CloudView {
-        let settings = AccountSettings { display_name: "me@example.com".into(), ..Default::default() };
+    fn account(kind: ProviderKind, name: &str, role: Role) -> AccountSettings {
+        AccountSettings { id: AccountId::new(kind, name), provider: kind, display_name: name.into(), role, ..Default::default() }
+    }
+
+    fn view(accounts: Vec<AccountSettings>) -> CloudView {
         CloudView {
-            settings: CloudSettings { enabled: true, accounts: vec![settings.clone()], ..Default::default() },
-            accounts: vec![AccountView {
-                settings,
-                usage: Some(Usage {
-                    lag_bytes: 3 << 30,
-                    clips: 4,
-                    space: ProviderSpace { free: 4 << 40, total: Some(5 << 40) },
-                }),
-                error: None,
-            }],
+            settings: CloudSettings { enabled: !accounts.is_empty(), accounts: accounts.clone(), ..Default::default() },
+            accounts: accounts
+                .into_iter()
+                .map(|settings| AccountView {
+                    settings,
+                    usage: Some(Usage { lag_bytes: 3 << 30, clips: 4, space: ProviderSpace { free: 4 << 40, total: Some(5 << 40) } }),
+                    error: None,
+                })
+                .collect(),
             configured: true,
             ..Default::default()
         }
     }
 
     #[test]
-    fn not_connected_shows_only_the_account_row() {
-        let shown = rows(&CloudView { configured: true, ..Default::default() });
-        assert_eq!(shown[0].id, "cloud-account");
-        assert!(!shown[0].checked && shown[0].enabled);
-        assert_eq!(shown[0].description, "Cloud_Desc");
-        assert!(shown.iter().skip(1).all(|r| !r.visible));
-        // a failed sign-in is shown on the row
-        let failed = rows(&CloudView { configured: true, error: Some("Cloud_Error_NoDrive"), ..Default::default() });
-        assert!(failed[0].auto_mode && failed[0].description == "Cloud_Error_NoDrive");
-        // a build without the OAuth client cannot connect
-        assert!(!rows(&CloudView::default())[0].enabled);
+    fn nothing_connected_offers_every_kind_of_storage() {
+        let shown = rows(&view(vec![]));
+        assert_eq!(shown.len(), 1);
+        assert_eq!((shown[0].kind, shown[0].description.as_str()), (17, "Cloud_Desc"));
+        let failed = rows(&CloudView { configured: true, error: Some("Cloud_Error_WebDavLogin"), ..Default::default() });
+        assert!(failed[0].auto_mode && failed[0].description == "Cloud_Error_WebDavLogin");
     }
 
     #[test]
-    fn connected_shows_the_account_its_space_and_the_settings() {
-        let shown = rows(&connected());
-        assert!(shown[0].checked);
-        assert_eq!(shown[0].display, "me@example.com");
-        assert!(shown.iter().all(|r| r.visible));
-        assert!(shown[1].display.contains("3") && shown[1].display.contains("TB"), "{}", shown[1].display);
-        let limit = shown.iter().find(|r| r.id == "cloud-limit").unwrap();
-        assert!(!limit.enabled, "auto-cleanup is off by default: its limit is greyed out");
+    fn every_storage_has_its_rows_and_roles_appear_with_several() {
+        let one = rows(&view(vec![account(ProviderKind::GoogleDrive, "me@example.com", Role::Primary)]));
+        assert_eq!(one[0].display, "me@example.com");
+        assert!(one[1].display.contains("TB"), "{}", one[1].display);
+        assert!(!one.iter().any(|r| r.id.starts_with("cloud-role")), "one storage: no roles");
+        let limit = one.iter().find(|r| r.id == "cloud-limit:0").unwrap();
+        assert!(!limit.enabled, "auto-cleanup off by default: its limit is greyed out");
         assert_eq!(limit.options.row_count(), LIMIT_RUNGS_GB.len());
+        assert!(one.iter().any(|r| r.id == "cloud-add") && one.iter().any(|r| r.id == "cloud-upload"));
+
+        let two = rows(&view(vec![
+            account(ProviderKind::GoogleDrive, "me@example.com", Role::Primary),
+            account(ProviderKind::Folder, r"\\nas\clips", Role::Mirror),
+        ]));
+        assert_eq!(two.iter().filter(|r| r.kind == 15).count(), 2);
+        assert_eq!(two.iter().find(|r| r.id == "cloud-account:1").unwrap().label, "Cloud_Folder");
+        assert_eq!(two.iter().find(|r| r.id == "cloud-role:1").unwrap().selected, 1);
     }
 
     #[test]
-    fn rows_change_the_cloud_settings() {
-        let mut cs = connected().settings;
+    fn rows_change_the_right_storage() {
+        let mut cs = view(vec![
+            account(ProviderKind::GoogleDrive, "a", Role::Primary),
+            account(ProviderKind::WebDav, "b", Role::Mirror),
+        ])
+        .settings;
         choose(&mut cs, "cloud-upload", 1);
         choose(&mut cs, "cloud-when", 0);
         choose(&mut cs, "cloud-sort", 3);
-        toggle(&mut cs, "cloud-cleanup", true);
-        choose(&mut cs, "cloud-limit", 4);
         choose(&mut cs, "cloud-delete", 2);
-        assert_eq!(cs.delete_mode, DeleteMode::Everywhere);
+        toggle(&mut cs, "cloud-cleanup:1", true);
+        choose(&mut cs, "cloud-limit:1", 4);
         toggle(&mut cs, "cloud-shots", false);
         assert_eq!(
-            (cs.upload_what, cs.upload_when, cs.sort, cs.upload_screenshots),
-            (UploadWhat::Favorites, UploadWhen::Immediately, SortMode::Flat, false)
+            (cs.upload_what, cs.upload_when, cs.sort, cs.upload_screenshots, cs.delete_mode),
+            (UploadWhat::Favorites, UploadWhen::Immediately, SortMode::Flat, false, DeleteMode::Everywhere)
         );
-        assert_eq!((cs.accounts[0].auto_cleanup, cs.accounts[0].max_size_gb), (true, 250));
+        assert_eq!((cs.accounts[0].auto_cleanup, cs.accounts[1].auto_cleanup, cs.accounts[1].max_size_gb), (false, true, 250));
+        // making the mirror the primary demotes the old primary
+        choose(&mut cs, "cloud-role:1", 0);
+        assert_eq!((cs.accounts[0].role, cs.accounts[1].role), (Role::Mirror, Role::Primary));
     }
 }

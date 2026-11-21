@@ -65,13 +65,31 @@ pub fn init(ui: &AppWindow, ctx: &Rc<AppCtx>) {
     let state = Rc::new(RefCell::new(State::new(initial.clone(), groups)));
     state.borrow_mut().cloud = ctx.cloud().view();
     let (st, weak) = (state.clone(), ui.as_weak());
+    let accounts_before = std::cell::Cell::new(ctx.cloud().view().accounts.len());
     ctx.cloud().on_changed(move |view| {
         if let Some(ui) = weak.upgrade() {
+            // the WebDAV dialog: busy while the server is asked, its problem, closed once the storage is added
+            let vm = ui.global::<SettingsVM>();
+            vm.set_webdav_busy(view.connecting);
+            if vm.get_webdav_open() {
+                if view.accounts.len() > accounts_before.get() {
+                    vm.set_webdav_open(false);
+                } else if !view.connecting {
+                    vm.set_webdav_error(view.error.unwrap_or("").into());
+                }
+            }
+            accounts_before.set(view.accounts.len());
             let mut st = st.borrow_mut();
             st.cloud = view.clone();
             st.refresh(&ui);
         }
     });
+    {
+        let c = ctx.clone();
+        ui.global::<SettingsVM>().on_webdav_connect(move |url, user, password| {
+            c.cloud().connect_webdav(&url, &user, &password);
+        });
+    }
     // Hardware probing (including encoder-open tests and webcam enumeration) never blocks Slint.
     let (hardware_send, hardware_recv) = mpsc::channel();
     std::thread::spawn(move || {

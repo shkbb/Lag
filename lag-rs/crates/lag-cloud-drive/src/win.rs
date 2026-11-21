@@ -46,6 +46,15 @@ fn dpapi(data: &[u8], encrypt: bool) -> io::Result<Vec<u8>> {
     }
 }
 
+/// Free and total bytes of the drive or share holding `path` (UNC paths too).
+pub fn disk_space(path: &std::path::Path) -> Option<lag_cloud::quota::ProviderSpace> {
+    use windows::Win32::Storage::FileSystem::GetDiskFreeSpaceExW;
+    let wide: Vec<u16> = path.as_os_str().to_string_lossy().encode_utf16().chain(Some(0)).collect();
+    let (mut free, mut total) = (0u64, 0u64);
+    unsafe { GetDiskFreeSpaceExW(PCWSTR(wide.as_ptr()), Some(&mut free), Some(&mut total), None) }.ok()?;
+    Some(lag_cloud::quota::ProviderSpace { free, total: Some(total) })
+}
+
 /// Opens `url` in the default browser.
 pub fn open_browser(url: &str) -> io::Result<()> {
     let result =

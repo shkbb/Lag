@@ -7,6 +7,8 @@ export component LagTextInput {
     in property <string> placeholder: "";
     in property <bool> enabled: true;
     in property <TextHorizontalAlignment> horizontal-alignment: left;
+    // password: the text is masked (WebDAV app password)
+    in property <InputType> input-type: InputType.text;
     callback edited(string);
     callback accepted(string);
     callback focus-changed(bool);
@@ -58,6 +60,7 @@ export component LagTextInput {
                 input := TextInput {
                     width: 100%;
                     height: 100%;
+                    input-type: root.input-type;
                     text <=> root.text;
                     enabled: root.enabled;
                     color: Theme.fg-brush;

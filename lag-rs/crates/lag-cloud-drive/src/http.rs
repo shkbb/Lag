@@ -9,6 +9,10 @@ pub enum Method {
     Put,
     Patch,
     Delete,
+    /// WebDAV: create a folder.
+    Mkcol,
+    /// WebDAV: list a folder / read properties.
+    Propfind,
 }
 
 impl Method {
@@ -19,6 +23,8 @@ impl Method {
             Self::Put => "PUT",
             Self::Patch => "PATCH",
             Self::Delete => "DELETE",
+            Self::Mkcol => "MKCOL",
+            Self::Propfind => "PROPFIND",
         }
     }
 }

@@ -50,6 +50,22 @@ impl TokenStore {
 
     pub fn forget(&self, account: &AccountId) {
         let _ = std::fs::remove_file(self.path(account));
+        let _ = std::fs::remove_file(self.path(account).with_extension("secret"));
+    }
+
+    /// A password (WebDAV app password), encrypted the same way, next to where tokens would be.
+    pub fn save_secret(&self, account: &AccountId, secret: &str) -> io::Result<()> {
+        std::fs::create_dir_all(&self.dir)?;
+        let sealed = crate::win::protect(secret.as_bytes())?;
+        let path = self.path(account).with_extension("secret");
+        let tmp = path.with_extension("tmp");
+        std::fs::write(&tmp, sealed)?;
+        std::fs::rename(&tmp, &path)
+    }
+
+    pub fn load_secret(&self, account: &AccountId) -> Option<String> {
+        let sealed = std::fs::read(self.path(account).with_extension("secret")).ok()?;
+        String::from_utf8(crate::win::unprotect(&sealed).ok()?).ok()
     }
 }
 
@@ -77,8 +93,12 @@ mod tests {
         assert_eq!(store.load(&account), Some(tokens));
         std::fs::write(dir.join("gdrive_1234.token"), b"garbage").unwrap();
         assert_eq!(store.load(&account), None, "unreadable = sign in again");
+        store.save_secret(&account, "app-password").unwrap();
+        assert_eq!(store.load_secret(&account).as_deref(), Some("app-password"));
+        assert!(!String::from_utf8_lossy(&std::fs::read(dir.join("gdrive_1234.secret")).unwrap()).contains("app-password"));
         store.forget(&account);
         assert_eq!(store.load(&account), None);
+        assert_eq!(store.load_secret(&account), None, "disconnecting forgets the password too");
         let _ = std::fs::remove_dir_all(&dir);
     }
 }

@@ -129,11 +129,35 @@ pub(super) fn bind_controls(ui: &AppWindow, ctx: &Rc<AppCtx>, state: &Rc<RefCell
                     }
                 });
             }
-            "cloud-connect" => c.cloud().connect(),
+            "cloud-add-google" => c.cloud().connect(),
             "cloud-cancel" => c.cloud().cancel_connect(),
-            "cloud-disconnect" => {
+            "cloud-add-folder" => {
+                // a folder picker (a NAS share, a network drive, a synced folder), off the UI thread
+                let (sender, receiver) = mpsc::channel();
+                std::thread::spawn(move || {
+                    let _ = sender.send(browse_folder(""));
+                });
+                let c = c.clone();
+                let timer = Rc::new(slint::Timer::default());
+                let keep = timer.clone();
+                timer.start(slint::TimerMode::Repeated, Duration::from_millis(50), move || {
+                    if let Ok(result) = receiver.try_recv() {
+                        keep.stop();
+                        if let Some(path) = result {
+                            c.cloud().connect_folder(&path);
+                        }
+                    }
+                });
+            }
+            "cloud-add-webdav" => {
+                let vm = ui.global::<SettingsVM>();
+                vm.set_webdav_error("".into());
+                vm.set_webdav_open(true);
+            }
+            other if other.starts_with("cloud-disconnect:") => {
                 // the page's state is borrowed again by the change listener: take the id out first
-                let id = st.borrow().cloud.accounts.first().map(|a| a.settings.id.clone());
+                let index = other.rsplit(':').next().and_then(|i| i.parse::<usize>().ok());
+                let id = index.and_then(|i| st.borrow().cloud.accounts.get(i).map(|a| a.settings.id.clone()));
                 if let Some(id) = id {
                     c.cloud().disconnect(&id);
                 }

@@ -78,6 +78,10 @@ pub struct AccountSettings {
     pub provider: ProviderKind,
     /// Shown in Settings (e-mail or name the provider reports).
     pub display_name: String,
+    /// Where the storage is: the folder of a Folder account, the server URL of a WebDAV account.
+    pub location: String,
+    /// The login of a WebDAV account (its password is in the encrypted secret store, never here).
+    pub user: String,
     pub role: Role,
     pub mirror: MirrorSelection,
     /// Cloud auto-cleanup, the cloud's own "library size limit" (like Settings > Library): off by default;
@@ -93,6 +97,8 @@ impl Default for AccountSettings {
             id: AccountId::new(ProviderKind::GoogleDrive, ""),
             provider: ProviderKind::GoogleDrive,
             display_name: String::new(),
+            location: String::new(),
+            user: String::new(),
             role: Role::Primary,
             mirror: MirrorSelection::Everything,
             auto_cleanup: false,

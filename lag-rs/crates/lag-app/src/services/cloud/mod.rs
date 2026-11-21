@@ -286,6 +286,8 @@ impl CloudService {
         let account = settings.accounts.iter().find(|a| &a.id == account)?;
         match account.provider {
             ProviderKind::GoogleDrive => Some(format!("https://drive.google.com/file/d/{}/view", entry.remote_id.as_deref()?)),
+            // a NAS folder: its path (the library shows it in Explorer)
+            ProviderKind::Folder => entry.remote_id.clone(),
             _ => None,
         }
     }
@@ -399,6 +401,81 @@ impl CloudService {
             }
         }
         self.notify();
+    }
+
+    /// "Add storage > Network folder / NAS": a folder Lag can write to.
+    pub fn connect_folder(&self, path: &str) {
+        let path = path.trim().trim_end_matches(['\\', '/']).to_owned();
+        let probe = std::path::Path::new(&path).join(".lag-write-test");
+        let writable = std::fs::write(&probe, b"ok").is_ok();
+        let _ = std::fs::remove_file(&probe);
+        if !writable {
+            self.error.set(Some("Cloud_Error_Folder"));
+            self.notify();
+            return;
+        }
+        let id = AccountId::new(ProviderKind::Folder, &path.to_lowercase());
+        log::info!("[Cloud] folder storage connected ({path})");
+        self.add_account(AccountSettings {
+            id: id.clone(),
+            provider: ProviderKind::Folder,
+            display_name: path.clone(),
+            location: path,
+            ..Default::default()
+        });
+        self.send(Cmd::SignedIn(id));
+        self.notify();
+    }
+
+    /// "Add storage > WebDAV": checks the address and login on a thread, then connects.
+    pub fn connect_webdav(&self, url: &str, user: &str, password: &str) {
+        if self.connecting.borrow().is_some() || !self.online.get() {
+            return;
+        }
+        let (url, user, password) = (url.trim().to_owned(), user.trim().to_owned(), password.to_owned());
+        if !(url.starts_with("https://") || url.starts_with("http://")) {
+            self.error.set(Some("Cloud_Error_WebDavUrl"));
+            self.notify();
+            return;
+        }
+        *self.connecting.borrow_mut() = Some(Arc::new(AtomicBool::new(false)));
+        self.error.set(None);
+        self.notify();
+        std::thread::spawn(move || {
+            let result = WinHttp::new()
+                .map_err(|e| lag_cloud::provider::CloudError::Transient(e.to_string()))
+                .and_then(|http| lag_cloud_drive::webdav::WebDav::new(Arc::new(http), &url, &user, &password).check());
+            post(move |s| {
+                *s.connecting.borrow_mut() = None;
+                match result {
+                    Ok(()) => {
+                        let host = url.split("://").nth(1).and_then(|r| r.split('/').next()).unwrap_or(&url).to_owned();
+                        let id = AccountId::new(ProviderKind::WebDav, &format!("{user}@{url}"));
+                        if let Some(store) = TokenStore::for_user() {
+                            if let Err(e) = store.save_secret(&id, &password) {
+                                log::warn!("[Cloud] storing the WebDAV password failed: {e}");
+                            }
+                        }
+                        log::info!("[Cloud] WebDAV connected ({user}@{host})");
+                        s.add_account(AccountSettings {
+                            id: id.clone(),
+                            provider: ProviderKind::WebDav,
+                            display_name: format!("{user}@{host}"),
+                            location: url,
+                            user,
+                            ..Default::default()
+                        });
+                        s.send(Cmd::SignedIn(id));
+                    }
+                    Err(lag_cloud::provider::CloudError::SignIn) => s.error.set(Some("Cloud_Error_WebDavLogin")),
+                    Err(e) => {
+                        log::warn!("[Cloud] WebDAV check failed: {e}");
+                        s.error.set(Some("Cloud_Error_WebDavServer"));
+                    }
+                }
+                s.notify();
+            });
+        });
     }
 
     /// A newly connected account (or the same one signed in again): the first one is the primary.
