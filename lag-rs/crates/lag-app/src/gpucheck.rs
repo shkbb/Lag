@@ -9,6 +9,7 @@
 //!           editor-clip N | editor-play | editor-crop | editor-rotate | editor-filter N | editor-aspect N
 //!           editor-addtext | ov-click X Y | ov-dbl X Y | ov-down X Y | ov-move X Y | ov-up X Y (stage coords,
 //!           dispatched to the editor's overlay window) | type TEXT (main window keys) | key esc|enter
+//!           toast | splash | splash-off | hud (the separate windows of the themed UI)
 //!           rec (start/stop recording) | save (save replay) | choose ID N | toggle ID 0|1 | number ID V | tab N
 //!           (settings audit: same paths as the Settings page; the recorder is stopped cleanly at the end)
 //!           hotkeys (start the real global hotkey service in this process) | action ID (Settings button, e.g.
@@ -19,6 +20,11 @@ use slint::platform::{PointerEventButton, WindowEvent};
 use crate::ComponentHandle;
 use slint::LogicalPosition;
 use std::{cell::RefCell, collections::VecDeque, rc::Rc, time::Duration};
+
+thread_local! {
+    /// windows a script opened (splash, HUD), kept alive until `splash-off` / the end
+    static KEEP: RefCell<Vec<Box<dyn std::any::Any>>> = RefCell::default();
+}
 
 pub fn args() -> Option<(String, String)> {
     let a: Vec<String> = std::env::args().collect();
@@ -123,6 +129,32 @@ fn step(weak: crate::Weak<AppWindow>, queue: Rc<RefCell<VecDeque<String>>>, dir:
         }
         "editor-play" => ui.global::<crate::EditorVM>().invoke_play_pause(),
         "editor-addtext" => ui.global::<crate::EditorVM>().invoke_add_text(),
+        // the separate windows (part of the themed UI): a real toast, the start-up splash, the in-game stats HUD
+        "toast" => crate::services::toast::show(
+            lag_core::i18n::tr("Toast_ReplaySaved").to_string(),
+            "2026-11-22_12-00-00-Replay.mp4".into(),
+            "check-circle",
+            "Accent",
+        ),
+        "splash" => {
+            let s = startup::load_settings();
+            KEEP.with(|k| k.borrow_mut().push(Box::new(startup::show_splash(&s))));
+        }
+        // a shown window stays up until hidden (dropping the handle is not enough, compiled or not)
+        "splash-off" => KEEP.with(|k| {
+            for w in k.borrow_mut().drain(..) {
+                if let Some(Some(splash)) = w.downcast_ref::<Option<crate::SplashWindow>>() {
+                    let _ = splash.hide();
+                }
+            }
+        }),
+        "hud" => {
+            let mut s = startup::load_settings();
+            s.overlay_enabled = true;
+            s.stats_shown = true;
+            let ctx = app_ctx::AppCtx::new(s);
+            KEEP.with(|k| k.borrow_mut().push(Box::new((crate::shell::hud::Hud::new(&ctx), ctx))));
+        }
         "hotkeys" => HOTKEYS.with(|h| {
             if h.borrow().is_none() {
                 if let Some(ctx) = CTX.with(|c| c.borrow().clone()) {

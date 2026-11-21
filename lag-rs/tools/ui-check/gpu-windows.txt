@@ -1,0 +1,13 @@
+# REAL windows (--gpu-check): the separate windows of the themed UI (they live outside the main window: grab
+# the desktop to see them). The log must have no "[Theme] ..." line (a name the UI lacks).
+size 1360x840
+page library
+wait 1200
+hud
+wait 3000
+toast
+wait 900
+splash
+wait 1500
+splash-off
+wait 800

@@ -1,0 +1,60 @@
+# REAL window (--gpu-check): the whole UI loaded from ui\*.slint at run time (themes, phase 1).
+# `screen` = what is really on screen (GPU renderer, native video, overlays).
+size 1360x840
+page settings
+wait 1200
+tab 0
+wait 400
+screen t-settings-video
+tab 1
+wait 400
+screen t-settings-audio
+tab 2
+wait 400
+screen t-settings-overlay
+tab 3
+wait 600
+screen t-settings-library
+tab 4
+wait 400
+screen t-settings-general
+# theme switches at run time (light, dark, GTA VI, then system)
+theme 0
+wait 900
+screen t-theme-light
+theme 1
+wait 900
+screen t-theme-dark
+theme 3
+wait 900
+screen t-theme-gta
+theme 2
+wait 900
+page library
+wait 1500
+screen t-library
+move 240 330
+wait 400
+screen t-library-hover
+scroll 700 500 -900
+wait 600
+screen t-library-scrolled
+scroll 700 500 3000
+wait 400
+# a card opens the player with real video
+click 240 330
+wait 3000
+screen t-player-playing
+page player
+wait 600
+screen t-player-page
+page editor
+wait 1200
+screen t-editor
+size 1080x640
+wait 800
+screen t-small
+size 1360x840
+page settings
+wait 600
+screen t-back

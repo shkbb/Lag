@@ -21,31 +21,27 @@ fn main() {
         use windows::Win32::UI::HiDpi::{SetProcessDpiAwarenessContext, DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2};
         let _ = SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
     }
-    // The UI is read from ui\*.slint now (themes): compiled here, before any window exists.
-    let ui_loaded = ui_twin::load_builtin();
-    if let Err(e) = &ui_loaded {
-        eprintln!("UI failed to load: {e}");
-    }
+    // The UI is read from ui\*.slint now (themes): compiled before any window exists. Dev modes load it here;
+    // the app after the single-instance check (a second launch must not spend ~0.25 s on it).
+    let dev_load = || {
+        if let Err(e) = ui_twin::load_builtin() {
+            eprintln!("UI failed to load: {e}");
+        }
+    };
     // Real-window GPU render check (dev tool): `--gpu-check <script> <out-dir>`.
     if let Some((script, dir)) = gpucheck::args() {
+        dev_load();
         gpucheck::run(script, dir);
         return;
     }
     // Headless UI snapshot mode (no window, no tray/hotkeys/engine): `--snapshot <out.png> [page] [WxH]`.
     if let Some(snap) = snapshot::install_from_args() {
+        dev_load();
         run_snapshot(snap);
         return;
     }
     // 1. Log first, so everything below is captured (FileLog.Initialize).
     let _log = startup::init_logging();
-    match &ui_loaded {
-        Ok(took) => log::info!("[Startup] UI loaded from {} in {} ms", ui_twin::builtin_dir().display(), took.as_millis()),
-        Err(e) => {
-            log::error!("[Startup] UI failed to load: {e}");
-            startup::fatal_message(&format!("Lag could not load its interface:\n\n{e}"));
-            return;
-        }
-    }
     // 2. 1 ms timer resolution (Program.cs:68).
     startup::raise_timer_resolution();
     // 3. Single instance ("LagAppSingleInstanceMutex"): a second launch exits immediately.
@@ -53,6 +49,15 @@ fn main() {
         log::info!("[Startup] another Lag instance is running \u{2014} exiting.");
         return;
     };
+    // 3b. The UI from ui\*.slint (themes).
+    match &ui_twin::load_builtin() {
+        Ok(took) => log::info!("[Startup] UI loaded from {} in {} ms", ui_twin::builtin_dir().display(), took.as_millis()),
+        Err(e) => {
+            log::error!("[Startup] UI failed to load: {e}");
+            startup::fatal_message(&format!("Lag could not load its interface:\n\n{e}"));
+            return;
+        }
+    }
     // 4. Settings + language before any UI string is built.
     let settings = startup::load_settings();
     lag_core::i18n::set_language(settings.language.as_deref().unwrap_or("en"));
