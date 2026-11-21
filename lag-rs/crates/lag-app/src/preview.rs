@@ -99,6 +99,11 @@ fn place(window: &slint::Window, at: Option<[i32; 4]>) {
     }
 }
 
+fn end_preview() -> slint::CloseRequestResponse {
+    let _ = slint::quit_event_loop();
+    slint::CloseRequestResponse::HideWindow
+}
+
 fn handle(window: &slint::Window) -> isize {
     crate::shell::nofocus::hwnd(window).map_or(0, |h| h.0 as isize)
 }
@@ -135,6 +140,9 @@ pub fn run(Args { dir, at, replace }: Args) {
             let ctx = app_ctx::AppCtx::new(settings);
             ctx.never_save();
             views::init_all(&ui, &ctx);
+            // closing the preview ends it (Lag's own close hides into the tray, and a preview has no tray: the
+            // process stayed alive invisible, owner 2026-11-22)
+            ui.window().on_close_requested(end_preview);
             place(ui.window(), at);
             if ui.show().is_err() {
                 return;
@@ -161,6 +169,7 @@ pub fn run(Args { dir, at, replace }: Args) {
             let prefix = format!("{}{}", dir.display(), std::path::MAIN_SEPARATOR);
             w.set_message(e.replace(&prefix, "").into());
             place(w.window(), at);
+            w.window().on_close_requested(end_preview);
             if w.show().is_err() {
                 return;
             }

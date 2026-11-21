@@ -13,6 +13,68 @@ use std::rc::Rc;
 use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 
+/// Videos FFmpeg cannot read (a damaged or cut-off file): remembered by path + size + time in
+/// `<thumbnail cache>\unreadable.txt`, so the library stops re-running ffprobe / ffmpeg on them at every refresh
+/// (owner, 2026-11-22: one broken clip filled the log on each visit). A changed file (other size or time) is
+/// tried again.
+pub(super) mod unreadable {
+    use std::collections::HashSet;
+    use std::os::windows::fs::MetadataExt;
+    use std::path::{Path, PathBuf};
+    use std::sync::Mutex;
+
+    static KNOWN: Mutex<Option<(PathBuf, HashSet<String>)>> = Mutex::new(None);
+    const FILE: &str = "unreadable.txt";
+
+    fn key(file: &Path) -> Option<String> {
+        let m = std::fs::metadata(file).ok()?;
+        Some(format!("{}|{}|{}", file.display().to_string().to_lowercase(), m.len(), m.last_write_time()))
+    }
+
+    fn with<T>(cache_dir: &Path, f: impl FnOnce(&mut HashSet<String>) -> T) -> T {
+        let mut known = KNOWN.lock().unwrap_or_else(|e| e.into_inner());
+        if known.as_ref().is_none_or(|(dir, _)| dir != cache_dir) {
+            let set = std::fs::read_to_string(cache_dir.join(FILE)).unwrap_or_default().lines().map(str::to_owned).collect();
+            *known = Some((cache_dir.to_path_buf(), set));
+        }
+        f(&mut known.as_mut().expect("loaded").1)
+    }
+
+    pub fn is_known(cache_dir: &Path, file: &Path) -> bool {
+        key(file).is_some_and(|k| with(cache_dir, |set| set.contains(&k)))
+    }
+
+    pub fn remember(cache_dir: &Path, file: &Path) {
+        let Some(k) = key(file) else { return };
+        let lines = with(cache_dir, |set| set.insert(k).then(|| set.iter().cloned().collect::<Vec<_>>().join("\n")));
+        if let Some(text) = lines {
+            log::info!("[Library] {} cannot be read (damaged?): skipped until the file changes", file.display());
+            let _ = std::fs::create_dir_all(cache_dir);
+            let _ = std::fs::write(cache_dir.join(FILE), text);
+        }
+    }
+
+    #[cfg(test)]
+    mod tests {
+        #[test]
+        fn a_broken_file_is_remembered_until_it_changes() {
+            let dir = std::env::temp_dir().join(format!("lag-unreadable-{}", std::process::id()));
+            let _ = std::fs::remove_dir_all(&dir);
+            std::fs::create_dir_all(&dir).unwrap();
+            let clip = dir.join("broken.mp4");
+            std::fs::write(&clip, b"not a video").unwrap();
+            let cache = dir.join("thumbs");
+            assert!(!super::is_known(&cache, &clip));
+            super::remember(&cache, &clip);
+            assert!(super::is_known(&cache, &clip));
+            assert!(cache.join(super::FILE).is_file(), "kept across runs");
+            std::fs::write(&clip, b"now a longer, maybe repaired file").unwrap();
+            assert!(!super::is_known(&cache, &clip), "a changed file is tried again");
+            let _ = std::fs::remove_dir_all(&dir);
+        }
+    }
+}
+
 pub(super) fn probe_duration_secs(file_path: &str) -> Option<f64> {
     let ffprobe = crate::services::ffmpeg::resolve_tool("ffprobe.exe");
     let out = Command::new(&ffprobe)
@@ -162,6 +224,11 @@ pub(super) fn hydrate_single_clip(
     } else {
         let src_path = Path::new(&task.file_path);
         let thumb_path = Path::new(&task.thumbnail_path);
+        let cache_dir = thumb_path.parent().unwrap_or(Path::new("."));
+        if !thumb_path.exists() && unreadable::is_known(cache_dir, src_path) {
+            return None;
+        }
+        let mut probe_failed = false;
 
         if duration_ticks <= 0 {
             if let Some(secs) = probe_duration_secs(&task.file_path) {
@@ -172,6 +239,7 @@ pub(super) fn hydrate_single_clip(
                     }
                 }
             } else {
+                probe_failed = true;
                 log::debug!("[FFProbe] Failed to get duration for {}", task.file_path);
             }
         }
@@ -189,6 +257,10 @@ pub(super) fn hydrate_single_clip(
             let secs = duration_ticks as f64 / 10_000_000.0;
             if let Err(e) = generate_video_thumbnail(&task.file_path, thumb_path, secs) {
                 log::debug!("[FFMpeg] Failed to generate thumbnail for {}: {e}", task.file_path);
+                // neither the length nor a frame: the file cannot be read, do not try again at every refresh
+                if probe_failed && !thumb_path.exists() {
+                    unreadable::remember(cache_dir, src_path);
+                }
             }
         }
 
