@@ -279,5 +279,6 @@ Owner: "ми робимо і вносимо редактор в одне оно�
   the same *as code* as Lag's (tokens, spaces ignored) is not kept in the theme, and folders left empty go; the
   theme's name is a field in the editor's toolbar (Enter renames it in theme.toml); Settings > Interface >
   **Delete theme** (a second press within 6 s) moves the theme's folder to the Recycle Bin and chooses Lag's own
-  interface; Restart sits left of the list, so the list does not move. Still open: `font-italic` needs Inter's
-  italic font files (not bundled; a download, the owner decides).
+  interface; Restart sits left of the list, so the list does not move. `font-italic` works: Inter 4.1 italics
+  (Italic, Medium / SemiBold / Bold Italic, github.com/rsms/inter, SIL OFL 1.1, `ui/fonts/LICENSE-Inter.txt`)
+  are bundled next to the upright Inter, owner's go-ahead 2026-11-23.
