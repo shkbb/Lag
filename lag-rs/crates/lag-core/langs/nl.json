@@ -428,5 +428,11 @@
   "ThemeEditor_Op_up": "omhoog verplaatst",
   "ThemeEditor_Op_down": "omlaag verplaatst",
   "ThemeEditor_Op_add-rect": "vorm toegevoegd",
-  "ThemeEditor_Op_add-text": "tekst toegevoegd"
+  "ThemeEditor_Op_add-text": "tekst toegevoegd",
+  "Theme_Delete": "Thema verwijderen",
+  "Theme_DeleteConfirm": "Druk nogmaals op ‘Thema verwijderen’ om ‘{0}’ naar de Prullenbak te verplaatsen",
+  "Theme_Deleted": "‘{0}’ staat in de Prullenbak (daar te herstellen). De eigen interface van Lag is gekozen.",
+  "Theme_ErrDeleteBuiltin": "De eigen interface van Lag kan niet worden verwijderd: kies eerst een thema",
+  "ThemeEditor_Renamed": "Hernoemd: {0}",
+  "ThemeEditor_CtaHint": "In GTA VI hebben de hoofdknoppen (opnemen, opslaan) een eigen verloop: cta-brush en cta-hover-brush"
 }

@@ -428,5 +428,11 @@
   "ThemeEditor_Op_up": "siirretty ylös",
   "ThemeEditor_Op_down": "siirretty alas",
   "ThemeEditor_Op_add-rect": "muoto lisätty",
-  "ThemeEditor_Op_add-text": "teksti lisätty"
+  "ThemeEditor_Op_add-text": "teksti lisätty",
+  "Theme_Delete": "Poista teema",
+  "Theme_DeleteConfirm": "Paina ”Poista teema” uudelleen siirtääksesi teeman ”{0}” roskakoriin",
+  "Theme_Deleted": "”{0}” on roskakorissa (sieltä sen voi palauttaa). Lagin oma käyttöliittymä on valittu.",
+  "Theme_ErrDeleteBuiltin": "Lagin omaa käyttöliittymää ei voi poistaa: valitse ensin teema",
+  "ThemeEditor_Renamed": "Nimetty uudelleen: {0}",
+  "ThemeEditor_CtaHint": "GTA VI:ssä päänapeilla (tallennus, tallenna) on oma liukuvärinsä: cta-brush ja cta-hover-brush"
 }

@@ -468,6 +468,42 @@ pub fn new_from_builtin(root: &Path, name: &str) -> Result<ThemeInfo, String> {
     read(&target)
 }
 
+/// Renames a theme (its `name` in theme.toml; the folder stays). Returns the theme.
+pub fn rename(dir: &Path, name: &str) -> Result<ThemeInfo, String> {
+    let name = name.trim();
+    if name.is_empty() {
+        return Err(tr("Theme_ErrNoName").to_owned());
+    }
+    let path = dir.join("theme.toml");
+    let text = std::fs::read_to_string(&path).map_err(|e| e.to_string())?;
+    let mut table: toml::Table = toml::from_str(&text).map_err(|e| format!("theme.toml: {e}"))?;
+    table.insert("name".into(), toml::Value::String(name.to_owned()));
+    std::fs::write(&path, toml::to_string(&table).map_err(|e| e.to_string())?).map_err(|e| e.to_string())?;
+    read(dir)
+}
+
+/// Moves an installed theme's folder to the Recycle Bin (it can be restored from there).
+pub fn remove(theme: &ThemeInfo) -> Result<(), String> {
+    if theme.builtin {
+        return Err(tr("Theme_ErrDeleteBuiltin").to_owned());
+    }
+    use std::os::windows::ffi::OsStrExt;
+    use windows::Win32::UI::Shell::{SHFileOperationW, FOF_ALLOWUNDO, FOF_NOCONFIRMATION, FOF_NOERRORUI, FOF_SILENT, FO_DELETE, SHFILEOPSTRUCTW};
+    // a double-NUL-terminated list of one path
+    let from: Vec<u16> = theme.dir.as_os_str().encode_wide().chain([0, 0]).collect();
+    let mut op = SHFILEOPSTRUCTW {
+        wFunc: FO_DELETE,
+        pFrom: windows::core::PCWSTR(from.as_ptr()),
+        fFlags: (FOF_ALLOWUNDO | FOF_NOCONFIRMATION | FOF_SILENT | FOF_NOERRORUI).0 as u16,
+        ..Default::default()
+    };
+    let r = unsafe { SHFileOperationW(&mut op) };
+    if r != 0 || op.fAnyOperationsAborted.as_bool() || theme.dir.exists() {
+        return Err(format!("{} ({r})", theme.dir.display()));
+    }
+    Ok(())
+}
+
 /// Installs a `.lagtheme` file into the themes folder (checked first; never over an installed theme: the same
 /// file twice is two themes, `name-2`). Returns the theme.
 pub fn import(file: &Path) -> Result<ThemeInfo, String> {
@@ -660,6 +696,16 @@ mod tests {
         let Err(e) = compile_theme(&theme) else { panic!("a broken theme compiled") };
         assert!(e.contains("app.slint") && !e.contains(&build.display().to_string()), "{e}");
         let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn a_theme_is_renamed_in_its_manifest() {
+        let d = temp("rename");
+        std::fs::write(d.join("theme.toml"), "name = \"Old\"\nauthor = \"me\"\napi = 1\n").unwrap();
+        let t = rename(&d, "  Нова назва ").unwrap();
+        assert_eq!((t.name.as_str(), t.author.as_str()), ("Нова назва", "me"), "the other keys stay");
+        assert!(rename(&d, "   ").is_err());
+        let _ = std::fs::remove_dir_all(&d);
     }
 
     #[test]

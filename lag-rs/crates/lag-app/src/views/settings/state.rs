@@ -34,6 +34,8 @@ pub(super) struct State {
     pub(super) theme_note: String,
     /// which buttons row the note belongs to ("theme-own" / "theme-share")
     pub(super) theme_note_at: &'static str,
+    /// "Delete theme" was pressed once for this theme (a second press within a few seconds moves it to the bin)
+    pub(super) theme_delete: Option<(String, std::time::Instant)>,
 }
 
 impl State {
@@ -57,6 +59,7 @@ impl State {
             cloud: Default::default(),
             theme_note: String::new(),
             theme_note_at: "",
+            theme_delete: None,
         }
     }
 

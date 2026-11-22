@@ -428,5 +428,11 @@
   "ThemeEditor_Op_up": "liigutatud üles",
   "ThemeEditor_Op_down": "liigutatud alla",
   "ThemeEditor_Op_add-rect": "kujund lisatud",
-  "ThemeEditor_Op_add-text": "tekst lisatud"
+  "ThemeEditor_Op_add-text": "tekst lisatud",
+  "Theme_Delete": "Kustuta teema",
+  "Theme_DeleteConfirm": "Vajuta uuesti „Kustuta teema“, et viia „{0}“ prügikasti",
+  "Theme_Deleted": "„{0}“ on prügikastis (sealt saab taastada). Valitud on Lagi enda liides.",
+  "Theme_ErrDeleteBuiltin": "Lagi enda liidest ei saa kustutada: vali esmalt teema",
+  "ThemeEditor_Renamed": "Ümber nimetatud: {0}",
+  "ThemeEditor_CtaHint": "GTA VI-s on põhinuppudel (salvestus, salvestamine) oma üleminek: cta-brush ja cta-hover-brush"
 }

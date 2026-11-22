@@ -428,5 +428,11 @@
   "ThemeEditor_Op_up": "moved up",
   "ThemeEditor_Op_down": "moved down",
   "ThemeEditor_Op_add-rect": "shape added",
-  "ThemeEditor_Op_add-text": "text added"
+  "ThemeEditor_Op_add-text": "text added",
+  "Theme_Delete": "Delete theme",
+  "Theme_DeleteConfirm": "Press \"Delete theme\" again to move \"{0}\" to the Recycle Bin",
+  "Theme_Deleted": "\"{0}\" is in the Recycle Bin (it can be restored from there). Lag's own interface is chosen.",
+  "Theme_ErrDeleteBuiltin": "Lag's own interface cannot be deleted: choose a theme first",
+  "ThemeEditor_Renamed": "Renamed: {0}",
+  "ThemeEditor_CtaHint": "In GTA VI the main buttons (record, save) use their own gradient: cta-brush and cta-hover-brush"
 }

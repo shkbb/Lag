@@ -428,5 +428,11 @@
   "ThemeEditor_Op_up": "перамешчана вышэй",
   "ThemeEditor_Op_down": "перамешчана ніжэй",
   "ThemeEditor_Op_add-rect": "дададзена фігура",
-  "ThemeEditor_Op_add-text": "дададзены тэкст"
+  "ThemeEditor_Op_add-text": "дададзены тэкст",
+  "Theme_Delete": "Выдаліць тэму",
+  "Theme_DeleteConfirm": "Націсніце «Выдаліць тэму» яшчэ раз, каб перамясціць «{0}» у Сметніцу",
+  "Theme_Deleted": "«{0}» у Сметніцы (адтуль яе можна аднавіць). Выбраны інтэрфейс Lag.",
+  "Theme_ErrDeleteBuiltin": "Убудаваны інтэрфейс Lag не выдаліць: спачатку выберыце тэму",
+  "ThemeEditor_Renamed": "Назва зменена: {0}",
+  "ThemeEditor_CtaHint": "У GTA VI галоўныя кнопкі (запіс, захаванне) маюць свой градыент: cta-brush і cta-hover-brush"
 }

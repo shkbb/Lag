@@ -428,5 +428,11 @@
   "ThemeEditor_Op_up": "上へ移動しました",
   "ThemeEditor_Op_down": "下へ移動しました",
   "ThemeEditor_Op_add-rect": "図形を追加しました",
-  "ThemeEditor_Op_add-text": "テキストを追加しました"
+  "ThemeEditor_Op_add-text": "テキストを追加しました",
+  "Theme_Delete": "テーマを削除",
+  "Theme_DeleteConfirm": "もう一度「テーマを削除」を押すと「{0}」をごみ箱に移動します",
+  "Theme_Deleted": "「{0}」はごみ箱にあります（そこから復元できます）。Lag 本来のインターフェースを選択しました。",
+  "Theme_ErrDeleteBuiltin": "Lag 本来のインターフェースは削除できません。先にテーマを選んでください",
+  "ThemeEditor_Renamed": "名前を変更しました：{0}",
+  "ThemeEditor_CtaHint": "GTA VI ではメインボタン（録画・保存）に専用のグラデーションがあります：cta-brush と cta-hover-brush"
 }

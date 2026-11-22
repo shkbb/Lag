@@ -428,5 +428,11 @@
   "ThemeEditor_Op_up": "pārvietots augšup",
   "ThemeEditor_Op_down": "pārvietots lejup",
   "ThemeEditor_Op_add-rect": "pievienota figūra",
-  "ThemeEditor_Op_add-text": "pievienots teksts"
+  "ThemeEditor_Op_add-text": "pievienots teksts",
+  "Theme_Delete": "Dzēst tēmu",
+  "Theme_DeleteConfirm": "Vēlreiz nospiediet “Dzēst tēmu”, lai pārvietotu “{0}” uz atkritni",
+  "Theme_Deleted": "“{0}” ir atkritnē (no turienes to var atjaunot). Izvēlēta Lag saskarne.",
+  "Theme_ErrDeleteBuiltin": "Lag saskarni nevar izdzēst: vispirms izvēlieties tēmu",
+  "ThemeEditor_Renamed": "Pārdēvēts: {0}",
+  "ThemeEditor_CtaHint": "GTA VI režīmā galvenajām pogām (ierakstīt, saglabāt) ir savs gradients: cta-brush un cta-hover-brush"
 }

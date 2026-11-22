@@ -428,5 +428,11 @@
   "ThemeEditor_Op_up": "perkelta aukštyn",
   "ThemeEditor_Op_down": "perkelta žemyn",
   "ThemeEditor_Op_add-rect": "pridėta figūra",
-  "ThemeEditor_Op_add-text": "pridėtas tekstas"
+  "ThemeEditor_Op_add-text": "pridėtas tekstas",
+  "Theme_Delete": "Ištrinti temą",
+  "Theme_DeleteConfirm": "Dar kartą spauskite „Ištrinti temą“, kad perkeltumėte „{0}“ į šiukšlinę",
+  "Theme_Deleted": "„{0}“ yra šiukšlinėje (iš ten galima atkurti). Pasirinkta Lag sąsaja.",
+  "Theme_ErrDeleteBuiltin": "Lag sąsajos ištrinti negalima: pirmiausia pasirinkite temą",
+  "ThemeEditor_Renamed": "Pervadinta: {0}",
+  "ThemeEditor_CtaHint": "GTA VI režime pagrindiniai mygtukai (įrašyti, išsaugoti) turi savo gradientą: cta-brush ir cta-hover-brush"
 }

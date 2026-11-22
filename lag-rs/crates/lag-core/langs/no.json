@@ -428,5 +428,11 @@
   "ThemeEditor_Op_up": "flyttet opp",
   "ThemeEditor_Op_down": "flyttet ned",
   "ThemeEditor_Op_add-rect": "figur lagt til",
-  "ThemeEditor_Op_add-text": "tekst lagt til"
+  "ThemeEditor_Op_add-text": "tekst lagt til",
+  "Theme_Delete": "Slett tema",
+  "Theme_DeleteConfirm": "Trykk «Slett tema» igjen for å flytte «{0}» til papirkurven",
+  "Theme_Deleted": "«{0}» ligger i papirkurven (den kan gjenopprettes derfra). Lags eget grensesnitt er valgt.",
+  "Theme_ErrDeleteBuiltin": "Lags eget grensesnitt kan ikke slettes: velg et tema først",
+  "ThemeEditor_Renamed": "Omdøpt: {0}",
+  "ThemeEditor_CtaHint": "I GTA VI har hovedknappene (ta opp, lagre) sin egen gradient: cta-brush og cta-hover-brush"
 }

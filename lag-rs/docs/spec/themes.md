@@ -272,8 +272,12 @@ Owner: "ми робимо і вносимо редактор в одне оно�
   SettingsPage" for a page used once (the hint now needs 2+ uses or a `for`); untranslated errors / statuses
   (26 keys); the canvas page is marked in the toolbar; frames of a picked element stayed after a page switch; a
   delete did not select the element around it; the picker kept the old colour after a theme colour was chosen;
-  a compile error says "Not applied, the code has an error: ...". Known, left: an expression colour shows an
-  empty swatch; `font-italic` has no Inter italic to show; in GTA VI the main buttons use `cta-brush`, not
-  `accent`; a picture brought in and then undone stays in `art/`; add + delete in a one-line element keeps the
-  file in the theme (formatting differs; Undo is exact); themes cannot be renamed / deleted from Lag yet; after
-  "New theme" the Restart button appears where the list was (a fast second click restarts).
+  a compile error says "Not applied, the code has an error: ...".
+- **The small ones (2026-11-23, owner: "доробити дрібниці").** An expression colour shows "?" in its swatch;
+  in GTA VI the palette says the main buttons are `cta-brush`; pictures the editor brought in and nothing names
+  any more are removed when the editor closes (Redo may need them until then), with an `art/` left empty; a file
+  the same *as code* as Lag's (tokens, spaces ignored) is not kept in the theme, and folders left empty go; the
+  theme's name is a field in the editor's toolbar (Enter renames it in theme.toml); Settings > Interface >
+  **Delete theme** (a second press within 6 s) moves the theme's folder to the Recycle Bin and chooses Lag's own
+  interface; Restart sits left of the list, so the list does not move. Still open: `font-italic` needs Inter's
+  italic font files (not bundled; a download, the owner decides).

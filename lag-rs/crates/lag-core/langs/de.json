@@ -428,5 +428,11 @@
   "ThemeEditor_Op_up": "nach oben verschoben",
   "ThemeEditor_Op_down": "nach unten verschoben",
   "ThemeEditor_Op_add-rect": "Form hinzugefügt",
-  "ThemeEditor_Op_add-text": "Text hinzugefügt"
+  "ThemeEditor_Op_add-text": "Text hinzugefügt",
+  "Theme_Delete": "Theme löschen",
+  "Theme_DeleteConfirm": "Nochmals „Theme löschen“ drücken, um „{0}“ in den Papierkorb zu verschieben",
+  "Theme_Deleted": "„{0}“ ist im Papierkorb (von dort wiederherstellbar). Lags eigene Oberfläche ist gewählt.",
+  "Theme_ErrDeleteBuiltin": "Lags eigene Oberfläche lässt sich nicht löschen: zuerst ein Theme wählen",
+  "ThemeEditor_Renamed": "Umbenannt: {0}",
+  "ThemeEditor_CtaHint": "In GTA VI haben die Hauptknöpfe (Aufnahme, Speichern) einen eigenen Verlauf: cta-brush und cta-hover-brush"
 }

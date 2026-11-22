@@ -172,6 +172,40 @@ pub(super) fn bind_controls(ui: &AppWindow, ctx: &Rc<AppCtx>, state: &Rc<RefCell
                 }
             }
             "theme-restart" => crate::shell::restart(),
+            // the chosen theme to the Recycle Bin: a first press asks for a second one (QA 2026-11-22: themes could
+            // not be deleted from Lag)
+            "theme-delete" => {
+                let chosen = st.borrow().settings.ui_theme.clone().unwrap_or_else(|| crate::themes::BUILTIN.into());
+                let theme = crate::themes::list().into_iter().find(|t| t.id == chosen);
+                let Some(theme) = theme.filter(|t| !t.builtin) else {
+                    st.borrow_mut().theme_note = tr("Theme_ErrDeleteBuiltin");
+                    st.borrow_mut().theme_note_at = "theme-own";
+                    st.borrow().refresh(&ui);
+                    return;
+                };
+                let confirmed = st.borrow().theme_delete.as_ref().is_some_and(|(id, at)| *id == theme.id && at.elapsed() < Duration::from_secs(6));
+                if !confirmed {
+                    st.borrow_mut().theme_delete = Some((theme.id.clone(), std::time::Instant::now()));
+                    st.borrow_mut().theme_note = i18n::format("Theme_DeleteConfirm", &[&theme.name]).unwrap_or_default();
+                    st.borrow_mut().theme_note_at = "theme-own";
+                    st.borrow().refresh(&ui);
+                    return;
+                }
+                st.borrow_mut().theme_delete = None;
+                match crate::themes::remove(&theme) {
+                    Ok(()) => {
+                        st.borrow_mut().theme_note = i18n::format("Theme_Deleted", &[&theme.name]).unwrap_or_default();
+                        st.borrow_mut().theme_note_at = "theme-own";
+                        save(&ui, &c, &st, "ui-theme", |s| s.settings.ui_theme = None);
+                    }
+                    Err(e) => {
+                        log::warn!("[Theme] delete failed: {e}");
+                        st.borrow_mut().theme_note = e;
+                        st.borrow_mut().theme_note_at = "theme-own";
+                        st.borrow().refresh(&ui);
+                    }
+                }
+            }
             // a new theme (Lag's own interface until something is changed in it, docs/spec/themes.md), chosen
             "theme-new" => {
                 let Some(root) = crate::themes::user_dir() else { return };

@@ -428,5 +428,11 @@
   "ThemeEditor_Op_up": "flyttat upp",
   "ThemeEditor_Op_down": "flyttat ned",
   "ThemeEditor_Op_add-rect": "form tillagd",
-  "ThemeEditor_Op_add-text": "text tillagd"
+  "ThemeEditor_Op_add-text": "text tillagd",
+  "Theme_Delete": "Ta bort tema",
+  "Theme_DeleteConfirm": "Tryck på ”Ta bort tema” igen för att flytta ”{0}” till papperskorgen",
+  "Theme_Deleted": "”{0}” ligger i papperskorgen (kan återställas därifrån). Lags eget gränssnitt är valt.",
+  "Theme_ErrDeleteBuiltin": "Lags eget gränssnitt kan inte tas bort: välj ett tema först",
+  "ThemeEditor_Renamed": "Omdöpt: {0}",
+  "ThemeEditor_CtaHint": "I GTA VI har huvudknapparna (spela in, spara) en egen gradient: cta-brush och cta-hover-brush"
 }

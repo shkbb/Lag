@@ -63,16 +63,18 @@ export component SettingsRow {
                     items: root.data.options; flags: root.language-flags; selected-index: root.data.selected;
                     selected(i) => { root.choose(root.data.id, i); }
                 }
+                // left of the list, so the list stays where it was (QA 2026-11-22: a quick second click on the
+                // list after "New theme" hit Restart, which had appeared in its place)
+                if root.data.id == "ui-theme" && root.data.custom: VerticalLayout {
+                    alignment: center;
+                    RChipButton { text: Tr.t("Theme_Restart", Tr.rev); active: true; clicked => { root.action("theme-restart"); } }
+                }
                 if root.data.id != "language": LagComboBox {
                     max-width: root.data.id == "output" ? 240px : 460px;
                     min-width: root.data.id == "bitrate" ? 120px : 0px;
                     items: root.data.options;
                     selected-index: root.data.selected; enabled: root.data.enabled;
                     selected(i) => { root.choose(root.data.id, i); }
-                }
-                if root.data.id == "ui-theme" && root.data.custom: VerticalLayout {
-                    alignment: center;
-                    RChipButton { text: Tr.t("Theme_Restart", Tr.rev); active: true; clicked => { root.action("theme-restart"); } }
                 }
                 if root.data.id == "bitrate" && root.data.custom: HorizontalLayout {
                     spacing: 4px;
@@ -181,6 +183,7 @@ export component SettingsRow {
             if root.data.id == "theme-own": RChipButton { text: Tr.t("Theme_New", Tr.rev); clicked => { root.action("theme-new"); } }
             if root.data.id == "theme-own": RChipButton { text: Tr.t("Theme_Edit", Tr.rev); clicked => { root.action("theme-edit"); } }
             if root.data.id == "theme-own": RChipButton { text: Tr.t("Theme_Preview", Tr.rev); clicked => { root.action("theme-preview"); } }
+            if root.data.id == "theme-own": RChipButton { text: Tr.t("Theme_Delete", Tr.rev); danger: true; clicked => { root.action("theme-delete"); } }
             if root.data.id == "theme-share": RChipButton { text: Tr.t("Theme_Import", Tr.rev); clicked => { root.action("theme-import"); } }
             if root.data.id == "theme-share": RChipButton { text: Tr.t("Theme_Export", Tr.rev); clicked => { root.action("theme-export"); } }
             if root.data.id == "theme-share": RChipButton { text: Tr.t("Theme_OpenFolder", Tr.rev); clicked => { root.action("theme-folder"); } }

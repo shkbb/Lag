@@ -24,6 +24,8 @@ export struct EditorProp {
     options: [ComboBoxItemData],
     option-index: int,
     swatch: color,
+    // the swatch's colour is known (a plain colour or a palette name); false: an expression (shown as ?)
+    known: bool,
     // kind 7: the picture the file names (empty when it is not a plain file)
     picture: image,
 }
@@ -33,7 +35,7 @@ export struct EditorCrumb { label: string, index: int, current: bool }
 
 // One colour of the theme's palette: what shows in the chosen mode. header: the section title on the first
 // colour of a section ("" on the others); index: which colour, for set-token
-export struct EditorToken { header: string, name: string, value: string, swatch: color, index: int }
+export struct EditorToken { header: string, name: string, value: string, swatch: color, index: int, known: bool }
 
 component TokenRow {
     in property <EditorToken> token;
@@ -62,6 +64,7 @@ component TokenRow {
                     border-width: token-swatch-ta.has-hover ? 2px : 1px;
                     border-color: token-swatch-ta.has-hover ? Theme.accent : Theme.border-strong;
                     background: root.token.swatch;
+                    if !root.token.known: Text { text: "?"; color: Theme.text-faint; font-size: 12px; horizontal-alignment: center; vertical-alignment: center; }
                     token-swatch-ta := TouchArea { mouse-cursor: pointer; clicked => { root.pick-color(root.token.index); } }
                 }
             }
@@ -116,6 +119,8 @@ component PropRow {
                 border-width: swatch-ta.has-hover ? 2px : 1px;
                 border-color: swatch-ta.has-hover ? Theme.accent : Theme.border-strong;
                 background: root.prop.swatch;
+                // an expression (`root.recording ? ... : ...`): its colour depends on the state, not one colour
+                if !root.prop.known && root.prop.value != "": Text { text: "?"; color: Theme.text-faint; font-size: 12px; horizontal-alignment: center; vertical-alignment: center; }
                 swatch-ta := TouchArea { mouse-cursor: pointer; clicked => { root.pick-color(root.prop.name); } }
             }
         }
@@ -362,6 +367,7 @@ export component ThemeEditorWindow inherits Window {
     in property <length> canvas-min-width: 900px;
     in property <length> canvas-min-height: 600px;
     in property <string> theme-name;
+    callback rename(string);
     // the page on the canvas (0 settings, 1 library, 2 player, 3 editor), marked in the toolbar
     in-out property <int> current-page: 1;
     // the selected element (canvas coordinates) and what it is
@@ -427,7 +433,12 @@ export component ThemeEditorWindow inherits Window {
         // toolbar
         HorizontalLayout {
             spacing: 8px;
-            Text { text: root.theme-name; color: Theme.text-hi; font-size: 16px; font-weight: 700; vertical-alignment: center; }
+            // the theme's name: Enter renames it (theme.toml)
+            name-input := LagTextInput {
+                width: 220px;
+                text: root.theme-name;
+                accepted(t) => { root.rename(t); }
+            }
             Rectangle { width: 10px; }
             RChipButton { text: Tr.t("Nav_Library", Tr.rev); active: root.current-page == 1; clicked => { root.page(1); } }
             RChipButton { text: Tr.t("Nav_Player", Tr.rev); active: root.current-page == 2; clicked => { root.page(2); } }
@@ -591,6 +602,13 @@ export component ThemeEditorWindow inherits Window {
                                 wrap: word-wrap;
                                 vertical-alignment: center;
                             }
+                        }
+                        // GTA VI's main buttons are the sunset gradient, not the accent (QA 2026-11-22)
+                        if root.has-modes && root.palette-mode == "neon": Text {
+                            text: Tr.t("ThemeEditor_CtaHint", Tr.rev);
+                            color: Theme.text-faint;
+                            font-size: 11.5px;
+                            wrap: word-wrap;
                         }
                         if root.tokens.length > 0 || root.token-filter != "": LagTextInput {
                             text <=> root.token-filter;

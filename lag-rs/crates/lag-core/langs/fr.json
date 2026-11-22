@@ -428,5 +428,11 @@
   "ThemeEditor_Op_up": "déplacé vers le haut",
   "ThemeEditor_Op_down": "déplacé vers le bas",
   "ThemeEditor_Op_add-rect": "forme ajoutée",
-  "ThemeEditor_Op_add-text": "texte ajouté"
+  "ThemeEditor_Op_add-text": "texte ajouté",
+  "Theme_Delete": "Supprimer le thème",
+  "Theme_DeleteConfirm": "Appuyez de nouveau sur « Supprimer le thème » pour mettre « {0} » dans la Corbeille",
+  "Theme_Deleted": "« {0} » est dans la Corbeille (restaurable depuis là). L'interface de Lag est choisie.",
+  "Theme_ErrDeleteBuiltin": "L'interface de Lag ne peut pas être supprimée : choisissez d'abord un thème",
+  "ThemeEditor_Renamed": "Renommé : {0}",
+  "ThemeEditor_CtaHint": "Dans GTA VI, les boutons principaux (enregistrer, sauvegarder) ont leur propre dégradé : cta-brush et cta-hover-brush"
 }

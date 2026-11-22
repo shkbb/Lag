@@ -325,6 +325,8 @@ struct State {
     token_filter: String,
     /// what the colour picker changes
     picker: Option<Target>,
+    /// pictures this editor copied into the theme (removed at the end when nothing names them any more)
+    imported: Vec<PathBuf>,
 }
 
 #[derive(Clone)]
@@ -598,9 +600,8 @@ fn props_of(st: &State, s: &Source) -> Vec<EditorProp> {
             let (kind, label, options) = kind_of(&t)?;
             let value = node.as_ref().and_then(|n| binding_text(n, &name)).unwrap_or_default();
             // a literal colour, or a colour of the theme's palette (`Theme.on-accent`) as the chosen mode shows it
-            let swatch = parse_color(&value)
-                .or_else(|| palette::colour_named(&value, &st.tokens, &st.mode.borrow()))
-                .unwrap_or(Color::from_argb_u8(0, 0, 0, 0));
+            let known = parse_color(&value).or_else(|| palette::colour_named(&value, &st.tokens, &st.mode.borrow()));
+            let swatch = known.unwrap_or(Color::from_argb_u8(0, 0, 0, 0));
             // `ImageFit.cover` or `cover`: which of the values
             let short = value.rsplit('.').next().unwrap_or(&value).trim();
             let option_index = options.iter().position(|o| o == short).map_or(-1, |i| i as i32);
@@ -616,6 +617,7 @@ fn props_of(st: &State, s: &Source) -> Vec<EditorProp> {
                 )),
                 option_index,
                 swatch,
+                known: known.is_some(),
                 picture,
             })
         })
@@ -733,20 +735,45 @@ fn own_path(st: &State, file: &Path) -> Result<PathBuf, String> {
     Ok(st.dir.join(rel))
 }
 
-/// Writes the theme's own `target` (None: removes it). A text the same as Lag's own file is not kept: the theme
-/// inherits Lag's (and its later versions).
+/// The same code, whatever the spaces and line breaks between its tokens (a shape added to a one-line element
+/// and removed again leaves the `}` on a line of its own: still Lag's file).
+fn same_code(a: &str, b: &str) -> bool {
+    let tokens = |t: &str| {
+        i_slint_compiler::lexer::lex(t)
+            .into_iter()
+            .filter(|k| k.kind != SyntaxKind::Whitespace)
+            .map(|k| (k.kind, k.text))
+            .collect::<Vec<_>>()
+    };
+    a == b || tokens(a) == tokens(b)
+}
+
+/// Writes the theme's own `target` (None: removes it). A text the same as Lag's own file (as code) is not kept:
+/// the theme inherits Lag's (and its later versions).
 fn write_own(st: &State, target: &Path, text: Option<&str>) -> Result<(), String> {
     let lag = target.strip_prefix(&st.dir).ok().map(|rel| ui_twin::builtin_dir().join(rel));
-    let same_as_lag = text.is_some_and(|t| lag.as_ref().and_then(|l| std::fs::read_to_string(l).ok()).as_deref() == Some(t));
+    let lag_text = lag.as_ref().and_then(|l| std::fs::read_to_string(l).ok());
+    let same_as_lag = text.is_some_and(|t| lag_text.as_deref().is_some_and(|l| same_code(t, l)));
     match text {
         Some(t) if !same_as_lag => {
             std::fs::create_dir_all(target.parent().unwrap_or(&st.dir)).map_err(|e| e.to_string())?;
             std::fs::write(target, t).map_err(|e| e.to_string())
         }
-        _ => match std::fs::remove_file(target) {
-            Err(e) if e.kind() != std::io::ErrorKind::NotFound => Err(e.to_string()),
-            _ => Ok(()),
-        },
+        _ => {
+            match std::fs::remove_file(target) {
+                Err(e) if e.kind() != std::io::ErrorKind::NotFound => return Err(e.to_string()),
+                _ => {}
+            }
+            // folders left empty go too (only empty ones: remove_dir refuses the others)
+            let mut at = target.parent();
+            while let Some(d) = at.filter(|d| d.starts_with(&st.dir) && *d != st.dir.as_path()) {
+                if std::fs::remove_dir(d).is_err() {
+                    break;
+                }
+                at = d.parent();
+            }
+            Ok(())
+        }
     }
 }
 
@@ -815,6 +842,7 @@ fn palette_rows(st: &State) -> Vec<EditorToken> {
                 value: value.into(),
                 swatch: palette::colour_of(t, &st.tokens, &mode).unwrap_or(Color::from_argb_u8(0, 0, 0, 0)),
                 index: i as i32,
+                known: palette::colour_of(t, &st.tokens, &mode).is_some(),
             }
         })
         .collect()
@@ -917,6 +945,34 @@ fn edit_selected(
     refresh_soon(ui, s);
 }
 
+/// The pictures this editor brought in that no file of the theme names any more (a change undone): removed when
+/// the editor closes (until then Redo may need them).
+fn remove_unused_pictures(st: &State) {
+    if st.imported.is_empty() {
+        return;
+    }
+    let mut texts = String::new();
+    let mut stack = vec![st.dir.clone()];
+    while let Some(d) = stack.pop() {
+        for e in std::fs::read_dir(&d).into_iter().flatten().flatten() {
+            let p = e.path();
+            if p.is_dir() {
+                stack.push(p);
+            } else if p.extension().is_some_and(|x| x == "slint") {
+                texts.push_str(&std::fs::read_to_string(&p).unwrap_or_default());
+            }
+        }
+    }
+    for pic in &st.imported {
+        let name = pic.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+        if !name.is_empty() && !texts.contains(&name) && std::fs::remove_file(pic).is_ok() {
+            log::info!("[ThemeEditor] removed the unused picture {name}");
+        }
+    }
+    // an art/ left empty goes too
+    let _ = std::fs::remove_dir(st.dir.join("art"));
+}
+
 /// `--editor-shots <out-dir>`: the editor runs in memory, the `--editor-script` runs to its end, `shot NAME` saves
 /// `<out-dir>/NAME.png`.
 fn shots_dir() -> Option<PathBuf> {
@@ -970,6 +1026,7 @@ fn open_picker(ui: &ThemeEditorWindow, st: &State, colour: Color, title: &str) {
             value: Default::default(),
             swatch: palette::colour_of(t, &st.tokens, &mode).unwrap_or(Color::from_argb_u8(0, 0, 0, 0)),
             index: i as i32,
+            known: palette::colour_of(t, &st.tokens, &mode).is_some(),
         })
         .collect();
     ui.set_picker_swatches(ModelRc::new(VecModel::from(swatches)));
@@ -989,9 +1046,16 @@ fn apply_picked(ui: &ThemeEditorWindow, s: &Rc<RefCell<State>>, value: &str) {
 /// A picture file chosen for the selected element's `name`: brought into the theme and named there.
 fn set_picture(ui: &ThemeEditorWindow, s: &Rc<RefCell<State>>, name: &str, file: &Path) {
     let rel = {
-        let st = s.borrow();
-        let Some(sel) = st.selected.as_ref() else { return };
-        import_picture(&st.dir, &st.build, file, &sel.path)
+        let mut st = s.borrow_mut();
+        let Some(sel) = st.selected.clone() else { return };
+        let art = st.dir.join("art");
+        let before: Vec<PathBuf> = std::fs::read_dir(&art).map(|e| e.flatten().map(|e| e.path()).collect()).unwrap_or_default();
+        let rel = import_picture(&st.dir, &st.build, file, &sel.path);
+        let new: Vec<PathBuf> = std::fs::read_dir(&art)
+            .map(|e| e.flatten().map(|e| e.path()).filter(|p| !before.contains(p)).collect())
+            .unwrap_or_default();
+        st.imported.extend(new);
+        rel
     };
     match rel {
         Ok(rel) => set_prop(ui, s, name, &format!("@image-url(\"{rel}\")")),
@@ -1042,6 +1106,7 @@ pub fn run(dir: PathBuf) {
         all_modes: false,
         token_filter: String::new(),
         picker: None,
+        imported: Vec::new(),
     }));
     if let Err(e) = load(&ui, &mut st.borrow_mut()) {
         report(&ui, Err(e));
@@ -1176,6 +1241,23 @@ pub fn run(dir: PathBuf) {
             let _ = i.set_global_property("MainVM", "current-page", Value::EnumerationValue("Page".into(), PAGES[p.clamp(0, 3) as usize].into()));
         }
         refresh_soon(&ui, &s);
+    });
+    let (s, weak) = (st.clone(), ui.as_weak());
+    ui.on_rename(move |name| {
+        let Some(ui) = weak.upgrade() else { return };
+        let dir = s.borrow().dir.clone();
+        let result = themes::rename(&dir, &name).map(|t| {
+            let msg = lag_core::i18n::format("ThemeEditor_Renamed", &[&t.name]).unwrap_or_default();
+            ui.set_theme_name(t.name.clone().into());
+            s.borrow_mut().theme.name = t.name;
+            msg
+        });
+        if result.is_err() {
+            // the field shows the name the theme still has
+            ui.set_theme_name("".into());
+            ui.set_theme_name(s.borrow().theme.name.clone().into());
+        }
+        report(&ui, result);
     });
     let (s, weak) = (st.clone(), ui.as_weak());
     ui.on_set_token(move |index, input| {
@@ -1335,6 +1417,7 @@ pub fn run(dir: PathBuf) {
                 Command::Wait(ms) => snap.pump_drawing(Duration::from_millis(ms)),
             }
         }
+        remove_unused_pictures(&st.borrow());
         unsafe {
             use windows::Win32::System::Threading::{GetCurrentProcess, TerminateProcess};
             let _ = TerminateProcess(GetCurrentProcess(), 0);
@@ -1342,6 +1425,7 @@ pub fn run(dir: PathBuf) {
     }
     script(&ui);
     let _ = slint::run_event_loop_until_quit();
+    remove_unused_pictures(&st.borrow());
     unsafe {
         use windows::Win32::System::Threading::{GetCurrentProcess, TerminateProcess};
         let _ = TerminateProcess(GetCurrentProcess(), 0);
@@ -1444,6 +1528,7 @@ fn command(ui: &ThemeEditorWindow, line: &str) -> Command {
             }
         }
         "picker-close" => ui.set_picker_open(false),
+        "rename" => ui.invoke_rename(rest.trim().into()),
         // `image NAME FILE`: as if FILE was chosen in the dialog for NAME
         "image" => {
             let (n, f) = rest.split_once(' ').unwrap_or((rest, ""));
@@ -1571,6 +1656,21 @@ mod tests {
         let _ = std::fs::remove_dir_all(root);
         assert_eq!(hex(Color::from_rgb_u8(0xC0, 0x39, 0x2B)), "#C0392B");
         assert_eq!(hex(Color::from_argb_u8(0x80, 0, 0xFF, 0x10)), "#00FF1080");
+    }
+
+    #[test]
+    fn spaces_do_not_make_a_file_the_themes() {
+        let lag = "Text { text: \"a  b\"; color: red; }
+";
+        assert!(same_code(lag, "Text {
+    text: \"a  b\";
+    color: red;
+}
+"));
+        assert!(!same_code(lag, "Text { text: \"a b\"; color: red; }
+"), "spaces inside a string are content");
+        assert!(!same_code(lag, "Text { text: \"a  b\"; color: blue; }
+"));
     }
 
     #[test]
