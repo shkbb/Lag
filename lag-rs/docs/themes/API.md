@@ -10,7 +10,9 @@ import { MainVM, LibraryVM, Tr } from "@lag/api.slint";
 - **in-out property**: either side may change it (e.g. the current page).
 - **callback**: the theme calls it, Lag does the work (save a replay, open a clip...). A `pure callback` is answered by Lag (`Tr.t(key, Tr.rev)` = the translated text).
 
-Lag's own building blocks can be used too: `@lag/components/...` (buttons, cards, settings rows, the clip card...), `@lag/theme/tokens.slint` (colours, sizes) and `@lag/theme/icons.slint`. The quickest start: Settings > General > Interface > **New theme** (a full copy of Lag's interface) and **Preview**.
+Lag's own building blocks can be used too: `@lag/components/...` (buttons, cards, settings rows, the clip card...), `@lag/theme/tokens.slint` (colours, sizes) and `@lag/theme/icons.slint`.
+
+**A theme holds only what it changes.** Lag puts it together over its own interface: a file the theme has (same path as in Lag's `ui\`, e.g. `theme/tokens.slint` or `views/library.slint`) replaces Lag's, every other file is Lag's, the newest one (a Lag update reaches the parts the theme did not change). `api/` is always Lag's. The quickest start: Settings > Interface > **New theme**, then **Edit** (the first change in a file copies it into the theme) or put a changed copy of one of Lag's files into the theme folder and press **Preview**.
 
 ## Globals
 

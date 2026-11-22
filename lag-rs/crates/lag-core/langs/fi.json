@@ -364,7 +364,7 @@
   "ThemePreview_Hint": "Korjaa tiedosto ja tallenna se: esikatselu latautuu itsestään.",
   "Theme_New": "Uusi teema",
   "Theme_NewName": "Oma teema",
-  "Theme_Created": "Kopio Lagin käyttöliittymästä on valmis muutettavaksi: {0}. Paina Esikatsele nähdäksesi muutokset heti.",
+  "Theme_Created": "Teema on valmis: {0}. Toistaiseksi se on Lagin oma käyttöliittymä: se tallentaa vain muutoksesi, muu päivittyy Lagin mukana. Paina Muokkaa tai Esikatsele.",
   "ThemeEditor_PickHint": "Napsauta mitä tahansa teemassa muuttaaksesi sitä",
   "ThemeEditor_Search": "Etsi ominaisuus…",
   "ThemeEditor_Undo": "Kumoa",
@@ -392,7 +392,8 @@
   "Settings_UiThemeRow": "Käyttöliittymän teema",
   "Settings_Group_OwnThemes": "OMAT TEEMAT",
   "Theme_OwnRow": "Luo ja muuta",
-  "Theme_OwnRow_Desc": "”Uusi teema” kopioi Lagin käyttöliittymän: muuta sitä editorissa hiirellä tai koodissa",
+  "Theme_OwnRow_Desc": "Teema alkaa Lagin käyttöliittymänä ja tallentaa vain muutoksesi: Lagin päivitykset ulottuvat muuhun",
   "Theme_ShareRow": "Jakaminen",
-  "Theme_ShareRow_Desc": "Teema on yksi .lagtheme-tiedosto: avaa muiden teemoja, jaa omasi"
+  "Theme_ShareRow_Desc": "Teema on yksi .lagtheme-tiedosto: avaa muiden teemoja, jaa omasi",
+  "ThemeEditor_Inherited": "Lagin oma tiedosto: ensimmäinen muutos kopioi sen teemaan"
 }

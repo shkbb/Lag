@@ -364,7 +364,7 @@
   "ThemePreview_Hint": "Verbeter het bestand en sla het op: het voorbeeld laadt vanzelf opnieuw.",
   "Theme_New": "Nieuw thema",
   "Theme_NewName": "Mijn thema",
-  "Theme_Created": "Een kopie van Lags interface staat klaar: {0}. Druk op Voorbeeld om je wijzigingen live te zien.",
+  "Theme_Created": "Thema klaar: {0}. Voorlopig is het de interface van Lag: het bewaart alleen wat je wijzigt, de rest blijft bij met Lag. Druk op Bewerken of Voorbeeld.",
   "ThemeEditor_PickHint": "Klik op iets in het thema om het te wijzigen",
   "ThemeEditor_Search": "Eigenschap zoeken…",
   "ThemeEditor_Undo": "Ongedaan maken",
@@ -392,7 +392,8 @@
   "Settings_UiThemeRow": "Interfacethema",
   "Settings_Group_OwnThemes": "JE EIGEN THEMA'S",
   "Theme_OwnRow": "Maken en wijzigen",
-  "Theme_OwnRow_Desc": "‘Nieuw thema’ kopieert de interface van Lag: wijzig hem in de editor met de muis of in code",
+  "Theme_OwnRow_Desc": "Een thema begint als de interface van Lag en bewaart alleen jouw wijzigingen: updates van Lag bereiken de rest",
   "Theme_ShareRow": "Delen",
-  "Theme_ShareRow_Desc": "Een thema is één .lagtheme-bestand: open die van anderen, deel het jouwe"
+  "Theme_ShareRow_Desc": "Een thema is één .lagtheme-bestand: open die van anderen, deel het jouwe",
+  "ThemeEditor_Inherited": "Bestand van Lag: de eerste wijziging kopieert het naar het thema"
 }

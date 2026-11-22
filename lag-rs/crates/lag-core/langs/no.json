@@ -364,7 +364,7 @@
   "ThemePreview_Hint": "Rett filen og lagre den: forhåndsvisningen lastes inn på nytt av seg selv.",
   "Theme_New": "Nytt tema",
   "Theme_NewName": "Mitt tema",
-  "Theme_Created": "En kopi av Lags grensesnitt er klar til endring: {0}. Trykk Forhåndsvis for å se endringene med en gang.",
+  "Theme_Created": "Temaet er klart: {0}. Foreløpig er det Lags eget grensesnitt: det lagrer bare det du endrer, resten følger Lags oppdateringer. Trykk Rediger eller Forhåndsvis.",
   "ThemeEditor_PickHint": "Klikk på hva som helst i temaet for å endre det",
   "ThemeEditor_Search": "Finn en egenskap…",
   "ThemeEditor_Undo": "Angre",
@@ -392,7 +392,8 @@
   "Settings_UiThemeRow": "Grensesnittema",
   "Settings_Group_OwnThemes": "DINE TEMAER",
   "Theme_OwnRow": "Lag og endre",
-  "Theme_OwnRow_Desc": "«Nytt tema» kopierer Lags grensesnitt: endre det i redigeringsprogrammet med musen eller i kode",
+  "Theme_OwnRow_Desc": "Et tema starter som Lags grensesnitt og lagrer bare endringene dine: Lags oppdateringer når resten",
   "Theme_ShareRow": "Deling",
-  "Theme_ShareRow_Desc": "Et tema er én .lagtheme-fil: åpne andres, del ditt eget"
+  "Theme_ShareRow_Desc": "Et tema er én .lagtheme-fil: åpne andres, del ditt eget",
+  "ThemeEditor_Inherited": "Lags egen fil: den første endringen kopierer den inn i temaet"
 }

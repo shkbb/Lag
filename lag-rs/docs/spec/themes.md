@@ -250,9 +250,17 @@ Owner: "ми робимо і вносимо редактор в одне оно�
   / Preview) and Sharing (Import / Export / Themes folder), three buttons a row (the old six-button row was cut
   off). General keeps language, hotkeys, startup, about. Shots `s-interface`, `z-small-interface`,
   `lang-*-interface` in the ui-check scripts.
-- **Open problem: a theme is a full copy, so it goes stale.** A theme made from Lag N keeps Lag N's pages: when
-  Lag N+1 moves or adds settings (as this tab did), the old copy cannot show them (here: the theme controls left
-  the General tab, and an old copy has no Interface tab — only the tray's "Lag's own interface" or Shift at
-  start leads back). Needs a decision before / soon after 2.2.0: theme API version in theme.toml + a notice
-  ("made for an older Lag: some new things are missing, update it from Lag's interface"), and/or themes that
-  override only some pages / components and inherit the rest from Lag.
+- **Inheritance (2026-11-22, owner: "Зроби спадкування").** A theme holds only the files it changes.
+  `themes::sync` puts it together in `%TEMP%\lag-theme-<pid>\<id>-<hash>` (Lag's `ui\` files, then the theme's
+  at the same relative paths, except `api/` which is always Lag's; only changed files are copied, extra ones
+  removed; build folders of dead processes are removed on the first sync), and `compile_theme` compiles that
+  folder with `@lag` pointing at it, so the theme's files and Lag's share one set of API globals. Compiler
+  messages name the theme's own paths. "New theme" writes only `theme.toml`. The editor shows the built theme;
+  `change` writes the theme's own copy of a file (copied from Lag on the first change, marked "Lag's own file"
+  in the panel), and a file that becomes identical to Lag's again is removed from the theme. Undo / redo keep
+  `Option<String>` (None = inherit). Export packs only the theme's own files. Verified headless: an empty theme
+  draws Lag's whole UI, a changed border in an inherited file then undone leaves the theme with nothing but
+  `theme.toml` + the palette file it changed; tests `a_theme_inherits_what_it_does_not_change`,
+  `a_new_theme_from_lags_ui_works`, `lags_own_palette_is_editable`.
+  Still true: a file the theme did change keeps the version it was copied from (a Lag update to that file does not
+  reach it) — that is the theme author's choice.

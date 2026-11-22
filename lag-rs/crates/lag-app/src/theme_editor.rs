@@ -4,6 +4,10 @@
 //! has (from the compiler's type of it) with what the file says now; a change is written into the theme's `.slint`
 //! file as a text edit, compiled, and swapped in. An edit that does not compile is undone in the file at once and
 //! the compiler's message is shown. Undo / redo keep whole-file texts.
+//!
+//! The editor shows the theme put together over Lag's own UI (`themes::sync`): every element is there, the
+//! theme's or Lag's. The first change in a file of Lag's copies it into the theme; a file that becomes the same
+//! as Lag's again leaves the theme (it inherits Lag's, newer versions included).
 use crate::{app_ctx, startup, themes, ui_twin, views, AppWindow, ComboBoxItemData, ComponentHandle, EditorCrumb, EditorProp, EditorRect, EditorToken, ThemeEditorWindow, Tr};
 use i_slint_compiler::langtype::Type;
 use i_slint_compiler::object_tree::ElementRc;
@@ -290,14 +294,17 @@ fn binding_text(el: &SyntaxNode, name: &str) -> Option<String> {
     Some(after.trim().trim_end_matches(';').trim().to_owned())
 }
 
+/// One change of one of the theme's own files (None: the theme has no such file, Lag's is used).
 struct Edit {
     path: PathBuf,
-    before: String,
-    after: String,
+    before: Option<String>,
+    after: Option<String>,
 }
 
 struct State {
     dir: PathBuf,
+    /// the theme put together over Lag's UI: what is compiled and shown (`themes::sync`)
+    build: PathBuf,
     theme: themes::ThemeInfo,
     /// the live theme inside the editor
     instance: Rc<RefCell<Option<ComponentInstance>>>,
@@ -411,8 +418,9 @@ fn load(ui: &ThemeEditorWindow, st: &mut State) -> Result<(), String> {
     let (defs, _) = themes::compile_theme(&st.theme)?;
     let def = defs.into_iter().find(|d| d.name() == "AppWindow").ok_or("the theme has no AppWindow")?;
     st.raw = def.raw_type_loader();
-    st.sources = sources(&st.dir);
-    st.tokens = palette::tokens(&st.dir);
+    st.build = themes::build_dir(&st.theme);
+    st.sources = sources(&st.build);
+    st.tokens = palette::tokens(&st.build);
     let slot = factory(def, st.instance.clone(), st.page.clone(), st.mode.clone());
     ui.instance().set_property("canvas", slot).map_err(|e| format!("{e:?}"))?;
     Ok(())
@@ -616,12 +624,16 @@ fn hex(c: Color) -> String {
     }
 }
 
-/// Brings a picture into the theme: a file inside the theme stays where it is, anything else is copied into
-/// `art/` (the same file is not copied twice; another file of the same name gets `-2`...). Returns the path to
-/// write in `@image-url(..)`, relative to `slint_file`.
-fn import_picture(theme_dir: &Path, file: &Path, slint_file: &Path) -> Result<String, String> {
+/// Brings a picture into the theme: a file of the theme (or of the built theme: one of Lag's) stays where it is,
+/// anything else is copied into the theme's `art/` (the same file is not copied twice; another file of the same
+/// name gets `-2`...). Returns the path to write in `@image-url(..)` in `slint_file` (a file of the built theme
+/// `build`, where the theme's files land at the same relative paths).
+fn import_picture(theme_dir: &Path, build: &Path, file: &Path, slint_file: &Path) -> Result<String, String> {
     let clean = i_slint_compiler::pathutils::clean_path;
-    let (dir, file) = (clean(theme_dir), clean(file));
+    let (dir, build, file) = (clean(theme_dir), clean(build), clean(file));
+    if file.starts_with(&build) {
+        return Ok(relative(&clean(slint_file.parent().unwrap_or(&build)), &file));
+    }
     let ext = file.extension().map(|e| e.to_string_lossy().to_lowercase()).unwrap_or_default();
     if !["png", "jpg", "jpeg", "svg", "gif", "webp"].contains(&ext.as_str()) {
         return Err(format!("not a picture: {}", file.display()));
@@ -647,7 +659,8 @@ fn import_picture(theme_dir: &Path, file: &Path, slint_file: &Path) -> Result<St
             }
         }
     };
-    Ok(relative(&clean(slint_file.parent().unwrap_or(&dir)), &target))
+    let in_build = build.join(target.strip_prefix(&dir).map_err(|e| e.to_string())?);
+    Ok(relative(&clean(slint_file.parent().unwrap_or(&build)), &in_build))
 }
 
 /// `to` written from `from` (a folder): `../art/bg.png`, with forward slashes.
@@ -680,24 +693,55 @@ fn crumbs(s: &Source) -> Vec<Source> {
     chain
 }
 
-/// Writes `after` into `path`, compiles; an error puts the file back and returns the compiler's message.
-fn change(ui: &ThemeEditorWindow, st: &mut State, path: &Path, after: String, record: bool) -> Result<(), String> {
-    let before = std::fs::read_to_string(path).map_err(|e| e.to_string())?;
-    if before == after {
-        return Ok(());
+/// The theme's own file for a file of the built theme.
+fn own_path(st: &State, file: &Path) -> Result<PathBuf, String> {
+    let rel = file.strip_prefix(&st.build).map_err(|_| format!("{} is not part of the theme", file.display()))?;
+    Ok(st.dir.join(rel))
+}
+
+/// Writes the theme's own `target` (None: removes it). A text the same as Lag's own file is not kept: the theme
+/// inherits Lag's (and its later versions).
+fn write_own(st: &State, target: &Path, text: Option<&str>) -> Result<(), String> {
+    let lag = target.strip_prefix(&st.dir).ok().map(|rel| ui_twin::builtin_dir().join(rel));
+    let same_as_lag = text.is_some_and(|t| lag.as_ref().and_then(|l| std::fs::read_to_string(l).ok()).as_deref() == Some(t));
+    match text {
+        Some(t) if !same_as_lag => {
+            std::fs::create_dir_all(target.parent().unwrap_or(&st.dir)).map_err(|e| e.to_string())?;
+            std::fs::write(target, t).map_err(|e| e.to_string())
+        }
+        _ => match std::fs::remove_file(target) {
+            Err(e) if e.kind() != std::io::ErrorKind::NotFound => Err(e.to_string()),
+            _ => Ok(()),
+        },
     }
-    std::fs::write(path, &after).map_err(|e| e.to_string())?;
+}
+
+/// Puts `after` in place of the theme's own `target` and compiles; an error puts `before` back and returns the
+/// compiler's message.
+fn apply(ui: &ThemeEditorWindow, st: &mut State, target: &Path, before: Option<String>, after: Option<String>, record: bool) -> Result<(), String> {
+    write_own(st, target, after.as_deref())?;
     if let Err(e) = load(ui, st) {
-        let _ = std::fs::write(path, &before);
+        let _ = write_own(st, target, before.as_deref());
         let _ = load(ui, st);
-        let rel = format!("{}{}", st.dir.display(), std::path::MAIN_SEPARATOR);
-        return Err(e.replace(&rel, ""));
+        return Err(e);
     }
     if record {
-        st.undo.push(Edit { path: path.to_path_buf(), before, after });
+        st.undo.push(Edit { path: target.to_path_buf(), before, after });
         st.redo.clear();
     }
     Ok(())
+}
+
+/// A file of the built theme (`file`, the theme's or Lag's) as `after`: written as the theme's own, compiled; an
+/// error puts the theme back and returns the compiler's message.
+fn change(ui: &ThemeEditorWindow, st: &mut State, file: &Path, after: String, record: bool) -> Result<(), String> {
+    let shown = std::fs::read_to_string(file).map_err(|e| e.to_string())?;
+    if shown == after {
+        return Ok(());
+    }
+    let target = own_path(st, file)?;
+    let before = std::fs::read_to_string(&target).ok();
+    apply(ui, st, &target, before, Some(after), record)
 }
 
 /// After a change the element may sit a line lower or higher in its file: find it again.
@@ -757,14 +801,21 @@ fn refresh(ui: &ThemeEditorWindow, st: &State) {
                     log::info!("[ThemeEditor] refresh {what}: {} ms", t0.elapsed().as_millis());
                 }
             };
-            let rel = s.path.strip_prefix(i_slint_compiler::pathutils::clean_path(&st.dir)).unwrap_or(&s.path).display().to_string();
+            let rel_path = s.path.strip_prefix(&st.build).unwrap_or(&s.path);
+            let rel = rel_path.display().to_string();
+            // still Lag's own file: the first change copies it into the theme
+            let inherited = if st.dir.join(rel_path).is_file() {
+                String::new()
+            } else {
+                format!("\n{}", lag_core::i18n::tr("ThemeEditor_Inherited"))
+            };
             ui.set_selection(ModelRc::new(VecModel::from(rects(&i, s))));
             lap("rects");
             ui.set_selected_name(s.label.clone().into());
             let template = template_of(s)
                 .map(|c| format!("\n{}", lag_core::i18n::format("ThemeEditor_Template", &[&c]).unwrap_or(c)))
                 .unwrap_or_default();
-            ui.set_selected_where(format!("{rel}:{}{template}", s.line).into());
+            ui.set_selected_where(format!("{rel}:{}{inherited}{template}", s.line).into());
             lap("template");
             let chain = crumbs(s);
             let crumbs: Vec<EditorCrumb> = chain
@@ -906,7 +957,7 @@ fn set_picture(ui: &ThemeEditorWindow, s: &Rc<RefCell<State>>, name: &str, file:
     let rel = {
         let st = s.borrow();
         let Some(sel) = st.selected.as_ref() else { return };
-        import_picture(&st.dir, file, &sel.path)
+        import_picture(&st.dir, &st.build, file, &sel.path)
     };
     match rel {
         Ok(rel) => set_prop(ui, s, name, &format!("@image-url(\"{rel}\")")),
@@ -938,6 +989,7 @@ pub fn run(dir: PathBuf) {
     ui.set_theme_name(theme.name.clone().into());
     start_donor(&settings);
     let st = Rc::new(RefCell::new(State {
+        build: themes::build_dir(&theme),
         dir,
         theme,
         instance: Rc::default(),
@@ -1005,9 +1057,9 @@ pub fn run(dir: PathBuf) {
                 let mut st = s.borrow_mut();
                 let edit = if redo { st.redo.pop() } else { st.undo.pop() };
                 let Some(edit) = edit else { return };
-                let text = if redo { edit.after.clone() } else { edit.before.clone() };
+                let (from, to) = if redo { (edit.before.clone(), edit.after.clone()) } else { (edit.after.clone(), edit.before.clone()) };
                 let old = st.selected.clone();
-                let _ = change(&ui, &mut st, &edit.path, text, false);
+                let _ = apply(&ui, &mut st, &edit.path, from, to, false);
                 if redo {
                     st.undo.push(edit)
                 } else {
@@ -1447,18 +1499,23 @@ mod tests {
     #[test]
     fn pictures_come_into_the_theme_once() {
         let root = std::env::temp_dir().join(format!("lag-picture-test-{}", std::process::id()));
-        let theme = root.join("theme");
-        std::fs::create_dir_all(theme.join("views")).unwrap();
+        let (theme, build) = (root.join("theme"), root.join("build"));
+        std::fs::create_dir_all(&theme).unwrap();
         std::fs::create_dir_all(root.join("outside")).unwrap();
         let a = root.join("outside").join("bg.png");
         std::fs::write(&a, [1u8, 2, 3]).unwrap();
-        let page = theme.join("views").join("library.slint");
-        assert_eq!(import_picture(&theme, &a, &page).unwrap(), "../art/bg.png");
-        assert_eq!(import_picture(&theme, &a, &page).unwrap(), "../art/bg.png", "the same file is not copied again");
+        let page = build.join("views").join("library.slint");
+        assert_eq!(import_picture(&theme, &build, &a, &page).unwrap(), "../art/bg.png");
+        assert!(theme.join("art").join("bg.png").is_file(), "copied into the theme itself");
+        assert_eq!(import_picture(&theme, &build, &a, &page).unwrap(), "../art/bg.png", "the same file is not copied again");
         std::fs::write(&a, [9u8]).unwrap();
-        assert_eq!(import_picture(&theme, &a, &page).unwrap(), "../art/bg-2.png", "another file of that name");
-        assert_eq!(import_picture(&theme, &theme.join("art").join("bg.png"), &theme.join("app.slint")).unwrap(), "art/bg.png");
-        assert!(import_picture(&theme, &root.join("outside").join("x.exe"), &page).is_err());
+        assert_eq!(import_picture(&theme, &build, &a, &page).unwrap(), "../art/bg-2.png", "another file of that name");
+        assert_eq!(import_picture(&theme, &build, &theme.join("art").join("bg.png"), &build.join("app.slint")).unwrap(), "art/bg.png");
+        // one of Lag's own pictures (in the built theme): named, not copied
+        let lags = build.join("theme").join("neon.jpg");
+        assert_eq!(import_picture(&theme, &build, &lags, &page).unwrap(), "../theme/neon.jpg");
+        assert!(!theme.join("art").join("neon.jpg").exists());
+        assert!(import_picture(&theme, &build, &root.join("outside").join("x.exe"), &page).is_err());
         let _ = std::fs::remove_dir_all(root);
         assert_eq!(hex(Color::from_rgb_u8(0xC0, 0x39, 0x2B)), "#C0392B");
         assert_eq!(hex(Color::from_argb_u8(0x80, 0, 0xFF, 0x10)), "#00FF1080");

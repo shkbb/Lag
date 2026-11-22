@@ -301,7 +301,9 @@ mod tests {
         let _ = std::fs::remove_dir_all(&root);
         std::fs::create_dir_all(&root).unwrap();
         let theme = crate::themes::new_from_builtin(&root, "Palette").unwrap();
-        let all = tokens(&theme.dir);
+        // the new theme holds nothing: its palette is Lag's, through the built theme
+        let build = crate::themes::sync(&theme).unwrap();
+        let all = tokens(&build);
         assert!(all.len() > 100, "{}", all.len());
         assert!(all.iter().any(|t| t.global == "Theme" && t.name == "accent" && t.section.contains("Brand Accent")));
         for mode in ["dark", "light", "neon"] {
@@ -310,10 +312,14 @@ mod tests {
         }
         let accent = all.iter().find(|t| t.global == "Theme" && t.name == "accent").unwrap();
         assert_eq!(colour_of(accent, &all, "light"), parse_color("#A9722E"));
+        // a change lands in the theme's own copy of the file
         let text = std::fs::read_to_string(&accent.path).unwrap();
         let after = set_token(&text, &accent.path, accent.offset, "light", false, "#123456").unwrap();
-        std::fs::write(&accent.path, after).unwrap();
-        let again = tokens(&theme.dir);
+        let own = theme.dir.join(accent.path.strip_prefix(&build).unwrap());
+        std::fs::create_dir_all(own.parent().unwrap()).unwrap();
+        std::fs::write(&own, after).unwrap();
+        crate::themes::sync(&theme).unwrap();
+        let again = tokens(&build);
         let accent2 = again.iter().find(|t| t.global == "Theme" && t.name == "accent").unwrap();
         assert_eq!(colour_of(accent2, &again, "light"), parse_color("#123456"));
         assert_eq!(colour_of(accent2, &again, "dark"), parse_color("#22D3EE"));

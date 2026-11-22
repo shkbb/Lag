@@ -364,7 +364,7 @@
   "ThemePreview_Hint": "Pataisykite failą ir išsaugokite: peržiūra atsinaujins pati.",
   "Theme_New": "Nauja tema",
   "Theme_NewName": "Mano tema",
-  "Theme_Created": "Lag sąsajos kopija paruošta keisti: {0}. Spauskite Peržiūrėti, kad matytumėte pakeitimus iškart.",
+  "Theme_Created": "Tema sukurta: {0}. Kol kas tai Lag sąsaja: tema saugo tik tai, ką pakeisite, o visa kita atnaujinama kartu su Lag. Spauskite „Redaguoti“ arba „Peržiūrėti“.",
   "ThemeEditor_PickHint": "Spustelėkite bet ką temoje, kad pakeistumėte",
   "ThemeEditor_Search": "Rasti savybę…",
   "ThemeEditor_Undo": "Atšaukti",
@@ -392,7 +392,8 @@
   "Settings_UiThemeRow": "Sąsajos tema",
   "Settings_Group_OwnThemes": "JŪSŲ TEMOS",
   "Theme_OwnRow": "Sukurti ir keisti",
-  "Theme_OwnRow_Desc": "„Nauja tema“ nukopijuoja Lag sąsają: keiskite ją redaktoriuje pele arba kode",
+  "Theme_OwnRow_Desc": "Tema prasideda kaip Lag sąsaja ir saugo tik jūsų pakeitimus: Lag naujinimai pasiekia visa kita",
   "Theme_ShareRow": "Dalijimasis",
-  "Theme_ShareRow_Desc": "Tema – tai vienas .lagtheme failas: atidarykite kitų, dalinkitės savo"
+  "Theme_ShareRow_Desc": "Tema – tai vienas .lagtheme failas: atidarykite kitų, dalinkitės savo",
+  "ThemeEditor_Inherited": "Lag failas: pirmas pakeitimas nukopijuos jį į temą"
 }

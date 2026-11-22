@@ -364,7 +364,7 @@
   "ThemePreview_Hint": "Correggi il file e salvalo: l’anteprima si ricarica da sola.",
   "Theme_New": "Nuovo tema",
   "Theme_NewName": "Il mio tema",
-  "Theme_Created": "Una copia dell’interfaccia di Lag è pronta da modificare: {0}. Premi Anteprima per vedere le modifiche dal vivo.",
+  "Theme_Created": "Tema pronto: {0}. Per ora è l'interfaccia di Lag: conserva solo ciò che cambi, il resto si aggiorna con Lag. Premi Modifica o Anteprima.",
   "ThemeEditor_PickHint": "Fai clic su qualsiasi cosa nel tema per modificarla",
   "ThemeEditor_Search": "Cerca una proprietà…",
   "ThemeEditor_Undo": "Annulla",
@@ -392,7 +392,8 @@
   "Settings_UiThemeRow": "Tema dell'interfaccia",
   "Settings_Group_OwnThemes": "I TUOI TEMI",
   "Theme_OwnRow": "Crea e modifica",
-  "Theme_OwnRow_Desc": "«Nuovo tema» copia l'interfaccia di Lag: modificala nell'editor con il mouse o nel codice",
+  "Theme_OwnRow_Desc": "Un tema parte dall'interfaccia di Lag e conserva solo le tue modifiche: gli aggiornamenti di Lag raggiungono il resto",
   "Theme_ShareRow": "Condivisione",
-  "Theme_ShareRow_Desc": "Un tema è un unico file .lagtheme: apri quelli degli altri, condividi il tuo"
+  "Theme_ShareRow_Desc": "Un tema è un unico file .lagtheme: apri quelli degli altri, condividi il tuo",
+  "ThemeEditor_Inherited": "File di Lag: la prima modifica lo copia nel tema"
 }

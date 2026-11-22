@@ -364,7 +364,7 @@
   "ThemePreview_Hint": "ファイルを直して保存すると、プレビューが自動で再読み込みされます。",
   "Theme_New": "新しいテーマ",
   "Theme_NewName": "マイテーマ",
-  "Theme_Created": "Lag のインターフェイスのコピーを作成しました: {0}。プレビューで変更をその場で確認できます。",
+  "Theme_Created": "テーマを作成しました：{0}。今は Lag のインターフェースそのままです。変更した部分だけが保存され、それ以外は Lag と一緒に更新されます。「編集」または「プレビュー」を押してください。",
   "ThemeEditor_PickHint": "テーマ内のどこかをクリックして変更します",
   "ThemeEditor_Search": "プロパティを検索…",
   "ThemeEditor_Undo": "元に戻す",
@@ -392,7 +392,8 @@
   "Settings_UiThemeRow": "インターフェースのテーマ",
   "Settings_Group_OwnThemes": "自分のテーマ",
   "Theme_OwnRow": "作成と編集",
-  "Theme_OwnRow_Desc": "「新しいテーマ」は Lag のインターフェースを複製します。エディターでマウス操作、またはコードで変更できます",
+  "Theme_OwnRow_Desc": "テーマは Lag のインターフェースから始まり、変更した部分だけを保存します。それ以外には Lag の更新が反映されます",
   "Theme_ShareRow": "共有",
-  "Theme_ShareRow_Desc": "テーマは 1 つの .lagtheme ファイルです。他の人のテーマを開いたり、自分のテーマを共有したりできます"
+  "Theme_ShareRow_Desc": "テーマは 1 つの .lagtheme ファイルです。他の人のテーマを開いたり、自分のテーマを共有したりできます",
+  "ThemeEditor_Inherited": "Lag のファイル：最初の変更でテーマにコピーされます"
 }

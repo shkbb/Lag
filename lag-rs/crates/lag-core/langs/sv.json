@@ -364,7 +364,7 @@
   "ThemePreview_Hint": "Rätta filen och spara den: förhandsgranskningen laddas om av sig själv.",
   "Theme_New": "Nytt tema",
   "Theme_NewName": "Mitt tema",
-  "Theme_Created": "En kopia av Lags gränssnitt är redo att ändras: {0}. Tryck Förhandsgranska för att se ändringarna direkt.",
+  "Theme_Created": "Temat är klart: {0}. Än så länge är det Lags eget gränssnitt: det sparar bara det du ändrar, resten följer Lags uppdateringar. Tryck Redigera eller Förhandsgranska.",
   "ThemeEditor_PickHint": "Klicka på vad som helst i temat för att ändra det",
   "ThemeEditor_Search": "Sök en egenskap…",
   "ThemeEditor_Undo": "Ångra",
@@ -392,7 +392,8 @@
   "Settings_UiThemeRow": "Gränssnittstema",
   "Settings_Group_OwnThemes": "DINA TEMAN",
   "Theme_OwnRow": "Skapa och ändra",
-  "Theme_OwnRow_Desc": "”Nytt tema” kopierar Lags gränssnitt: ändra det i redigeraren med musen eller i kod",
+  "Theme_OwnRow_Desc": "Ett tema börjar som Lags gränssnitt och sparar bara dina ändringar: Lags uppdateringar når resten",
   "Theme_ShareRow": "Delning",
-  "Theme_ShareRow_Desc": "Ett tema är en .lagtheme-fil: öppna andras, dela ditt eget"
+  "Theme_ShareRow_Desc": "Ett tema är en .lagtheme-fil: öppna andras, dela ditt eget",
+  "ThemeEditor_Inherited": "Lags egen fil: den första ändringen kopierar den till temat"
 }

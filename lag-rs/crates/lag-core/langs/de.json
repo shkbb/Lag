@@ -364,7 +364,7 @@
   "ThemePreview_Hint": "Korrigiere die Datei und speichere sie: Die Vorschau lädt sich selbst neu.",
   "Theme_New": "Neues Theme",
   "Theme_NewName": "Mein Theme",
-  "Theme_Created": "Eine Kopie von Lags Oberfläche ist bereit: {0}. Drücke Vorschau, um Änderungen live zu sehen.",
+  "Theme_Created": "Theme bereit: {0}. Vorerst ist es Lags eigene Oberfläche: es speichert nur, was du änderst, der Rest bleibt mit Lag aktuell. Drücke Bearbeiten oder Vorschau.",
   "ThemeEditor_PickHint": "Klicke auf etwas im Theme, um es zu ändern",
   "ThemeEditor_Search": "Eigenschaft suchen…",
   "ThemeEditor_Undo": "Rückgängig",
@@ -392,7 +392,8 @@
   "Settings_UiThemeRow": "Oberflächen-Theme",
   "Settings_Group_OwnThemes": "EIGENE THEMES",
   "Theme_OwnRow": "Erstellen und ändern",
-  "Theme_OwnRow_Desc": "„Neues Theme“ kopiert die Oberfläche von Lag: im Editor mit der Maus oder im Code ändern",
+  "Theme_OwnRow_Desc": "Ein Theme beginnt als Lags Oberfläche und speichert nur deine Änderungen: Lags Updates erreichen den Rest",
   "Theme_ShareRow": "Teilen",
-  "Theme_ShareRow_Desc": "Ein Theme ist eine .lagtheme-Datei: fremde öffnen, eigene teilen"
+  "Theme_ShareRow_Desc": "Ein Theme ist eine .lagtheme-Datei: fremde öffnen, eigene teilen",
+  "ThemeEditor_Inherited": "Datei von Lag: die erste Änderung kopiert sie ins Theme"
 }

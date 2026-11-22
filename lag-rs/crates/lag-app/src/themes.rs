@@ -4,6 +4,11 @@
 //! It talks to Lag only through `@lag/api.slint` (the globals Lag fills). A theme that does not compile never
 //! breaks Lag: the built-in UI is used and the error is kept for Settings.
 //!
+//! Inheritance: a theme holds only the files it changes. Before it is compiled, Lag's own UI and the theme's
+//! files are put together in a build folder (`sync`: Lag's file wherever the theme has none, the API always
+//! Lag's), and `@lag/` points there. A newer Lag brings its new pages and settings into every theme that did
+//! not change those files.
+//!
 //! Sharing: one `.lagtheme` file = a zip of the theme folder. Packages are checked before use: only theme files
 //! (`.slint`, pictures, fonts, text), no paths leaving the package, size limits. `.slint` is declarative: no code
 //! runs, no file or network access beyond loading the package's own pictures and fonts.
@@ -294,6 +299,106 @@ fn apply_theme(theme: &ThemeInfo) -> Result<(), String> {
     Ok(())
 }
 
+/// A path of Lag's UI that a theme cannot replace: the API (the globals Lag's Rust code drives; a theme's own copy
+/// would be globals nobody fills).
+fn is_api(rel: &[String]) -> bool {
+    rel.first().is_some_and(|f| f == "api" || f == "api.slint")
+}
+
+/// Every file of a UI folder that can be part of the interface, by its relative path.
+fn ui_files(dir: &Path) -> Vec<(Vec<String>, PathBuf)> {
+    let mut out = Vec::new();
+    let mut stack = vec![(dir.to_path_buf(), Vec::<String>::new())];
+    while let Some((d, rel)) = stack.pop() {
+        let Ok(entries) = std::fs::read_dir(&d) else { continue };
+        for e in entries.flatten() {
+            let path = e.path();
+            let mut here = rel.clone();
+            here.push(e.file_name().to_string_lossy().into_owned());
+            if path.is_dir() {
+                stack.push((path, here));
+                continue;
+            }
+            let ext = path.extension().map(|x| x.to_string_lossy().to_lowercase()).unwrap_or_default();
+            if ALLOWED.contains(&ext.as_str()) && ext != "toml" {
+                out.push((here, path));
+            }
+        }
+    }
+    out
+}
+
+/// Where a theme is put together before it is compiled: `%TEMP%\lag-theme-<process>\<theme>` (one folder per
+/// process: Lag, its preview and the editor may build the same theme at once).
+pub fn build_dir(theme: &ThemeInfo) -> PathBuf {
+    use std::hash::{Hash, Hasher};
+    let mut h = std::collections::hash_map::DefaultHasher::new();
+    theme.dir.hash(&mut h);
+    let id: String = theme.id.chars().map(|c| if c.is_alphanumeric() || c == '-' { c } else { '-' }).collect();
+    let dir = std::env::temp_dir().join(format!("lag-theme-{}", std::process::id())).join(format!("{id}-{:08x}", h.finish() as u32));
+    i_slint_compiler::pathutils::clean_path(&dir)
+}
+
+/// The build folders of processes that are gone.
+fn remove_stale_builds() {
+    let Ok(entries) = std::fs::read_dir(std::env::temp_dir()) else { return };
+    for e in entries.flatten() {
+        let name = e.file_name().to_string_lossy().into_owned();
+        let Some(pid) = name.strip_prefix("lag-theme-").and_then(|p| p.parse::<u32>().ok()) else { continue };
+        if pid == std::process::id() {
+            continue;
+        }
+        let alive = unsafe {
+            use windows::Win32::System::Threading::{OpenProcess, PROCESS_QUERY_LIMITED_INFORMATION};
+            match OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid) {
+                Ok(h) => {
+                    let _ = windows::Win32::Foundation::CloseHandle(h);
+                    true
+                }
+                Err(_) => false,
+            }
+        };
+        if !alive {
+            let _ = std::fs::remove_dir_all(e.path());
+        }
+    }
+}
+
+/// Puts the theme together over Lag's own UI in its build folder (only what changed is copied) and returns it.
+pub fn sync(theme: &ThemeInfo) -> Result<PathBuf, String> {
+    static CLEANED: std::sync::Once = std::sync::Once::new();
+    CLEANED.call_once(remove_stale_builds);
+    let build = build_dir(theme);
+    let mut wanted: std::collections::HashMap<Vec<String>, PathBuf> = ui_files(&ui_twin::builtin_dir()).into_iter().collect();
+    if !theme.builtin {
+        for (rel, path) in ui_files(&theme.dir) {
+            if !is_api(&rel) {
+                wanted.insert(rel, path);
+            }
+        }
+    }
+    let stamp = |p: &Path| std::fs::metadata(p).ok().map(|m| (m.len(), m.modified().ok()));
+    for (rel, src) in &wanted {
+        let dest = rel.iter().fold(build.clone(), |p, part| p.join(part));
+        if stamp(&dest).is_some() && stamp(&dest) == stamp(src) {
+            continue;
+        }
+        std::fs::create_dir_all(dest.parent().unwrap_or(&build)).map_err(|e| e.to_string())?;
+        std::fs::copy(src, &dest).map_err(|e| format!("{}: {e}", rel.join("/")))?;
+        // the same time as the source: the next sync sees it is current
+        if let Some(t) = std::fs::metadata(src).ok().and_then(|m| m.modified().ok()) {
+            let _ = std::fs::File::options().write(true).open(&dest).and_then(|f| f.set_modified(t));
+        }
+    }
+    // a file the theme no longer has (or Lag no longer ships)
+    for (rel, path) in ui_files(&build) {
+        if !wanted.contains_key(&rel) {
+            let _ = std::fs::remove_file(path);
+        }
+    }
+    Ok(build)
+}
+
 /// Compiles a theme the way Lag runs it: its windows (not the tray menu) plus the API globals. Returns the window
 /// definitions and their names.
 pub fn compile_theme(theme: &ThemeInfo) -> Result<(Vec<slint_interpreter::ComponentDefinition>, Vec<String>), String> {
@@ -301,10 +406,14 @@ pub fn compile_theme(theme: &ThemeInfo) -> Result<(Vec<slint_interpreter::Compon
         return Err(format!("\"{}\" needs a newer Lag (theme API {}, this Lag has {API_VERSION})", theme.name, theme.api));
     }
     validate(&theme.dir)?;
-    let entry = theme.dir.join(&theme.entry);
-    let api = ui_twin::builtin_dir();
+    // the theme over Lag's own UI; `@lag/` leads there too, so the theme's files and Lag's share one API
+    let api = sync(theme)?;
+    let entry = api.join(&theme.entry);
+    // the compiler names the build folder: the author knows the theme's own paths
+    let prefix = format!("{}{}", api.display(), std::path::MAIN_SEPARATOR);
+    let tidy = |e: String| e.replace(&prefix, "");
     // first pass: which windows the theme draws
-    let windows: Vec<String> = rt::compile(&entry, &api)?.iter().map(|c| c.name().to_owned()).collect();
+    let windows: Vec<String> = rt::compile(&entry, &api).map_err(tidy)?.iter().map(|c| c.name().to_owned()).collect();
     // the tray menu stays Lag's: it holds the way back to Lag's own interface
     let windows: Vec<String> = windows.into_iter().filter(|w| w != "TrayMenuWindow").collect();
     if windows.is_empty() {
@@ -320,30 +429,7 @@ pub fn compile_theme(theme: &ThemeInfo) -> Result<(Vec<slint_interpreter::Compon
     std::fs::write(&wrapper, text).map_err(|e| e.to_string())?;
     let defs = rt::compile(&wrapper, &api);
     let _ = std::fs::remove_file(&wrapper);
-    Ok((defs?, windows))
-}
-
-/// Files of Lag's own UI that are not part of a theme made from it: the API (a theme uses Lag's, through `@lag/`)
-/// and the developer gallery.
-const NOT_COPIED: &[&str] = &["api", "api.slint", "gallery.slint", "spike.slint"];
-
-/// Rewrites one `.slint` text of a copy of Lag's UI: imports of the API (`api/...`, `api.slint`, relative to
-/// `file_dir`) point at Lag's (`@lag/...`), so the copy shares the globals Lag drives instead of having its own.
-fn point_api_at_lag(text: &str, file_dir: &[String]) -> String {
-    let mut out = text.to_owned();
-    // from the end, so earlier byte ranges stay valid; only real code (comment-free ranges are recomputed on
-    // the original text: comments never contain these keywords followed by a path in Lag's own files)
-    let mut refs = path_refs(text);
-    refs.sort_by_key(|r| std::cmp::Reverse(r.0));
-    for (s, e) in refs {
-        let p = &text[s..e];
-        if let Some(parts) = resolve(file_dir, p) {
-            if parts.first().map(String::as_str) == Some("api") || parts == ["api.slint"] {
-                out.replace_range(s..e, &format!("@lag/{}", parts.join("/")));
-            }
-        }
-    }
-    out
+    Ok((defs.map_err(tidy)?, windows))
 }
 
 fn unique_id(root: &Path, name: &str) -> String {
@@ -358,40 +444,12 @@ fn unique_id(root: &Path, name: &str) -> String {
     (1..).map(|i| if i == 1 { base.clone() } else { format!("{base}-{i}") }).find(|id| !root.join(id).exists()).unwrap_or(base)
 }
 
-/// "New theme": a full copy of Lag's own interface as an installed theme named `name`, ready to be changed
-/// (every page, every window). Returns it. `root` = the themes folder.
+/// "New theme": a theme named `name` that is Lag's own interface until something is changed in it (it holds only
+/// what is changed; everything else comes from the Lag that runs it). Returns it. `root` = the themes folder.
 pub fn new_from_builtin(root: &Path, name: &str) -> Result<ThemeInfo, String> {
-    let src = ui_twin::builtin_dir();
     let id = unique_id(root, name);
     let target = root.join(&id);
-    let mut stack = vec![(src.clone(), Vec::<String>::new())];
-    while let Some((dir, rel)) = stack.pop() {
-        for e in std::fs::read_dir(&dir).map_err(|e| e.to_string())?.flatten() {
-            let file_name = e.file_name().to_string_lossy().into_owned();
-            if rel.is_empty() && NOT_COPIED.contains(&file_name.as_str()) {
-                continue;
-            }
-            let path = e.path();
-            let mut here = rel.clone();
-            here.push(file_name.clone());
-            if path.is_dir() {
-                stack.push((path, here));
-                continue;
-            }
-            let ext = path.extension().map(|x| x.to_string_lossy().to_lowercase()).unwrap_or_default();
-            if !ALLOWED.contains(&ext.as_str()) {
-                continue;
-            }
-            let out = here.iter().fold(target.clone(), |p, part| p.join(part));
-            std::fs::create_dir_all(out.parent().unwrap_or(&target)).map_err(|e| e.to_string())?;
-            if ext == "slint" {
-                let text = std::fs::read_to_string(&path).map_err(|e| e.to_string())?;
-                std::fs::write(&out, point_api_at_lag(&text, &rel)).map_err(|e| e.to_string())?;
-            } else {
-                std::fs::copy(&path, &out).map_err(|e| e.to_string())?;
-            }
-        }
-    }
+    std::fs::create_dir_all(&target).map_err(|e| e.to_string())?;
     let manifest = format!(
         "name = {}\nauthor = \"\"\nversion = \"1.0\"\napi = {API_VERSION}\nentry = \"app.slint\"\n",
         toml::Value::String(name.to_owned())
@@ -537,29 +595,19 @@ mod tests {
         }
     }
 
-    #[test]
-    fn a_copy_of_lags_ui_points_at_lags_api() {
-        let views = vec!["views".to_string()];
-        let text = "import { Tr } from \"../api/globals.slint\";\nimport { Theme } from \"../theme/tokens.slint\";";
-        assert_eq!(
-            point_api_at_lag(text, &views),
-            "import { Tr } from \"@lag/api/globals.slint\";\nimport { Theme } from \"../theme/tokens.slint\";"
-        );
-        assert_eq!(point_api_at_lag("export { X } from \"api.slint\";", &[]), "export { X } from \"@lag/api.slint\";");
-    }
-
-    /// The whole of Lag's interface as a new theme: it compiles, draws every window except the tray menu, and its
-    /// windows share Lag's globals (not copies of them).
+    /// A new theme is only its manifest, yet it is the whole of Lag's interface: it compiles, draws every window
+    /// except the tray menu, and its windows share Lag's globals (not copies of them).
     #[test]
     fn a_new_theme_from_lags_ui_works() {
-        // LAG_KEEP_NEW_THEME=<themes folder>: also leave a copy there (for the pixel comparison with Lag's own UI)
+        // LAG_KEEP_NEW_THEME=<themes folder>: also leave one there (for the pixel comparison with Lag's own UI)
         if let Some(keep) = std::env::var_os("LAG_KEEP_NEW_THEME") {
             new_from_builtin(Path::new(&keep), "Copy").unwrap();
         }
         let root = temp("newtheme");
         let t = new_from_builtin(&root, "Моя тема").unwrap();
         assert_eq!((t.id.as_str(), t.name.as_str()), ("моя-тема", "Моя тема"));
-        assert!(!t.dir.join("api").exists() && t.dir.join("views").join("settings.slint").is_file());
+        let own: Vec<_> = std::fs::read_dir(&t.dir).unwrap().flatten().map(|e| e.file_name()).collect();
+        assert_eq!(own, ["theme.toml"], "nothing of Lag's is copied");
         assert_eq!(new_from_builtin(&root, "Моя тема").unwrap().id, "моя-тема-2", "never over an existing one");
         ui_twin::load_builtin().unwrap();
         apply_dir(&t.dir).unwrap();
@@ -568,6 +616,41 @@ mod tests {
             assert!(windows.iter().any(|x| x == w), "{w}");
         }
         let _ = std::fs::remove_dir_all(root);
+    }
+
+    /// A theme that changes one file gets everything else from Lag, and the newest of it: a file Lag changes later
+    /// shows up in the theme; a file the theme drops comes back from Lag; the API stays Lag's even if the theme
+    /// ships its own.
+    #[test]
+    fn a_theme_inherits_what_it_does_not_change() {
+        let dir = temp("inherit");
+        std::fs::write(dir.join("theme.toml"), "name = \"One file\"\n").unwrap();
+        std::fs::create_dir_all(dir.join("theme")).unwrap();
+        std::fs::create_dir_all(dir.join("api")).unwrap();
+        let tokens = std::fs::read_to_string(ui_twin::builtin_dir().join("theme").join("tokens.slint")).unwrap();
+        let changed = tokens.replacen("#22D3EE", "#C0392B", 1);
+        assert_ne!(changed, tokens);
+        std::fs::write(dir.join("theme").join("tokens.slint"), &changed).unwrap();
+        std::fs::write(dir.join("api").join("globals.slint"), "export global MainVM { }").unwrap();
+        let theme = read(&dir).unwrap();
+        let build = sync(&theme).unwrap();
+        assert_eq!(std::fs::read_to_string(build.join("theme").join("tokens.slint")).unwrap(), changed, "the theme's own file");
+        let lag = |rel: &str| std::fs::read(ui_twin::builtin_dir().join(rel)).unwrap();
+        assert_eq!(std::fs::read(build.join("views").join("settings.slint")).unwrap(), lag("views/settings.slint"), "Lag's file");
+        assert_eq!(std::fs::read(build.join("api").join("globals.slint")).unwrap(), lag("api/globals.slint"), "Lag's API");
+        assert!(!build.join("theme.toml").exists());
+        ui_twin::load_builtin().unwrap();
+        let (_, windows) = compile_theme(&theme).unwrap();
+        assert!(windows.iter().any(|w| w == "AppWindow"), "{windows:?}");
+        // dropped from the theme: Lag's again
+        std::fs::remove_file(dir.join("theme").join("tokens.slint")).unwrap();
+        sync(&theme).unwrap();
+        assert_eq!(std::fs::read(build.join("theme").join("tokens.slint")).unwrap(), lag("theme/tokens.slint"));
+        // a compile error names the theme's own path, not the build folder
+        std::fs::write(dir.join("app.slint"), "export component AppWindow inherits Window { oops }").unwrap();
+        let Err(e) = compile_theme(&theme) else { panic!("a broken theme compiled") };
+        assert!(e.contains("app.slint") && !e.contains(&build.display().to_string()), "{e}");
+        let _ = std::fs::remove_dir_all(dir);
     }
 
     #[test]

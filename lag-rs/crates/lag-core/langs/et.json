@@ -364,7 +364,7 @@
   "ThemePreview_Hint": "Paranda fail ja salvesta see: eelvaade laadib end ise uuesti.",
   "Theme_New": "Uus teema",
   "Theme_NewName": "Minu teema",
-  "Theme_Created": "Lagi liidese koopia on muutmiseks valmis: {0}. Vajuta Eelvaade, et muudatusi kohe näha.",
+  "Theme_Created": "Teema on valmis: {0}. Praegu on see Lagi enda liides: see hoiab ainult seda, mida muudad, ülejäänu uueneb koos Lagiga. Vajuta Muuda või Eelvaade.",
   "ThemeEditor_PickHint": "Klõpsa teemas ükskõik millel, et seda muuta",
   "ThemeEditor_Search": "Otsi omadust…",
   "ThemeEditor_Undo": "Võta tagasi",
@@ -392,7 +392,8 @@
   "Settings_UiThemeRow": "Liidese teema",
   "Settings_Group_OwnThemes": "SINU TEEMAD",
   "Theme_OwnRow": "Loo ja muuda",
-  "Theme_OwnRow_Desc": "„Uus teema“ kopeerib Lagi liidese: muuda seda redaktoris hiirega või koodis",
+  "Theme_OwnRow_Desc": "Teema algab Lagi liidesena ja hoiab ainult sinu muudatusi: Lagi uuendused jõuavad ülejäänuni",
   "Theme_ShareRow": "Jagamine",
-  "Theme_ShareRow_Desc": "Teema on üks .lagtheme-fail: ava teiste omi, jaga enda oma"
+  "Theme_ShareRow_Desc": "Teema on üks .lagtheme-fail: ava teiste omi, jaga enda oma",
+  "ThemeEditor_Inherited": "Lagi fail: esimene muudatus kopeerib selle teemasse"
 }

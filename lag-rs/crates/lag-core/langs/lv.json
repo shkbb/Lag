@@ -364,7 +364,7 @@
   "ThemePreview_Hint": "Izlabojiet failu un saglabājiet to: priekšskatījums atjaunosies pats.",
   "Theme_New": "Jauna tēma",
   "Theme_NewName": "Mana tēma",
-  "Theme_Created": "Lag saskarnes kopija ir gatava izmaiņām: {0}. Nospiediet Priekšskatīt, lai redzētu labojumus uzreiz.",
+  "Theme_Created": "Tēma ir gatava: {0}. Pagaidām tā ir Lag saskarne: tēma glabā tikai jūsu izmaiņas, pārējais atjauninās kopā ar Lag. Nospiediet “Rediģēt” vai “Priekšskatīt”.",
   "ThemeEditor_PickHint": "Noklikšķiniet uz jebkā tēmā, lai to mainītu",
   "ThemeEditor_Search": "Meklēt īpašību…",
   "ThemeEditor_Undo": "Atsaukt",
@@ -392,7 +392,8 @@
   "Settings_UiThemeRow": "Saskarnes tēma",
   "Settings_Group_OwnThemes": "JŪSU TĒMAS",
   "Theme_OwnRow": "Izveidot un mainīt",
-  "Theme_OwnRow_Desc": "“Jauna tēma” nokopē Lag saskarni: mainiet to redaktorā ar peli vai kodā",
+  "Theme_OwnRow_Desc": "Tēma sākas kā Lag saskarne un glabā tikai jūsu izmaiņas: Lag atjauninājumi sasniedz pārējo",
   "Theme_ShareRow": "Kopīgošana",
-  "Theme_ShareRow_Desc": "Tēma ir viens .lagtheme fails: atveriet citu, dalieties ar savējo"
+  "Theme_ShareRow_Desc": "Tēma ir viens .lagtheme fails: atveriet citu, dalieties ar savējo",
+  "ThemeEditor_Inherited": "Lag fails: pirmās izmaiņas to nokopēs tēmā"
 }

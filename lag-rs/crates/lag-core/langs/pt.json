@@ -364,7 +364,7 @@
   "ThemePreview_Hint": "Corrija o ficheiro e guarde-o: a pré-visualização recarrega sozinha.",
   "Theme_New": "Novo tema",
   "Theme_NewName": "O meu tema",
-  "Theme_Created": "Uma cópia da interface do Lag está pronta a alterar: {0}. Prima Pré-visualizar para ver as alterações ao vivo.",
+  "Theme_Created": "Tema pronto: {0}. Por agora é a interface do Lag: guarda só o que alterar, o resto acompanha as atualizações do Lag. Prima Editar ou Pré-visualizar.",
   "ThemeEditor_PickHint": "Clique em qualquer coisa no tema para a alterar",
   "ThemeEditor_Search": "Procurar uma propriedade…",
   "ThemeEditor_Undo": "Anular",
@@ -392,7 +392,8 @@
   "Settings_UiThemeRow": "Tema da interface",
   "Settings_Group_OwnThemes": "OS SEUS TEMAS",
   "Theme_OwnRow": "Criar e alterar",
-  "Theme_OwnRow_Desc": "«Novo tema» copia a interface do Lag: altere-a no editor com o rato ou em código",
+  "Theme_OwnRow_Desc": "Um tema começa como a interface do Lag e guarda só as suas alterações: as atualizações do Lag chegam ao resto",
   "Theme_ShareRow": "Partilha",
-  "Theme_ShareRow_Desc": "Um tema é um único ficheiro .lagtheme: abra os de outros, partilhe o seu"
+  "Theme_ShareRow_Desc": "Um tema é um único ficheiro .lagtheme: abra os de outros, partilhe o seu",
+  "ThemeEditor_Inherited": "Ficheiro do Lag: a primeira alteração copia-o para o tema"
 }

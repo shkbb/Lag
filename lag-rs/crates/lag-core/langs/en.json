@@ -364,7 +364,7 @@
   "ThemePreview_Hint": "Fix the file and save it: the preview reloads by itself.",
   "Theme_New": "New theme",
   "Theme_NewName": "My theme",
-  "Theme_Created": "A copy of Lag's interface is ready to change: {0}. Press Preview to see your edits live.",
+  "Theme_Created": "Theme ready: {0}. For now it is Lag's own interface: it keeps only what you change, everything else stays up to date with Lag. Press Edit or Preview.",
   "ThemeEditor_PickHint": "Click anything in the theme to change it",
   "ThemeEditor_Search": "Find a property…",
   "ThemeEditor_Undo": "Undo",
@@ -392,7 +392,8 @@
   "Settings_UiThemeRow": "Interface theme",
   "Settings_Group_OwnThemes": "YOUR THEMES",
   "Theme_OwnRow": "Make and change",
-  "Theme_OwnRow_Desc": "“New theme” copies Lag's interface: change it in the editor with the mouse, or in code",
+  "Theme_OwnRow_Desc": "A theme starts as Lag's interface and keeps only what you change: Lag's updates still reach the rest",
   "Theme_ShareRow": "Sharing",
-  "Theme_ShareRow_Desc": "A theme is one .lagtheme file: open other people's, share yours"
+  "Theme_ShareRow_Desc": "A theme is one .lagtheme file: open other people's, share yours",
+  "ThemeEditor_Inherited": "Lag's own file: the first change copies it into the theme"
 }

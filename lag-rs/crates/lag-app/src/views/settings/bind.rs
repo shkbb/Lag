@@ -172,7 +172,7 @@ pub(super) fn bind_controls(ui: &AppWindow, ctx: &Rc<AppCtx>, state: &Rc<RefCell
                 }
             }
             "theme-restart" => crate::shell::restart(),
-            // a full copy of Lag's interface as a new theme, chosen and opened in its folder (docs/spec/themes.md)
+            // a new theme (Lag's own interface until something is changed in it, docs/spec/themes.md), chosen
             "theme-new" => {
                 let Some(root) = crate::themes::user_dir() else { return };
                 crate::themes::write_reference(&root);
@@ -180,8 +180,6 @@ pub(super) fn bind_controls(ui: &AppWindow, ctx: &Rc<AppCtx>, state: &Rc<RefCell
                     Ok(t) => {
                         st.borrow_mut().theme_note = i18n::format("Theme_Created", &[&t.dir.display().to_string()]).unwrap_or_default();
                         st.borrow_mut().theme_note_at = "theme-own";
-                        let dir = t.dir.clone();
-                        std::thread::spawn(move || open_in_explorer(&dir, false));
                         save(&ui, &c, &st, "ui-theme", |s| s.settings.ui_theme = Some(t.id.clone()));
                     }
                     Err(e) => {
@@ -192,7 +190,7 @@ pub(super) fn bind_controls(ui: &AppWindow, ctx: &Rc<AppCtx>, state: &Rc<RefCell
                     }
                 }
             }
-            // the graphical editor for the chosen theme; Lag's own cannot be changed: a new copy of it is made first
+            // the graphical editor for the chosen theme; Lag's own cannot be changed: a new theme is made first
             "theme-edit" => {
                 let chosen = st.borrow().settings.ui_theme.clone().unwrap_or_else(|| crate::themes::BUILTIN.into());
                 let theme = match crate::themes::list().into_iter().find(|t| t.id == chosen && !t.builtin) {

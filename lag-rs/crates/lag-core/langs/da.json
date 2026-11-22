@@ -364,7 +364,7 @@
   "ThemePreview_Hint": "Ret filen og gem den: forhåndsvisningen genindlæses af sig selv.",
   "Theme_New": "Nyt tema",
   "Theme_NewName": "Mit tema",
-  "Theme_Created": "En kopi af Lags brugerflade er klar til ændringer: {0}. Tryk Forhåndsvis for at se dine rettelser live.",
+  "Theme_Created": "Temaet er klar: {0}. Indtil videre er det Lags egen brugerflade: det gemmer kun det, du ændrer, resten følger Lags opdateringer. Tryk Rediger eller Forhåndsvis.",
   "ThemeEditor_PickHint": "Klik på hvad som helst i temaet for at ændre det",
   "ThemeEditor_Search": "Find en egenskab…",
   "ThemeEditor_Undo": "Fortryd",
@@ -392,7 +392,8 @@
   "Settings_UiThemeRow": "Tema for brugerfladen",
   "Settings_Group_OwnThemes": "DINE TEMAER",
   "Theme_OwnRow": "Lav og ret",
-  "Theme_OwnRow_Desc": "“Nyt tema” kopierer Lags brugerflade: ret den i editoren med musen eller i kode",
+  "Theme_OwnRow_Desc": "Et tema starter som Lags brugerflade og gemmer kun dine ændringer: Lags opdateringer når resten",
   "Theme_ShareRow": "Deling",
-  "Theme_ShareRow_Desc": "Et tema er én .lagtheme-fil: åbn andres, del dit eget"
+  "Theme_ShareRow_Desc": "Et tema er én .lagtheme-fil: åbn andres, del dit eget",
+  "ThemeEditor_Inherited": "Lags egen fil: den første ændring kopierer den ind i temaet"
 }
