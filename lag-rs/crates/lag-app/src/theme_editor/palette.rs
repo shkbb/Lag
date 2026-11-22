@@ -228,7 +228,7 @@ pub(crate) fn colour_input(input: &str) -> String {
 
 /// Puts `value` into the token at `offset`: in the branch `mode` shows, or in place of the whole expression.
 pub(crate) fn set_token(text: &str, path: &Path, offset: u32, mode: &str, all_modes: bool, value: &str) -> Result<String, String> {
-    let t = tokens_in(text, path).into_iter().find(|t| t.offset == offset).ok_or("the colour moved in its file")?;
+    let t = tokens_in(text, path).into_iter().find(|t| t.offset == offset).ok_or(lag_core::i18n::tr("ThemeEditor_ErrMoved"))?;
     let (s, e) = if all_modes {
         (0, t.expr.len())
     } else {

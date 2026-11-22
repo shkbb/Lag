@@ -343,6 +343,20 @@ fn sub_component_idx_at_path(
     current
 }
 
+/// LAG PATCH: under an `opacity: 0` (a hover icon not shown yet): not what was clicked on.
+fn transparent(item: &ItemRc) -> bool {
+    let mut at = Some(item.clone());
+    while let Some(i) = at {
+        if let Some(o) = i.downcast::<i_slint_core::items::Opacity>() {
+            if o.as_pin_ref().opacity() < 0.01 {
+                return true;
+            }
+        }
+        at = i.parent_item(i_slint_core::item_tree::ParentItemTraversalMode::FindAllParents);
+    }
+    false
+}
+
 /// LAG PATCH (lag-rs/vendor/README.md): every element under `pos` (root coordinates) in ONE pass over the item
 /// tree: the source location of the element each hit item comes from (path, offset of its qualified name), its
 /// rectangle, and whether it is the use site of a component (`Button { }` in the parent file) rather than an
@@ -373,8 +387,9 @@ pub fn sources_at(
             if !rect.contains(pos) {
                 continue;
             }
-            // not what is shown (a page under the current one, a hidden panel)
-            if !ItemRc::new(dyn_instance.clone(), flat as u32).is_visible() {
+            // not what is shown (a page under the current one, a hidden panel, a hover icon at opacity 0)
+            let item = ItemRc::new(dyn_instance.clone(), flat as u32);
+            if !item.is_visible() || transparent(&item) {
                 continue;
             }
             out.push((file.path().to_path_buf(), dbg.source_location.span.offset as u32, rect, false));

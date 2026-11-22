@@ -17,6 +17,7 @@ use slint_interpreter::{ComponentDefinition, ComponentInstance, Value};
 use std::cell::RefCell;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
+use lag_core::i18n::tr;
 use std::time::Duration;
 
 mod palette;
@@ -101,7 +102,7 @@ fn sources(dir: &Path) -> Vec<Source> {
 /// Sets `name: value;` on the element at `offset` (replaces the binding or adds it).
 pub(crate) fn set_binding(text: &str, path: &Path, offset: u32, name: &str, value: &str) -> Result<String, String> {
     let root = parse_text(text, path);
-    let el = find_element(&root, offset).ok_or("the element moved in its file; pick it again")?;
+    let el = find_element(&root, offset).ok_or(tr("ThemeEditor_ErrMoved"))?;
     let existing = binding_node(&el, name);
     let mut out = text.to_owned();
     match existing {
@@ -124,8 +125,8 @@ pub(crate) fn set_binding(text: &str, path: &Path, offset: u32, name: &str, valu
 /// Removes `name: ...;` from the element at `offset` (back to the element's default).
 pub(crate) fn remove_binding(text: &str, path: &Path, offset: u32, name: &str) -> Result<String, String> {
     let root = parse_text(text, path);
-    let el = find_element(&root, offset).ok_or("the element moved in its file; pick it again")?;
-    let b = binding_node(&el, name).ok_or("not set")?;
+    let el = find_element(&root, offset).ok_or(tr("ThemeEditor_ErrMoved"))?;
+    let b = binding_node(&el, name).ok_or(tr("ThemeEditor_ErrNotSet"))?;
     let (mut s, mut e) = (usize::from(b.text_range().start()), usize::from(b.text_range().end()));
     // the whole line when the binding is alone on it
     let line_start = text[..s].rfind('\n').map_or(0, |i| i + 1);
@@ -166,11 +167,11 @@ fn indent_at(text: &str, at: usize) -> String {
 /// afterwards (None = its parent).
 pub(crate) fn restructure(text: &str, path: &Path, offset: u32, op: &str) -> Result<(String, Option<u32>), String> {
     let root = parse_text(text, path);
-    let el = find_element(&root, offset).ok_or("the element moved in its file; pick it again")?;
+    let el = find_element(&root, offset).ok_or(tr("ThemeEditor_ErrMoved"))?;
     let mut out = text.to_owned();
     match op {
         "delete" => {
-            let b = block_of(&el).ok_or("the root of the window cannot be removed")?;
+            let b = block_of(&el).ok_or(tr("ThemeEditor_ErrRoot"))?;
             let (mut s, mut e) = range(&b);
             let line_start = text[..s].rfind('\n').map_or(0, |i| i + 1);
             let line_end = text[e..].find('\n').map_or(text.len(), |i| e + i);
@@ -182,7 +183,7 @@ pub(crate) fn restructure(text: &str, path: &Path, offset: u32, op: &str) -> Res
             Ok((out, None))
         }
         "duplicate" => {
-            let b = block_of(&el).ok_or("the root of the window cannot be copied")?;
+            let b = block_of(&el).ok_or(tr("ThemeEditor_ErrRoot"))?;
             let (s, e) = range(&b);
             // the copy without the `id :=` (two elements cannot share an id)
             let (cs, ce) = if b.kind() == SyntaxKind::SubElement { range(&el) } else { (s, e) };
@@ -193,12 +194,12 @@ pub(crate) fn restructure(text: &str, path: &Path, offset: u32, op: &str) -> Res
             Ok((out, Some(new_at as u32)))
         }
         "up" | "down" => {
-            let b = block_of(&el).ok_or("the root of the window has no neighbours")?;
+            let b = block_of(&el).ok_or(tr("ThemeEditor_ErrRoot"))?;
             let parent = b.parent().ok_or("no parent")?;
             let siblings: Vec<SyntaxNode> = parent.children().filter(is_block).collect();
             let i = siblings.iter().position(|n| n.text_range() == b.text_range()).ok_or("not found")?;
             let j = if op == "up" { i.checked_sub(1) } else { (i + 1 < siblings.len()).then_some(i + 1) };
-            let j = j.ok_or(if op == "up" { "already the first" } else { "already the last" })?;
+            let j = j.ok_or(tr(if op == "up" { "ThemeEditor_ErrFirst" } else { "ThemeEditor_ErrLast" }))?;
             let (first, second) = if i < j { (&siblings[i], &siblings[j]) } else { (&siblings[j], &siblings[i]) };
             let ((a0, a1), (b0, b1)) = (range(first), range(second));
             let (ta, mid, tb) = (&text[a0..a1], &text[a1..b0], &text[b0..b1]);
@@ -471,24 +472,50 @@ fn pick(st: &State, x: f32, y: f32) -> Option<Source> {
     hits.into_iter().nth(i)
 }
 
-/// The component an element is written in, when it is not the window itself: changing it changes every place
-/// that component is used.
-fn template_of(s: &Source) -> Option<String> {
+/// The component an element is written in, when a change to it shows in several places: the component is used
+/// more than once, or in a `for` (QA 2026-11-22: "changes every SettingsPage" for a page that exists once).
+fn template_of(st: &State, s: &Source) -> Option<String> {
     let text = std::fs::read_to_string(&s.path).ok()?;
     let root = parse_text(&text, &s.path);
     let mut n = find_element(&root, s.offset)?.parent();
-    while let Some(p) = n {
+    let name = loop {
+        let p = n?;
         if p.kind() == SyntaxKind::Component {
             let name = p.child_node(SyntaxKind::DeclaredIdentifier)?.text().to_string().trim().to_owned();
             let window = p
                 .child_node(SyntaxKind::Element)
                 .and_then(|e| e.child_node(SyntaxKind::QualifiedName))
                 .is_some_and(|q| q.text().to_string().trim() == "Window");
-            return (!window).then_some(name);
+            if window {
+                return None;
+            }
+            break name;
         }
         n = p.parent();
-    }
-    None
+    };
+    // the uses of the component (its own root carries its name too: not a use)
+    let node_of = |u: &Source| {
+        let t = std::fs::read_to_string(&u.path).ok()?;
+        find_element(&parse_text(&t, &u.path), u.offset)
+    };
+    let uses: Vec<&Source> = st
+        .sources
+        .iter()
+        .filter(|x| x.label.rsplit(" := ").next() == Some(name.as_str()))
+        .filter(|x| node_of(x).is_some_and(|e| e.parent().is_none_or(|p| p.kind() != SyntaxKind::Component)))
+        .collect();
+    let repeated = |u: &Source| {
+        let mut at = node_of(u).and_then(|e| e.parent());
+        while let Some(p) = at {
+            match p.kind() {
+                SyntaxKind::RepeatedElement => return true,
+                SyntaxKind::Component => return false,
+                _ => at = p.parent(),
+            }
+        }
+        false
+    };
+    (uses.len() > 1 || uses.first().is_some_and(|u| repeated(u))).then_some(name)
 }
 
 /// The compiler's element for a source element (its type knows every property).
@@ -554,6 +581,13 @@ fn props_of(st: &State, s: &Source) -> Vec<EditorProp> {
     let root = parse_text(&text, &s.path);
     let node = find_element(&root, s.offset);
     let mut list = el.borrow().base_type.property_list();
+    // x / y / width / height are every element's, but the builtin types do not list them (QA 2026-11-22: a new
+    // shape could not be placed or sized by number)
+    for g in ["x", "y", "width", "height"] {
+        if !list.iter().any(|(n, _)| n == g) {
+            list.push((g.into(), Type::LogicalLength));
+        }
+    }
     // properties the element declares itself (`in property <..> x`)
     list.extend(el.borrow().property_declarations.iter().map(|(k, d)| (k.clone(), d.property_type.clone())));
     let filter = st.filter.trim().to_lowercase();
@@ -636,7 +670,7 @@ fn import_picture(theme_dir: &Path, build: &Path, file: &Path, slint_file: &Path
     }
     let ext = file.extension().map(|e| e.to_string_lossy().to_lowercase()).unwrap_or_default();
     if !["png", "jpg", "jpeg", "svg", "gif", "webp"].contains(&ext.as_str()) {
-        return Err(format!("not a picture: {}", file.display()));
+        return Err(lag_core::i18n::format("ThemeEditor_ErrNotPicture", &[&file.display().to_string()]).unwrap_or_default());
     }
     let target = if file.starts_with(&dir) {
         file
@@ -723,7 +757,7 @@ fn apply(ui: &ThemeEditorWindow, st: &mut State, target: &Path, before: Option<S
     if let Err(e) = load(ui, st) {
         let _ = write_own(st, target, before.as_deref());
         let _ = load(ui, st);
-        return Err(e);
+        return Err(lag_core::i18n::format("ThemeEditor_NotApplied", &[&e]).unwrap_or(e));
     }
     if record {
         st.undo.push(Edit { path: target.to_path_buf(), before, after });
@@ -812,7 +846,7 @@ fn refresh(ui: &ThemeEditorWindow, st: &State) {
             ui.set_selection(ModelRc::new(VecModel::from(rects(&i, s))));
             lap("rects");
             ui.set_selected_name(s.label.clone().into());
-            let template = template_of(s)
+            let template = template_of(st, s)
                 .map(|c| format!("\n{}", lag_core::i18n::format("ThemeEditor_Template", &[&c]).unwrap_or(c)))
                 .unwrap_or_default();
             ui.set_selected_where(format!("{rel}:{}{inherited}{template}", s.line).into());
@@ -1046,7 +1080,7 @@ pub fn run(dir: PathBuf) {
         let Some(ui) = weak.upgrade() else { return };
         edit_selected(&ui, &s, |_, sel, text| {
             let after = remove_binding(text, &sel.path, sel.offset, &name)?;
-            Ok((after, format!("{}: {name} = default", sel.label)))
+            Ok((after, format!("{}: {name} = {}", sel.label, tr("ThemeEditor_Default"))))
         });
     });
     for redo in [false, true] {
@@ -1085,18 +1119,20 @@ pub fn run(dir: PathBuf) {
         let result = {
             let mut st = s.borrow_mut();
             let Some(sel) = st.selected.clone() else { return };
+            // the element around it, found before the change (after a delete its place leads nowhere)
+            let parent = crumbs(&sel).into_iter().rev().nth(1);
             let r = std::fs::read_to_string(&sel.path)
                 .map_err(|e| e.to_string())
                 .and_then(|t| restructure(&t, &sel.path, sel.offset, &op))
                 .and_then(|(after, next)| change(&ui, &mut st, &sel.path, after, true).map(|_| next));
             match r {
                 Ok(next) => {
-                    let parent = crumbs(&sel).into_iter().rev().nth(1);
-                    st.selected = match next {
-                        Some(at) => st.sources.iter().find(|x| x.path == sel.path && x.offset == at).cloned(),
-                        None => parent.and_then(|p| st.sources.iter().find(|x| x.path == p.path && x.label == p.label).cloned()),
-                    };
-                    Ok(format!("{}: {op}", sel.label))
+                    match (next, parent) {
+                        (Some(at), _) => st.selected = st.sources.iter().find(|x| x.path == sel.path && x.offset == at).cloned(),
+                        (None, Some(p)) => reselect(&mut st, &p),
+                        (None, None) => st.selected = None,
+                    }
+                    Ok(format!("{}: {}", sel.label, tr(&format!("ThemeEditor_Op_{op}"))))
                 }
                 Err(e) => {
                     reselect(&mut st, &sel);
@@ -1132,6 +1168,9 @@ pub fn run(dir: PathBuf) {
     let (s, weak) = (st.clone(), ui.as_weak());
     ui.on_page(move |p| {
         let Some(ui) = weak.upgrade() else { return };
+        ui.set_current_page(p);
+        // what was picked is on the other page (its frames stayed on the new one: QA 2026-11-22)
+        s.borrow_mut().selected = None;
         s.borrow().page.set(p);
         if let Some(i) = live(&s.borrow()) {
             let _ = i.set_global_property("MainVM", "current-page", Value::EnumerationValue("Page".into(), PAGES[p.clamp(0, 3) as usize].into()));
@@ -1178,6 +1217,19 @@ pub fn run(dir: PathBuf) {
     let (s, weak) = (st.clone(), ui.as_weak());
     ui.on_picker_ref(move |index| {
         let Some(ui) = weak.upgrade() else { return };
+        // the picker shows the chosen colour from now on (QA 2026-11-22: it stayed on the previous one)
+        let shown = {
+            let st = s.borrow();
+            let mode = st.mode.borrow().clone();
+            st.tokens.get(index as usize).and_then(|r| palette::colour_of(r, &st.tokens, &mode))
+        };
+        if let Some(c) = shown {
+            let hsva = c.to_hsva();
+            ui.set_picker_hue(hsva.hue.rem_euclid(360.0));
+            ui.set_picker_sat(hsva.saturation);
+            ui.set_picker_val(hsva.value);
+            ui.set_picker_alpha(hsva.alpha);
+        }
         let text = {
             let st = s.borrow();
             let Some(r) = st.tokens.get(index as usize) else { return };

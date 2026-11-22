@@ -178,7 +178,7 @@ pub(super) fn bind_controls(ui: &AppWindow, ctx: &Rc<AppCtx>, state: &Rc<RefCell
                 crate::themes::write_reference(&root);
                 match crate::themes::new_from_builtin(&root, &tr("Theme_NewName")) {
                     Ok(t) => {
-                        st.borrow_mut().theme_note = i18n::format("Theme_Created", &[&t.dir.display().to_string()]).unwrap_or_default();
+                        st.borrow_mut().theme_note = i18n::format("Theme_Created", &[&t.name]).unwrap_or_default();
                         st.borrow_mut().theme_note_at = "theme-own";
                         save(&ui, &c, &st, "ui-theme", |s| s.settings.ui_theme = Some(t.id.clone()));
                     }

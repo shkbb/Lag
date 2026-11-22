@@ -264,3 +264,16 @@ Owner: "ми робимо і вносимо редактор в одне оно�
   `a_new_theme_from_lags_ui_works`, `lags_own_palette_is_editable`.
   Still true: a file the theme did change keeps the version it was copied from (a Lag update to that file does not
   reach it) — that is the theme author's choice.
+- **QA pass (2026-11-22, live with computer use + headless).** Fixed: geometry (x/y/width/height) was missing from
+  the property list; the preview's own title-bar close only hid it (process lingered) — it ends now, and its status
+  pill says "Preview: <theme>"; "New theme" made several "Моя тема" (now "Моя тема 2"...; same names in the list
+  show their folder); import replaced an installed theme of the same file name (now a new id); a click on a clip
+  thumbnail picked the invisible hover icon (vendored `sources_at` skips items under `opacity: 0`); "changes every
+  SettingsPage" for a page used once (the hint now needs 2+ uses or a `for`); untranslated errors / statuses
+  (26 keys); the canvas page is marked in the toolbar; frames of a picked element stayed after a page switch; a
+  delete did not select the element around it; the picker kept the old colour after a theme colour was chosen;
+  a compile error says "Not applied, the code has an error: ...". Known, left: an expression colour shows an
+  empty swatch; `font-italic` has no Inter italic to show; in GTA VI the main buttons use `cta-brush`, not
+  `accent`; a picture brought in and then undone stays in `art/`; add + delete in a one-line element keeps the
+  file in the theme (formatting differs; Undo is exact); themes cannot be renamed / deleted from Lag yet; after
+  "New theme" the Restart button appears where the list was (a fast second click restarts).

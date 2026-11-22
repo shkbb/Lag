@@ -362,6 +362,8 @@ export component ThemeEditorWindow inherits Window {
     in property <length> canvas-min-width: 900px;
     in property <length> canvas-min-height: 600px;
     in property <string> theme-name;
+    // the page on the canvas (0 settings, 1 library, 2 player, 3 editor), marked in the toolbar
+    in-out property <int> current-page: 1;
     // the selected element (canvas coordinates) and what it is
     in property <[EditorRect]> selection;
     in property <string> selected-name;
@@ -427,10 +429,10 @@ export component ThemeEditorWindow inherits Window {
             spacing: 8px;
             Text { text: root.theme-name; color: Theme.text-hi; font-size: 16px; font-weight: 700; vertical-alignment: center; }
             Rectangle { width: 10px; }
-            RChipButton { text: Tr.t("Nav_Library", Tr.rev); clicked => { root.page(1); } }
-            RChipButton { text: Tr.t("Nav_Player", Tr.rev); clicked => { root.page(2); } }
-            RChipButton { text: Tr.t("Editor_Title", Tr.rev); clicked => { root.page(3); } }
-            RChipButton { text: Tr.t("Nav_Settings", Tr.rev); clicked => { root.page(0); } }
+            RChipButton { text: Tr.t("Nav_Library", Tr.rev); active: root.current-page == 1; clicked => { root.page(1); } }
+            RChipButton { text: Tr.t("Nav_Player", Tr.rev); active: root.current-page == 2; clicked => { root.page(2); } }
+            RChipButton { text: Tr.t("Editor_Title", Tr.rev); active: root.current-page == 3; clicked => { root.page(3); } }
+            RChipButton { text: Tr.t("Nav_Settings", Tr.rev); active: root.current-page == 0; clicked => { root.page(0); } }
             Rectangle { horizontal-stretch: 1; }
             RChipButton { text: Tr.t("ThemeEditor_Undo", Tr.rev); enabled: root.can-undo; clicked => { root.undo(); } }
             RChipButton { text: Tr.t("ThemeEditor_Redo", Tr.rev); enabled: root.can-redo; clicked => { root.redo(); } }

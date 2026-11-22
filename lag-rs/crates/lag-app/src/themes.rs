@@ -13,6 +13,7 @@
 //! (`.slint`, pictures, fonts, text), no paths leaving the package, size limits. `.slint` is declarative: no code
 //! runs, no file or network access beyond loading the package's own pictures and fonts.
 use crate::ui_twin::{self, rt};
+use lag_core::i18n::{format as trf, tr};
 use serde::Deserialize;
 use std::io::{Read, Write};
 use std::path::{Component, Path, PathBuf};
@@ -94,7 +95,7 @@ pub fn read(dir: &Path) -> Result<ThemeInfo, String> {
     let text = std::fs::read_to_string(dir.join("theme.toml")).map_err(|e| format!("theme.toml: {e}"))?;
     let m: Manifest = toml::from_str(&text).map_err(|e| format!("theme.toml: {e}"))?;
     if m.name.trim().is_empty() {
-        return Err("theme.toml: `name` is empty".into());
+        return Err(tr("Theme_ErrNoName").to_owned());
     }
     Ok(ThemeInfo { id, name: m.name, author: m.author, version: m.version, api: m.api, dir: dir.to_path_buf(), entry: m.entry, builtin: false })
 }
@@ -204,7 +205,7 @@ pub fn validate(dir: &Path) -> Result<(), String> {
             let meta = std::fs::symlink_metadata(&path).map_err(|e| e.to_string())?;
             let rel = path.strip_prefix(dir).unwrap_or(&path).display().to_string();
             if meta.file_type().is_symlink() {
-                return Err(format!("{rel}: links are not allowed in a theme"));
+                return Err(trf("Theme_ErrLink", &[&rel]).unwrap_or_default());
             }
             if meta.is_dir() {
                 stack.push(path);
@@ -214,10 +215,10 @@ pub fn validate(dir: &Path) -> Result<(), String> {
             total += meta.len();
             let ext = path.extension().map(|x| x.to_string_lossy().to_lowercase()).unwrap_or_default();
             if !ALLOWED.contains(&ext.as_str()) {
-                return Err(format!("{rel}: this kind of file cannot be in a theme"));
+                return Err(trf("Theme_ErrFileKind", &[&rel]).unwrap_or_default());
             }
             if meta.len() > MAX_FILE {
-                return Err(format!("{rel}: too big ({} MB)", meta.len() >> 20));
+                return Err(trf("Theme_ErrFileTooBig", &[&rel, &(meta.len() >> 20).to_string()]).unwrap_or_default());
             }
             if ext == "slint" {
                 let text = std::fs::read_to_string(&path).map_err(|e| format!("{rel}: {e}"))?;
@@ -227,13 +228,14 @@ pub fn validate(dir: &Path) -> Result<(), String> {
                     .map(|p| p.components().map(|c| c.as_os_str().to_string_lossy().into_owned()).collect())
                     .unwrap_or_default();
                 if let Some(bad) = referenced_paths(&text).into_iter().find(|p| !path_ok(&file_dir, p)) {
-                    return Err(format!("{rel}: \"{bad}\" points outside the theme"));
+                    return Err(trf("Theme_ErrOutside", &[&rel, &bad]).unwrap_or_default());
                 }
             }
         }
     }
     if files > MAX_FILES || total > MAX_TOTAL {
-        return Err(format!("the theme is too big ({files} files, {} MB)", total >> 20));
+        log::info!("[Theme] too big: {files} files, {} MB", total >> 20);
+        return Err(tr("Theme_ErrTooBig").to_owned());
     }
     Ok(())
 }
@@ -283,7 +285,7 @@ pub fn activate(id: &str) -> Result<Duration, String> {
 
 /// The theme `id` over the loaded built-in UI.
 fn apply(id: &str) -> Result<(), String> {
-    let theme = list().into_iter().find(|t| t.id == id).ok_or_else(|| format!("theme \"{id}\" is not installed"))?;
+    let theme = list().into_iter().find(|t| t.id == id).ok_or_else(|| trf("Theme_ErrNotInstalled", &[id]).unwrap_or_default())?;
     apply_theme(&theme)
 }
 
@@ -403,7 +405,7 @@ pub fn sync(theme: &ThemeInfo) -> Result<PathBuf, String> {
 /// definitions and their names.
 pub fn compile_theme(theme: &ThemeInfo) -> Result<(Vec<slint_interpreter::ComponentDefinition>, Vec<String>), String> {
     if theme.api > API_VERSION {
-        return Err(format!("\"{}\" needs a newer Lag (theme API {}, this Lag has {API_VERSION})", theme.name, theme.api));
+        return Err(trf("Theme_ErrNewer", &[&theme.name]).unwrap_or_default());
     }
     validate(&theme.dir)?;
     // the theme over Lag's own UI; `@lag/` leads there too, so the theme's files and Lag's share one API
@@ -417,7 +419,7 @@ pub fn compile_theme(theme: &ThemeInfo) -> Result<(Vec<slint_interpreter::Compon
     // the tray menu stays Lag's: it holds the way back to Lag's own interface
     let windows: Vec<String> = windows.into_iter().filter(|w| w != "TrayMenuWindow").collect();
     if windows.is_empty() {
-        return Err(format!("\"{}\" exports no window (export component AppWindow inherits Window ...)", theme.name));
+        return Err(trf("Theme_ErrNoWindow", &[&theme.name]).unwrap_or_default());
     }
     // second pass: the same windows plus the API globals, so Lag's Rust code reaches them
     let wrapper = std::env::temp_dir().join(format!("lag-theme-{}.slint", std::process::id()));
@@ -447,6 +449,13 @@ fn unique_id(root: &Path, name: &str) -> String {
 /// "New theme": a theme named `name` that is Lag's own interface until something is changed in it (it holds only
 /// what is changed; everything else comes from the Lag that runs it). Returns it. `root` = the themes folder.
 pub fn new_from_builtin(root: &Path, name: &str) -> Result<ThemeInfo, String> {
+    let taken: Vec<String> = std::fs::read_dir(root)
+        .map(|e| e.flatten().filter_map(|e| read(&e.path()).ok()).map(|t| t.name.to_lowercase()).collect())
+        .unwrap_or_default();
+    let name = &(1..)
+        .map(|i| if i == 1 { name.to_owned() } else { format!("{name} {i}") })
+        .find(|n| !taken.contains(&n.to_lowercase()))
+        .unwrap_or_else(|| name.to_owned());
     let id = unique_id(root, name);
     let target = root.join(&id);
     std::fs::create_dir_all(&target).map_err(|e| e.to_string())?;
@@ -459,14 +468,14 @@ pub fn new_from_builtin(root: &Path, name: &str) -> Result<ThemeInfo, String> {
     read(&target)
 }
 
-/// Installs a `.lagtheme` file into the themes folder (checked first; an installed theme of the same id is
-/// replaced). Returns the theme.
+/// Installs a `.lagtheme` file into the themes folder (checked first; never over an installed theme: the same
+/// file twice is two themes, `name-2`). Returns the theme.
 pub fn import(file: &Path) -> Result<ThemeInfo, String> {
     let root = user_dir().ok_or("no %APPDATA%")?;
     let stem = file.file_stem().map(|s| s.to_string_lossy().into_owned()).unwrap_or_default();
     let id: String = stem.chars().map(|c| if c.is_alphanumeric() || c == '-' || c == '_' { c } else { '-' }).collect();
     if id.is_empty() || id == BUILTIN {
-        return Err("bad theme file name".into());
+        return Err(tr("Theme_ErrFileName").to_owned());
     }
     let staging = root.join(format!(".import-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&staging);
@@ -479,8 +488,7 @@ pub fn import(file: &Path) -> Result<ThemeInfo, String> {
         };
         validate(&inner)?;
         read(&inner)?;
-        let target = root.join(&id);
-        let _ = std::fs::remove_dir_all(&target);
+        let target = root.join(unique_id(&root, &id));
         std::fs::rename(&inner, &target).map_err(|e| e.to_string())?;
         read(&target)
     });
@@ -490,15 +498,15 @@ pub fn import(file: &Path) -> Result<ThemeInfo, String> {
 
 fn unpack(file: &Path, into: &Path) -> Result<(), String> {
     let f = std::fs::File::open(file).map_err(|e| e.to_string())?;
-    let mut zip = zip::ZipArchive::new(f).map_err(|e| format!("not a theme file: {e}"))?;
+    let mut zip = zip::ZipArchive::new(f).map_err(|e| trf("Theme_ErrNotTheme", &[&e.to_string()]).unwrap_or_default())?;
     if zip.len() > MAX_FILES {
-        return Err("the theme has too many files".into());
+        return Err(tr("Theme_ErrTooMany").to_owned());
     }
     let mut total = 0u64;
     for i in 0..zip.len() {
         let mut entry = zip.by_index(i).map_err(|e| e.to_string())?;
         // enclosed_name refuses absolute paths and ".." (zip-slip)
-        let rel = entry.enclosed_name().ok_or_else(|| format!("unsafe path in the theme file: {}", entry.name()))?;
+        let rel = entry.enclosed_name().ok_or_else(|| trf("Theme_ErrUnsafe", &[entry.name()]).unwrap_or_default())?;
         let out = into.join(rel);
         if entry.is_dir() {
             std::fs::create_dir_all(&out).map_err(|e| e.to_string())?;
@@ -506,7 +514,7 @@ fn unpack(file: &Path, into: &Path) -> Result<(), String> {
         }
         total += entry.size();
         if entry.size() > MAX_FILE || total > MAX_TOTAL {
-            return Err("the theme is too big".into());
+            return Err(tr("Theme_ErrTooBig").to_owned());
         }
         if let Some(p) = out.parent() {
             std::fs::create_dir_all(p).map_err(|e| e.to_string())?;
@@ -608,7 +616,8 @@ mod tests {
         assert_eq!((t.id.as_str(), t.name.as_str()), ("моя-тема", "Моя тема"));
         let own: Vec<_> = std::fs::read_dir(&t.dir).unwrap().flatten().map(|e| e.file_name()).collect();
         assert_eq!(own, ["theme.toml"], "nothing of Lag's is copied");
-        assert_eq!(new_from_builtin(&root, "Моя тема").unwrap().id, "моя-тема-2", "never over an existing one");
+        let second = new_from_builtin(&root, "Моя тема").unwrap();
+        assert_eq!((second.id.as_str(), second.name.as_str()), ("моя-тема-2", "Моя тема 2"), "never over an existing one, nor its name");
         ui_twin::load_builtin().unwrap();
         apply_dir(&t.dir).unwrap();
         let windows = rt::loaded();
@@ -663,7 +672,7 @@ mod tests {
         assert!(validate(&d).unwrap_err().contains("run.exe"));
         std::fs::remove_file(d.join("run.exe")).unwrap();
         std::fs::write(d.join("app.slint"), "Image { source: @image-url(\"C:/Users/x/Desktop/a.png\"); }").unwrap();
-        assert!(validate(&d).unwrap_err().contains("outside the theme"));
+        assert!(validate(&d).unwrap_err().contains("Desktop/a.png"), "names the path that leaves the theme");
         let _ = std::fs::remove_dir_all(&d);
     }
 
@@ -689,7 +698,7 @@ mod tests {
         z.write_all(b"x").unwrap();
         z.finish().unwrap();
         let out2 = temp("out2");
-        assert!(unpack(&evil, &out2).unwrap_err().contains("unsafe path"));
+        assert!(unpack(&evil, &out2).unwrap_err().contains("evil.slint"));
         for p in [src, out, out2] {
             let _ = std::fs::remove_dir_all(p);
         }

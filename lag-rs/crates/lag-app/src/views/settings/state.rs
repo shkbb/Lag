@@ -445,9 +445,20 @@ impl State {
                     "" => crate::themes::BUILTIN,
                     id => id,
                 };
+                // two themes of the same name (imported twice, made before 2.2 named them apart) show their folders
+                let same = |t: &crate::themes::ThemeInfo| themes.iter().filter(|o| o.name.eq_ignore_ascii_case(&t.name)).count() > 1;
                 let names = themes
                     .iter()
-                    .map(|t| if t.builtin { tr("Theme_Builtin") } else if t.author.is_empty() { t.name.clone() } else { format!("{} · {}", t.name, t.author) })
+                    .map(|t| {
+                        let name = if same(t) && !t.builtin { format!("{} ({})", t.name, t.id) } else { t.name.clone() };
+                        if t.builtin {
+                            tr("Theme_Builtin")
+                        } else if t.author.is_empty() {
+                            name
+                        } else {
+                            format!("{name} · {}", t.author)
+                        }
+                    })
                     .collect();
                 let mut ui_theme = combo("ui-theme", "Settings_UiThemeRow", names, themes.iter().position(|t| t.id == chosen).unwrap_or(0));
                 let pending = chosen != crate::themes::active();

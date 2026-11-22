@@ -5,7 +5,7 @@
 //! in the window order and then closes it, so there is no gap and the preview never falls behind other windows
 //! (Windows does not let a background process come to the front). Every reload is exactly what Lag would show.
 //! A theme that does not compile shows its error text instead, and the fix reloads it the same way.
-use crate::{app_ctx, startup, themes, ui_twin, views, AppWindow, ComponentHandle, ThemeErrorWindow, Tr};
+use crate::{app_ctx, startup, themes, ui_twin, views, AppWindow, ComponentHandle, MainVM, ThemeErrorWindow, Tr};
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
@@ -141,8 +141,15 @@ pub fn run(Args { dir, at, replace }: Args) {
             ctx.never_save();
             views::init_all(&ui, &ctx);
             // closing the preview ends it (Lag's own close hides into the tray, and a preview has no tray: the
-            // process stayed alive invisible, owner 2026-11-22)
+            // process stayed alive invisible, owner 2026-11-22). Lag's title bar has its own close button
+            // (MainVM.close-window, not a close request): it ends the preview too (QA 2026-11-22)
             ui.window().on_close_requested(end_preview);
+            ui.global::<MainVM>().on_close_window(|| {
+                let _ = end_preview();
+            });
+            // the status pill says what this window is: a preview, not a second Lag (QA 2026-11-22)
+            ui.global::<MainVM>()
+                .set_status_text(lag_core::i18n::format("ThemePreview_Status", &[&name]).unwrap_or_default().into());
             place(ui.window(), at);
             if ui.show().is_err() {
                 return;
