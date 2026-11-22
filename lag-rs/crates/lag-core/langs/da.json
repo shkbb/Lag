@@ -382,5 +382,9 @@
   "ThemeEditor_AllModes": "En farve erstatter hele værdien: den samme i alle tilstande",
   "ThemeEditor_PaletteSearch": "Find en farve…",
   "ThemeEditor_PaletteEmpty": "Dette tema har ingen palet: farverne står direkte i elementerne (fanen Element)",
-  "ThemeEditor_PaletteUnknown": "Denne farve afhænger af mere end tilstanden: slå “ens i alle tilstande” til, eller ret den i filen"
+  "ThemeEditor_PaletteUnknown": "Denne farve afhænger af mere end tilstanden: slå “ens i alle tilstande” til, eller ret den i filen",
+  "ThemeEditor_Default": "standard",
+  "ThemeEditor_Choose": "Vælg…",
+  "ThemeEditor_PickerPalette": "Temaets farver",
+  "ThemeEditor_ImageFilter": "Billeder"
 }

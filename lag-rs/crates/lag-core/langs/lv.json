@@ -382,5 +382,9 @@
   "ThemeEditor_AllModes": "Krāsa aizstāj visu vērtību: vienāda katrā režīmā",
   "ThemeEditor_PaletteSearch": "Meklēt krāsu…",
   "ThemeEditor_PaletteEmpty": "Šai tēmai nav paletes: krāsas ir ierakstītas pašos elementos (cilne “Elements”)",
-  "ThemeEditor_PaletteUnknown": "Šī krāsa atkarīga ne tikai no režīma: ieslēdziet “vienāda katrā režīmā” vai mainiet to failā"
+  "ThemeEditor_PaletteUnknown": "Šī krāsa atkarīga ne tikai no režīma: ieslēdziet “vienāda katrā režīmā” vai mainiet to failā",
+  "ThemeEditor_Default": "noklusējums",
+  "ThemeEditor_Choose": "Izvēlēties…",
+  "ThemeEditor_PickerPalette": "Tēmas krāsas",
+  "ThemeEditor_ImageFilter": "Attēli"
 }

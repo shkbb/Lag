@@ -382,5 +382,9 @@
   "ThemeEditor_AllModes": "En färg ersätter hela värdet: samma i alla lägen",
   "ThemeEditor_PaletteSearch": "Hitta en färg…",
   "ThemeEditor_PaletteEmpty": "Det här temat har ingen palett: färgerna står direkt i elementen (fliken Element)",
-  "ThemeEditor_PaletteUnknown": "Den här färgen beror på mer än läget: slå på ”samma i alla lägen” eller ändra den i filen"
+  "ThemeEditor_PaletteUnknown": "Den här färgen beror på mer än läget: slå på ”samma i alla lägen” eller ändra den i filen",
+  "ThemeEditor_Default": "standard",
+  "ThemeEditor_Choose": "Välj…",
+  "ThemeEditor_PickerPalette": "Temats färger",
+  "ThemeEditor_ImageFilter": "Bilder"
 }

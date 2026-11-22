@@ -382,5 +382,9 @@
   "ThemeEditor_AllModes": "Uma cor substitui o valor inteiro: a mesma em todos os modos",
   "ThemeEditor_PaletteSearch": "Procurar uma cor…",
   "ThemeEditor_PaletteEmpty": "Este tema não tem paleta: as cores estão nos próprios elementos (separador Elemento)",
-  "ThemeEditor_PaletteUnknown": "Esta cor depende de mais do que o modo: ative «igual em todos os modos» ou altere-a no ficheiro"
+  "ThemeEditor_PaletteUnknown": "Esta cor depende de mais do que o modo: ative «igual em todos os modos» ou altere-a no ficheiro",
+  "ThemeEditor_Default": "predefinido",
+  "ThemeEditor_Choose": "Escolher…",
+  "ThemeEditor_PickerPalette": "Cores do tema",
+  "ThemeEditor_ImageFilter": "Imagens"
 }

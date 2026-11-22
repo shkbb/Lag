@@ -382,5 +382,9 @@
   "ThemeEditor_AllModes": "Eine Farbe ersetzt den ganzen Wert: in jedem Modus gleich",
   "ThemeEditor_PaletteSearch": "Farbe suchen…",
   "ThemeEditor_PaletteEmpty": "Dieses Theme hat keine Palette: die Farben stehen direkt in den Elementen (Reiter Element)",
-  "ThemeEditor_PaletteUnknown": "Diese Farbe hängt nicht nur vom Modus ab: „in jedem Modus gleich“ einschalten oder in der Datei ändern"
+  "ThemeEditor_PaletteUnknown": "Diese Farbe hängt nicht nur vom Modus ab: „in jedem Modus gleich“ einschalten oder in der Datei ändern",
+  "ThemeEditor_Default": "Standard",
+  "ThemeEditor_Choose": "Auswählen…",
+  "ThemeEditor_PickerPalette": "Theme-Farben",
+  "ThemeEditor_ImageFilter": "Bilder"
 }

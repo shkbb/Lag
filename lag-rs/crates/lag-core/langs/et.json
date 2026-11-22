@@ -382,5 +382,9 @@
   "ThemeEditor_AllModes": "Värv asendab kogu väärtuse: sama igas režiimis",
   "ThemeEditor_PaletteSearch": "Otsi värvi…",
   "ThemeEditor_PaletteEmpty": "Sellel teemal pole paletti: värvid on kirjas elementides endis (vaheleht Element)",
-  "ThemeEditor_PaletteUnknown": "See värv ei sõltu ainult režiimist: lülita sisse „sama igas režiimis“ või muuda seda failis"
+  "ThemeEditor_PaletteUnknown": "See värv ei sõltu ainult režiimist: lülita sisse „sama igas režiimis“ või muuda seda failis",
+  "ThemeEditor_Default": "vaikimisi",
+  "ThemeEditor_Choose": "Vali…",
+  "ThemeEditor_PickerPalette": "Teema värvid",
+  "ThemeEditor_ImageFilter": "Pildid"
 }

@@ -382,5 +382,9 @@
   "ThemeEditor_AllModes": "Een kleur vervangt de hele waarde: in elke modus hetzelfde",
   "ThemeEditor_PaletteSearch": "Kleur zoeken…",
   "ThemeEditor_PaletteEmpty": "Dit thema heeft geen palet: de kleuren staan in de elementen zelf (tabblad Element)",
-  "ThemeEditor_PaletteUnknown": "Deze kleur hangt van meer af dan de modus: zet ‘in elke modus hetzelfde’ aan of wijzig hem in het bestand"
+  "ThemeEditor_PaletteUnknown": "Deze kleur hangt van meer af dan de modus: zet ‘in elke modus hetzelfde’ aan of wijzig hem in het bestand",
+  "ThemeEditor_Default": "standaard",
+  "ThemeEditor_Choose": "Kiezen…",
+  "ThemeEditor_PickerPalette": "Themakleuren",
+  "ThemeEditor_ImageFilter": "Afbeeldingen"
 }

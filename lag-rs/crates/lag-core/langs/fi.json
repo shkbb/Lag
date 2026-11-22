@@ -382,5 +382,9 @@
   "ThemeEditor_AllModes": "Väri korvaa koko arvon: sama kaikissa tiloissa",
   "ThemeEditor_PaletteSearch": "Etsi väriä…",
   "ThemeEditor_PaletteEmpty": "Tällä teemalla ei ole palettia: värit on kirjoitettu suoraan elementteihin (välilehti Elementti)",
-  "ThemeEditor_PaletteUnknown": "Tämä väri ei riipu vain tilasta: ota käyttöön ”sama kaikissa tiloissa” tai muuta sitä tiedostossa"
+  "ThemeEditor_PaletteUnknown": "Tämä väri ei riipu vain tilasta: ota käyttöön ”sama kaikissa tiloissa” tai muuta sitä tiedostossa",
+  "ThemeEditor_Default": "oletus",
+  "ThemeEditor_Choose": "Valitse…",
+  "ThemeEditor_PickerPalette": "Teeman värit",
+  "ThemeEditor_ImageFilter": "Kuvat"
 }

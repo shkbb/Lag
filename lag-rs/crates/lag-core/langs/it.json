@@ -382,5 +382,9 @@
   "ThemeEditor_AllModes": "Un colore sostituisce l'intero valore: uguale in ogni modalità",
   "ThemeEditor_PaletteSearch": "Trova un colore…",
   "ThemeEditor_PaletteEmpty": "Questo tema non ha una tavolozza: i colori sono scritti negli elementi stessi (scheda Elemento)",
-  "ThemeEditor_PaletteUnknown": "Questo colore non dipende solo dalla modalità: attiva «uguale in ogni modalità» o modificalo nel file"
+  "ThemeEditor_PaletteUnknown": "Questo colore non dipende solo dalla modalità: attiva «uguale in ogni modalità» o modificalo nel file",
+  "ThemeEditor_Default": "predefinito",
+  "ThemeEditor_Choose": "Scegli…",
+  "ThemeEditor_PickerPalette": "Colori del tema",
+  "ThemeEditor_ImageFilter": "Immagini"
 }

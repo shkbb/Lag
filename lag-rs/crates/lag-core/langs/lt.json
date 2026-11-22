@@ -382,5 +382,9 @@
   "ThemeEditor_AllModes": "Spalva pakeičia visą reikšmę: vienoda kiekviename režime",
   "ThemeEditor_PaletteSearch": "Ieškoti spalvos…",
   "ThemeEditor_PaletteEmpty": "Ši tema neturi paletės: spalvos įrašytos pačiuose elementuose (skirtukas „Elementas“)",
-  "ThemeEditor_PaletteUnknown": "Ši spalva priklauso ne tik nuo režimo: įjunkite „vienoda kiekviename režime“ arba pakeiskite ją faile"
+  "ThemeEditor_PaletteUnknown": "Ši spalva priklauso ne tik nuo režimo: įjunkite „vienoda kiekviename režime“ arba pakeiskite ją faile",
+  "ThemeEditor_Default": "numatyta",
+  "ThemeEditor_Choose": "Pasirinkti…",
+  "ThemeEditor_PickerPalette": "Temos spalvos",
+  "ThemeEditor_ImageFilter": "Paveikslėliai"
 }

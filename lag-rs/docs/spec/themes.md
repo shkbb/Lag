@@ -233,4 +233,14 @@ Owner: "ми робимо і вносимо редактор в одне оно�
   `allmodes`, `token NAME VALUE`, `tokens FILTER`, `undo`, `redo`, `wait`, `shot`, `quit`); with
   `--editor-shots <dir>` the editor runs in memory (software renderer, no window — safe while a game runs) and
   `shot NAME` writes PNGs.
-- Still to do before 2.2.0: enum dropdowns, a colour picker, an image picker, then the full UI check.
+- **Choosers (2026-11-22).** A property with a fixed set of values (`image-fit`, alignments...) is a dropdown
+  ("default" = not set; an expression stays a text field). A click on any colour swatch (element property or
+  palette) opens the colour picker: saturation / brightness square, hue and opacity strips, was / now, the colour
+  as text, and the theme's own colours (a click names that palette colour instead of copying it). A change is
+  written when the mouse is released, one undo step each. An `image` property has **Choose…**: the system dialog;
+  a file outside the theme is copied into `art/` (the same file once, another of that name `-2`...) and named
+  relative to the `.slint` file; the property shows a thumbnail.
+- The canvas takes all the room there is (min 900×600, then it scrolls off), as Lag's window of that size.
+- Picking order for equal sizes: what is drawn on top first (the thumbnail over its placeholder).
+- `LagTextInput` clips a text longer than the field (it widened past its frame); the full UI check (172 shots)
+  is pixel-identical to before except data.

@@ -7,6 +7,7 @@ import { RChipButton } from "components/buttons.slint";
 import { LagTextInput } from "components/text_input.slint";
 import { LagToggleSwitch } from "components/toggle_switch.slint";
 import { LagScrollView } from "components/scrollbar.slint";
+import { LagComboBox, DropdownLayer, ComboBoxItemData } from "components/combobox.slint";
 
 export struct EditorRect { x: length, y: length, width: length, height: length }
 
@@ -19,8 +20,12 @@ export struct EditorProp {
     // what the theme's file says now ("" = not set: the element's default)
     value: string,
     bound: bool,
-    options: [string],
+    // kind 6: the values to choose from, and which one the file says (-1: not set, or an expression)
+    options: [ComboBoxItemData],
+    option-index: int,
     swatch: color,
+    // kind 7: the picture the file names (empty when it is not a plain file)
+    picture: image,
 }
 
 // The element and the ones around it, for the path above the panel
@@ -33,6 +38,7 @@ export struct EditorToken { header: string, name: string, value: string, swatch:
 component TokenRow {
     in property <EditorToken> token;
     callback set(int, string);
+    callback pick-color(int);
     VerticalLayout {
         spacing: 2px;
         if root.token.header != "": Text {
@@ -53,9 +59,10 @@ component TokenRow {
                     width: 22px;
                     height: 22px;
                     border-radius: 5px;
-                    border-width: 1px;
-                    border-color: Theme.border-strong;
+                    border-width: token-swatch-ta.has-hover ? 2px : 1px;
+                    border-color: token-swatch-ta.has-hover ? Theme.accent : Theme.border-strong;
                     background: root.token.swatch;
+                    token-swatch-ta := TouchArea { mouse-cursor: pointer; clicked => { root.pick-color(root.token.index); } }
                 }
             }
             Text {
@@ -79,6 +86,10 @@ component PropRow {
     in property <EditorProp> prop;
     callback set(string, string);
     callback reset(string);
+    callback pick-color(string);
+    callback choose-image(string);
+    // a choice from the list (not set or one of the values; an expression stays a text)
+    property <bool> listed: root.prop.kind == 6 && (root.prop.option-index >= 0 || root.prop.value == "");
     min-height: 38px;
     HorizontalLayout {
         spacing: 8px;
@@ -102,9 +113,22 @@ component PropRow {
                 width: 22px;
                 height: 22px;
                 border-radius: 5px;
+                border-width: swatch-ta.has-hover ? 2px : 1px;
+                border-color: swatch-ta.has-hover ? Theme.accent : Theme.border-strong;
+                background: root.prop.swatch;
+                swatch-ta := TouchArea { mouse-cursor: pointer; clicked => { root.pick-color(root.prop.name); } }
+            }
+        }
+        if root.prop.kind == 7: VerticalLayout {
+            alignment: center;
+            Rectangle {
+                width: 22px;
+                height: 22px;
+                border-radius: 4px;
                 border-width: 1px;
                 border-color: Theme.border-strong;
-                background: root.prop.swatch;
+                clip: true;
+                Image { width: 100%; height: 100%; source: root.prop.picture; image-fit: contain; }
             }
         }
         if root.prop.kind == 4: VerticalLayout {
@@ -114,11 +138,21 @@ component PropRow {
                 toggled(v) => { root.set(root.prop.name, v ? "true" : "false"); }
             }
         }
-        if root.prop.kind != 4: input := LagTextInput {
+        if root.listed: LagComboBox {
+            horizontal-stretch: 1;
+            items: root.prop.options;
+            selected-index: root.prop.option-index;
+            placeholder: Tr.t("ThemeEditor_Default", Tr.rev);
+            selected(i) => { root.set(root.prop.name, root.prop.options[i].text); }
+        }
+        if root.prop.kind != 4 && !root.listed: LagTextInput {
             horizontal-stretch: 1;
             text: root.prop.value;
-            placeholder: root.prop.kind == 6 ? root.prop.options[0] + " …" : "";
             accepted(t) => { root.set(root.prop.name, t); }
+        }
+        if root.prop.kind == 7: RChipButton {
+            text: Tr.t("ThemeEditor_Choose", Tr.rev);
+            clicked => { root.choose-image(root.prop.name); }
         }
         if root.prop.kind == 4: Rectangle { horizontal-stretch: 1; }
         VerticalLayout {
@@ -133,6 +167,188 @@ component PropRow {
     }
 }
 
+// The colour picker: saturation / brightness square, hue and opacity strips, the colour as text, the theme's own
+// colours. A change is written when the mouse is released (one undo step each), or on Enter in the text.
+component ColorPicker inherits Rectangle {
+    in property <string> title;
+    in-out property <float> hue;
+    in-out property <float> sat;
+    in-out property <float> val;
+    in-out property <float> alpha;
+    in property <color> old;
+    in property <[EditorToken]> swatches;
+    in property <string> hex;
+    callback commit(color);
+    callback commit-text(string);
+    callback commit-ref(int);
+    callback close();
+    out property <color> current: hsv(root.hue, root.sat, root.val, root.alpha);
+    property <string> hovered;
+    width: 336px;
+    height: col.preferred-height;
+    background: Theme.surface-card;
+    border-radius: 12px;
+    border-width: 1px;
+    border-color: Theme.popup-border-brush;
+    drop-shadow-blur: 24px;
+    drop-shadow-color: #00000080;
+    // the card itself takes clicks (they do not close it)
+    TouchArea { }
+    col := VerticalLayout {
+        padding: 12px;
+        spacing: 10px;
+        HorizontalLayout {
+            Text { text: root.title; color: Theme.text-hi; font-size: 14px; font-weight: 700; overflow: elide; horizontal-stretch: 1; }
+            Text {
+                text: "×";
+                font-size: 18px;
+                color: close-ta.has-hover ? Theme.text-hi : Theme.text-faint;
+                close-ta := TouchArea { clicked => { root.close(); } }
+            }
+        }
+        sv := Rectangle {
+            height: 180px;
+            border-radius: 6px;
+            clip: true;
+            background: hsv(root.hue, 1, 1);
+            Rectangle { background: @linear-gradient(90deg, #FFFFFF 0%, #FFFFFF00 100%); }
+            Rectangle { background: @linear-gradient(180deg, #00000000 0%, #000000 100%); }
+            Rectangle {
+                x: root.sat * parent.width - 7px;
+                y: (1 - root.val) * parent.height - 7px;
+                width: 14px;
+                height: 14px;
+                border-radius: 7px;
+                border-width: 2px;
+                border-color: #FFFFFF;
+                drop-shadow-blur: 3px;
+                drop-shadow-color: #00000099;
+            }
+            sv-ta := TouchArea {
+                mouse-cursor: crosshair;
+                pointer-event(e) => {
+                    if (e.kind == PointerEventKind.down) {
+                        root.sat = clamp(self.mouse-x / self.width, 0, 1);
+                        root.val = 1 - clamp(self.mouse-y / self.height, 0, 1);
+                    } else if (e.kind == PointerEventKind.up) {
+                        root.commit(root.current);
+                    }
+                }
+                moved => {
+                    if (self.pressed) {
+                        root.sat = clamp(self.mouse-x / self.width, 0, 1);
+                        root.val = 1 - clamp(self.mouse-y / self.height, 0, 1);
+                    }
+                }
+            }
+        }
+        // hue
+        Rectangle {
+            height: 14px;
+            border-radius: 7px;
+            background: @linear-gradient(90deg, #FF0000 0%, #FFFF00 16.67%, #00FF00 33.33%, #00FFFF 50%, #0000FF 66.67%, #FF00FF 83.33%, #FF0000 100%);
+            Rectangle {
+                x: root.hue / 360 * parent.width - 7px;
+                width: 14px;
+                height: 14px;
+                border-radius: 7px;
+                border-width: 2px;
+                border-color: #FFFFFF;
+                background: hsv(root.hue, 1, 1);
+            }
+            TouchArea {
+                mouse-cursor: pointer;
+                pointer-event(e) => {
+                    if (e.kind == PointerEventKind.down) {
+                        root.hue = clamp(self.mouse-x / self.width, 0, 1) * 360;
+                    } else if (e.kind == PointerEventKind.up) {
+                        root.commit(root.current);
+                    }
+                }
+                moved => { if (self.pressed) { root.hue = clamp(self.mouse-x / self.width, 0, 1) * 360; } }
+            }
+        }
+        // opacity
+        Rectangle {
+            height: 14px;
+            border-radius: 7px;
+            background: #808080;
+            Rectangle {
+                border-radius: 7px;
+                background: @linear-gradient(90deg, hsv(root.hue, root.sat, root.val, 0) 0%, hsv(root.hue, root.sat, root.val, 1) 100%);
+            }
+            Rectangle {
+                x: root.alpha * parent.width - 7px;
+                width: 14px;
+                height: 14px;
+                border-radius: 7px;
+                border-width: 2px;
+                border-color: #FFFFFF;
+            }
+            TouchArea {
+                mouse-cursor: pointer;
+                pointer-event(e) => {
+                    if (e.kind == PointerEventKind.down) {
+                        root.alpha = clamp(self.mouse-x / self.width, 0, 1);
+                    } else if (e.kind == PointerEventKind.up) {
+                        root.commit(root.current);
+                    }
+                }
+                moved => { if (self.pressed) { root.alpha = clamp(self.mouse-x / self.width, 0, 1); } }
+            }
+        }
+        HorizontalLayout {
+            spacing: 8px;
+            // was / now
+            Rectangle {
+                width: 64px;
+                height: 32px;
+                border-radius: 6px;
+                clip: true;
+                border-width: 1px;
+                border-color: Theme.border-strong;
+                HorizontalLayout {
+                    Rectangle { background: root.old; }
+                    Rectangle { background: root.current; }
+                }
+            }
+            LagTextInput {
+                horizontal-stretch: 1;
+                text: root.hex;
+                accepted(t) => { root.commit-text(t); }
+            }
+        }
+        if root.swatches.length > 0: VerticalLayout {
+            spacing: 6px;
+            HorizontalLayout {
+                Text { text: Tr.t("ThemeEditor_PickerPalette", Tr.rev); color: Theme.text-mid; font-size: 11.5px; font-weight: 700; }
+                Text { text: root.hovered; color: Theme.text-faint; font-size: 11.5px; horizontal-alignment: right; horizontal-stretch: 1; overflow: elide; }
+            }
+            LagScrollView {
+                height: 112px;
+                content-height: (floor((root.swatches.length - 1) / 11) + 1) * 28px;
+                Rectangle {
+                    for t[i] in root.swatches: Rectangle {
+                        x: mod(i, 11) * 28px;
+                        y: floor(i / 11) * 28px;
+                        width: 24px;
+                        height: 24px;
+                        border-radius: 5px;
+                        border-width: sw-ta.has-hover ? 2px : 1px;
+                        border-color: sw-ta.has-hover ? Theme.accent : Theme.border-strong;
+                        background: t.swatch;
+                        sw-ta := TouchArea {
+                            mouse-cursor: pointer;
+                            changed has-hover => { if (self.has-hover) { root.hovered = t.name; } }
+                            clicked => { root.commit-ref(t.index); }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 export component ThemeEditorWindow inherits Window {
     title: "Lag";
     preferred-width: 1640px;
@@ -142,8 +358,9 @@ export component ThemeEditorWindow inherits Window {
 
     // the theme, live
     in property <component-factory> canvas;
-    in property <length> canvas-width: 1360px;
-    in property <length> canvas-height: 840px;
+    // the theme gets the room there is, as Lag's window of that size (not less than this: then it is cut off)
+    in property <length> canvas-min-width: 900px;
+    in property <length> canvas-min-height: 600px;
     in property <string> theme-name;
     // the selected element (canvas coordinates) and what it is
     in property <[EditorRect]> selection;
@@ -168,6 +385,24 @@ export component ThemeEditorWindow inherits Window {
     callback palette-mode-changed(string);
     callback all-modes-changed(bool);
     callback token-filter-changed(string);
+    // the colour picker, for an element's property or a palette colour
+    in-out property <bool> picker-open;
+    in-out property <float> picker-hue;
+    in-out property <float> picker-sat;
+    in-out property <float> picker-val;
+    in-out property <float> picker-alpha;
+    in property <color> picker-old;
+    in property <string> picker-title;
+    in property <[EditorToken]> picker-swatches;
+    callback open-picker-prop(string);
+    callback open-picker-token(int);
+    callback picker-commit(color);
+    callback picker-text(string);
+    callback picker-ref(int);
+    pure callback hex-of(color) -> string;
+    // a picture file for an element's `image` property (system dialog); -file: that file (checks)
+    callback choose-image(string);
+    callback choose-image-file(string, string);
     callback pick(length, length);
     callback set-prop(string, string);
     callback reset-prop(string);
@@ -210,8 +445,8 @@ export component ThemeEditorWindow inherits Window {
                 stage := Rectangle {
                     x: 0px;
                     y: 0px;
-                    width: root.canvas-width;
-                    height: root.canvas-height;
+                    width: max(parent.width, root.canvas-min-width);
+                    height: max(parent.height, root.canvas-min-height);
                     // selection frames of repeats below the theme's window stay out of sight
                     clip: true;
                     border-width: 1px;
@@ -324,6 +559,8 @@ export component ThemeEditorWindow inherits Window {
                                 prop: p;
                                 set(n, v) => { root.set-prop(n, v); }
                                 reset(n) => { root.reset-prop(n); }
+                                pick-color(n) => { root.open-picker-prop(n); }
+                                choose-image(n) => { root.choose-image(n); }
                             }
                         }
                     }
@@ -373,6 +610,7 @@ export component ThemeEditorWindow inherits Window {
                                 for t in root.tokens: TokenRow {
                                     token: t;
                                     set(i, v) => { root.set-token(i, v); }
+                                    pick-color(i) => { root.open-picker-token(i); }
                                 }
                             }
                         }
@@ -387,4 +625,26 @@ export component ThemeEditorWindow inherits Window {
             }
         }
     }
+    // a click outside the picker closes it
+    if root.picker-open: TouchArea {
+        clicked => { root.picker-open = false; }
+    }
+    if root.picker-open: ColorPicker {
+        x: root.width - 12px - 440px - 12px - self.width;
+        y: 56px;
+        title: root.picker-title;
+        hue <=> root.picker-hue;
+        sat <=> root.picker-sat;
+        val <=> root.picker-val;
+        alpha <=> root.picker-alpha;
+        old: root.picker-old;
+        swatches: root.picker-swatches;
+        hex: root.hex-of(self.current);
+        commit(c) => { root.picker-commit(c); }
+        commit-text(t) => { root.picker-text(t); }
+        commit-ref(i) => { root.picker-ref(i); }
+        close => { root.picker-open = false; }
+    }
+    DropdownLayer { x: 0; y: 0; width: root.width; height: root.height; }
 }
+

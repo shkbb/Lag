@@ -382,5 +382,9 @@
   "ThemeEditor_AllModes": "A colour replaces the whole value: the same in every mode",
   "ThemeEditor_PaletteSearch": "Find a colour…",
   "ThemeEditor_PaletteEmpty": "This theme has no palette: its colours are written in the elements themselves (Element tab)",
-  "ThemeEditor_PaletteUnknown": "This colour depends on more than the mode: turn on “same in every mode” or edit it in the file"
+  "ThemeEditor_PaletteUnknown": "This colour depends on more than the mode: turn on “same in every mode” or edit it in the file",
+  "ThemeEditor_Default": "default",
+  "ThemeEditor_Choose": "Choose…",
+  "ThemeEditor_PickerPalette": "Theme colours",
+  "ThemeEditor_ImageFilter": "Pictures"
 }

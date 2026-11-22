@@ -4,11 +4,11 @@
 //! has (from the compiler's type of it) with what the file says now; a change is written into the theme's `.slint`
 //! file as a text edit, compiled, and swapped in. An edit that does not compile is undone in the file at once and
 //! the compiler's message is shown. Undo / redo keep whole-file texts.
-use crate::{app_ctx, startup, themes, ui_twin, views, AppWindow, ComponentHandle, EditorCrumb, EditorProp, EditorRect, EditorToken, ThemeEditorWindow, Tr};
+use crate::{app_ctx, startup, themes, ui_twin, views, AppWindow, ComboBoxItemData, ComponentHandle, EditorCrumb, EditorProp, EditorRect, EditorToken, ThemeEditorWindow, Tr};
 use i_slint_compiler::langtype::Type;
 use i_slint_compiler::object_tree::ElementRc;
 use i_slint_compiler::parser::{SyntaxKind, SyntaxNode};
-use slint::{Color, ComponentFactory, ModelRc, SharedString, VecModel};
+use slint::{Color, ComponentFactory, ModelRc, VecModel};
 use slint_interpreter::{ComponentDefinition, ComponentInstance, Value};
 use std::cell::RefCell;
 use std::path::{Path, PathBuf};
@@ -315,6 +315,16 @@ struct State {
     mode: Rc<RefCell<String>>,
     all_modes: bool,
     token_filter: String,
+    /// what the colour picker changes
+    picker: Option<Target>,
+}
+
+#[derive(Clone)]
+enum Target {
+    /// a property of the selected element
+    Prop(String),
+    /// a palette colour (index into `tokens`)
+    Token(usize),
 }
 
 const PAGES: [&str; 4] = ["settings", "library", "player", "editor"];
@@ -434,8 +444,9 @@ fn hits(st: &State, x: f32, y: f32) -> Vec<Source> {
             None => found.push((area, use_site, s.clone())),
         }
     }
-    // innermost first; for the same size, the use of a component (this button) before its body (every button)
-    found.sort_by(|a, b| a.0.total_cmp(&b.0).then(b.1.cmp(&a.1)));
+    // innermost first; for the same size, the use of a component (this button) before its body (every button),
+    // then what is drawn on top (written later: a child after its parent, a sibling after the ones before it)
+    found.sort_by(|a, b| a.0.total_cmp(&b.0).then(b.1.cmp(&a.1)).then(b.2.offset.cmp(&a.2.offset)));
     found.into_iter().map(|(_, _, s)| s).collect()
 }
 
@@ -548,14 +559,22 @@ fn props_of(st: &State, s: &Source) -> Vec<EditorProp> {
             let swatch = parse_color(&value)
                 .or_else(|| palette::colour_named(&value, &st.tokens, &st.mode.borrow()))
                 .unwrap_or(Color::from_argb_u8(0, 0, 0, 0));
+            // `ImageFit.cover` or `cover`: which of the values
+            let short = value.rsplit('.').next().unwrap_or(&value).trim();
+            let option_index = options.iter().position(|o| o == short).map_or(-1, |i| i as i32);
+            let picture = if kind == 7 { picture_of(&s.path, &value).unwrap_or_default() } else { Default::default() };
             Some(EditorProp {
                 name: name.to_string().into(),
                 kind,
                 type_label: label.into(),
                 bound: !value.is_empty(),
                 value: value.into(),
-                options: ModelRc::new(VecModel::from(options.into_iter().map(SharedString::from).collect::<Vec<_>>())),
+                options: ModelRc::new(VecModel::from(
+                    options.into_iter().map(|o| ComboBoxItemData { text: o.into(), tier: 0 }).collect::<Vec<_>>(),
+                )),
+                option_index,
                 swatch,
+                picture,
             })
         })
         .collect();
@@ -579,6 +598,65 @@ fn expression(kind: i32, input: &str) -> String {
         7 if !t.starts_with('@') && !t.is_empty() => format!("@image-url(\"{t}\")"),
         _ => t.to_owned(),
     }
+}
+
+/// The picture `@image-url("art/bg.png")` names, read relative to the `.slint` file that names it.
+fn picture_of(slint_file: &Path, value: &str) -> Option<slint::Image> {
+    let rel = value.trim().strip_prefix("@image-url(")?.trim_start().strip_prefix('"')?;
+    let rel = &rel[..rel.find('"')?];
+    slint::Image::load_from_path(&slint_file.parent()?.join(rel)).ok()
+}
+
+/// `#RRGGBB`, or `#RRGGBBAA` when the colour is not opaque.
+fn hex(c: Color) -> String {
+    if c.alpha() == 255 {
+        format!("#{:02X}{:02X}{:02X}", c.red(), c.green(), c.blue())
+    } else {
+        format!("#{:02X}{:02X}{:02X}{:02X}", c.red(), c.green(), c.blue(), c.alpha())
+    }
+}
+
+/// Brings a picture into the theme: a file inside the theme stays where it is, anything else is copied into
+/// `art/` (the same file is not copied twice; another file of the same name gets `-2`...). Returns the path to
+/// write in `@image-url(..)`, relative to `slint_file`.
+fn import_picture(theme_dir: &Path, file: &Path, slint_file: &Path) -> Result<String, String> {
+    let clean = i_slint_compiler::pathutils::clean_path;
+    let (dir, file) = (clean(theme_dir), clean(file));
+    let ext = file.extension().map(|e| e.to_string_lossy().to_lowercase()).unwrap_or_default();
+    if !["png", "jpg", "jpeg", "svg", "gif", "webp"].contains(&ext.as_str()) {
+        return Err(format!("not a picture: {}", file.display()));
+    }
+    let target = if file.starts_with(&dir) {
+        file
+    } else {
+        let art = dir.join("art");
+        std::fs::create_dir_all(&art).map_err(|e| e.to_string())?;
+        let bytes = std::fs::read(&file).map_err(|e| e.to_string())?;
+        let stem = file.file_stem().map(|s| s.to_string_lossy().into_owned()).unwrap_or_else(|| "picture".into());
+        let mut n = 1;
+        loop {
+            let name = if n == 1 { format!("{stem}.{ext}") } else { format!("{stem}-{n}.{ext}") };
+            let at = art.join(name);
+            match std::fs::read(&at) {
+                Ok(existing) if existing == bytes => break at,
+                Ok(_) => n += 1,
+                Err(_) => {
+                    std::fs::write(&at, &bytes).map_err(|e| e.to_string())?;
+                    break at;
+                }
+            }
+        }
+    };
+    Ok(relative(&clean(slint_file.parent().unwrap_or(&dir)), &target))
+}
+
+/// `to` written from `from` (a folder): `../art/bg.png`, with forward slashes.
+fn relative(from: &Path, to: &Path) -> String {
+    let (a, b): (Vec<_>, Vec<_>) = (from.components().collect(), to.components().collect());
+    let same = a.iter().zip(&b).take_while(|(x, y)| x == y).count();
+    let mut parts: Vec<String> = vec!["..".into(); a.len() - same];
+    parts.extend(b[same..].iter().map(|c| c.as_os_str().to_string_lossy().into_owned()));
+    parts.join("/")
 }
 
 /// The element and the ones around it in its file (outermost first).
@@ -761,6 +839,81 @@ fn shots_dir() -> Option<PathBuf> {
     a.iter().position(|x| x == "--editor-shots").and_then(|i| a.get(i + 1)).map(PathBuf::from)
 }
 
+fn set_prop(ui: &ThemeEditorWindow, s: &Rc<RefCell<State>>, name: &str, input: &str) {
+    edit_selected(ui, s, |st, sel, text| {
+        let kind = props_of(st, sel).iter().find(|p| p.name == name).map_or(0, |p| p.kind);
+        let value = expression(kind, input);
+        let after = set_binding(text, &sel.path, sel.offset, name, &value)?;
+        Ok((after, format!("{}: {name} = {value}", sel.label)))
+    });
+}
+
+fn set_token(ui: &ThemeEditorWindow, s: &Rc<RefCell<State>>, index: usize, input: &str) {
+    let result = {
+        let mut st = s.borrow_mut();
+        let Some(t) = st.tokens.get(index).cloned() else { return };
+        let (mode, all) = (st.mode.borrow().clone(), st.all_modes);
+        let value = palette::colour_input(input);
+        std::fs::read_to_string(&t.path)
+            .map_err(|e| e.to_string())
+            .and_then(|text| palette::set_token(&text, &t.path, t.offset, &mode, all, &value))
+            .and_then(|after| change(ui, &mut st, &t.path, after, true))
+            .map(|_| format!("{}.{} = {value}", t.global, t.name))
+    };
+    report(ui, result);
+    refresh_soon(ui, s);
+}
+
+/// Shows the colour picker on `colour` for what `State::picker` names.
+fn open_picker(ui: &ThemeEditorWindow, st: &State, colour: Color, title: &str) {
+    let hsva = colour.to_hsva();
+    ui.set_picker_hue(hsva.hue.rem_euclid(360.0));
+    ui.set_picker_sat(hsva.saturation);
+    ui.set_picker_val(hsva.value);
+    ui.set_picker_alpha(hsva.alpha);
+    ui.set_picker_old(colour);
+    ui.set_picker_title(title.into());
+    // the theme's colours, as the chosen mode shows them (all of them, whatever the palette tab filters)
+    let mode = st.mode.borrow().clone();
+    let swatches: Vec<EditorToken> = st
+        .tokens
+        .iter()
+        .enumerate()
+        .map(|(i, t)| EditorToken {
+            header: Default::default(),
+            name: format!("{}.{}", t.global, t.name).into(),
+            value: Default::default(),
+            swatch: palette::colour_of(t, &st.tokens, &mode).unwrap_or(Color::from_argb_u8(0, 0, 0, 0)),
+            index: i as i32,
+        })
+        .collect();
+    ui.set_picker_swatches(ModelRc::new(VecModel::from(swatches)));
+    ui.set_picker_open(true);
+}
+
+/// Writes what the picker chose (`#RRGGBB`, a typed colour, a palette name) into its target.
+fn apply_picked(ui: &ThemeEditorWindow, s: &Rc<RefCell<State>>, value: &str) {
+    let target = s.borrow().picker.clone();
+    match target {
+        Some(Target::Prop(name)) => set_prop(ui, s, &name, value),
+        Some(Target::Token(i)) => set_token(ui, s, i, value),
+        None => {}
+    }
+}
+
+/// A picture file chosen for the selected element's `name`: brought into the theme and named there.
+fn set_picture(ui: &ThemeEditorWindow, s: &Rc<RefCell<State>>, name: &str, file: &Path) {
+    let rel = {
+        let st = s.borrow();
+        let Some(sel) = st.selected.as_ref() else { return };
+        import_picture(&st.dir, file, &sel.path)
+    };
+    match rel {
+        Ok(rel) => set_prop(ui, s, name, &format!("@image-url(\"{rel}\")")),
+        Err(e) => report(ui, Err(e)),
+    }
+}
+
 pub fn run(dir: PathBuf) {
     if log::set_logger(&crate::STDERR_LOG).is_ok() {
         log::set_max_level(log::LevelFilter::Info);
@@ -802,6 +955,7 @@ pub fn run(dir: PathBuf) {
         })),
         all_modes: false,
         token_filter: String::new(),
+        picker: None,
     }));
     if let Err(e) = load(&ui, &mut st.borrow_mut()) {
         report(&ui, Err(e));
@@ -833,12 +987,7 @@ pub fn run(dir: PathBuf) {
     let (s, weak) = (st.clone(), ui.as_weak());
     ui.on_set_prop(move |name, input| {
         let Some(ui) = weak.upgrade() else { return };
-        edit_selected(&ui, &s, |st, sel, text| {
-            let kind = props_of(st, sel).iter().find(|p| p.name == name).map_or(0, |p| p.kind);
-            let value = expression(kind, &input);
-            let after = set_binding(text, &sel.path, sel.offset, &name, &value)?;
-            Ok((after, format!("{}: {name} = {value}", sel.label)))
-        });
+        set_prop(&ui, &s, &name, &input);
     });
     let (s, weak) = (st.clone(), ui.as_weak());
     ui.on_reset_prop(move |name| {
@@ -940,19 +1089,75 @@ pub fn run(dir: PathBuf) {
     let (s, weak) = (st.clone(), ui.as_weak());
     ui.on_set_token(move |index, input| {
         let Some(ui) = weak.upgrade() else { return };
-        let result = {
-            let mut st = s.borrow_mut();
-            let Some(t) = st.tokens.get(index as usize).cloned() else { return };
-            let (mode, all) = (st.mode.borrow().clone(), st.all_modes);
-            let value = palette::colour_input(&input);
-            std::fs::read_to_string(&t.path)
-                .map_err(|e| e.to_string())
-                .and_then(|text| palette::set_token(&text, &t.path, t.offset, &mode, all, &value))
-                .and_then(|after| change(&ui, &mut st, &t.path, after, true))
-                .map(|_| format!("{}.{} = {value}", t.global, t.name))
+        set_token(&ui, &s, index as usize, &input);
+    });
+    let (s, weak) = (st.clone(), ui.as_weak());
+    ui.on_open_picker_prop(move |name| {
+        let Some(ui) = weak.upgrade() else { return };
+        use slint::Model;
+        let colour = ui.get_props().iter().find(|p| p.name == name).map_or(Color::from_rgb_u8(0, 0, 0), |p| p.swatch);
+        s.borrow_mut().picker = Some(Target::Prop(name.to_string()));
+        let title = format!("{} · {name}", s.borrow().selected.as_ref().map(|x| x.label.clone()).unwrap_or_default());
+        open_picker(&ui, &s.borrow(), colour, &title);
+    });
+    let (s, weak) = (st.clone(), ui.as_weak());
+    ui.on_open_picker_token(move |index| {
+        let Some(ui) = weak.upgrade() else { return };
+        let (colour, title) = {
+            let st = s.borrow();
+            let Some(t) = st.tokens.get(index as usize) else { return };
+            let mode = st.mode.borrow().clone();
+            (palette::colour_of(t, &st.tokens, &mode).unwrap_or(Color::from_rgb_u8(0, 0, 0)), format!("{}.{}", t.global, t.name))
         };
-        report(&ui, result);
-        refresh_soon(&ui, &s);
+        s.borrow_mut().picker = Some(Target::Token(index as usize));
+        open_picker(&ui, &s.borrow(), colour, &title);
+    });
+    ui.on_hex_of(|c| hex(c).into());
+    let (s, weak) = (st.clone(), ui.as_weak());
+    ui.on_picker_commit(move |c| {
+        let Some(ui) = weak.upgrade() else { return };
+        apply_picked(&ui, &s, &hex(c));
+    });
+    let (s, weak) = (st.clone(), ui.as_weak());
+    ui.on_picker_text(move |t| {
+        let Some(ui) = weak.upgrade() else { return };
+        apply_picked(&ui, &s, &palette::colour_input(&t));
+    });
+    let (s, weak) = (st.clone(), ui.as_weak());
+    ui.on_picker_ref(move |index| {
+        let Some(ui) = weak.upgrade() else { return };
+        let text = {
+            let st = s.borrow();
+            let Some(r) = st.tokens.get(index as usize) else { return };
+            match &st.picker {
+                // a colour of the same global names it plainly
+                Some(Target::Token(i)) if st.tokens.get(*i).is_some_and(|t| t.global == r.global) => r.name.clone(),
+                _ => format!("{}.{}", r.global, r.name),
+            }
+        };
+        apply_picked(&ui, &s, &text);
+    });
+    let (s, weak) = (st.clone(), ui.as_weak());
+    ui.on_choose_image_file(move |name, file| {
+        let Some(ui) = weak.upgrade() else { return };
+        set_picture(&ui, &s, &name, Path::new(file.as_str()));
+    });
+    let (s, weak) = (st.clone(), ui.as_weak());
+    ui.on_choose_image(move |name| {
+        let (sender, receiver) = std::sync::mpsc::channel();
+        let filter = lag_core::i18n::tr("ThemeEditor_ImageFilter").to_owned();
+        std::thread::spawn(move || {
+            let _ = sender.send(crate::views::settings::os::pick_file(None, &filter, "*.png;*.jpg;*.jpeg;*.svg;*.gif;*.webp", "png"));
+        });
+        let (s, weak) = (s.clone(), weak.clone());
+        let timer = Rc::new(slint::Timer::default());
+        let keep = timer.clone();
+        timer.start(slint::TimerMode::Repeated, Duration::from_millis(50), move || {
+            let Ok(result) = receiver.try_recv() else { return };
+            keep.stop();
+            let (Some(file), Some(ui)) = (result, weak.upgrade()) else { return };
+            set_picture(&ui, &s, &name, Path::new(&file));
+        });
     });
     let (s, weak) = (st.clone(), ui.as_weak());
     ui.on_palette_mode_changed(move |m| {
@@ -1053,7 +1258,9 @@ fn script_lines() -> Vec<String> {
 
 /// One line of an `--editor-script` (checks without the mouse): `pick X Y`, `set NAME VALUE`, `reset NAME`,
 /// `crumb N`, `page N`, `undo`, `redo`, `filter TEXT`, `do OP`, `drag DX DY`, `tab N`, `mode dark|light|neon`,
-/// `allmodes 0|1`, `token NAME VALUE`, `wait MS`, `shot NAME` (with `--editor-shots`), `quit`.
+/// `allmodes 0|1`, `token NAME VALUE`, `click X Y`, `picker-prop NAME`, `picker-token NAME`, `picker-hsv H S V A`,
+/// `picker-text TEXT`, `picker-ref Global.name`, `picker-close`, `image NAME FILE`, `wait MS`, `shot NAME` (with
+/// `--editor-shots`), `quit`.
 fn command(ui: &ThemeEditorWindow, line: &str) -> Command {
     if std::env::var_os("LAG_EDITOR_DEBUG").is_some() {
         log::info!("[ThemeEditor] script: {line}");
@@ -1097,6 +1304,46 @@ fn command(ui: &ThemeEditorWindow, line: &str) -> Command {
             if let Some(t) = ui.get_tokens().iter().find(|t| t.name == n) {
                 ui.invoke_set_token(t.index, v.into());
             }
+        }
+        // `click X Y`: a mouse click into the editor window itself (nothing reaches the system)
+        "click" => {
+            use slint::platform::{PointerEventButton, WindowEvent};
+            let n = nums();
+            let position = slint::LogicalPosition::new(n.first().copied().unwrap_or(0.0), n.get(1).copied().unwrap_or(0.0));
+            let button = PointerEventButton::Left;
+            ui.window().dispatch_event(WindowEvent::PointerMoved { position });
+            ui.window().dispatch_event(WindowEvent::PointerPressed { position, button });
+            ui.window().dispatch_event(WindowEvent::PointerReleased { position, button });
+        }
+        "picker-prop" => ui.invoke_open_picker_prop(rest.trim().into()),
+        "picker-token" => {
+            use slint::Model;
+            if let Some(t) = ui.get_tokens().iter().find(|t| t.name == rest.trim()) {
+                ui.invoke_open_picker_token(t.index);
+            }
+        }
+        // `picker-hsv H S V A`: moves the picker there and writes it, as a released drag does
+        "picker-hsv" => {
+            let n = nums();
+            let get = |i: usize, d: f32| n.get(i).copied().unwrap_or(d);
+            ui.set_picker_hue(get(0, 0.0));
+            ui.set_picker_sat(get(1, 1.0));
+            ui.set_picker_val(get(2, 1.0));
+            ui.set_picker_alpha(get(3, 1.0));
+            ui.invoke_picker_commit(Color::from_hsva(get(0, 0.0), get(1, 1.0), get(2, 1.0), get(3, 1.0)));
+        }
+        "picker-text" => ui.invoke_picker_text(rest.trim().into()),
+        "picker-ref" => {
+            use slint::Model;
+            if let Some(t) = ui.get_picker_swatches().iter().find(|t| t.name == rest.trim()) {
+                ui.invoke_picker_ref(t.index);
+            }
+        }
+        "picker-close" => ui.set_picker_open(false),
+        // `image NAME FILE`: as if FILE was chosen in the dialog for NAME
+        "image" => {
+            let (n, f) = rest.split_once(' ').unwrap_or((rest, ""));
+            ui.invoke_choose_image_file(n.into(), f.trim().into());
         }
         "wait" => return Command::Wait(rest.trim().parse().unwrap_or(500)),
         "shot" => return Command::Shot(rest.trim().to_owned()),
@@ -1195,6 +1442,26 @@ mod tests {
         assert!(in_layout(&find_element(&root, a_at).unwrap()));
         assert!(!in_layout(&find_element(&root, lay_at).unwrap()));
         assert_eq!(label_of(&find_element(&root, text.find("Window").unwrap() as u32).unwrap()), "W");
+    }
+
+    #[test]
+    fn pictures_come_into_the_theme_once() {
+        let root = std::env::temp_dir().join(format!("lag-picture-test-{}", std::process::id()));
+        let theme = root.join("theme");
+        std::fs::create_dir_all(theme.join("views")).unwrap();
+        std::fs::create_dir_all(root.join("outside")).unwrap();
+        let a = root.join("outside").join("bg.png");
+        std::fs::write(&a, [1u8, 2, 3]).unwrap();
+        let page = theme.join("views").join("library.slint");
+        assert_eq!(import_picture(&theme, &a, &page).unwrap(), "../art/bg.png");
+        assert_eq!(import_picture(&theme, &a, &page).unwrap(), "../art/bg.png", "the same file is not copied again");
+        std::fs::write(&a, [9u8]).unwrap();
+        assert_eq!(import_picture(&theme, &a, &page).unwrap(), "../art/bg-2.png", "another file of that name");
+        assert_eq!(import_picture(&theme, &theme.join("art").join("bg.png"), &theme.join("app.slint")).unwrap(), "art/bg.png");
+        assert!(import_picture(&theme, &root.join("outside").join("x.exe"), &page).is_err());
+        let _ = std::fs::remove_dir_all(root);
+        assert_eq!(hex(Color::from_rgb_u8(0xC0, 0x39, 0x2B)), "#C0392B");
+        assert_eq!(hex(Color::from_argb_u8(0x80, 0, 0xFF, 0x10)), "#00FF1080");
     }
 
     #[test]

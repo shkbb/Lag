@@ -38,6 +38,12 @@ pub(super) fn browse_folder(current: &str) -> Option<String> {
 /// System Open (`save` = None) or Save As (`save` = Some(default file name)) dialog for one `.lagtheme` file.
 /// None = cancelled.
 pub(super) fn pick_theme_file(save: Option<&str>) -> Option<String> {
+    pick_file(save, &tr("Theme_FileFilter"), "*.lagtheme", "lagtheme")
+}
+
+/// System Open / Save As dialog for one file of the kind `pattern` (`*.png;*.jpg`), named `filter` in the list;
+/// `ext` is added to a saved name without one. None = cancelled. Blocks: call it off the UI thread.
+pub(crate) fn pick_file(save: Option<&str>, filter: &str, pattern: &str, ext: &str) -> Option<String> {
     use windows::{
         core::{Interface, PCWSTR},
         Win32::{System::Com::*, UI::Shell::Common::COMDLG_FILTERSPEC, UI::Shell::*},
@@ -52,14 +58,14 @@ pub(super) fn pick_theme_file(save: Option<&str>) -> Option<String> {
         }
         let _com = Apartment;
         let wide = |s: &str| s.encode_utf16().chain(Some(0)).collect::<Vec<u16>>();
-        let (name, pattern) = (wide(&tr("Theme_FileFilter")), wide("*.lagtheme"));
+        let (name, pattern) = (wide(filter), wide(pattern));
         let spec = [COMDLG_FILTERSPEC { pszName: PCWSTR(name.as_ptr()), pszSpec: PCWSTR(pattern.as_ptr()) }];
         let dialog: IFileDialog = match save {
             Some(default) => {
                 let d: IFileSaveDialog = CoCreateInstance(&FileSaveDialog, None, CLSCTX_INPROC_SERVER).ok()?;
                 let file = wide(default);
                 let _ = d.SetFileName(PCWSTR(file.as_ptr()));
-                let ext = wide("lagtheme");
+                let ext = wide(ext);
                 let _ = d.SetDefaultExtension(PCWSTR(ext.as_ptr()));
                 d.cast().ok()?
             }

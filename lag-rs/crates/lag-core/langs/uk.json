@@ -382,5 +382,9 @@
   "ThemeEditor_AllModes": "Колір замінює все значення: однаковий у кожному режимі",
   "ThemeEditor_PaletteSearch": "Знайти колір…",
   "ThemeEditor_PaletteEmpty": "У цієї теми немає палітри: її кольори записані прямо в елементах (вкладка «Елемент»)",
-  "ThemeEditor_PaletteUnknown": "Цей колір залежить не лише від режиму: увімкніть «однаковий у кожному режимі» або змініть його у файлі"
+  "ThemeEditor_PaletteUnknown": "Цей колір залежить не лише від режиму: увімкніть «однаковий у кожному режимі» або змініть його у файлі",
+  "ThemeEditor_Default": "типово",
+  "ThemeEditor_Choose": "Вибрати…",
+  "ThemeEditor_PickerPalette": "Кольори теми",
+  "ThemeEditor_ImageFilter": "Зображення"
 }

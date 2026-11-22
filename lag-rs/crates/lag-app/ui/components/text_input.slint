@@ -24,6 +24,7 @@ export component LagTextInput {
     Rectangle {
         width: 100%;
         height: 100%;
+        clip: true;
         border-radius: Theme.rad-control;
         border-width: 1px;
         background: input.has-focus
@@ -42,9 +43,12 @@ export component LagTextInput {
             padding-top: 4px;
             padding-bottom: 4px;
 
-            // Placeholder + TextInput overlay
+            // Placeholder + TextInput overlay (a text longer than the field stays inside it)
             Rectangle {
                 horizontal-stretch: 1;
+                // a long text must not widen the field past its frame (the TextInput scrolls it instead)
+                min-width: 0px;
+                clip: true;
                 if root.text == "" && root.placeholder != "": Text {
                     x: 0px;
                     width: parent.width;

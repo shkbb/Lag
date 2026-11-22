@@ -31,7 +31,7 @@ mod cloud;
 mod devices;
 mod edit;
 mod normalize;
-mod os;
+pub(crate) mod os;
 mod rows;
 mod state;
 #[cfg(test)]
