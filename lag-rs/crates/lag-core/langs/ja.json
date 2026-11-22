@@ -395,5 +395,11 @@
   "Theme_OwnRow_Desc": "テーマは Lag のインターフェースから始まり、変更した部分だけを保存します。それ以外には Lag の更新が反映されます",
   "Theme_ShareRow": "共有",
   "Theme_ShareRow_Desc": "テーマは 1 つの .lagtheme ファイルです。他の人のテーマを開いたり、自分のテーマを共有したりできます",
-  "ThemeEditor_Inherited": "Lag のファイル：最初の変更でテーマにコピーされます"
+  "ThemeEditor_Inherited": "Lag のファイル：最初の変更でテーマにコピーされます",
+  "Splash_UpdateDownloading": "{0} に更新中… {1}%",
+  "Splash_UpdateDownloadingPlain": "{0} に更新中…",
+  "Splash_UpdateInstalling": "{0} をインストール中…",
+  "Splash_UpdateSkip": "クリックするとすぐに Lag を開きます。更新は次回インストールされます",
+  "Update_DownloadingPercent": "更新をダウンロード中… {0}%",
+  "Update_InstallFailed": "更新をインストールできませんでした。現在のバージョンを起動します"
 }

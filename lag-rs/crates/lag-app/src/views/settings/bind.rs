@@ -282,9 +282,11 @@ pub(super) fn bind_controls(ui: &AppWindow, ctx: &Rc<AppCtx>, state: &Rc<RefCell
                 st.borrow_mut().update_status = tr("Update_Checking");
                 st.borrow().refresh(&ui);
                 let weak = ui.as_weak();
-                crate::shell::updater::check_for_updates(false, move |status| {
+                let mode = st.borrow().settings.theme.clone().unwrap_or_else(|| "dark".into());
+                // a newer Lag downloads here with its percentage, then installs at once (LagUpdate.exe shows it)
+                crate::shell::updater::manual_check(mode, move |status| {
                     if let Some(ui) = weak.upgrade() {
-                        ui.global::<SettingsVM>().invoke_update_status(status.unwrap_or("").into());
+                        ui.global::<SettingsVM>().invoke_update_status(status.into());
                     }
                 });
             }

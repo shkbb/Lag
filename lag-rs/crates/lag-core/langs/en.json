@@ -395,5 +395,11 @@
   "Theme_OwnRow_Desc": "A theme starts as Lag's interface and keeps only what you change: Lag's updates still reach the rest",
   "Theme_ShareRow": "Sharing",
   "Theme_ShareRow_Desc": "A theme is one .lagtheme file: open other people's, share yours",
-  "ThemeEditor_Inherited": "Lag's own file: the first change copies it into the theme"
+  "ThemeEditor_Inherited": "Lag's own file: the first change copies it into the theme",
+  "Splash_UpdateDownloading": "Updating to {0}… {1}%",
+  "Splash_UpdateDownloadingPlain": "Updating to {0}…",
+  "Splash_UpdateInstalling": "Installing {0}…",
+  "Splash_UpdateSkip": "Click to open Lag now: the update installs next time",
+  "Update_DownloadingPercent": "Downloading the update… {0}%",
+  "Update_InstallFailed": "The update did not install: starting this version"
 }

@@ -40,9 +40,8 @@ pub fn init(ui: &crate::AppWindow, ctx: &Rc<AppCtx>) {
         let hud = hud::Hud::new(ctx);
         autostart::init(ctx);
         let update_timer = slint::Timer::default();
-        update_timer.start(slint::TimerMode::SingleShot, std::time::Duration::from_secs(3), || {
-            updater::check_for_updates(true, |_| {});
-        });
+        // download a newer Lag for the next start (the splash's own check, when it ran, is still going or done)
+        update_timer.start(slint::TimerMode::SingleShot, std::time::Duration::from_secs(3), updater::background_fetch);
         if ctx.settings().start_minimized {
             start_minimized(ui);
         }

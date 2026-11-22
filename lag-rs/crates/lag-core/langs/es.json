@@ -395,5 +395,11 @@
   "Theme_OwnRow_Desc": "Un tema empieza como la interfaz de Lag y guarda solo tus cambios: las actualizaciones de Lag llegan al resto",
   "Theme_ShareRow": "Compartir",
   "Theme_ShareRow_Desc": "Un tema es un archivo .lagtheme: abre los de otros, comparte el tuyo",
-  "ThemeEditor_Inherited": "Archivo de Lag: el primer cambio lo copia al tema"
+  "ThemeEditor_Inherited": "Archivo de Lag: el primer cambio lo copia al tema",
+  "Splash_UpdateDownloading": "Actualizando a {0}… {1}%",
+  "Splash_UpdateDownloadingPlain": "Actualizando a {0}…",
+  "Splash_UpdateInstalling": "Instalando {0}…",
+  "Splash_UpdateSkip": "Haz clic para abrir Lag ahora: la actualización se instalará la próxima vez",
+  "Update_DownloadingPercent": "Descargando la actualización… {0}%",
+  "Update_InstallFailed": "La actualización no se instaló: iniciando esta versión"
 }

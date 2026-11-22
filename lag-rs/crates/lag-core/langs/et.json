@@ -395,5 +395,11 @@
   "Theme_OwnRow_Desc": "Teema algab Lagi liidesena ja hoiab ainult sinu muudatusi: Lagi uuendused jõuavad ülejäänuni",
   "Theme_ShareRow": "Jagamine",
   "Theme_ShareRow_Desc": "Teema on üks .lagtheme-fail: ava teiste omi, jaga enda oma",
-  "ThemeEditor_Inherited": "Lagi fail: esimene muudatus kopeerib selle teemasse"
+  "ThemeEditor_Inherited": "Lagi fail: esimene muudatus kopeerib selle teemasse",
+  "Splash_UpdateDownloading": "Uuendus {0}… {1}%",
+  "Splash_UpdateDownloadingPlain": "Uuendus {0}…",
+  "Splash_UpdateInstalling": "Paigaldan {0}…",
+  "Splash_UpdateSkip": "Klõpsa, et avada Lag kohe: uuendus paigaldatakse järgmisel korral",
+  "Update_DownloadingPercent": "Uuenduse allalaadimine… {0}%",
+  "Update_InstallFailed": "Uuendus ei paigaldunud: käivitan selle versiooni"
 }

@@ -395,5 +395,11 @@
   "Theme_OwnRow_Desc": "Tēma sākas kā Lag saskarne un glabā tikai jūsu izmaiņas: Lag atjauninājumi sasniedz pārējo",
   "Theme_ShareRow": "Kopīgošana",
   "Theme_ShareRow_Desc": "Tēma ir viens .lagtheme fails: atveriet citu, dalieties ar savējo",
-  "ThemeEditor_Inherited": "Lag fails: pirmās izmaiņas to nokopēs tēmā"
+  "ThemeEditor_Inherited": "Lag fails: pirmās izmaiņas to nokopēs tēmā",
+  "Splash_UpdateDownloading": "Atjaunina uz {0}… {1}%",
+  "Splash_UpdateDownloadingPlain": "Atjaunina uz {0}…",
+  "Splash_UpdateInstalling": "Instalē {0}…",
+  "Splash_UpdateSkip": "Noklikšķiniet, lai atvērtu Lag tagad: atjauninājums tiks instalēts nākamreiz",
+  "Update_DownloadingPercent": "Lejupielādē atjauninājumu… {0}%",
+  "Update_InstallFailed": "Atjauninājums netika instalēts: palaiž šo versiju"
 }

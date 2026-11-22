@@ -395,5 +395,11 @@
   "Theme_OwnRow_Desc": "Ett tema börjar som Lags gränssnitt och sparar bara dina ändringar: Lags uppdateringar når resten",
   "Theme_ShareRow": "Delning",
   "Theme_ShareRow_Desc": "Ett tema är en .lagtheme-fil: öppna andras, dela ditt eget",
-  "ThemeEditor_Inherited": "Lags egen fil: den första ändringen kopierar den till temat"
+  "ThemeEditor_Inherited": "Lags egen fil: den första ändringen kopierar den till temat",
+  "Splash_UpdateDownloading": "Uppdaterar till {0}… {1}%",
+  "Splash_UpdateDownloadingPlain": "Uppdaterar till {0}…",
+  "Splash_UpdateInstalling": "Installerar {0}…",
+  "Splash_UpdateSkip": "Klicka för att öppna Lag nu: uppdateringen installeras nästa gång",
+  "Update_DownloadingPercent": "Laddar ner uppdateringen… {0}%",
+  "Update_InstallFailed": "Uppdateringen installerades inte: startar den här versionen"
 }

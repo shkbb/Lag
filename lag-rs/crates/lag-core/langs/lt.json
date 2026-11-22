@@ -395,5 +395,11 @@
   "Theme_OwnRow_Desc": "Tema prasideda kaip Lag sąsaja ir saugo tik jūsų pakeitimus: Lag naujinimai pasiekia visa kita",
   "Theme_ShareRow": "Dalijimasis",
   "Theme_ShareRow_Desc": "Tema – tai vienas .lagtheme failas: atidarykite kitų, dalinkitės savo",
-  "ThemeEditor_Inherited": "Lag failas: pirmas pakeitimas nukopijuos jį į temą"
+  "ThemeEditor_Inherited": "Lag failas: pirmas pakeitimas nukopijuos jį į temą",
+  "Splash_UpdateDownloading": "Atnaujinama į {0}… {1}%",
+  "Splash_UpdateDownloadingPlain": "Atnaujinama į {0}…",
+  "Splash_UpdateInstalling": "Diegiama {0}…",
+  "Splash_UpdateSkip": "Spustelėkite, kad atidarytumėte Lag dabar: naujinimas bus įdiegtas kitą kartą",
+  "Update_DownloadingPercent": "Atsisiunčiamas naujinimas… {0}%",
+  "Update_InstallFailed": "Naujinimas neįdiegtas: paleidžiama ši versija"
 }

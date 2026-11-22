@@ -395,5 +395,11 @@
   "Theme_OwnRow_Desc": "Et tema starter som Lags grensesnitt og lagrer bare endringene dine: Lags oppdateringer når resten",
   "Theme_ShareRow": "Deling",
   "Theme_ShareRow_Desc": "Et tema er én .lagtheme-fil: åpne andres, del ditt eget",
-  "ThemeEditor_Inherited": "Lags egen fil: den første endringen kopierer den inn i temaet"
+  "ThemeEditor_Inherited": "Lags egen fil: den første endringen kopierer den inn i temaet",
+  "Splash_UpdateDownloading": "Oppdaterer til {0}… {1}%",
+  "Splash_UpdateDownloadingPlain": "Oppdaterer til {0}…",
+  "Splash_UpdateInstalling": "Installerer {0}…",
+  "Splash_UpdateSkip": "Klikk for å åpne Lag nå: oppdateringen installeres neste gang",
+  "Update_DownloadingPercent": "Laster ned oppdateringen… {0}%",
+  "Update_InstallFailed": "Oppdateringen ble ikke installert: starter denne versjonen"
 }

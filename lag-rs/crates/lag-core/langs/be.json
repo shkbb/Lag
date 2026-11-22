@@ -395,5 +395,11 @@
   "Theme_OwnRow_Desc": "Тэма пачынаецца як інтэрфейс Lag і захоўвае толькі вашы змены: абнаўленні Lag даходзяць да астатняга",
   "Theme_ShareRow": "Абмен",
   "Theme_ShareRow_Desc": "Тэма — гэта адзін файл .lagtheme: адкрывайце чужыя, дзяліцеся сваёй",
-  "ThemeEditor_Inherited": "Файл Lag: першая змена скапіюе яго ў тэму"
+  "ThemeEditor_Inherited": "Файл Lag: першая змена скапіюе яго ў тэму",
+  "Splash_UpdateDownloading": "Абнаўленне {0}… {1}%",
+  "Splash_UpdateDownloadingPlain": "Абнаўленне {0}…",
+  "Splash_UpdateInstalling": "Устаноўка {0}…",
+  "Splash_UpdateSkip": "Націсніце, каб адкрыць Lag зараз: абнаўленне ўсталюецца наступным разам",
+  "Update_DownloadingPercent": "Спампоўка абнаўлення… {0}%",
+  "Update_InstallFailed": "Абнаўленне не ўсталявалася: запускаю гэтую версію"
 }

@@ -211,6 +211,8 @@ impl Snapshot {
         };
         let _ = std::fs::create_dir_all(dir);
         let win = ui.window();
+        // `splash`: Lag's startup splash in its update state, drawn over the page (top-left, 300x340)
+        let mut splash: Option<crate::SplashWindow> = None;
         let num = |a: &[&str], i: usize| -> f32 { a.get(i).and_then(|v| v.parse().ok()).unwrap_or(0.0) };
         for (ln, line) in text.lines().enumerate() {
             let line = line.split('#').next().unwrap_or("").trim();
@@ -300,6 +302,37 @@ impl Snapshot {
                     }
                 }
                 // Same path as the language picker in Settings (persists to the scratch settings only).
+                // splash MODE STATE: STATE = download (42 %), unknown (no size), install
+                "splash" => {
+                    if let Ok(sp) = crate::SplashWindow::new() {
+                        let tr = lag_core::i18n::format;
+                        sp.set_theme_mode(a.first().copied().unwrap_or("dark").into());
+                        sp.set_show_progress(true);
+                        match a.get(1).copied().unwrap_or("download") {
+                            "install" => {
+                                sp.set_busy(true);
+                                sp.set_text(tr("Splash_UpdateInstalling", &["2.2.1"]).unwrap_or_default().into());
+                            }
+                            "unknown" => {
+                                sp.set_busy(true);
+                                sp.set_text(tr("Splash_UpdateDownloadingPlain", &["2.2.1"]).unwrap_or_default().into());
+                                sp.set_hint(lag_core::i18n::tr("Splash_UpdateSkip").into());
+                            }
+                            _ => {
+                                sp.set_progress(0.42);
+                                sp.set_text(tr("Splash_UpdateDownloading", &["2.2.1", "42"]).unwrap_or_default().into());
+                                sp.set_hint(lag_core::i18n::tr("Splash_UpdateSkip").into());
+                            }
+                        }
+                        let _ = sp.show();
+                        splash = Some(sp);
+                    }
+                }
+                "splash-off" => {
+                    if let Some(sp) = splash.take() {
+                        let _ = sp.hide();
+                    }
+                }
                 "lang" => {
                     let code = a.first().copied().unwrap_or("en");
                     let idx = lag_core::i18n::LANGUAGES.iter().position(|l| l.code == code).unwrap_or(0);

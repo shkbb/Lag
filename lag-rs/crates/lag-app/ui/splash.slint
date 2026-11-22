@@ -1,7 +1,8 @@
 // Startup splash (owner, 2026-11-16: "like Discord's"): the app's background with the brand-coloured Lag
 // rewind-clock mark animated: the rewind arrow circles backwards, the minute and hour hands run forward at
 // their own speeds. Geometry is computed (sin/cos), not transformed, so every renderer draws it identically.
-// Shown only on a manual launch (not when starting minimized into the tray).
+// Shown only on a manual launch (not when starting minimized into the tray). It also carries an update: the
+// download's progress (Lag), then the install (the LagUpdate.exe helper shows this same window, crates/lag-update).
 import { Theme } from "theme/tokens.slint";
 export { Theme }
 
@@ -13,6 +14,13 @@ export component SplashWindow inherits Window {
     height: 340px;
     in property <string> theme-mode: "dark";
     in property <string> text: "Starting...";
+    // an update: the bar under the text (progress 0..1, or `busy` = running with no known end), and a hint under it
+    in property <bool> show-progress: false;
+    in property <float> progress: 0;
+    in property <bool> busy: false;
+    in property <string> hint;
+    // a click on the window while `hint` is shown (open Lag now; the update waits for the next start)
+    callback skip();
     changed theme-mode => { Theme.mode = root.theme-mode; }
     init => { Theme.mode = root.theme-mode; }
 
@@ -114,6 +122,38 @@ export component SplashWindow inherits Window {
             font-size: 15px;
             font-weight: 600;
             horizontal-alignment: center;
+        }
+        if root.show-progress: Rectangle {
+            x: (parent.width - 180px) / 2;
+            y: 92px + root.mark + 40px + 32px;
+            width: 180px;
+            height: 4px;
+            border-radius: 2px;
+            clip: true;
+            background: root.dark ? #FFFFFF1F : #0000001F;
+            // known progress: filled from the left; busy: a segment sweeping across
+            Rectangle {
+                x: root.busy ? (parent.width + self.width) * mod(root.t, 1400) / 1400 - self.width : 0px;
+                width: root.busy ? 60px : parent.width * clamp(root.progress, 0, 1);
+                height: 100%;
+                border-radius: 2px;
+                background: root.ink;
+            }
+        }
+        if root.hint != "": Text {
+            x: 20px;
+            y: 92px + root.mark + 40px + 48px;
+            width: parent.width - 40px;
+            text: root.hint;
+            color: Theme.text-faint;
+            font-family: Theme.font-ui;
+            font-size: 11.5px;
+            wrap: word-wrap;
+            horizontal-alignment: center;
+        }
+        if root.hint != "": TouchArea {
+            mouse-cursor: pointer;
+            clicked => { root.skip(); }
         }
     }
 }

@@ -395,5 +395,11 @@
   "Theme_OwnRow_Desc": "Ein Theme beginnt als Lags Oberfläche und speichert nur deine Änderungen: Lags Updates erreichen den Rest",
   "Theme_ShareRow": "Teilen",
   "Theme_ShareRow_Desc": "Ein Theme ist eine .lagtheme-Datei: fremde öffnen, eigene teilen",
-  "ThemeEditor_Inherited": "Datei von Lag: die erste Änderung kopiert sie ins Theme"
+  "ThemeEditor_Inherited": "Datei von Lag: die erste Änderung kopiert sie ins Theme",
+  "Splash_UpdateDownloading": "Update auf {0}… {1}%",
+  "Splash_UpdateDownloadingPlain": "Update auf {0}…",
+  "Splash_UpdateInstalling": "Installiere {0}…",
+  "Splash_UpdateSkip": "Klicken, um Lag jetzt zu öffnen: das Update wird beim nächsten Mal installiert",
+  "Update_DownloadingPercent": "Update wird geladen… {0}%",
+  "Update_InstallFailed": "Update nicht installiert: diese Version startet"
 }

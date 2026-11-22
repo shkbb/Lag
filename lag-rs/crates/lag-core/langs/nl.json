@@ -395,5 +395,11 @@
   "Theme_OwnRow_Desc": "Een thema begint als de interface van Lag en bewaart alleen jouw wijzigingen: updates van Lag bereiken de rest",
   "Theme_ShareRow": "Delen",
   "Theme_ShareRow_Desc": "Een thema is één .lagtheme-bestand: open die van anderen, deel het jouwe",
-  "ThemeEditor_Inherited": "Bestand van Lag: de eerste wijziging kopieert het naar het thema"
+  "ThemeEditor_Inherited": "Bestand van Lag: de eerste wijziging kopieert het naar het thema",
+  "Splash_UpdateDownloading": "Bijwerken naar {0}… {1}%",
+  "Splash_UpdateDownloadingPlain": "Bijwerken naar {0}…",
+  "Splash_UpdateInstalling": "{0} installeren…",
+  "Splash_UpdateSkip": "Klik om Lag nu te openen: de update wordt de volgende keer geïnstalleerd",
+  "Update_DownloadingPercent": "Update downloaden… {0}%",
+  "Update_InstallFailed": "Update niet geïnstalleerd: deze versie wordt gestart"
 }

@@ -395,5 +395,11 @@
   "Theme_OwnRow_Desc": "Тема починається як інтерфейс Lag і зберігає лише ваші зміни: оновлення Lag доходять до решти",
   "Theme_ShareRow": "Обмін",
   "Theme_ShareRow_Desc": "Тема — це один файл .lagtheme: відкривайте чужі, діліться своєю",
-  "ThemeEditor_Inherited": "Файл Lag: перша зміна скопіює його в тему"
+  "ThemeEditor_Inherited": "Файл Lag: перша зміна скопіює його в тему",
+  "Splash_UpdateDownloading": "Оновлення {0}… {1}%",
+  "Splash_UpdateDownloadingPlain": "Оновлення {0}…",
+  "Splash_UpdateInstalling": "Встановлення {0}…",
+  "Splash_UpdateSkip": "Клацніть, щоб відкрити Lag зараз: оновлення встановиться наступного разу",
+  "Update_DownloadingPercent": "Завантаження оновлення… {0}%",
+  "Update_InstallFailed": "Оновлення не встановилось: запускаю цю версію"
 }

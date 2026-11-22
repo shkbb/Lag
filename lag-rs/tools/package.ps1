@@ -25,7 +25,7 @@ if (-not $Out) { $Out = Join-Path $repo "release-publish-rs" }
 if (-not $NoBuild) {
     Push-Location $lagRs
     try {
-        & cargo build --release -p lag-app
+        & cargo build --release -p lag-app -p lag-update
         if ($LASTEXITCODE -ne 0) { throw "cargo build failed ($LASTEXITCODE)" }
     } finally { Pop-Location }
 }
@@ -34,6 +34,8 @@ if (Test-Path $Out) { Remove-Item -Recurse -Force $Out }
 New-Item -ItemType Directory -Force $Out | Out-Null
 
 Copy-Item (Join-Path $release "Lag.exe") $Out
+# shows an update while the installer runs, then starts the new Lag (crates/lag-update)
+Copy-Item (Join-Path $release "LagUpdate.exe") $Out
 Get-ChildItem $release -Filter *.dll | Copy-Item -Destination $Out
 foreach ($sub in "ffmpeg", "rnnoise") {
     Copy-Item -Recurse (Join-Path $repo "InstantReplay\$sub") (Join-Path $Out $sub)
@@ -47,7 +49,7 @@ Copy-Item (Join-Path $repo "LICENSE") $Out
 Copy-Item -Recurse (Join-Path $repo "lag-rs\crates\lag-app\ui") (Join-Path $Out "ui")
 
 $required = @(
-    "Lag.exe", "libmpv-2.dll",
+    "Lag.exe", "LagUpdate.exe", "libmpv-2.dll",
     "avcodec-61.dll", "avdevice-61.dll", "avfilter-10.dll", "avformat-61.dll", "avutil-59.dll",
     "postproc-58.dll", "swresample-5.dll", "swscale-8.dll",
     "ffmpeg\ffmpeg.exe", "ffmpeg\ffprobe.exe", "ffmpeg\LICENSE.txt",
@@ -72,8 +74,10 @@ $strip = @(
     (Get-ChildItem "$env:LOCALAPPDATA\Microsoft\WinGet\Packages" -Recurse -Filter strip.exe -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty FullName)
 ) | Where-Object { $_ } | Select-Object -First 1
 if ($strip) {
-    & $strip --strip-debug (Join-Path $Out "Lag.exe")
-    if ($LASTEXITCODE -ne 0) { throw "strip failed ($LASTEXITCODE)" }
+    foreach ($exe in "Lag.exe", "LagUpdate.exe") {
+        & $strip --strip-debug (Join-Path $Out $exe)
+        if ($LASTEXITCODE -ne 0) { throw "strip of $exe failed ($LASTEXITCODE)" }
+    }
     Write-Host "stripped debug info: $([math]::Round((Get-Item (Join-Path $Out 'Lag.exe')).Length / 1MB, 1)) MB"
 } else {
     Write-Warning "strip not found: Lag.exe ships with its debug line tables (~105 MB)"

@@ -113,31 +113,143 @@ fn main() {
         Some((ui, ctx))
     };
 
+    let mode = settings.theme.clone().unwrap_or_else(|| "dark".into());
+    // A newer Lag downloaded earlier (by a start into the tray, or a check the splash gave up on): installed now,
+    // before Lag opens; LagUpdate.exe shows it and starts the new Lag.
+    if let Some((version, installer)) = shell::updater::cached_update() {
+        log::info!("[Startup] installing the downloaded update {}", version.short());
+        if shell::updater::hand_off(&installer, &mode) {
+            return;
+        }
+    }
     let splash = (!settings.start_minimized).then(|| startup::show_splash(&settings)).flatten();
     if let Some(splash) = splash {
         // Build inside the event loop so the splash is already animating while the app initialises; keep it
         // up for at least SPLASH_MIN so it reads as an intentional animation, not a flicker.
         const SPLASH_MIN: std::time::Duration = std::time::Duration::from_millis(1400);
+        // how long the splash waits for the update check before Lag opens anyway (it goes on in the background)
+        const CHECK_WAIT: std::time::Duration = std::time::Duration::from_millis(2500);
         let shown = std::time::Instant::now();
-        let slot = app.clone();
-        slint::Timer::single_shot(std::time::Duration::from_millis(80), move || {
-            let Some((ui, ctx)) = build(settings) else {
-                let _ = slint::quit_event_loop();
-                return;
-            };
-            let weak = ui.as_weak();
-            *slot.borrow_mut() = Some((ui, ctx));
-            let rest = SPLASH_MIN.saturating_sub(shown.elapsed());
-            slint::Timer::single_shot(rest, move || {
-                if let Some(ui) = weak.upgrade() {
-                    if let Err(e) = ui.show() {
-                        log::error!("[Startup] main window show failed: {e}");
+        let splash = std::rc::Rc::new(splash);
+        let settings = std::rc::Rc::new(std::cell::RefCell::new(Some(settings)));
+        // opens Lag (once): builds it, shows it after SPLASH_MIN, hides the splash
+        let open = {
+            let (slot, splash, settings) = (app.clone(), splash.clone(), settings.clone());
+            std::rc::Rc::new(move || {
+                let Some(settings) = settings.borrow_mut().take() else { return };
+                splash.set_show_progress(false);
+                splash.set_hint("".into());
+                splash.set_text(lag_core::i18n::tr("Splash_Starting").into());
+                let Some((ui, ctx)) = build(settings) else {
+                    let _ = slint::quit_event_loop();
+                    return;
+                };
+                let weak = ui.as_weak();
+                *slot.borrow_mut() = Some((ui, ctx));
+                let rest = SPLASH_MIN.saturating_sub(shown.elapsed());
+                let splash = splash.clone();
+                slint::Timer::single_shot(rest, move || {
+                    if let Some(ui) = weak.upgrade() {
+                        if let Err(e) = ui.show() {
+                            log::error!("[Startup] main window show failed: {e}");
+                        }
+                        shell::window_geometry::apply_state(&ui);
                     }
-                    shell::window_geometry::apply_state(&ui);
-                }
-                let _ = splash.hide();
-            });
+                    let _ = splash.hide();
+                });
+            })
+        };
+        // the update check on the splash (owner: Lag should open already updated)
+        let (tx, rx) = std::sync::mpsc::channel();
+        let checking = shell::updater::startup_check(move |e| {
+            let _ = tx.send(e);
         });
+        #[derive(Clone, Copy, PartialEq)]
+        enum Phase {
+            Checking,
+            Updating,
+            Opened,
+        }
+        let phase = std::rc::Rc::new(std::cell::Cell::new(if checking { Phase::Checking } else { Phase::Opened }));
+        if !checking {
+            let open = open.clone();
+            slint::Timer::single_shot(std::time::Duration::from_millis(80), move || open());
+        }
+        {
+            // a click on the splash while it downloads: open Lag now, the update installs at the next start
+            let (open, phase) = (open.clone(), phase.clone());
+            splash.on_skip(move || {
+                if phase.get() == Phase::Updating {
+                    log::info!("[Startup] update skipped for now: it installs at the next start");
+                    phase.set(Phase::Opened);
+                    open();
+                }
+            });
+        }
+        let version = std::rc::Rc::new(std::cell::RefCell::new(String::new()));
+        let poll = std::rc::Rc::new(slint::Timer::default());
+        let (splash2, open2, phase2, me) = (splash.clone(), open.clone(), phase.clone(), std::rc::Rc::downgrade(&poll));
+        poll.start(slint::TimerMode::Repeated, std::time::Duration::from_millis(50), move || {
+            while let Ok(event) = rx.try_recv() {
+                use shell::updater::Startup;
+                match (phase2.get(), event) {
+                    (Phase::Opened, _) => {}
+                    (_, Startup::Nothing) => {
+                        phase2.set(Phase::Opened);
+                        open2();
+                    }
+                    (Phase::Checking, Startup::Found(v)) => {
+                        log::info!("[Startup] update {} found: downloading it on the splash", v.short());
+                        phase2.set(Phase::Updating);
+                        *version.borrow_mut() = v.short();
+                        splash2.set_show_progress(true);
+                        splash2.set_busy(true);
+                        splash2.set_text(
+                            lag_core::i18n::format("Splash_UpdateDownloading", &[&v.short(), "0"]).unwrap_or_default().into(),
+                        );
+                        splash2.set_hint(lag_core::i18n::tr("Splash_UpdateSkip").into());
+                    }
+                    (Phase::Updating, Startup::Progress(p)) => {
+                        splash2.set_busy(p.is_none());
+                        splash2.set_progress(p.unwrap_or(0.0));
+                        let v = version.borrow().clone();
+                        let text = match p {
+                            Some(p) => lag_core::i18n::format("Splash_UpdateDownloading", &[&v, &((p * 100.0) as i32).to_string()]),
+                            None => lag_core::i18n::format("Splash_UpdateDownloadingPlain", &[&v]),
+                        };
+                        splash2.set_text(text.unwrap_or_default().into());
+                    }
+                    (Phase::Updating, Startup::Ready(installer)) => {
+                        splash2.set_busy(true);
+                        splash2.set_hint("".into());
+                        splash2.set_text(
+                            lag_core::i18n::format("Splash_UpdateInstalling", &[&version.borrow()]).unwrap_or_default().into(),
+                        );
+                        if shell::updater::hand_off(&installer, &mode) {
+                            // LagUpdate.exe takes over the same splash; Lag was never opened, so it just ends
+                            let _ = slint::quit_event_loop();
+                        } else {
+                            phase2.set(Phase::Opened);
+                            open2();
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            if phase2.get() == Phase::Checking && shown.elapsed() > CHECK_WAIT {
+                log::info!("[Startup] the update check is slow: opening Lag (a newer Lag installs at the next start)");
+                phase2.set(Phase::Opened);
+                open2();
+            }
+            // Lag is open: what the check still finds is kept for the next start
+            if phase2.get() == Phase::Opened {
+                if let Some(t) = me.upgrade() {
+                    t.stop();
+                }
+            }
+        });
+        // kept until the process ends (it stops itself once Lag is open)
+        std::mem::forget(poll);
     } else {
         let Some((ui, ctx)) = build(settings) else { return };
         // NOT ui.run(): that ends the event loop as soon as the last window is hidden, and "start minimized"

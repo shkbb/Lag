@@ -395,5 +395,11 @@
   "Theme_OwnRow_Desc": "Teema alkaa Lagin käyttöliittymänä ja tallentaa vain muutoksesi: Lagin päivitykset ulottuvat muuhun",
   "Theme_ShareRow": "Jakaminen",
   "Theme_ShareRow_Desc": "Teema on yksi .lagtheme-tiedosto: avaa muiden teemoja, jaa omasi",
-  "ThemeEditor_Inherited": "Lagin oma tiedosto: ensimmäinen muutos kopioi sen teemaan"
+  "ThemeEditor_Inherited": "Lagin oma tiedosto: ensimmäinen muutos kopioi sen teemaan",
+  "Splash_UpdateDownloading": "Päivitys {0}… {1}%",
+  "Splash_UpdateDownloadingPlain": "Päivitys {0}…",
+  "Splash_UpdateInstalling": "Asennetaan {0}…",
+  "Splash_UpdateSkip": "Napsauta avataksesi Lagin nyt: päivitys asennetaan ensi kerralla",
+  "Update_DownloadingPercent": "Ladataan päivitystä… {0}%",
+  "Update_InstallFailed": "Päivitys ei asentunut: käynnistetään tämä versio"
 }
