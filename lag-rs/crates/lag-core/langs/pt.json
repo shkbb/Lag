@@ -386,5 +386,13 @@
   "ThemeEditor_Default": "predefinido",
   "ThemeEditor_Choose": "Escolher…",
   "ThemeEditor_PickerPalette": "Cores do tema",
-  "ThemeEditor_ImageFilter": "Imagens"
+  "ThemeEditor_ImageFilter": "Imagens",
+  "Tab_Interface": "Interface",
+  "Settings_ColorTheme": "Cores",
+  "Settings_UiThemeRow": "Tema da interface",
+  "Settings_Group_OwnThemes": "OS SEUS TEMAS",
+  "Theme_OwnRow": "Criar e alterar",
+  "Theme_OwnRow_Desc": "«Novo tema» copia a interface do Lag: altere-a no editor com o rato ou em código",
+  "Theme_ShareRow": "Partilha",
+  "Theme_ShareRow_Desc": "Um tema é um único ficheiro .lagtheme: abra os de outros, partilhe o seu"
 }

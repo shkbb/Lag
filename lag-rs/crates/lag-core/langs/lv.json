@@ -386,5 +386,13 @@
   "ThemeEditor_Default": "noklusējums",
   "ThemeEditor_Choose": "Izvēlēties…",
   "ThemeEditor_PickerPalette": "Tēmas krāsas",
-  "ThemeEditor_ImageFilter": "Attēli"
+  "ThemeEditor_ImageFilter": "Attēli",
+  "Tab_Interface": "Saskarne",
+  "Settings_ColorTheme": "Krāsas",
+  "Settings_UiThemeRow": "Saskarnes tēma",
+  "Settings_Group_OwnThemes": "JŪSU TĒMAS",
+  "Theme_OwnRow": "Izveidot un mainīt",
+  "Theme_OwnRow_Desc": "“Jauna tēma” nokopē Lag saskarni: mainiet to redaktorā ar peli vai kodā",
+  "Theme_ShareRow": "Kopīgošana",
+  "Theme_ShareRow_Desc": "Tēma ir viens .lagtheme fails: atveriet citu, dalieties ar savējo"
 }

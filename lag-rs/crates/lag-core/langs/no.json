@@ -386,5 +386,13 @@
   "ThemeEditor_Default": "standard",
   "ThemeEditor_Choose": "Velg…",
   "ThemeEditor_PickerPalette": "Temafarger",
-  "ThemeEditor_ImageFilter": "Bilder"
+  "ThemeEditor_ImageFilter": "Bilder",
+  "Tab_Interface": "Grensesnitt",
+  "Settings_ColorTheme": "Farger",
+  "Settings_UiThemeRow": "Grensesnittema",
+  "Settings_Group_OwnThemes": "DINE TEMAER",
+  "Theme_OwnRow": "Lag og endre",
+  "Theme_OwnRow_Desc": "«Nytt tema» kopierer Lags grensesnitt: endre det i redigeringsprogrammet med musen eller i kode",
+  "Theme_ShareRow": "Deling",
+  "Theme_ShareRow_Desc": "Et tema er én .lagtheme-fil: åpne andres, del ditt eget"
 }

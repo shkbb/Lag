@@ -8,7 +8,7 @@ pub(super) fn bind_controls(ui: &AppWindow, ctx: &Rc<AppCtx>, state: &Rc<RefCell
     ui.global::<SettingsVM>().on_select_tab(move |tab| {
         if let Some(ui) = weak.upgrade() {
             let mut st = st.borrow_mut();
-            st.tab = tab.clamp(0, 4);
+            st.tab = tab.clamp(0, 5);
             ui.global::<SettingsVM>().set_tab(st.tab);
             ui.global::<SettingsVM>().set_hear_yourself(false);
             crate::shell::hotkeys::cancel();
@@ -179,6 +179,7 @@ pub(super) fn bind_controls(ui: &AppWindow, ctx: &Rc<AppCtx>, state: &Rc<RefCell
                 match crate::themes::new_from_builtin(&root, &tr("Theme_NewName")) {
                     Ok(t) => {
                         st.borrow_mut().theme_note = i18n::format("Theme_Created", &[&t.dir.display().to_string()]).unwrap_or_default();
+                        st.borrow_mut().theme_note_at = "theme-own";
                         let dir = t.dir.clone();
                         std::thread::spawn(move || open_in_explorer(&dir, false));
                         save(&ui, &c, &st, "ui-theme", |s| s.settings.ui_theme = Some(t.id.clone()));
@@ -186,6 +187,7 @@ pub(super) fn bind_controls(ui: &AppWindow, ctx: &Rc<AppCtx>, state: &Rc<RefCell
                     Err(e) => {
                         log::warn!("[Theme] new theme failed: {e}");
                         st.borrow_mut().theme_note = e;
+                        st.borrow_mut().theme_note_at = "theme-own";
                         st.borrow().refresh(&ui);
                     }
                 }
@@ -245,17 +247,20 @@ pub(super) fn bind_controls(ui: &AppWindow, ctx: &Rc<AppCtx>, state: &Rc<RefCell
                             None => String::new(),
                         };
                         st.borrow_mut().theme_note = note;
+                        st.borrow_mut().theme_note_at = "theme-share";
                         st.borrow().refresh(&ui);
                         return;
                     }
                     match crate::themes::import(&path) {
                         Ok(t) => {
                             st.borrow_mut().theme_note = i18n::format("Theme_Imported", &[&t.name]).unwrap_or_default();
+                            st.borrow_mut().theme_note_at = "theme-share";
                             save(&ui, &c, &st, "ui-theme", |s| s.settings.ui_theme = Some(t.id.clone()));
                         }
                         Err(e) => {
                             log::warn!("[Theme] import of {file} failed: {e}");
                             st.borrow_mut().theme_note = i18n::format("Theme_ImportFailed", &[&e]).unwrap_or(e);
+                            st.borrow_mut().theme_note_at = "theme-share";
                             st.borrow().refresh(&ui);
                         }
                     }

@@ -196,6 +196,7 @@ fn state_with_hardware(settings: SettingsData) -> State {
         app_icons: Default::default(),
         cloud: Default::default(),
         theme_note: String::new(),
+        theme_note_at: "",
     }
 }
 #[test]

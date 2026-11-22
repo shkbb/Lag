@@ -31,7 +31,7 @@ export component SettingsRow {
     opacity: data.enabled || data.with-toggle || data.kind == 17 || data.kind == 18 ? 1 : 0.45;
     VerticalLayout {
         padding-left: 18px; padding-right: 18px;
-        padding-top: root.data.kind == 14 ? 2px : root.data.kind == 18 ? 0px : root.data.kind == 4 ? 11px : 15px;
+        padding-top: root.data.kind == 14 ? 2px :  root.data.kind == 4 ? 11px : 15px;
         padding-bottom: root.data.kind == 14 ? 12px : root.data.kind == 4 ? 11px : 15px; spacing: 10px;
         HorizontalLayout {
             spacing: 12px;
@@ -69,6 +69,10 @@ export component SettingsRow {
                     items: root.data.options;
                     selected-index: root.data.selected; enabled: root.data.enabled;
                     selected(i) => { root.choose(root.data.id, i); }
+                }
+                if root.data.id == "ui-theme" && root.data.custom: VerticalLayout {
+                    alignment: center;
+                    RChipButton { text: Tr.t("Theme_Restart", Tr.rev); active: true; clicked => { root.action("theme-restart"); } }
                 }
                 if root.data.id == "bitrate" && root.data.custom: HorizontalLayout {
                     spacing: 4px;
@@ -171,18 +175,18 @@ export component SettingsRow {
             if !root.data.custom: RChipButton { text: "WebDAV"; clicked => { root.action("cloud-add-webdav"); } }
         }
         // kind 18: interface theme buttons on their own line; custom = a new theme waits for a restart
+        // kind 18: the interface tab's buttons, three at most per row (they fit the narrowest window)
         if root.data.kind == 18: HorizontalLayout {
             alignment: start; spacing: 6px;
-            RChipButton { text: Tr.t("Theme_New", Tr.rev); clicked => { root.action("theme-new"); } }
-            RChipButton { text: Tr.t("Theme_Import", Tr.rev); clicked => { root.action("theme-import"); } }
-            RChipButton { text: Tr.t("Theme_Export", Tr.rev); clicked => { root.action("theme-export"); } }
-            RChipButton { text: Tr.t("Theme_OpenFolder", Tr.rev); clicked => { root.action("theme-folder"); } }
-            RChipButton { text: Tr.t("Theme_Preview", Tr.rev); clicked => { root.action("theme-preview"); } }
-            RChipButton { text: Tr.t("Theme_Edit", Tr.rev); clicked => { root.action("theme-edit"); } }
-            if root.data.custom: RChipButton { text: Tr.t("Theme_Restart", Tr.rev); active: true; clicked => { root.action("theme-restart"); } }
+            if root.data.id == "theme-own": RChipButton { text: Tr.t("Theme_New", Tr.rev); clicked => { root.action("theme-new"); } }
+            if root.data.id == "theme-own": RChipButton { text: Tr.t("Theme_Edit", Tr.rev); clicked => { root.action("theme-edit"); } }
+            if root.data.id == "theme-own": RChipButton { text: Tr.t("Theme_Preview", Tr.rev); clicked => { root.action("theme-preview"); } }
+            if root.data.id == "theme-share": RChipButton { text: Tr.t("Theme_Import", Tr.rev); clicked => { root.action("theme-import"); } }
+            if root.data.id == "theme-share": RChipButton { text: Tr.t("Theme_Export", Tr.rev); clicked => { root.action("theme-export"); } }
+            if root.data.id == "theme-share": RChipButton { text: Tr.t("Theme_OpenFolder", Tr.rev); clicked => { root.action("theme-folder"); } }
         }
-        if root.data.kind == 18 && root.data.description != "": Text {
-            text: root.data.description; color: Theme.text-faint; font-size: 12.5px; wrap: word-wrap;
+        if root.data.kind == 18 && root.data.display != "": Text {
+            text: root.data.display; color: Theme.text-mid; font-size: 12.5px; wrap: word-wrap;
         }
         if root.data.kind == 5: HorizontalLayout {
             NoiseGateBar { auto-mode: root.data.auto-mode; mic-level: root.mic-level; threshold: root.data.value;

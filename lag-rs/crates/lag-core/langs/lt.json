@@ -386,5 +386,13 @@
   "ThemeEditor_Default": "numatyta",
   "ThemeEditor_Choose": "Pasirinkti…",
   "ThemeEditor_PickerPalette": "Temos spalvos",
-  "ThemeEditor_ImageFilter": "Paveikslėliai"
+  "ThemeEditor_ImageFilter": "Paveikslėliai",
+  "Tab_Interface": "Sąsaja",
+  "Settings_ColorTheme": "Spalvos",
+  "Settings_UiThemeRow": "Sąsajos tema",
+  "Settings_Group_OwnThemes": "JŪSŲ TEMOS",
+  "Theme_OwnRow": "Sukurti ir keisti",
+  "Theme_OwnRow_Desc": "„Nauja tema“ nukopijuoja Lag sąsają: keiskite ją redaktoriuje pele arba kode",
+  "Theme_ShareRow": "Dalijimasis",
+  "Theme_ShareRow_Desc": "Tema – tai vienas .lagtheme failas: atidarykite kitų, dalinkitės savo"
 }

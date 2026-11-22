@@ -244,3 +244,15 @@ Owner: "ми робимо і вносимо редактор в одне оно�
 - Picking order for equal sizes: what is drawn on top first (the thumbnail over its placeholder).
 - `LagTextInput` clips a text longer than the field (it widened past its frame); the full UI check (172 shots)
   is pixel-identical to before except data.
+- **Settings > Interface (2026-11-22, owner: "там вже так дохуя функцій... окрему категорію").** A sixth tab (index
+  5, last, so the ui-check scripts' tab numbers stay): Colours (light / dark / system / GTA VI), Interface theme
+  (with Restart next to the list when a chosen theme waits), and "Your themes": Make and change (New theme / Edit
+  / Preview) and Sharing (Import / Export / Themes folder), three buttons a row (the old six-button row was cut
+  off). General keeps language, hotkeys, startup, about. Shots `s-interface`, `z-small-interface`,
+  `lang-*-interface` in the ui-check scripts.
+- **Open problem: a theme is a full copy, so it goes stale.** A theme made from Lag N keeps Lag N's pages: when
+  Lag N+1 moves or adds settings (as this tab did), the old copy cannot show them (here: the theme controls left
+  the General tab, and an old copy has no Interface tab — only the tray's "Lag's own interface" or Shift at
+  start leads back). Needs a decision before / soon after 2.2.0: theme API version in theme.toml + a notice
+  ("made for an older Lag: some new things are missing, update it from Lag's interface"), and/or themes that
+  override only some pages / components and inherit the rest from Lag.

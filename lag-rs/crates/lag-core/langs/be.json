@@ -386,5 +386,13 @@
   "ThemeEditor_Default": "па змаўчанні",
   "ThemeEditor_Choose": "Выбраць…",
   "ThemeEditor_PickerPalette": "Колеры тэмы",
-  "ThemeEditor_ImageFilter": "Выявы"
+  "ThemeEditor_ImageFilter": "Выявы",
+  "Tab_Interface": "Інтэрфейс",
+  "Settings_ColorTheme": "Колеры",
+  "Settings_UiThemeRow": "Тэма інтэрфейсу",
+  "Settings_Group_OwnThemes": "СВАЕ ТЭМЫ",
+  "Theme_OwnRow": "Стварыць і змяніць",
+  "Theme_OwnRow_Desc": "«Новая тэма» капіруе інтэрфейс Lag: змяняйце яго ў рэдактары мышкай або ў кодзе",
+  "Theme_ShareRow": "Абмен",
+  "Theme_ShareRow_Desc": "Тэма — гэта адзін файл .lagtheme: адкрывайце чужыя, дзяліцеся сваёй"
 }

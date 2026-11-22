@@ -386,5 +386,13 @@
   "ThemeEditor_Default": "типово",
   "ThemeEditor_Choose": "Вибрати…",
   "ThemeEditor_PickerPalette": "Кольори теми",
-  "ThemeEditor_ImageFilter": "Зображення"
+  "ThemeEditor_ImageFilter": "Зображення",
+  "Tab_Interface": "Інтерфейс",
+  "Settings_ColorTheme": "Кольори",
+  "Settings_UiThemeRow": "Тема інтерфейсу",
+  "Settings_Group_OwnThemes": "СВОЇ ТЕМИ",
+  "Theme_OwnRow": "Створити й змінити",
+  "Theme_OwnRow_Desc": "«Нова тема» копіює інтерфейс Lag: змінюйте його в редакторі мишкою або в коді",
+  "Theme_ShareRow": "Обмін",
+  "Theme_ShareRow_Desc": "Тема — це один файл .lagtheme: відкривайте чужі, діліться своєю"
 }

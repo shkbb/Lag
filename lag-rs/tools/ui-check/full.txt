@@ -98,6 +98,9 @@ scroll 700 500 -1500
 wait 300
 shot s-general-bottom
 scroll 700 500 3000
+tab 5
+wait 300
+shot s-interface
 tab 0
 
 # ---------- Top bar states ----------
@@ -173,6 +176,10 @@ size 1080x640
 page settings
 wait 400
 shot z-small-settings
+tab 5
+wait 300
+shot z-small-interface
+tab 0
 page library
 wait 600
 shot z-small-library
@@ -213,6 +220,9 @@ shot en-settings-library
 tab 4
 wait 300
 shot en-settings-general
+tab 5
+wait 300
+shot en-settings-interface
 page library
 wait 500
 shot en-library

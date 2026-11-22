@@ -386,5 +386,13 @@
   "ThemeEditor_Default": "既定",
   "ThemeEditor_Choose": "選択…",
   "ThemeEditor_PickerPalette": "テーマの色",
-  "ThemeEditor_ImageFilter": "画像"
+  "ThemeEditor_ImageFilter": "画像",
+  "Tab_Interface": "インターフェース",
+  "Settings_ColorTheme": "配色",
+  "Settings_UiThemeRow": "インターフェースのテーマ",
+  "Settings_Group_OwnThemes": "自分のテーマ",
+  "Theme_OwnRow": "作成と編集",
+  "Theme_OwnRow_Desc": "「新しいテーマ」は Lag のインターフェースを複製します。エディターでマウス操作、またはコードで変更できます",
+  "Theme_ShareRow": "共有",
+  "Theme_ShareRow_Desc": "テーマは 1 つの .lagtheme ファイルです。他の人のテーマを開いたり、自分のテーマを共有したりできます"
 }

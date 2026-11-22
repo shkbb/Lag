@@ -43,7 +43,7 @@ export component SettingsPage inherits Rectangle {
                 SegmentedControl {
                     options: [{text: Tr.t("Tab_Video", Tr.rev), tier: 0}, {text: Tr.t("Tab_Audio", Tr.rev), tier: 0},
                         {text: Tr.t("Settings_Group_Overlay", Tr.rev), tier: 0}, {text: Tr.t("Nav_Library", Tr.rev), tier: 0},
-                        {text: Tr.t("Tab_General", Tr.rev), tier: 0}];
+                        {text: Tr.t("Tab_General", Tr.rev), tier: 0}, {text: Tr.t("Tab_Interface", Tr.rev), tier: 0}];
                     selected-index: SettingsVM.tab;
                     selected(i) => { scroll.content-y = 0px; SettingsVM.select-tab(i); }
                 }

@@ -386,5 +386,13 @@
   "ThemeEditor_Default": "standard",
   "ThemeEditor_Choose": "Välj…",
   "ThemeEditor_PickerPalette": "Temats färger",
-  "ThemeEditor_ImageFilter": "Bilder"
+  "ThemeEditor_ImageFilter": "Bilder",
+  "Tab_Interface": "Gränssnitt",
+  "Settings_ColorTheme": "Färger",
+  "Settings_UiThemeRow": "Gränssnittstema",
+  "Settings_Group_OwnThemes": "DINA TEMAN",
+  "Theme_OwnRow": "Skapa och ändra",
+  "Theme_OwnRow_Desc": "”Nytt tema” kopierar Lags gränssnitt: ändra det i redigeraren med musen eller i kod",
+  "Theme_ShareRow": "Delning",
+  "Theme_ShareRow_Desc": "Ett tema är en .lagtheme-fil: öppna andras, dela ditt eget"
 }

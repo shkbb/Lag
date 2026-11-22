@@ -16,6 +16,9 @@ shot lang-en-video
 tab 4
 wait 300
 shot lang-en-general
+tab 5
+wait 300
+shot lang-en-interface
 tab 3
 wait 300
 scroll 700 500 -600
@@ -43,6 +46,9 @@ shot lang-uk-video
 tab 4
 wait 300
 shot lang-uk-general
+tab 5
+wait 300
+shot lang-uk-interface
 tab 3
 wait 300
 scroll 700 500 -600
@@ -70,6 +76,9 @@ shot lang-de-video
 tab 4
 wait 300
 shot lang-de-general
+tab 5
+wait 300
+shot lang-de-interface
 tab 3
 wait 300
 scroll 700 500 -600
@@ -97,6 +106,9 @@ shot lang-fr-video
 tab 4
 wait 300
 shot lang-fr-general
+tab 5
+wait 300
+shot lang-fr-interface
 tab 3
 wait 300
 scroll 700 500 -600
@@ -124,6 +136,9 @@ shot lang-be-video
 tab 4
 wait 300
 shot lang-be-general
+tab 5
+wait 300
+shot lang-be-interface
 tab 3
 wait 300
 scroll 700 500 -600
@@ -151,6 +166,9 @@ shot lang-lt-video
 tab 4
 wait 300
 shot lang-lt-general
+tab 5
+wait 300
+shot lang-lt-interface
 tab 3
 wait 300
 scroll 700 500 -600
@@ -178,6 +196,9 @@ shot lang-et-video
 tab 4
 wait 300
 shot lang-et-general
+tab 5
+wait 300
+shot lang-et-interface
 tab 3
 wait 300
 scroll 700 500 -600
@@ -205,6 +226,9 @@ shot lang-lv-video
 tab 4
 wait 300
 shot lang-lv-general
+tab 5
+wait 300
+shot lang-lv-interface
 tab 3
 wait 300
 scroll 700 500 -600
@@ -232,6 +256,9 @@ shot lang-fi-video
 tab 4
 wait 300
 shot lang-fi-general
+tab 5
+wait 300
+shot lang-fi-interface
 tab 3
 wait 300
 scroll 700 500 -600
@@ -259,6 +286,9 @@ shot lang-sv-video
 tab 4
 wait 300
 shot lang-sv-general
+tab 5
+wait 300
+shot lang-sv-interface
 tab 3
 wait 300
 scroll 700 500 -600
@@ -286,6 +316,9 @@ shot lang-no-video
 tab 4
 wait 300
 shot lang-no-general
+tab 5
+wait 300
+shot lang-no-interface
 tab 3
 wait 300
 scroll 700 500 -600
@@ -313,6 +346,9 @@ shot lang-da-video
 tab 4
 wait 300
 shot lang-da-general
+tab 5
+wait 300
+shot lang-da-interface
 tab 3
 wait 300
 scroll 700 500 -600
@@ -340,6 +376,9 @@ shot lang-nl-video
 tab 4
 wait 300
 shot lang-nl-general
+tab 5
+wait 300
+shot lang-nl-interface
 tab 3
 wait 300
 scroll 700 500 -600
@@ -367,6 +406,9 @@ shot lang-it-video
 tab 4
 wait 300
 shot lang-it-general
+tab 5
+wait 300
+shot lang-it-interface
 tab 3
 wait 300
 scroll 700 500 -600
@@ -394,6 +436,9 @@ shot lang-es-video
 tab 4
 wait 300
 shot lang-es-general
+tab 5
+wait 300
+shot lang-es-interface
 tab 3
 wait 300
 scroll 700 500 -600
@@ -421,6 +466,9 @@ shot lang-pt-video
 tab 4
 wait 300
 shot lang-pt-general
+tab 5
+wait 300
+shot lang-pt-interface
 tab 3
 wait 300
 scroll 700 500 -600
@@ -448,6 +496,9 @@ shot lang-ja-video
 tab 4
 wait 300
 shot lang-ja-general
+tab 5
+wait 300
+shot lang-ja-interface
 tab 3
 wait 300
 scroll 700 500 -600

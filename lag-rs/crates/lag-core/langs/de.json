@@ -386,5 +386,13 @@
   "ThemeEditor_Default": "Standard",
   "ThemeEditor_Choose": "Auswählen…",
   "ThemeEditor_PickerPalette": "Theme-Farben",
-  "ThemeEditor_ImageFilter": "Bilder"
+  "ThemeEditor_ImageFilter": "Bilder",
+  "Tab_Interface": "Oberfläche",
+  "Settings_ColorTheme": "Farben",
+  "Settings_UiThemeRow": "Oberflächen-Theme",
+  "Settings_Group_OwnThemes": "EIGENE THEMES",
+  "Theme_OwnRow": "Erstellen und ändern",
+  "Theme_OwnRow_Desc": "„Neues Theme“ kopiert die Oberfläche von Lag: im Editor mit der Maus oder im Code ändern",
+  "Theme_ShareRow": "Teilen",
+  "Theme_ShareRow_Desc": "Ein Theme ist eine .lagtheme-Datei: fremde öffnen, eigene teilen"
 }

@@ -386,5 +386,13 @@
   "ThemeEditor_Default": "vaikimisi",
   "ThemeEditor_Choose": "Vali…",
   "ThemeEditor_PickerPalette": "Teema värvid",
-  "ThemeEditor_ImageFilter": "Pildid"
+  "ThemeEditor_ImageFilter": "Pildid",
+  "Tab_Interface": "Liides",
+  "Settings_ColorTheme": "Värvid",
+  "Settings_UiThemeRow": "Liidese teema",
+  "Settings_Group_OwnThemes": "SINU TEEMAD",
+  "Theme_OwnRow": "Loo ja muuda",
+  "Theme_OwnRow_Desc": "„Uus teema“ kopeerib Lagi liidese: muuda seda redaktoris hiirega või koodis",
+  "Theme_ShareRow": "Jagamine",
+  "Theme_ShareRow_Desc": "Teema on üks .lagtheme-fail: ava teiste omi, jaga enda oma"
 }

@@ -32,6 +32,8 @@ pub(super) struct State {
     pub(super) cloud: crate::services::cloud::CloudView,
     /// The result of the last theme import / export, shown under the theme buttons.
     pub(super) theme_note: String,
+    /// which buttons row the note belongs to ("theme-own" / "theme-share")
+    pub(super) theme_note_at: &'static str,
 }
 
 impl State {
@@ -54,6 +56,7 @@ impl State {
             app_icons: Default::default(),
             cloud: Default::default(),
             theme_note: String::new(),
+            theme_note_at: "",
         }
     }
 
@@ -427,6 +430,56 @@ impl State {
                     ("Settings_Group_Cloud".into(), super::cloud::rows(&self.cloud)),
                 ]
             }
+            5 => {
+                let mut theme = choice(
+                    "theme",
+                    "Settings_ColorTheme",
+                    1,
+                    simple_options(&["Theme_Light", "Theme_Dark", "Theme_System", "Theme_Neon"]),
+                    pos(&["light", "dark", "system", "neon"], &text(&s.theme)),
+                );
+                theme.description = "Settings_Theme_Desc".into();
+                // the interface theme (docs/spec/themes.md): Lag's own + the installed ones
+                let themes = crate::themes::list();
+                let chosen = match text(&s.ui_theme) {
+                    "" => crate::themes::BUILTIN,
+                    id => id,
+                };
+                let names = themes
+                    .iter()
+                    .map(|t| if t.builtin { tr("Theme_Builtin") } else if t.author.is_empty() { t.name.clone() } else { format!("{} · {}", t.name, t.author) })
+                    .collect();
+                let mut ui_theme = combo("ui-theme", "Settings_UiThemeRow", names, themes.iter().position(|t| t.id == chosen).unwrap_or(0));
+                let pending = chosen != crate::themes::active();
+                ui_theme.description = match crate::themes::last_error() {
+                    Some(e) if pending => i18n::format("Theme_Failed", &[&e]).unwrap_or(e),
+                    _ if pending => "Settings_UiTheme_Restart".into(),
+                    _ => "Settings_UiTheme_Desc".into(),
+                }
+                .into();
+                ui_theme.auto_mode = pending;
+                // kind 18: a row of buttons chosen by its id; `display` = the note of the last action there
+                let actions = |id: &str, label: &str, description: &str| {
+                    let mut r = row(id, label, 18);
+                    r.description = description.into();
+                    if self.theme_note_at == id {
+                        r.display = self.theme_note.clone().into();
+                    }
+                    r
+                };
+                // a chosen theme waits for a restart: the button sits next to the list
+                ui_theme.custom = pending;
+                vec![
+                    ("".into(), vec![theme, ui_theme]),
+                    (
+                        "Settings_Group_OwnThemes".into(),
+                        vec![
+                            actions("theme-own", "Theme_OwnRow", "Theme_OwnRow_Desc"),
+                            actions("theme-share", "Theme_ShareRow", "Theme_ShareRow_Desc"),
+                        ],
+                    ),
+                ]
+            }
             _ => {
                 let mut keys = Vec::new();
                 for (id, label, key, mods) in [
@@ -450,45 +503,10 @@ impl State {
                     self.update_status.clone()
                 }
                 .into();
-                let mut theme = choice(
-                    "theme",
-                    "Settings_Theme",
-                    1,
-                    simple_options(&["Theme_Light", "Theme_Dark", "Theme_System", "Theme_Neon"]),
-                    pos(&["light", "dark", "system", "neon"], &text(&s.theme)),
-                );
-                theme.description = "Settings_Theme_Desc".into();
-                // the interface theme (docs/spec/themes.md): Lag's own + the installed ones
-                let themes = crate::themes::list();
-                let chosen = match text(&s.ui_theme) {
-                    "" => crate::themes::BUILTIN,
-                    id => id,
-                };
-                let names = themes
-                    .iter()
-                    .map(|t| if t.builtin { tr("Theme_Builtin") } else if t.author.is_empty() { t.name.clone() } else { format!("{} · {}", t.name, t.author) })
-                    .collect();
-                let mut ui_theme = combo("ui-theme", "Settings_UiTheme", names, themes.iter().position(|t| t.id == chosen).unwrap_or(0));
-                let pending = chosen != crate::themes::active();
-                ui_theme.description = match crate::themes::last_error() {
-                    Some(e) if pending => i18n::format("Theme_Failed", &[&e]).unwrap_or(e),
-                    _ if pending => "Settings_UiTheme_Restart".into(),
-                    _ => "Settings_UiTheme_Desc".into(),
-                }
-                .into();
-                ui_theme.auto_mode = pending;
-                // kind 18: import / export / folder (+ restart when a new theme waits)
-                let mut theme_actions = row("theme-actions", "", 18);
-                theme_actions.divider = false;
-                theme_actions.custom = pending;
-                theme_actions.description = self.theme_note.clone().into();
                 vec![
                     (
                         "".into(),
                         vec![
-                            theme,
-                            ui_theme,
-                            theme_actions,
                             combo(
                                 "language",
                                 "Settings_Language",

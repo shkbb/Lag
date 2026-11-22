@@ -386,5 +386,13 @@
   "ThemeEditor_Default": "standard",
   "ThemeEditor_Choose": "Vælg…",
   "ThemeEditor_PickerPalette": "Temaets farver",
-  "ThemeEditor_ImageFilter": "Billeder"
+  "ThemeEditor_ImageFilter": "Billeder",
+  "Tab_Interface": "Brugerflade",
+  "Settings_ColorTheme": "Farver",
+  "Settings_UiThemeRow": "Tema for brugerfladen",
+  "Settings_Group_OwnThemes": "DINE TEMAER",
+  "Theme_OwnRow": "Lav og ret",
+  "Theme_OwnRow_Desc": "“Nyt tema” kopierer Lags brugerflade: ret den i editoren med musen eller i kode",
+  "Theme_ShareRow": "Deling",
+  "Theme_ShareRow_Desc": "Et tema er én .lagtheme-fil: åbn andres, del dit eget"
 }

@@ -386,5 +386,13 @@
   "ThemeEditor_Default": "oletus",
   "ThemeEditor_Choose": "Valitse…",
   "ThemeEditor_PickerPalette": "Teeman värit",
-  "ThemeEditor_ImageFilter": "Kuvat"
+  "ThemeEditor_ImageFilter": "Kuvat",
+  "Tab_Interface": "Käyttöliittymä",
+  "Settings_ColorTheme": "Värit",
+  "Settings_UiThemeRow": "Käyttöliittymän teema",
+  "Settings_Group_OwnThemes": "OMAT TEEMAT",
+  "Theme_OwnRow": "Luo ja muuta",
+  "Theme_OwnRow_Desc": "”Uusi teema” kopioi Lagin käyttöliittymän: muuta sitä editorissa hiirellä tai koodissa",
+  "Theme_ShareRow": "Jakaminen",
+  "Theme_ShareRow_Desc": "Teema on yksi .lagtheme-tiedosto: avaa muiden teemoja, jaa omasi"
 }

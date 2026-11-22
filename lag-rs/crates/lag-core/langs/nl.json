@@ -386,5 +386,13 @@
   "ThemeEditor_Default": "standaard",
   "ThemeEditor_Choose": "Kiezen…",
   "ThemeEditor_PickerPalette": "Themakleuren",
-  "ThemeEditor_ImageFilter": "Afbeeldingen"
+  "ThemeEditor_ImageFilter": "Afbeeldingen",
+  "Tab_Interface": "Interface",
+  "Settings_ColorTheme": "Kleuren",
+  "Settings_UiThemeRow": "Interfacethema",
+  "Settings_Group_OwnThemes": "JE EIGEN THEMA'S",
+  "Theme_OwnRow": "Maken en wijzigen",
+  "Theme_OwnRow_Desc": "‘Nieuw thema’ kopieert de interface van Lag: wijzig hem in de editor met de muis of in code",
+  "Theme_ShareRow": "Delen",
+  "Theme_ShareRow_Desc": "Een thema is één .lagtheme-bestand: open die van anderen, deel het jouwe"
 }
