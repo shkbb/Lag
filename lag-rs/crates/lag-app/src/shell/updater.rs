@@ -423,6 +423,18 @@ pub fn hand_off(installer: &Path, mode: &str) -> bool {
 use std::sync::atomic::{AtomicBool, Ordering};
 /// One check / download at a time: 2.0.0 started two at launch, and both installed.
 static RUNNING: AtomicBool = AtomicBool::new(false);
+/// GitHub has answered this run already (the splash's check): the background one 3 s later does not ask again
+/// (60 unauthenticated requests an hour per address).
+static ANSWERED: AtomicBool = AtomicBool::new(false);
+
+/// The latest release, remembering that GitHub answered.
+fn lookup() -> Option<UpdateInfo> {
+    let latest = get_latest();
+    if latest.is_some() {
+        ANSWERED.store(true, Ordering::SeqCst);
+    }
+    latest
+}
 
 /// What the startup check reports (on its worker thread).
 pub enum Startup {
@@ -445,7 +457,7 @@ pub fn startup_check(events: impl Fn(Startup) + Send + 'static) -> bool {
     std::thread::spawn(move || {
         remove_old_installers();
         let kind = detect_install();
-        match (current_version(), get_latest()) {
+        match (current_version(), lookup()) {
             (Some(current), Some(latest)) if update_wanted(kind, current, latest.version) => {
                 events(Startup::Found(latest.version));
                 let mut last = -1i32;
@@ -475,13 +487,17 @@ pub fn startup_check(events: impl Fn(Startup) + Send + 'static) -> bool {
 /// Lag started into the tray, or the splash's check gave up: download a newer Lag for the next start, never
 /// install it now (the user may be in a game).
 pub fn background_fetch() {
+    if ANSWERED.load(Ordering::SeqCst) {
+        log::info!("[AppUpdate] already checked at this start");
+        return;
+    }
     if detect_install() == InstallKind::DevOrPortable || RUNNING.swap(true, Ordering::SeqCst) {
         return;
     }
     std::thread::spawn(|| {
         remove_old_installers();
         let kind = detect_install();
-        if let (Some(current), Some(latest)) = (current_version(), get_latest()) {
+        if let (Some(current), Some(latest)) = (current_version(), lookup()) {
             if update_wanted(kind, current, latest.version) {
                 match fetch(&latest, &mut |_, _| {}) {
                     Ok(_) => log::info!("[AppUpdate] {} is downloaded: it installs at the next start", latest.version.short()),
