@@ -176,20 +176,42 @@ export component SettingsRow {
             if !root.data.custom: RChipButton { text: Tr.t("Cloud_Folder", Tr.rev); clicked => { root.action("cloud-add-folder"); } }
             if !root.data.custom: RChipButton { text: "WebDAV"; clicked => { root.action("cloud-add-webdav"); } }
         }
-        // kind 18: interface theme buttons on their own line; custom = a new theme waits for a restart
-        // kind 18: the interface tab's buttons, three at most per row (they fit the narrowest window)
+        // kind 18: sharing (import, the themes folder, how to write a theme in code)
         if root.data.kind == 18: HorizontalLayout {
             alignment: start; spacing: 6px;
-            if root.data.id == "theme-own": RChipButton { text: Tr.t("Theme_New", Tr.rev); clicked => { root.action("theme-new"); } }
-            if root.data.id == "theme-own": RChipButton { text: Tr.t("Theme_Edit", Tr.rev); clicked => { root.action("theme-edit"); } }
-            if root.data.id == "theme-own": RChipButton { text: Tr.t("Theme_Preview", Tr.rev); clicked => { root.action("theme-preview"); } }
-            if root.data.id == "theme-own": RChipButton { text: Tr.t("Theme_Delete", Tr.rev); danger: true; clicked => { root.action("theme-delete"); } }
-            if root.data.id == "theme-share": RChipButton { text: Tr.t("Theme_Import", Tr.rev); clicked => { root.action("theme-import"); } }
-            if root.data.id == "theme-share": RChipButton { text: Tr.t("Theme_Export", Tr.rev); clicked => { root.action("theme-export"); } }
-            if root.data.id == "theme-share": RChipButton { text: Tr.t("Theme_OpenFolder", Tr.rev); clicked => { root.action("theme-folder"); } }
+            RChipButton { text: Tr.t("Theme_Import", Tr.rev); clicked => { root.action("theme-import"); } }
+            RChipButton { text: Tr.t("Theme_OpenFolder", Tr.rev); clicked => { root.action("theme-folder"); } }
+            RChipButton { text: Tr.t("Theme_CodeGuide", Tr.rev); clicked => { root.action("theme-api"); } }
         }
-        if root.data.kind == 18 && root.data.display != "": Text {
+        // kind 20: a new theme, named right there (display = what is typed; parts[0] = the last note)
+        if root.data.kind == 20: HorizontalLayout {
+            spacing: 6px;
+            new-name := LagTextInput {
+                horizontal-stretch: 1;
+                text: root.data.display;
+                placeholder: Tr.t("Theme_NewName", Tr.rev);
+                edited(t) => { root.text(root.data.id, t); }
+                accepted(t) => { root.text(root.data.id, t); root.action("theme-new"); }
+            }
+            RChipButton { text: Tr.t("Theme_Create", Tr.rev); active: true; clicked => { root.action("theme-new"); } }
+        }
+        // kind 19: one theme of the user, its own buttons (id = "theme:<id>"; checked = chosen; custom = a folder
+        // theme made before 2.2, which can become one file)
+        if root.data.kind == 19: HorizontalLayout {
+            alignment: start; spacing: 6px;
+            if !root.data.checked: RChipButton { text: Tr.t("Theme_Use", Tr.rev); clicked => { root.action("theme-use:" + root.data.id); } }
+            RChipButton { text: Tr.t("Theme_Edit", Tr.rev); clicked => { root.action("theme-edit:" + root.data.id); } }
+            RChipButton { text: Tr.t("Theme_Preview", Tr.rev); clicked => { root.action("theme-preview:" + root.data.id); } }
+            // a folder theme made before 2.2 offers to become one file in place of Export (that file is what is shared)
+            if !root.data.custom: RChipButton { text: Tr.t("Theme_Export", Tr.rev); clicked => { root.action("theme-export:" + root.data.id); } }
+            if root.data.custom: RChipButton { text: Tr.t("Theme_Convert", Tr.rev); clicked => { root.action("theme-convert:" + root.data.id); } }
+            RChipButton { text: Tr.t("ThemeEditor_Delete", Tr.rev); danger: true; clicked => { root.action("theme-delete:" + root.data.id); } }
+        }
+        if (root.data.kind == 18 || root.data.kind == 19) && root.data.display != "": Text {
             text: root.data.display; color: Theme.text-mid; font-size: 12.5px; wrap: word-wrap;
+        }
+        if root.data.kind == 20 && root.data.parts.length > 0: Text {
+            text: root.data.parts[0]; color: Theme.text-mid; font-size: 12.5px; wrap: word-wrap;
         }
         if root.data.kind == 5: HorizontalLayout {
             NoiseGateBar { auto-mode: root.data.auto-mode; mic-level: root.mic-level; threshold: root.data.value;

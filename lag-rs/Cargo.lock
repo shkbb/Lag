@@ -2494,6 +2494,7 @@ dependencies = [
  "lag-cloud-drive",
  "lag-core",
  "lag-player",
+ "lag-theme-file",
  "log",
  "muda 0.21.2",
  "raw-window-handle",
@@ -2589,6 +2590,15 @@ dependencies = [
  "lag-ffi",
  "log",
  "windows",
+]
+
+[[package]]
+name = "lag-theme-file"
+version = "2.1.2"
+dependencies = [
+ "base64",
+ "serde",
+ "toml",
 ]
 
 [[package]]

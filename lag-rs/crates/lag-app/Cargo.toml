@@ -47,6 +47,8 @@ i-slint-compiler = "=1.18.1"
 i-slint-core = "=1.18.1"
 # theme packages: theme.toml manifests, .lagtheme files (zip)
 toml = "1"
+# the .lag theme file (one text file per theme, the same on every OS)
+lag-theme-file = { path = "../lag-theme-file" }
 zip = { version = "2", default-features = false, features = ["deflate"] }
 serde = { workspace = true }
 

@@ -34,6 +34,10 @@ pub(super) struct State {
     pub(super) theme_note: String,
     /// which buttons row the note belongs to ("theme-own" / "theme-share")
     pub(super) theme_note_at: &'static str,
+    /// the theme (id) the note of the last per-theme action is about (shown in that theme's row)
+    pub(super) theme_note_for: String,
+    /// what is typed in the New theme field
+    pub(super) theme_new_name: String,
     /// "Delete theme" was pressed once for this theme (a second press within a few seconds moves it to the bin)
     pub(super) theme_delete: Option<(String, std::time::Instant)>,
 }
@@ -59,6 +63,8 @@ impl State {
             cloud: Default::default(),
             theme_note: String::new(),
             theme_note_at: "",
+            theme_note_for: String::new(),
+            theme_new_name: String::new(),
             theme_delete: None,
         }
     }
@@ -472,27 +478,53 @@ impl State {
                 }
                 .into();
                 ui_theme.auto_mode = pending;
-                // kind 18: a row of buttons chosen by its id; `display` = the note of the last action there
-                let actions = |id: &str, label: &str, description: &str| {
-                    let mut r = row(id, label, 18);
-                    r.description = description.into();
+                // a chosen theme waits for a restart: the button sits next to the list
+                ui_theme.custom = pending;
+                // "Your themes" (owner, 2026-11-23: which theme a button acts on must be plain): a new theme with
+                // its name typed in; every theme of the user its own row with its own buttons (kind 19); sharing
+                let note = |r: &mut SettingsRowData, id: &str| {
                     if self.theme_note_at == id {
                         r.display = self.theme_note.clone().into();
                     }
-                    r
                 };
-                // a chosen theme waits for a restart: the button sits next to the list
-                ui_theme.custom = pending;
-                vec![
-                    ("".into(), vec![theme, ui_theme]),
-                    (
-                        "Settings_Group_OwnThemes".into(),
-                        vec![
-                            actions("theme-own", "Theme_OwnRow", "Theme_OwnRow_Desc"),
-                            actions("theme-share", "Theme_ShareRow", "Theme_ShareRow_Desc"),
-                        ],
-                    ),
-                ]
+                let mut new_row = row("theme-new", "Theme_NewRow", 20);
+                new_row.description = "Theme_OwnRow_Desc".into();
+                new_row.display = self.theme_new_name.clone().into();
+                // the note of the last action on a theme that is gone shows here
+                if self.theme_note_at == "theme-own" {
+                    new_row.parts = model(vec![self.theme_note.clone().into()]);
+                }
+                let mut own = vec![new_row];
+                for t in themes.iter().filter(|t| !t.builtin) {
+                    let id = format!("theme:{}", t.id);
+                    let mut r = row(&id, "", 19);
+                    let file = t.location().file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+                    // label: the name; description: the file it is (or the folder of a theme made before 2.2)
+                    r.label = if same(t) { format!("{} ({})", t.name, t.id) } else { t.name.clone() }.into();
+                    let place = if t.file.is_some() { file } else { i18n::format("Theme_OldFolder", &[&file]).unwrap_or(file) };
+                    r.checked = t.id == chosen;
+                    r.auto_mode = t.id == crate::themes::active();
+                    // in use now / chosen, waiting for a restart
+                    let state = if r.auto_mode {
+                        tr("Theme_InUse")
+                    } else if r.checked {
+                        tr("Theme_AfterRestart")
+                    } else {
+                        String::new()
+                    };
+                    r.description = if state.is_empty() { place } else { format!("{place} · {state}") }.into();
+                    // a theme made before 2.2 offers to become one file
+                    r.custom = t.file.is_none();
+                    // the note of the last action on this theme (theme_note_at "theme", theme_note_for its id)
+                    if self.theme_note_at == "theme" && self.theme_note_for == t.id {
+                        r.display = self.theme_note.clone().into();
+                    }
+                    own.push(r);
+                }
+                let mut share = row("theme-share", "Theme_ShareRow", 18);
+                share.description = "Theme_ShareRow_Desc".into();
+                note(&mut share, "theme-share");
+                vec![("".into(), vec![theme, ui_theme]), ("Settings_Group_OwnThemes".into(), own), ("".into(), vec![share])]
             }
             _ => {
                 let mut keys = Vec::new();

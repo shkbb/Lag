@@ -1,0 +1,11 @@
+[package]
+name = "lag-theme-file"
+description = "The .lag theme file: one UTF-8 text file holding a whole Lag theme (the same on every OS)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+base64 = "0.23"
+toml = "1"
+serde = { workspace = true }

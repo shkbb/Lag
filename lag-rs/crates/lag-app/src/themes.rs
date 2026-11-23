@@ -9,13 +9,18 @@
 //! Lag's), and `@lag/` points there. A newer Lag brings its new pages and settings into every theme that did
 //! not change those files.
 //!
-//! Sharing: one `.lagtheme` file = a zip of the theme folder. Packages are checked before use: only theme files
-//! (`.slint`, pictures, fonts, text), no paths leaving the package, size limits. `.slint` is declarative: no code
-//! runs, no file or network access beyond loading the package's own pictures and fonts.
+//! One file: a theme is `<themes>\<id>.lag` (crates/lag-theme-file: UTF-8 text, the same on Windows and Linux),
+//! shared as it is. Before Lag uses it, it is written out into a working folder of this process (`materialize`:
+//! `%TEMP%\lag-theme-<pid>\own-...`, `ThemeInfo::dir`); the editor changes that folder and writes it back into the
+//! one file after every change (`pack`). Themes made as folders before 2.2 (`<themes>\<id>\theme.toml`) and
+//! `.lagtheme` zips are still read; `convert` turns a folder into one file. Packages are checked before use: only
+//! theme files (`.slint`, pictures, fonts, video, text), no paths leaving the theme, size limits. `.slint` is
+//! declarative: no code runs, no file or network access beyond loading the theme's own pictures and fonts.
 use crate::ui_twin::{self, rt};
 use lag_core::i18n::{format as trf, tr};
 use serde::Deserialize;
-use std::io::{Read, Write};
+use lag_theme_file::ThemeFile;
+use std::io::Read;
 use std::path::{Component, Path, PathBuf};
 use std::time::{Duration, Instant};
 
@@ -35,7 +40,8 @@ pub const API_VERSION: u32 = 1;
 /// The API globals Lag's Rust code drives; re-exported for every theme.
 const API_GLOBALS: &str =
     "Tr, MainVM, Page, WindowMetrics, SettingsVM, LibraryVM, PlayerVM, EditorVM, PlayerOverlayVM, EditorOverlayVM, AutoScroll";
-const ALLOWED: &[&str] = &["slint", "toml", "md", "txt", "png", "jpg", "jpeg", "svg", "gif", "webp", "ttf", "otf"];
+const ALLOWED: &[&str] =
+    &["slint", "toml", "md", "txt", "png", "jpg", "jpeg", "svg", "gif", "webp", "apng", "ttf", "otf", "mp4", "webm"];
 const MAX_FILE: u64 = 32 << 20;
 const MAX_TOTAL: u64 = 96 << 20;
 const MAX_FILES: usize = 2000;
@@ -47,9 +53,19 @@ pub struct ThemeInfo {
     pub author: String,
     pub version: String,
     pub api: u32,
+    /// where the theme's files are: the folder of a folder theme, the working folder of a `.lag` one
     pub dir: PathBuf,
     pub entry: String,
     pub builtin: bool,
+    /// the `.lag` file (None: a folder theme, or Lag's own)
+    pub file: Option<PathBuf>,
+}
+
+impl ThemeInfo {
+    /// What the user sees and shares: the `.lag` file, or the folder.
+    pub fn location(&self) -> &Path {
+        self.file.as_deref().unwrap_or(&self.dir)
+    }
 }
 
 #[derive(Deserialize)]
@@ -86,25 +102,141 @@ fn builtin() -> ThemeInfo {
         dir: ui_twin::builtin_dir(),
         entry: "app.slint".into(),
         builtin: true,
+        file: None,
     }
 }
 
-/// Reads one theme folder.
-pub fn read(dir: &Path) -> Result<ThemeInfo, String> {
+fn is_lag(path: &Path) -> bool {
+    path.extension().is_some_and(|e| e.eq_ignore_ascii_case(lag_theme_file::EXTENSION)) && path.is_file()
+}
+
+/// The working folder of a `.lag` theme in this process.
+fn own_dir(file: &Path, id: &str) -> PathBuf {
+    use std::hash::{Hash, Hasher};
+    let mut h = std::collections::hash_map::DefaultHasher::new();
+    file.hash(&mut h);
+    let id: String = id.chars().map(|c| if c.is_alphanumeric() || c == '-' { c } else { '-' }).collect();
+    let dir = std::env::temp_dir().join(format!("lag-theme-{}", std::process::id())).join(format!("own-{id}-{:08x}", h.finish() as u32));
+    i_slint_compiler::pathutils::clean_path(&dir)
+}
+
+fn file_error(e: lag_theme_file::Error) -> String {
+    use lag_theme_file::Error as E;
+    match e {
+        E::NotATheme => trf("Theme_ErrNotTheme", &["#@lag-theme 1"]).unwrap_or_default(),
+        E::Header(h) => format!("{}: {h}", tr("Theme_ErrNoName")),
+        E::BadPath(p) => trf("Theme_ErrOutside", &[&p, &p]).unwrap_or_default(),
+        E::Kind(p) => trf("Theme_ErrFileKind", &[&p]).unwrap_or_default(),
+        E::TooBig(Some(p)) => trf("Theme_ErrFileTooBig", &[&p, "64"]).unwrap_or_default(),
+        E::TooBig(None) => tr("Theme_ErrTooBig").to_owned(),
+        E::TooMany => tr("Theme_ErrTooMany").to_owned(),
+        other => other.to_string(),
+    }
+}
+
+/// Reads a theme: a `.lag` file (its header only) or a theme folder.
+pub fn read(path: &Path) -> Result<ThemeInfo, String> {
+    if is_lag(path) {
+        let id = path.file_stem().map(|n| n.to_string_lossy().into_owned()).ok_or("no file name")?;
+        let text = std::fs::read_to_string(path).map_err(|e| e.to_string())?;
+        let m = ThemeFile::read_manifest(&text).map_err(file_error)?;
+        return Ok(ThemeInfo {
+            dir: own_dir(path, &id),
+            id,
+            name: m.name,
+            author: m.author,
+            version: m.version,
+            api: m.api,
+            entry: m.entry,
+            builtin: false,
+            file: Some(path.to_path_buf()),
+        });
+    }
+    let dir = path;
     let id = dir.file_name().map(|n| n.to_string_lossy().into_owned()).ok_or("no folder name")?;
     let text = std::fs::read_to_string(dir.join("theme.toml")).map_err(|e| format!("theme.toml: {e}"))?;
     let m: Manifest = toml::from_str(&text).map_err(|e| format!("theme.toml: {e}"))?;
     if m.name.trim().is_empty() {
         return Err(tr("Theme_ErrNoName").to_owned());
     }
-    Ok(ThemeInfo { id, name: m.name, author: m.author, version: m.version, api: m.api, dir: dir.to_path_buf(), entry: m.entry, builtin: false })
+    Ok(ThemeInfo {
+        id,
+        name: m.name,
+        author: m.author,
+        version: m.version,
+        api: m.api,
+        dir: dir.to_path_buf(),
+        entry: m.entry,
+        builtin: false,
+        file: None,
+    })
+}
+
+/// Writes a `.lag` theme out into its working folder (fresh: what the file says now). A folder theme: nothing to do.
+pub fn materialize(theme: &ThemeInfo) -> Result<(), String> {
+    let Some(file) = &theme.file else { return Ok(()) };
+    let text = std::fs::read_to_string(file).map_err(|e| e.to_string())?;
+    let tf = ThemeFile::parse(&text).map_err(file_error)?;
+    let _ = std::fs::remove_dir_all(&theme.dir);
+    std::fs::create_dir_all(&theme.dir).map_err(|e| e.to_string())?;
+    for (rel, content) in &tf.files {
+        let out = rel.split('/').fold(theme.dir.clone(), |p, part| p.join(part));
+        std::fs::create_dir_all(out.parent().unwrap_or(&theme.dir)).map_err(|e| e.to_string())?;
+        std::fs::write(&out, content.bytes()).map_err(|e| format!("{rel}: {e}"))?;
+    }
+    write_manifest(&theme.dir, &tf.manifest)
+}
+
+fn write_manifest(dir: &Path, m: &lag_theme_file::Manifest) -> Result<(), String> {
+    let mut table = toml::Table::new();
+    table.insert("name".into(), toml::Value::String(m.name.clone()));
+    table.insert("author".into(), toml::Value::String(m.author.clone()));
+    table.insert("version".into(), toml::Value::String(m.version.clone()));
+    table.insert("api".into(), toml::Value::Integer(m.api as i64));
+    table.insert("entry".into(), toml::Value::String(m.entry.clone()));
+    std::fs::write(dir.join("theme.toml"), toml::to_string(&table).map_err(|e| e.to_string())?).map_err(|e| e.to_string())
+}
+
+/// A theme folder (a working folder, or one made before 2.2) as one `.lag` theme.
+fn folder_to_file(dir: &Path) -> Result<ThemeFile, String> {
+    let info = read(dir)?;
+    let mut tf = ThemeFile::new(&info.name);
+    tf.manifest.author = info.author;
+    tf.manifest.version = if info.version.is_empty() { "1.0".into() } else { info.version };
+    tf.manifest.api = info.api;
+    tf.manifest.entry = info.entry;
+    for (rel, path) in ui_files(dir) {
+        let bytes = std::fs::read(&path).map_err(|e| e.to_string())?;
+        tf.put(&rel.join("/"), bytes).map_err(file_error)?;
+    }
+    Ok(tf)
+}
+
+/// Writes `tf` into `file` safely (a temporary file renamed over it: a crash never leaves half a theme).
+fn write_file(file: &Path, tf: &ThemeFile) -> Result<(), String> {
+    let tmp = file.with_extension("lag.tmp");
+    std::fs::write(&tmp, tf.to_text()).map_err(|e| e.to_string())?;
+    std::fs::rename(&tmp, file).map_err(|e| {
+        let _ = std::fs::remove_file(&tmp);
+        e.to_string()
+    })
+}
+
+/// Writes a `.lag` theme's working folder back into its one file (the editor, after every change).
+pub fn pack(theme: &ThemeInfo) -> Result<(), String> {
+    let Some(file) = &theme.file else { return Ok(()) };
+    write_file(file, &folder_to_file(&theme.dir)?)
 }
 
 /// The built-in theme first, then the installed ones by name.
 pub fn list() -> Vec<ThemeInfo> {
     let mut themes = Vec::new();
     if let Some(Ok(entries)) = user_dir().map(std::fs::read_dir) {
-        for e in entries.flatten().filter(|e| e.path().is_dir()) {
+        for e in entries.flatten().filter(|e| e.path().is_dir() || is_lag(&e.path())) {
+            // a folder of something else (no theme.toml): not a theme
+            if e.path().is_dir() && !e.path().join("theme.toml").is_file() {
+                continue;
+            }
             match read(&e.path()) {
                 Ok(t) if t.id != BUILTIN => themes.push(t),
                 Ok(_) => {}
@@ -295,6 +427,8 @@ pub fn apply_dir(dir: &Path) -> Result<(), String> {
 }
 
 fn apply_theme(theme: &ThemeInfo) -> Result<(), String> {
+    // what the file says now (the preview reloads after every save of it)
+    materialize(theme)?;
     let (defs, windows) = compile_theme(theme)?;
     rt::install(defs);
     log::info!("[Theme] \"{}\" {} by {} draws {}", theme.name, theme.version, theme.author, windows.join(", "));
@@ -407,6 +541,9 @@ pub fn compile_theme(theme: &ThemeInfo) -> Result<(Vec<slint_interpreter::Compon
     if theme.api > API_VERSION {
         return Err(trf("Theme_ErrNewer", &[&theme.name]).unwrap_or_default());
     }
+    if theme.file.is_some() && !theme.dir.join("theme.toml").is_file() {
+        materialize(theme)?;
+    }
     validate(&theme.dir)?;
     // the theme over Lag's own UI; `@lag/` leads there too, so the theme's files and Lag's share one API
     let api = sync(theme)?;
@@ -443,54 +580,90 @@ fn unique_id(root: &Path, name: &str) -> String {
         .trim_matches('-')
         .to_owned();
     let base = if base.is_empty() || base == BUILTIN { "theme".to_owned() } else { base };
-    (1..).map(|i| if i == 1 { base.clone() } else { format!("{base}-{i}") }).find(|id| !root.join(id).exists()).unwrap_or(base)
+    let free = |id: &String| !root.join(id).exists() && !root.join(format!("{id}.{}", lag_theme_file::EXTENSION)).exists();
+    (1..).map(|i| if i == 1 { base.clone() } else { format!("{base}-{i}") }).find(free).unwrap_or(base)
 }
 
-/// "New theme": a theme named `name` that is Lag's own interface until something is changed in it (it holds only
-/// what is changed; everything else comes from the Lag that runs it). Returns it. `root` = the themes folder.
-pub fn new_from_builtin(root: &Path, name: &str) -> Result<ThemeInfo, String> {
+/// A free theme name: `name`, or `name 2`, `name 3`... (the list tells them apart).
+pub fn free_name(root: &Path, name: &str) -> String {
     let taken: Vec<String> = std::fs::read_dir(root)
         .map(|e| e.flatten().filter_map(|e| read(&e.path()).ok()).map(|t| t.name.to_lowercase()).collect())
         .unwrap_or_default();
-    let name = &(1..)
+    (1..)
         .map(|i| if i == 1 { name.to_owned() } else { format!("{name} {i}") })
         .find(|n| !taken.contains(&n.to_lowercase()))
-        .unwrap_or_else(|| name.to_owned());
-    let id = unique_id(root, name);
-    let target = root.join(&id);
-    std::fs::create_dir_all(&target).map_err(|e| e.to_string())?;
-    let manifest = format!(
-        "name = {}\nauthor = \"\"\nversion = \"1.0\"\napi = {API_VERSION}\nentry = \"app.slint\"\n",
-        toml::Value::String(name.to_owned())
-    );
-    std::fs::write(target.join("theme.toml"), manifest).map_err(|e| e.to_string())?;
-    validate(&target)?;
-    read(&target)
+        .unwrap_or_else(|| name.to_owned())
 }
 
-/// Renames a theme (its `name` in theme.toml; the folder stays). Returns the theme.
-pub fn rename(dir: &Path, name: &str) -> Result<ThemeInfo, String> {
+/// "New theme": `<root>\<id>.lag`, a theme named `name` that is Lag's own interface until something is changed in
+/// it (it holds only what is changed; everything else comes from the Lag that runs it). Returns it.
+pub fn new_from_builtin(root: &Path, name: &str) -> Result<ThemeInfo, String> {
     let name = name.trim();
     if name.is_empty() {
         return Err(tr("Theme_ErrNoName").to_owned());
     }
-    let path = dir.join("theme.toml");
-    let text = std::fs::read_to_string(&path).map_err(|e| e.to_string())?;
-    let mut table: toml::Table = toml::from_str(&text).map_err(|e| format!("theme.toml: {e}"))?;
-    table.insert("name".into(), toml::Value::String(name.to_owned()));
-    std::fs::write(&path, toml::to_string(&table).map_err(|e| e.to_string())?).map_err(|e| e.to_string())?;
-    read(dir)
+    let name = free_name(root, name);
+    std::fs::create_dir_all(root).map_err(|e| e.to_string())?;
+    let file = root.join(format!("{}.{}", unique_id(root, &name), lag_theme_file::EXTENSION));
+    write_file(&file, &ThemeFile::new(&name))?;
+    read(&file)
 }
 
-/// Moves an installed theme's folder to the Recycle Bin (it can be restored from there).
+/// Renames a theme (its name inside it; the file / folder stays). Returns the theme.
+pub fn rename(theme: &ThemeInfo, name: &str) -> Result<ThemeInfo, String> {
+    let name = name.trim();
+    if name.is_empty() {
+        return Err(tr("Theme_ErrNoName").to_owned());
+    }
+    // the folder's manifest: a folder theme's own, or the working folder the editor writes back from
+    let manifest = theme.dir.join("theme.toml");
+    if manifest.is_file() {
+        let text = std::fs::read_to_string(&manifest).map_err(|e| e.to_string())?;
+        let mut table: toml::Table = toml::from_str(&text).map_err(|e| format!("theme.toml: {e}"))?;
+        table.insert("name".into(), toml::Value::String(name.to_owned()));
+        std::fs::write(&manifest, toml::to_string(&table).map_err(|e| e.to_string())?).map_err(|e| e.to_string())?;
+    }
+    if let Some(file) = &theme.file {
+        let text = std::fs::read_to_string(file).map_err(|e| e.to_string())?;
+        let mut tf = ThemeFile::parse(&text).map_err(file_error)?;
+        tf.manifest.name = name.to_owned();
+        write_file(file, &tf)?;
+    }
+    let mut t = read(theme.location())?;
+    t.dir = theme.dir.clone();
+    Ok(t)
+}
+
+/// A theme folder made before 2.2 as one `.lag` file next to it; the folder goes to the Recycle Bin.
+pub fn convert(theme: &ThemeInfo) -> Result<ThemeInfo, String> {
+    if theme.builtin || theme.file.is_some() {
+        return Ok(theme.clone());
+    }
+    let root = theme.dir.parent().ok_or("no themes folder")?;
+    let tf = folder_to_file(&theme.dir)?;
+    let file = root.join(format!("{}.{}", theme.id, lag_theme_file::EXTENSION));
+    if file.exists() {
+        return Err(format!("{} already exists", file.display()));
+    }
+    write_file(&file, &tf)?;
+    to_recycle_bin(&theme.dir)?;
+    read(&file)
+}
+
+/// Moves an installed theme (its `.lag` file or its folder) to the Recycle Bin (it can be restored from there).
 pub fn remove(theme: &ThemeInfo) -> Result<(), String> {
     if theme.builtin {
         return Err(tr("Theme_ErrDeleteBuiltin").to_owned());
     }
+    to_recycle_bin(theme.location())
+}
+
+/// The Recycle Bin on Windows (a Linux build uses the freedesktop trash: docs/spec/themes.md, parity).
+fn to_recycle_bin(path: &Path) -> Result<(), String> {
     use std::os::windows::ffi::OsStrExt;
     use windows::Win32::UI::Shell::{SHFileOperationW, FOF_ALLOWUNDO, FOF_NOCONFIRMATION, FOF_NOERRORUI, FOF_SILENT, FO_DELETE, SHFILEOPSTRUCTW};
     // a double-NUL-terminated list of one path
-    let from: Vec<u16> = theme.dir.as_os_str().encode_wide().chain([0, 0]).collect();
+    let from: Vec<u16> = path.as_os_str().encode_wide().chain([0, 0]).collect();
     let mut op = SHFILEOPSTRUCTW {
         wFunc: FO_DELETE,
         pFrom: windows::core::PCWSTR(from.as_ptr()),
@@ -498,38 +671,51 @@ pub fn remove(theme: &ThemeInfo) -> Result<(), String> {
         ..Default::default()
     };
     let r = unsafe { SHFileOperationW(&mut op) };
-    if r != 0 || op.fAnyOperationsAborted.as_bool() || theme.dir.exists() {
-        return Err(format!("{} ({r})", theme.dir.display()));
+    if r != 0 || op.fAnyOperationsAborted.as_bool() || path.exists() {
+        return Err(format!("{} ({r})", path.display()));
     }
     Ok(())
 }
 
-/// Installs a `.lagtheme` file into the themes folder (checked first; never over an installed theme: the same
-/// file twice is two themes, `name-2`). Returns the theme.
+/// Installs a theme file into the themes folder as one `.lag`: a `.lag` (checked first), or a `.lagtheme` zip made
+/// before 2.2 (converted). Never over an installed theme: the same file twice is two themes (`name-2`). Returns it.
 pub fn import(file: &Path) -> Result<ThemeInfo, String> {
     let root = user_dir().ok_or("no %APPDATA%")?;
+    std::fs::create_dir_all(&root).map_err(|e| e.to_string())?;
     let stem = file.file_stem().map(|s| s.to_string_lossy().into_owned()).unwrap_or_default();
     let id: String = stem.chars().map(|c| if c.is_alphanumeric() || c == '-' || c == '_' { c } else { '-' }).collect();
-    if id.is_empty() || id == BUILTIN {
+    if id.trim_matches('-').is_empty() || id == BUILTIN {
         return Err(tr("Theme_ErrFileName").to_owned());
     }
-    let staging = root.join(format!(".import-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&staging);
-    std::fs::create_dir_all(&staging).map_err(|e| e.to_string())?;
-    let result = unpack(file, &staging).and_then(|_| {
-        // a zip of the folder itself (one top folder with theme.toml) or of its contents
-        let inner = match std::fs::read_dir(&staging).map_err(|e| e.to_string())?.flatten().collect::<Vec<_>>().as_slice() {
-            [only] if only.path().is_dir() && only.path().join("theme.toml").is_file() => only.path(),
-            _ => staging.clone(),
-        };
-        validate(&inner)?;
-        read(&inner)?;
-        let target = root.join(unique_id(&root, &id));
-        std::fs::rename(&inner, &target).map_err(|e| e.to_string())?;
-        read(&target)
-    });
-    let _ = std::fs::remove_dir_all(&staging);
-    result
+    let tf = if is_lag(file) {
+        let text = std::fs::read_to_string(file).map_err(|_| trf("Theme_ErrNotTheme", &["UTF-8"]).unwrap_or_default())?;
+        ThemeFile::parse(&text).map_err(file_error)?
+    } else {
+        let staging = std::env::temp_dir().join(format!("lag-theme-{}", std::process::id())).join("import");
+        let _ = std::fs::remove_dir_all(&staging);
+        std::fs::create_dir_all(&staging).map_err(|e| e.to_string())?;
+        let result = unpack(file, &staging).and_then(|_| {
+            // a zip of the folder itself (one top folder with theme.toml) or of its contents
+            let inner = match std::fs::read_dir(&staging).map_err(|e| e.to_string())?.flatten().collect::<Vec<_>>().as_slice() {
+                [only] if only.path().is_dir() && only.path().join("theme.toml").is_file() => only.path(),
+                _ => staging.clone(),
+            };
+            validate(&inner)?;
+            folder_to_file(&inner)
+        });
+        let _ = std::fs::remove_dir_all(&staging);
+        result?
+    };
+    // the references inside it are checked as for any theme (written out, then validated)
+    let target = root.join(format!("{}.{}", unique_id(&root, &id), lag_theme_file::EXTENSION));
+    write_file(&target, &tf)?;
+    let theme = read(&target)?;
+    let checked = materialize(&theme).and_then(|_| validate(&theme.dir));
+    if let Err(e) = checked {
+        let _ = std::fs::remove_file(&target);
+        return Err(e);
+    }
+    Ok(theme)
 }
 
 fn unpack(file: &Path, into: &Path) -> Result<(), String> {
@@ -562,40 +748,17 @@ fn unpack(file: &Path, into: &Path) -> Result<(), String> {
     Ok(())
 }
 
-/// Writes a theme folder as one `.lagtheme` file (Lag's own theme too: a starting point for a new one).
+/// Writes a theme as one `.lag` file to share (Lag's own: an empty theme, a starting point).
 pub fn export(theme: &ThemeInfo, file: &Path) -> Result<(), String> {
-    let f = std::fs::File::create(file).map_err(|e| e.to_string())?;
-    let mut zip = zip::ZipWriter::new(f);
-    let opts = zip::write::SimpleFileOptions::default().compression_method(zip::CompressionMethod::Deflated);
-    let mut stack = vec![theme.dir.clone()];
-    let mut wrote_manifest = false;
-    while let Some(d) = stack.pop() {
-        for e in std::fs::read_dir(&d).map_err(|e| e.to_string())?.flatten() {
-            let path = e.path();
-            if path.is_dir() {
-                stack.push(path);
-                continue;
-            }
-            let ext = path.extension().map(|x| x.to_string_lossy().to_lowercase()).unwrap_or_default();
-            if !ALLOWED.contains(&ext.as_str()) {
-                continue;
-            }
-            let rel = path.strip_prefix(&theme.dir).unwrap_or(&path).to_string_lossy().replace('\\', "/");
-            wrote_manifest |= rel == "theme.toml";
-            zip.start_file(rel, opts).map_err(|e| e.to_string())?;
-            zip.write_all(&std::fs::read(&path).map_err(|e| e.to_string())?).map_err(|e| e.to_string())?;
-        }
-    }
-    if !wrote_manifest {
-        zip.start_file("theme.toml", opts).map_err(|e| e.to_string())?;
-        let manifest = format!(
-            "name = \"{} (copy)\"\nauthor = \"\"\nversion = \"1.0\"\napi = {API_VERSION}\nentry = \"{}\"\n",
-            theme.name, theme.entry
-        );
-        zip.write_all(manifest.as_bytes()).map_err(|e| e.to_string())?;
-    }
-    zip.finish().map_err(|e| e.to_string())?;
-    Ok(())
+    let tf = if theme.builtin {
+        ThemeFile::new(&format!("{} ({})", theme.name, tr("Theme_Copy")))
+    } else if let Some(src) = &theme.file {
+        let text = std::fs::read_to_string(src).map_err(|e| e.to_string())?;
+        ThemeFile::parse(&text).map_err(file_error)?
+    } else {
+        folder_to_file(&theme.dir)?
+    };
+    write_file(file, &tf)
 }
 
 #[cfg(test)]
@@ -650,12 +813,14 @@ mod tests {
         let root = temp("newtheme");
         let t = new_from_builtin(&root, "Моя тема").unwrap();
         assert_eq!((t.id.as_str(), t.name.as_str()), ("моя-тема", "Моя тема"));
-        let own: Vec<_> = std::fs::read_dir(&t.dir).unwrap().flatten().map(|e| e.file_name()).collect();
-        assert_eq!(own, ["theme.toml"], "nothing of Lag's is copied");
+        let own: Vec<_> = std::fs::read_dir(&root).unwrap().flatten().map(|e| e.file_name()).collect();
+        assert_eq!(own, ["моя-тема.lag"], "one file, nothing of Lag's copied");
+        let text = std::fs::read_to_string(t.location()).unwrap();
+        assert!(text.starts_with(lag_theme_file::MAGIC) && !text.lines().any(|l| l.starts_with("#@file ") || l.starts_with("#@data ")), "{text}");
         let second = new_from_builtin(&root, "Моя тема").unwrap();
         assert_eq!((second.id.as_str(), second.name.as_str()), ("моя-тема-2", "Моя тема 2"), "never over an existing one, nor its name");
         ui_twin::load_builtin().unwrap();
-        apply_dir(&t.dir).unwrap();
+        apply_dir(t.location()).unwrap();
         let windows = rt::loaded();
         for w in ["AppWindow", "ToastWindow", "StatsHud", "TrayMenuWindow"] {
             assert!(windows.iter().any(|x| x == w), "{w}");
@@ -698,13 +863,58 @@ mod tests {
         let _ = std::fs::remove_dir_all(dir);
     }
 
+    /// A `.lag` theme end to end: changed in its working folder, written back into its one file, read again; a
+    /// folder theme made before 2.2 becomes one file; export / import of one file; rename inside the file.
+    #[test]
+    fn one_file_themes_round_trip() {
+        let root = temp("onefile");
+        let t = new_from_builtin(&root, "Файл").unwrap();
+        materialize(&t).unwrap();
+        std::fs::create_dir_all(t.dir.join("theme")).unwrap();
+        let tokens = std::fs::read_to_string(ui_twin::builtin_dir().join("theme").join("tokens.slint")).unwrap();
+        std::fs::write(t.dir.join("theme").join("tokens.slint"), tokens.replacen("#22D3EE", "#123456", 1)).unwrap();
+        std::fs::create_dir_all(t.dir.join("art")).unwrap();
+        std::fs::write(t.dir.join("art").join("bg.png"), [137u8, 80, 78, 71, 1, 2, 3]).unwrap();
+        pack(&t).unwrap();
+        let text = std::fs::read_to_string(t.location()).unwrap();
+        assert!(text.contains("#@file theme/tokens.slint") && text.contains("#@data art/bg.png") && text.contains("#123456"));
+        // fresh working folder from the file alone
+        std::fs::remove_dir_all(&t.dir).unwrap();
+        materialize(&t).unwrap();
+        assert_eq!(std::fs::read(t.dir.join("art").join("bg.png")).unwrap(), [137u8, 80, 78, 71, 1, 2, 3]);
+        ui_twin::load_builtin().unwrap();
+        compile_theme(&t).unwrap();
+        // rename: inside the file and its working folder
+        let r = rename(&t, "Інша назва").unwrap();
+        assert_eq!(read(t.location()).unwrap().name, "Інша назва");
+        assert_eq!(read(&t.dir).unwrap().name, "Інша назва");
+        assert_eq!(r.location(), t.location());
+        // export: the same theme in one file elsewhere
+        let out = std::env::temp_dir().join(format!("lag-export-{}.lag", std::process::id()));
+        export(&r, &out).unwrap();
+        assert_eq!(ThemeFile::parse(&std::fs::read_to_string(&out).unwrap()).unwrap().files.len(), 2);
+        let _ = std::fs::remove_file(&out);
+        // a folder theme from before 2.2
+        let old = root.join("стара");
+        std::fs::create_dir_all(old.join("views")).unwrap();
+        std::fs::write(old.join("theme.toml"), "name = \"Стара\"
+").unwrap();
+        std::fs::write(old.join("views").join("x.slint"), "export component X {}
+").unwrap();
+        let tf = folder_to_file(&old).unwrap();
+        assert_eq!(tf.manifest.name, "Стара");
+        assert!(tf.files.contains_key("views/x.slint") && !tf.files.contains_key("theme.toml"));
+        let _ = std::fs::remove_dir_all(root);
+    }
+
     #[test]
     fn a_theme_is_renamed_in_its_manifest() {
         let d = temp("rename");
         std::fs::write(d.join("theme.toml"), "name = \"Old\"\nauthor = \"me\"\napi = 1\n").unwrap();
-        let t = rename(&d, "  Нова назва ").unwrap();
+        let theme = read(&d).unwrap();
+        let t = rename(&theme, "  Нова назва ").unwrap();
         assert_eq!((t.name.as_str(), t.author.as_str()), ("Нова назва", "me"), "the other keys stay");
-        assert!(rename(&d, "   ").is_err());
+        assert!(rename(&theme, "   ").is_err());
         let _ = std::fs::remove_dir_all(&d);
     }
 
@@ -723,21 +933,25 @@ mod tests {
     }
 
     #[test]
-    fn export_then_import_round_trips_and_rejects_zip_slip() {
+    fn export_writes_one_file_and_zip_slip_is_refused() {
+        use std::io::Write;
         let src = temp("src");
         std::fs::create_dir_all(src.join("art")).unwrap();
-        std::fs::write(src.join("theme.toml"), "name = \"Rice\"\nauthor = \"me\"\nversion = \"2\"\n").unwrap();
+        std::fs::write(src.join("theme.toml"), "name = \"Rice\"
+author = \"me\"
+version = \"2\"
+").unwrap();
         std::fs::write(src.join("app.slint"), "export component AppWindow inherits Window {}").unwrap();
         std::fs::write(src.join("art").join("bg.png"), [137u8, 80, 78, 71]).unwrap();
         let info = read(&src).unwrap();
-        let file = std::env::temp_dir().join(format!("lag-rice-{}.lagtheme", std::process::id()));
+        let file = std::env::temp_dir().join(format!("lag-rice-{}.lag", std::process::id()));
         export(&info, &file).unwrap();
-        let out = temp("out");
-        unpack(&file, &out).unwrap();
-        assert_eq!(std::fs::read(out.join("art").join("bg.png")).unwrap(), [137u8, 80, 78, 71]);
-        assert_eq!(read(&out).unwrap().name, "Rice");
+        let tf = ThemeFile::parse(&std::fs::read_to_string(&file).unwrap()).unwrap();
+        assert_eq!((tf.manifest.name.as_str(), tf.manifest.author.as_str(), tf.manifest.version.as_str()), ("Rice", "me", "2"));
+        assert_eq!(tf.files["art/bg.png"], lag_theme_file::Content::Binary(vec![137u8, 80, 78, 71]));
+        assert!(tf.files.contains_key("app.slint"));
 
-        // a crafted file that writes outside the folder
+        // a crafted .lagtheme (made before 2.2) that writes outside the folder
         let evil = std::env::temp_dir().join(format!("lag-evil-{}.lagtheme", std::process::id()));
         let mut z = zip::ZipWriter::new(std::fs::File::create(&evil).unwrap());
         z.start_file("../../evil.slint", zip::write::SimpleFileOptions::default()).unwrap();
@@ -745,7 +959,7 @@ mod tests {
         z.finish().unwrap();
         let out2 = temp("out2");
         assert!(unpack(&evil, &out2).unwrap_err().contains("evil.slint"));
-        for p in [src, out, out2] {
+        for p in [src, out2] {
             let _ = std::fs::remove_dir_all(p);
         }
         let _ = std::fs::remove_file(file);

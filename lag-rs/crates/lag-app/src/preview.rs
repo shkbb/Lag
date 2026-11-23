@@ -33,8 +33,13 @@ pub fn args() -> Option<Args> {
     })
 }
 
-/// What changed in a folder: every file's path, size and time, summed into one number.
+/// What changed in a theme (a `.lag` file, or a folder): every file's path, size and time, summed into one number.
 fn fingerprint(dir: &Path) -> u64 {
+    if dir.is_file() {
+        let m = std::fs::metadata(dir).ok();
+        let t = m.as_ref().and_then(|m| m.modified().ok()).and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok()).map_or(0, |d| d.as_millis() as u64);
+        return t.rotate_left(17) ^ m.map_or(0, |m| m.len()).rotate_left(41);
+    }
     let mut h = 0u64;
     let mut stack = vec![dir.to_path_buf()];
     while let Some(d) = stack.pop() {

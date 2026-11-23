@@ -35,10 +35,11 @@ pub(super) fn browse_folder(current: &str) -> Option<String> {
         result
     }
 }
-/// System Open (`save` = None) or Save As (`save` = Some(default file name)) dialog for one `.lagtheme` file.
-/// None = cancelled.
+/// System Open (`save` = None) or Save As (`save` = Some(default file name)) dialog for one theme file: `.lag`
+/// (saving), `.lag` or a `.lagtheme` made before 2.2 (opening). None = cancelled.
 pub(super) fn pick_theme_file(save: Option<&str>) -> Option<String> {
-    pick_file(save, &tr("Theme_FileFilter"), "*.lagtheme", "lagtheme")
+    let pattern = if save.is_some() { "*.lag" } else { "*.lag;*.lagtheme" };
+    pick_file(save, &tr("Theme_FileFilter"), pattern, "lag")
 }
 
 /// System Open / Save As dialog for one file of the kind `pattern` (`*.png;*.jpg`), named `filter` in the list;

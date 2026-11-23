@@ -300,7 +300,12 @@ mod tests {
         let root = std::env::temp_dir().join(format!("lag-palette-test-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&root);
         std::fs::create_dir_all(&root).unwrap();
-        let theme = crate::themes::new_from_builtin(&root, "Palette").unwrap();
+        // a folder theme (the working folder of a .lag one behaves the same)
+        let dir = root.join("palette");
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(dir.join("theme.toml"), "name = \"Palette\"
+").unwrap();
+        let theme = crate::themes::read(&dir).unwrap();
         // the new theme holds nothing: its palette is Lag's, through the built theme
         let build = crate::themes::sync(&theme).unwrap();
         let all = tokens(&build);

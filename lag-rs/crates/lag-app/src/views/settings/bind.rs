@@ -46,6 +46,11 @@ pub(super) fn bind_controls(ui: &AppWindow, ctx: &Rc<AppCtx>, state: &Rc<RefCell
     });
     let (st, c, weak) = (state.clone(), ctx.clone(), ui.as_weak());
     ui.global::<SettingsVM>().on_text(move |id, value| {
+        if id == "theme-new" {
+            // the name typed for a new theme (not saved anywhere; kept while the page lives)
+            st.borrow_mut().theme_new_name = value.to_string();
+            return;
+        }
         if let (Some(ui), Ok(v)) = (weak.upgrade(), value.parse::<f32>()) {
             save(&ui, &c, &st, &id, |s| set_number(s, &id, v));
         }
@@ -164,140 +169,8 @@ pub(super) fn bind_controls(ui: &AppWindow, ctx: &Rc<AppCtx>, state: &Rc<RefCell
                     c.cloud().disconnect(&id);
                 }
             }
-            // interface themes (docs/spec/themes.md)
-            "theme-folder" => {
-                if let Some(dir) = crate::themes::user_dir() {
-                    crate::themes::write_reference(&dir);
-                    std::thread::spawn(move || open_in_explorer(&dir, false));
-                }
-            }
-            "theme-restart" => crate::shell::restart(),
-            // the chosen theme to the Recycle Bin: a first press asks for a second one (QA 2026-11-22: themes could
-            // not be deleted from Lag)
-            "theme-delete" => {
-                let chosen = st.borrow().settings.ui_theme.clone().unwrap_or_else(|| crate::themes::BUILTIN.into());
-                let theme = crate::themes::list().into_iter().find(|t| t.id == chosen);
-                let Some(theme) = theme.filter(|t| !t.builtin) else {
-                    st.borrow_mut().theme_note = tr("Theme_ErrDeleteBuiltin");
-                    st.borrow_mut().theme_note_at = "theme-own";
-                    st.borrow().refresh(&ui);
-                    return;
-                };
-                let confirmed = st.borrow().theme_delete.as_ref().is_some_and(|(id, at)| *id == theme.id && at.elapsed() < Duration::from_secs(6));
-                if !confirmed {
-                    st.borrow_mut().theme_delete = Some((theme.id.clone(), std::time::Instant::now()));
-                    st.borrow_mut().theme_note = i18n::format("Theme_DeleteConfirm", &[&theme.name]).unwrap_or_default();
-                    st.borrow_mut().theme_note_at = "theme-own";
-                    st.borrow().refresh(&ui);
-                    return;
-                }
-                st.borrow_mut().theme_delete = None;
-                match crate::themes::remove(&theme) {
-                    Ok(()) => {
-                        st.borrow_mut().theme_note = i18n::format("Theme_Deleted", &[&theme.name]).unwrap_or_default();
-                        st.borrow_mut().theme_note_at = "theme-own";
-                        save(&ui, &c, &st, "ui-theme", |s| s.settings.ui_theme = None);
-                    }
-                    Err(e) => {
-                        log::warn!("[Theme] delete failed: {e}");
-                        st.borrow_mut().theme_note = e;
-                        st.borrow_mut().theme_note_at = "theme-own";
-                        st.borrow().refresh(&ui);
-                    }
-                }
-            }
-            // a new theme (Lag's own interface until something is changed in it, docs/spec/themes.md), chosen
-            "theme-new" => {
-                let Some(root) = crate::themes::user_dir() else { return };
-                crate::themes::write_reference(&root);
-                match crate::themes::new_from_builtin(&root, &tr("Theme_NewName")) {
-                    Ok(t) => {
-                        st.borrow_mut().theme_note = i18n::format("Theme_Created", &[&t.name]).unwrap_or_default();
-                        st.borrow_mut().theme_note_at = "theme-own";
-                        save(&ui, &c, &st, "ui-theme", |s| s.settings.ui_theme = Some(t.id.clone()));
-                    }
-                    Err(e) => {
-                        log::warn!("[Theme] new theme failed: {e}");
-                        st.borrow_mut().theme_note = e;
-                        st.borrow_mut().theme_note_at = "theme-own";
-                        st.borrow().refresh(&ui);
-                    }
-                }
-            }
-            // the graphical editor for the chosen theme; Lag's own cannot be changed: a new theme is made first
-            "theme-edit" => {
-                let chosen = st.borrow().settings.ui_theme.clone().unwrap_or_else(|| crate::themes::BUILTIN.into());
-                let theme = match crate::themes::list().into_iter().find(|t| t.id == chosen && !t.builtin) {
-                    Some(t) => Some(t),
-                    None => crate::themes::user_dir().and_then(|root| {
-                        crate::themes::write_reference(&root);
-                        let t = crate::themes::new_from_builtin(&root, &tr("Theme_NewName")).ok()?;
-                        save(&ui, &c, &st, "ui-theme", |s| s.settings.ui_theme = Some(t.id.clone()));
-                        Some(t)
-                    }),
-                };
-                if let Some(t) = theme {
-                    let spawned = std::env::current_exe()
-                        .and_then(|exe| std::process::Command::new(exe).arg("--theme-editor").arg(&t.dir).spawn());
-                    if let Err(e) = spawned {
-                        log::warn!("[Theme] editor did not start: {e}");
-                    }
-                }
-            }
-            // the chosen theme in its own live-reloading window (Lag.exe --theme-preview <folder>)
-            "theme-preview" => {
-                let chosen = st.borrow().settings.ui_theme.clone().unwrap_or_else(|| crate::themes::BUILTIN.into());
-                if let Some(t) = crate::themes::list().into_iter().find(|t| t.id == chosen) {
-                    let spawned = std::env::current_exe()
-                        .and_then(|exe| std::process::Command::new(exe).arg("--theme-preview").arg(&t.dir).spawn());
-                    if let Err(e) = spawned {
-                        log::warn!("[Theme] preview did not start: {e}");
-                    }
-                }
-            }
-            "theme-import" | "theme-export" => {
-                let export = id.as_str() == "theme-export";
-                let chosen = st.borrow().settings.ui_theme.clone().unwrap_or_else(|| crate::themes::BUILTIN.into());
-                let theme = crate::themes::list().into_iter().find(|t| t.id == chosen);
-                let default = theme.as_ref().map(|t| format!("{}.lagtheme", t.id)).unwrap_or_default();
-                let (sender, receiver) = mpsc::channel();
-                std::thread::spawn(move || {
-                    let _ = sender.send(pick_theme_file(export.then_some(default.as_str())));
-                });
-                let (st, c, weak) = (st.clone(), c.clone(), ui.as_weak());
-                let timer = Rc::new(slint::Timer::default());
-                let keep = timer.clone();
-                timer.start(slint::TimerMode::Repeated, Duration::from_millis(50), move || {
-                    let Ok(result) = receiver.try_recv() else { return };
-                    keep.stop();
-                    let (Some(file), Some(ui)) = (result, weak.upgrade()) else { return };
-                    let path = std::path::PathBuf::from(&file);
-                    if export {
-                        let note = match theme.as_ref().map(|t| crate::themes::export(t, &path)) {
-                            Some(Ok(())) => i18n::format("Theme_Exported", &[&file]).unwrap_or(file),
-                            Some(Err(e)) => e,
-                            None => String::new(),
-                        };
-                        st.borrow_mut().theme_note = note;
-                        st.borrow_mut().theme_note_at = "theme-share";
-                        st.borrow().refresh(&ui);
-                        return;
-                    }
-                    match crate::themes::import(&path) {
-                        Ok(t) => {
-                            st.borrow_mut().theme_note = i18n::format("Theme_Imported", &[&t.name]).unwrap_or_default();
-                            st.borrow_mut().theme_note_at = "theme-share";
-                            save(&ui, &c, &st, "ui-theme", |s| s.settings.ui_theme = Some(t.id.clone()));
-                        }
-                        Err(e) => {
-                            log::warn!("[Theme] import of {file} failed: {e}");
-                            st.borrow_mut().theme_note = i18n::format("Theme_ImportFailed", &[&e]).unwrap_or(e);
-                            st.borrow_mut().theme_note_at = "theme-share";
-                            st.borrow().refresh(&ui);
-                        }
-                    }
-                });
-            }
+            // interface themes (docs/spec/themes.md): `theme-<what>` or `theme-<what>:<theme id>`
+            other if other.starts_with("theme-") => theme_action(&ui, &c, &st, other),
             "logs" => {
                 std::thread::spawn(|| {
                     if let Some(path) = lag_core::filelog::log_directory() {
@@ -359,4 +232,151 @@ pub(super) fn bind_controls(ui: &AppWindow, ctx: &Rc<AppCtx>, state: &Rc<RefCell
             st.borrow().refresh(&ui);
         }
     });
+}
+
+/// The Interface tab's theme buttons. `id`: `theme-new`, `theme-import`, `theme-folder`, `theme-api`,
+/// `theme-restart`, or `theme-<edit|preview|export|delete|convert|use>:<theme id>` (each theme's own row).
+fn theme_action(ui: &AppWindow, c: &Rc<AppCtx>, st: &Rc<RefCell<State>>, id: &str) {
+    use crate::themes;
+    // a theme's row id is `theme:<id>`: its buttons send `theme-<what>:theme:<id>`
+    let (what, rest) = id.split_once(':').unwrap_or((id, ""));
+    let theme_id = rest.strip_prefix("theme:").unwrap_or(rest);
+    let theme = (!theme_id.is_empty()).then(|| themes::list().into_iter().find(|t| t.id == theme_id)).flatten();
+    // the note under the row it is about
+    let say = |text: String, at: &'static str, for_theme: &str| {
+        let mut s = st.borrow_mut();
+        s.theme_note = text;
+        s.theme_note_at = at;
+        s.theme_note_for = for_theme.to_owned();
+    };
+    let spawn = |flag: &str, t: &themes::ThemeInfo| {
+        let spawned = std::env::current_exe().and_then(|exe| std::process::Command::new(exe).arg(flag).arg(t.location()).spawn());
+        if let Err(e) = spawned {
+            log::warn!("[Theme] {flag} did not start: {e}");
+        }
+    };
+    match (what, theme) {
+        ("theme-folder", _) => {
+            if let Some(dir) = themes::user_dir() {
+                themes::write_reference(&dir);
+                std::thread::spawn(move || open_in_explorer(&dir, false));
+            }
+        }
+        // how to write a theme in code: API.md (the reference of everything a theme can use)
+        ("theme-api", _) => {
+            if let Some(dir) = themes::user_dir() {
+                themes::write_reference(&dir);
+                let file = dir.join("API.md");
+                std::thread::spawn(move || open_in_explorer(&file, true));
+            }
+        }
+        ("theme-restart", _) => crate::shell::restart(),
+        // a new theme under the name typed in, chosen (Lag's own interface until something is changed in it)
+        ("theme-new", _) => {
+            let Some(root) = themes::user_dir() else { return };
+            themes::write_reference(&root);
+            let typed = st.borrow().theme_new_name.trim().to_owned();
+            let name = if typed.is_empty() { tr("Theme_NewName") } else { typed };
+            match themes::new_from_builtin(&root, &name) {
+                Ok(t) => {
+                    say(i18n::format("Theme_Created", &[&t.name]).unwrap_or_default(), "theme", &t.id);
+                    st.borrow_mut().theme_new_name.clear();
+                    save(ui, c, st, "ui-theme", |s| s.settings.ui_theme = Some(t.id.clone()));
+                }
+                Err(e) => {
+                    log::warn!("[Theme] new theme failed: {e}");
+                    say(e, "theme-own", "");
+                    st.borrow().refresh(ui);
+                }
+            }
+        }
+        ("theme-use", Some(t)) => save(ui, c, st, "ui-theme", |s| s.settings.ui_theme = Some(t.id.clone())),
+        ("theme-edit", Some(t)) => spawn("--theme-editor", &t),
+        ("theme-preview", Some(t)) => spawn("--theme-preview", &t),
+        // a theme made as a folder before 2.2 -> one .lag file (the folder goes to the Recycle Bin)
+        ("theme-convert", Some(t)) => {
+            match themes::convert(&t) {
+                Ok(n) => say(i18n::format("Theme_Converted", &[&n.location().display().to_string()]).unwrap_or_default(), "theme", &n.id),
+                Err(e) => {
+                    log::warn!("[Theme] convert failed: {e}");
+                    say(e, "theme", &t.id);
+                }
+            }
+            st.borrow().refresh(ui);
+        }
+        // to the Recycle Bin: a first press asks for a second one within 6 s
+        ("theme-delete", Some(t)) => {
+            let confirmed = st.borrow().theme_delete.as_ref().is_some_and(|(id, at)| *id == t.id && at.elapsed() < Duration::from_secs(6));
+            if !confirmed {
+                st.borrow_mut().theme_delete = Some((t.id.clone(), std::time::Instant::now()));
+                say(i18n::format("Theme_DeleteConfirm", &[&t.name]).unwrap_or_default(), "theme", &t.id);
+                st.borrow().refresh(ui);
+                return;
+            }
+            st.borrow_mut().theme_delete = None;
+            match themes::remove(&t) {
+                Ok(()) => {
+                    say(i18n::format("Theme_Deleted", &[&t.name]).unwrap_or_default(), "theme-own", "");
+                    let chosen = st.borrow().settings.ui_theme.clone();
+                    if chosen.as_deref() == Some(t.id.as_str()) {
+                        save(ui, c, st, "ui-theme", |s| s.settings.ui_theme = None);
+                    } else {
+                        st.borrow().refresh(ui);
+                    }
+                }
+                Err(e) => {
+                    log::warn!("[Theme] delete failed: {e}");
+                    say(e, "theme", &t.id);
+                    st.borrow().refresh(ui);
+                }
+            }
+        }
+        ("theme-import", _) | ("theme-export", Some(_)) => {
+            let export = what == "theme-export";
+            let theme = (!theme_id.is_empty()).then(|| themes::list().into_iter().find(|t| t.id == theme_id)).flatten();
+            let default = theme.as_ref().map(|t| format!("{}.{}", t.name, lag_theme_file::EXTENSION)).unwrap_or_default();
+            let (sender, receiver) = mpsc::channel();
+            std::thread::spawn(move || {
+                let _ = sender.send(pick_theme_file(export.then_some(default.as_str())));
+            });
+            let (st, c, weak) = (st.clone(), c.clone(), ui.as_weak());
+            let timer = Rc::new(slint::Timer::default());
+            let keep = timer.clone();
+            timer.start(slint::TimerMode::Repeated, Duration::from_millis(50), move || {
+                let Ok(result) = receiver.try_recv() else { return };
+                keep.stop();
+                let (Some(file), Some(ui)) = (result, weak.upgrade()) else { return };
+                let path = std::path::PathBuf::from(&file);
+                let mut s = st.borrow_mut();
+                if let Some(t) = theme.as_ref().filter(|_| export) {
+                    s.theme_note = match themes::export(t, &path) {
+                        Ok(()) => i18n::format("Theme_Exported", &[&file]).unwrap_or(file),
+                        Err(e) => e,
+                    };
+                    s.theme_note_at = "theme";
+                    s.theme_note_for = t.id.clone();
+                    drop(s);
+                    st.borrow().refresh(&ui);
+                    return;
+                }
+                match themes::import(&path) {
+                    Ok(t) => {
+                        s.theme_note = i18n::format("Theme_Imported", &[&t.name]).unwrap_or_default();
+                        s.theme_note_at = "theme";
+                        s.theme_note_for = t.id.clone();
+                        drop(s);
+                        save(&ui, &c, &st, "ui-theme", |s| s.settings.ui_theme = Some(t.id.clone()));
+                    }
+                    Err(e) => {
+                        log::warn!("[Theme] import of {file} failed: {e}");
+                        s.theme_note = i18n::format("Theme_ImportFailed", &[&e]).unwrap_or(e);
+                        s.theme_note_at = "theme-share";
+                        drop(s);
+                        st.borrow().refresh(&ui);
+                    }
+                }
+            });
+        }
+        _ => {}
+    }
 }

@@ -786,6 +786,8 @@ fn apply(ui: &ThemeEditorWindow, st: &mut State, target: &Path, before: Option<S
         let _ = load(ui, st);
         return Err(lag_core::i18n::format("ThemeEditor_NotApplied", &[&e]).unwrap_or(e));
     }
+    // a .lag theme: the change goes into its one file at once
+    themes::pack(&st.theme)?;
     if record {
         st.undo.push(Edit { path: target.to_path_buf(), before, after });
         st.redo.clear();
@@ -1075,7 +1077,7 @@ pub fn run(dir: PathBuf) {
         startup::fatal_message(&format!("Lag could not load its interface:\n\n{e}"));
         return;
     }
-    let theme = match themes::read(&dir) {
+    let theme = match themes::read(&dir).and_then(|t| themes::materialize(&t).map(|_| t)) {
         Ok(t) => t,
         Err(e) => {
             startup::fatal_message(&format!("Not a Lag theme folder:\n\n{e}"));
@@ -1088,7 +1090,8 @@ pub fn run(dir: PathBuf) {
     start_donor(&settings);
     let st = Rc::new(RefCell::new(State {
         build: themes::build_dir(&theme),
-        dir,
+        // the files the editor changes: a folder theme's own, or the working folder of a .lag file
+        dir: theme.dir.clone(),
         theme,
         instance: Rc::default(),
         raw: None,
@@ -1245,8 +1248,8 @@ pub fn run(dir: PathBuf) {
     let (s, weak) = (st.clone(), ui.as_weak());
     ui.on_rename(move |name| {
         let Some(ui) = weak.upgrade() else { return };
-        let dir = s.borrow().dir.clone();
-        let result = themes::rename(&dir, &name).map(|t| {
+        let theme = s.borrow().theme.clone();
+        let result = themes::rename(&theme, &name).map(|t| {
             let msg = lag_core::i18n::format("ThemeEditor_Renamed", &[&t.name]).unwrap_or_default();
             ui.set_theme_name(t.name.clone().into());
             s.borrow_mut().theme.name = t.name;
@@ -1418,6 +1421,7 @@ pub fn run(dir: PathBuf) {
             }
         }
         remove_unused_pictures(&st.borrow());
+        let _ = themes::pack(&st.borrow().theme);
         unsafe {
             use windows::Win32::System::Threading::{GetCurrentProcess, TerminateProcess};
             let _ = TerminateProcess(GetCurrentProcess(), 0);
@@ -1426,6 +1430,7 @@ pub fn run(dir: PathBuf) {
     script(&ui);
     let _ = slint::run_event_loop_until_quit();
     remove_unused_pictures(&st.borrow());
+    let _ = themes::pack(&st.borrow().theme);
     unsafe {
         use windows::Win32::System::Threading::{GetCurrentProcess, TerminateProcess};
         let _ = TerminateProcess(GetCurrentProcess(), 0);
