@@ -1,6 +1,45 @@
 # Lag theme API v1
 
-_Generated from `ui/api/` - do not edit._ A theme imports these from `"@lag/api.slint"`:
+_Generated from `ui/api/` - do not edit._
+
+## Quick start: a theme in code
+
+A theme is **one text file**, `<name>.lag`, in Lag's themes folder (Settings > Interface > **Themes folder**). The
+same file works on every system Lag runs on. Settings > Interface > **New theme** makes one; the editor writes it
+after every change, so any text editor shows the code behind what you clicked, and **Preview** reloads as soon as
+the file is saved.
+
+```text
+#@lag-theme 1
+name = "Neon rain"
+author = "you"
+version = "1.0"
+api = 1
+
+#@file theme/tokens.slint
+// the whole changed copy of Lag's ui/theme/tokens.slint
+...
+
+#@file views/library.slint
+...
+
+#@data art/girl.gif
+R0lGODlhAAEAAfcAAP...
+```
+
+- The first line is `#@lag-theme 1`; then the header (TOML): `name` (required), `author`, `version`, `api`.
+- `#@file <path>`: a text file of the theme (`.slint`, `.svg`, `.md`, `.txt`) as it is, up to the next `#@` line.
+  A line of the file that itself starts with `#@` is written `#@#@...`.
+- `#@data <path>`: a picture, font or video (`png`, `jpg`, `gif`, `webp`, `ttf`, `otf`, `mp4`, `webm`) as base64.
+  The editor's **Choose...**, **+ Picture** and **+ Video** write these for you.
+- Paths are relative, with `/`, in the file's exact case, and cannot leave the theme. Up to 2000 files, 64 MB a
+  file, 192 MB in all.
+
+**A theme holds only what it changes.** Lag puts it together over its own interface: a file the theme has (same
+path as in Lag's `ui/`, e.g. `theme/tokens.slint` or `views/library.slint`) replaces Lag's, every other file is
+Lag's, the newest one (a Lag update reaches the parts the theme did not change). `api/` is always Lag's.
+
+The globals below are how a theme talks to Lag:
 
 ```slint
 import { MainVM, LibraryVM, Tr } from "@lag/api.slint";
@@ -8,11 +47,76 @@ import { MainVM, LibraryVM, Tr } from "@lag/api.slint";
 
 - **in property**: Lag sets it, the theme shows it.
 - **in-out property**: either side may change it (e.g. the current page).
-- **callback**: the theme calls it, Lag does the work (save a replay, open a clip...). A `pure callback` is answered by Lag (`Tr.t(key, Tr.rev)` = the translated text).
+- **callback**: the theme calls it, Lag does the work (save a replay, open a clip...). A `pure callback` is
+  answered by Lag (`Tr.t(key, Tr.rev)` = the translated text).
 
-Lag's own building blocks can be used too: `@lag/components/...` (buttons, cards, settings rows, the clip card...), `@lag/theme/tokens.slint` (colours, sizes) and `@lag/theme/icons.slint`.
+Lag's own building blocks can be used too: `@lag/components/...` (buttons, cards, settings rows, the clip card...),
+`@lag/theme/tokens.slint` (colours, sizes) and `@lag/theme/icons.slint`.
 
-**A theme holds only what it changes.** Lag puts it together over its own interface: a file the theme has (same path as in Lag's `ui\`, e.g. `theme/tokens.slint` or `views/library.slint`) replaces Lag's, every other file is Lag's, the newest one (a Lag update reaches the parts the theme did not change). `api/` is always Lag's. The quickest start: Settings > Interface > **New theme**, then **Edit** (the first change in a file copies it into the theme) or put a changed copy of one of Lag's files into the theme folder and press **Preview**.
+## Animated pictures and video
+
+```slint
+import { AnimatedImage, Video } from "@lag/api.slint";
+
+// a GIF / WebP / APNG plays in a loop (the path is from this .slint file, as for any picture)
+AnimatedImage { source: @image-url("../art/girl.gif"); width: 320px; height: 560px; image-fit: contain; }
+
+// a looping video behind everything else in its parent (the path is from the theme's top folder)
+Video { source: "art/rain.mp4"; width: parent.width; height: parent.height; }
+```
+
+- An animated picture shown in many places (a frame GIF on every clip card, `components/library/clip_card.slint`)
+  is decoded once.
+- A WebM with transparency (VP8 / VP9 alpha) stays transparent: a character standing over the interface, not a
+  box.
+- Nothing plays while it is not on screen (another page, a hidden window), and nothing plays while a game (anything
+  full screen) is in front of Lag: a theme never takes time from a game.
+- APNG lives in a `.png` file (that is what it is).
+
+## Animated pictures and video: the components
+
+### Media
+
+Driven by Lag (src/media.rs): the frame to show now. A theme does not need it directly.
+
+| Name | Kind | Type | Notes |
+|---|---|---|---|
+| `tick` | in property | `int` | bumped by Lag whenever an animation moves to its next frame: every AnimatedImage on screen asks again |
+| `frame` | pure callback | `(image, int, float) -> image` | the frame of a picture for now: a GIF, WebP or APNG plays in a loop; any other picture comes back as it is |
+| `video` | pure callback | `(string, int, float, int, bool) -> image` | the frame of a theme's video (path from the theme's top folder) for now: (path, tick, speed, max fps, playing) |
+
+### AnimatedImage
+
+An animated picture: GIF, WebP or APNG, played in a loop. Takes everything an Image takes; a still picture is shown as it is. It plays only while it is on screen (not on another page, not in a hidden window) and stops while a game (anything full screen) is in front of Lag. Where nothing plays it (the editor's file view, an old Lag) its first frame shows.
+
+| Name | Kind | Type | Notes |
+|---|---|---|---|
+| `source` | in property | `image` |  |
+| `playing` | in property | `bool` | false: the first frame, standing still |
+| `speed` | in property | `float` | 2 = twice as fast, 0.5 = half as fast |
+| `image-fit` | in property | `ImageFit` |  |
+| `image-rendering` | in property | `ImageRendering` |  |
+| `colorize` | in property | `brush` |  |
+| `horizontal-alignment` | in property | `ImageHorizontalAlignment` |  |
+| `vertical-alignment` | in property | `ImageVerticalAlignment` |  |
+| `horizontal-tiling` | in property | `ImageTiling` |  |
+| `vertical-tiling` | in property | `ImageTiling` |  |
+
+### Video
+
+A video in a loop, without sound: a moving background, a living picture. MP4 (H.264, HEVC, AV1) or WebM (VP8, VP9, AV1); a WebM with transparency stays transparent (a character over the interface, not a box). `source` is the file's path from the theme's top folder ("videos/rain.mp4"; the editor's "+ Video" puts it in "art/"), not from this file. Plays like AnimatedImage: only while on screen, never while a game is in front. Lag decodes it at most 1920 px across and `max-fps` frames a second (1..60).
+
+| Name | Kind | Type | Notes |
+|---|---|---|---|
+| `source` | in property | `string` |  |
+| `playing` | in property | `bool` | false: stands on its first frame |
+| `speed` | in property | `float` |  |
+| `max-fps` | in property | `int` |  |
+| `image-fit` | in property | `ImageFit` |  |
+| `image-rendering` | in property | `ImageRendering` |  |
+| `colorize` | in property | `brush` |  |
+| `horizontal-alignment` | in property | `ImageHorizontalAlignment` |  |
+| `vertical-alignment` | in property | `ImageVerticalAlignment` |  |
 
 ## Globals
 

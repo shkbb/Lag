@@ -282,3 +282,51 @@ Owner: "ми робимо і вносимо редактор в одне оно�
   interface; Restart sits left of the list, so the list does not move. `font-italic` works: Inter 4.1 italics
   (Italic, Medium / SemiBold / Bold Italic, github.com/rsms/inter, SIL OFL 1.1, `ui/fonts/LICENSE-Inter.txt`)
   are bundled next to the upright Inter, owner's go-ahead 2026-11-23.
+
+## 17. 2.2.0 (2026-11-23): one-file themes, a row per theme, editor keys
+Owner: a folder of many files "це рагульство... в один, максимум з 5 файлів"; the format is ours and the same on
+every OS ("обидві версії будуть ідентичні... ніяких різниць, окрім самого коду").
+- **`.lag`** (crate `lag-theme-file`): one UTF-8 text file. Line 1 `#@lag-theme 1`; a TOML header (`name`
+  required, `author`, `version`, `api`, `entry`); `#@file <path>` text sections (slint, svg, md, txt) and
+  `#@data <path>` base64 sections (png, jpg, jpeg, gif, webp, ttf, otf, mp4, webm; 100-char lines). LF on write,
+  CRLF / BOM read. A text line starting with `#@` is written `#@#@`. Paths relative, `/`, case kept, never
+  leaving the theme. Limits: 2000 files, 64 MB a file, 192 MB in all. APNG is a `.png` (Slint opens pictures by
+  extension), so there is no `apng` kind.
+- A `.lag` is unpacked into the process' working folder (`%TEMP%\lag-theme-<pid>\own-<id>-<hash>`); the editor
+  edits that folder and packs it back into the `.lag` after every change that compiles. Folder themes (made
+  before 2.2, `theme.toml`) and `.lagtheme` zips are still read; "Make one file" turns a folder into a `.lag`
+  (the folder goes to the Recycle Bin). Import takes `.lag` / `.lagtheme`, Export writes `.lag`.
+- **Settings > Interface > Your themes** (owner: which theme a button acts on must be plain): a "New theme" row
+  with the name typed in; then one row per theme (name; its file, or "a folder, made before 2.2"; "in use" /
+  "chosen: after a restart") with its own Use / Edit / Preview / Export (or Make one file) / Delete; notes show
+  under the row they are about.
+- **Editor**: the theme's name and file in the toolbar and the window title; the library on the canvas lays its
+  cards out for the canvas (`LibraryVM.viewport-changed` forwarded to the donor); keys after a click on the canvas:
+  Ctrl+Z, Ctrl+Y / Ctrl+Shift+Z, Delete / Backspace, Ctrl+D, Esc (picker, then selection), arrows 1 px (Shift
+  10 px), by key position in any layout; script command `key`.
+- **"How to write themes in code"** button: opens API.md, whose opening now explains the `.lag` file.
+
+## 18. 2.2.0: animated pictures and video (owner: "максимальну свободу... вище голови")
+His example: a big anime character on the side panel, a looping video / GIF background, clip cards with animated
+frames. All of it is plain theme code now:
+- `AnimatedImage { source: @image-url("girl.gif"); }` (GIF, WebP, APNG; everything an Image takes, plus `playing`,
+  `speed`) and `Video { source: "art/rain.mp4"; }` (MP4 / WebM in a loop, no sound; `playing`, `speed`, `max-fps`
+  1..60 = 30; path from the theme's top folder), both in `@lag/api.slint` (`ui/api/media.slint`).
+- `src/media.rs`: the `Media` global of every window (twin windows in `rt::new`, the editor's canvas) gets the
+  `frame` / `video` callbacks; Lag bumps `Media.tick` when an animation moves on and every drawn one asks again.
+  One player per file (a frame on every card = one decoder). Pictures: decoded on a thread by `image` (gif, webp,
+  png); a small one is kept whole after its first loop (64 MB each, 192 MB together), a big one streams.
+  Videos: Lag's own FFmpeg (`ffprobe` for size / rate / VP8-VP9 alpha, then `ffmpeg -stream_loop -1` → raw RGB,
+  or RGBA through libvpx for a transparent WebM), at most 1920 px across, below-normal priority, no console.
+- Plays only what is drawn: a tick it does not answer within 0.8 s (another page, hidden or minimised window)
+  stops it; a minute stopped and the player (thread, FFmpeg) is gone. A stopped video is just not read (FFmpeg
+  waits on the pipe, 0 CPU). Nothing plays while a borderless full-screen window that is not Lag is in front (a
+  game, a video on F11); a framed maximised window is not one (QA: the owner's maximised window on a monitor
+  without a taskbar paused everything). Linux: that check comes with the Linux build
+  (`_NET_WM_STATE_FULLSCREEN` / foreign-toplevel); until then animations simply play there.
+- Editor: **+ Picture** (an AnimatedImage up to 240 px, the picture copied into `art/`) and **+ Video** (first in
+  the element, behind the rest, its whole size); the needed import from `@lag/api.slint` is added; inside a
+  layout nothing gets x / y (Slint refuses them; this was wrong for + Shape / + Text too). A switch that is not
+  set shows its default (`playing` on). Compile errors show the first three lines and "… +N".
+- Verified headless: three animations and two videos (one VP9 with alpha over a checker) play in the app; + Picture
+  and + Video play on the canvas, Ctrl+Z takes them out and the file they brought goes at close.

@@ -145,31 +145,93 @@ impl Gen {
     }
 }
 
+/// The opening of the API reference: how a theme is written, before the generated tables.
+const API_INTRO: &str = r#"# Lag theme API v1
+
+_Generated from `ui/api/` - do not edit._
+
+## Quick start: a theme in code
+
+A theme is **one text file**, `<name>.lag`, in Lag's themes folder (Settings > Interface > **Themes folder**). The
+same file works on every system Lag runs on. Settings > Interface > **New theme** makes one; the editor writes it
+after every change, so any text editor shows the code behind what you clicked, and **Preview** reloads as soon as
+the file is saved.
+
+```text
+#@lag-theme 1
+name = "Neon rain"
+author = "you"
+version = "1.0"
+api = 1
+
+#@file theme/tokens.slint
+// the whole changed copy of Lag's ui/theme/tokens.slint
+...
+
+#@file views/library.slint
+...
+
+#@data art/girl.gif
+R0lGODlhAAEAAfcAAP...
+```
+
+- The first line is `#@lag-theme 1`; then the header (TOML): `name` (required), `author`, `version`, `api`.
+- `#@file <path>`: a text file of the theme (`.slint`, `.svg`, `.md`, `.txt`) as it is, up to the next `#@` line.
+  A line of the file that itself starts with `#@` is written `#@#@...`.
+- `#@data <path>`: a picture, font or video (`png`, `jpg`, `gif`, `webp`, `ttf`, `otf`, `mp4`, `webm`) as base64.
+  The editor's **Choose...**, **+ Picture** and **+ Video** write these for you.
+- Paths are relative, with `/`, in the file's exact case, and cannot leave the theme. Up to 2000 files, 64 MB a
+  file, 192 MB in all.
+
+**A theme holds only what it changes.** Lag puts it together over its own interface: a file the theme has (same
+path as in Lag's `ui/`, e.g. `theme/tokens.slint` or `views/library.slint`) replaces Lag's, every other file is
+Lag's, the newest one (a Lag update reaches the parts the theme did not change). `api/` is always Lag's.
+
+The globals below are how a theme talks to Lag:
+
+```slint
+import { MainVM, LibraryVM, Tr } from "@lag/api.slint";
+```
+
+- **in property**: Lag sets it, the theme shows it.
+- **in-out property**: either side may change it (e.g. the current page).
+- **callback**: the theme calls it, Lag does the work (save a replay, open a clip...). A `pure callback` is
+  answered by Lag (`Tr.t(key, Tr.rev)` = the translated text).
+
+Lag's own building blocks can be used too: `@lag/components/...` (buttons, cards, settings rows, the clip card...),
+`@lag/theme/tokens.slint` (colours, sizes) and `@lag/theme/icons.slint`.
+
+## Animated pictures and video
+
+```slint
+import { AnimatedImage, Video } from "@lag/api.slint";
+
+// a GIF / WebP / APNG plays in a loop (the path is from this .slint file, as for any picture)
+AnimatedImage { source: @image-url("../art/girl.gif"); width: 320px; height: 560px; image-fit: contain; }
+
+// a looping video behind everything else in its parent (the path is from the theme's top folder)
+Video { source: "art/rain.mp4"; width: parent.width; height: parent.height; }
+```
+
+- An animated picture shown in many places (a frame GIF on every clip card, `components/library/clip_card.slint`)
+  is decoded once.
+- A WebM with transparency (VP8 / VP9 alpha) stays transparent: a character standing over the interface, not a
+  box.
+- Nothing plays while it is not on screen (another page, a hidden window), and nothing plays while a game (anything
+  full screen) is in front of Lag: a theme never takes time from a game.
+- APNG lives in a `.png` file (that is what it is).
+"#;
+
 /// The theme API reference (docs/themes/API.md, shipped to theme authors): read straight from `ui/api/globals.slint`
 /// and `ui/api/types.slint`, with the comments written above / beside each line as the description.
 pub fn api_reference(ui: &Path) -> String {
-    let mut out = String::from(
-        "# Lag theme API v1\n\n\
-         _Generated from `ui/api/` - do not edit._ A theme imports these from `\"@lag/api.slint\"`:\n\n\
-         ```slint\nimport { MainVM, LibraryVM, Tr } from \"@lag/api.slint\";\n```\n\n\
-         - **in property**: Lag sets it, the theme shows it.\n\
-         - **in-out property**: either side may change it (e.g. the current page).\n\
-         - **callback**: the theme calls it, Lag does the work (save a replay, open a clip...). A `pure callback` \
-         is answered by Lag (`Tr.t(key, Tr.rev)` = the translated text).\n\n\
-         Lag's own building blocks can be used too: `@lag/components/...` (buttons, cards, settings rows, the clip \
-         card...), `@lag/theme/tokens.slint` (colours, sizes) and `@lag/theme/icons.slint`.\n\n\
-         **A theme holds only what it changes.** Lag puts it together over its own interface: a file the theme \
-         has (same path as in Lag's `ui\\`, e.g. `theme/tokens.slint` or `views/library.slint`) replaces Lag's, \
-         every other file is Lag's, the newest one (a Lag update reaches the parts the theme did not change). \
-         `api/` is always Lag's. The quickest start: Settings > Interface > **New theme**, then **Edit** (the first \
-         change in a file copies it into the theme) or put a changed copy of one of Lag's files into the theme \
-         folder and press **Preview**.\n",
-    );
-    for (file, title) in [("globals.slint", "Globals"), ("types.slint", "Data types")] {
+    let mut out = String::from(API_INTRO);
+    for (file, title) in [("media.slint", "Animated pictures and video: the components"), ("globals.slint", "Globals"), ("types.slint", "Data types")] {
         let text = std::fs::read_to_string(ui.join("api").join(file)).unwrap_or_default();
         let _ = write!(out, "\n## {title}\n");
         let mut comment: Vec<String> = Vec::new();
         let mut in_block = false;
+        let (mut in_component, mut depth) = (false, 0usize);
         for raw in text.lines() {
             let line = raw.trim();
             if let Some(c) = line.strip_prefix("//") {
@@ -195,6 +257,28 @@ pub fn api_reference(ui: &Path) -> String {
             }
             comment.clear();
             let note = note.replace('|', "\\|");
+            // inside a component: only its own properties (not the elements it draws with)
+            if depth > 1 || (depth == 1 && in_component && !code.contains("property")) {
+                depth += code.matches('{').count();
+                depth -= code.matches('}').count().min(depth);
+                if depth == 0 {
+                    in_block = false;
+                    in_component = false;
+                }
+                continue;
+            }
+            if let Some(rest) = code.strip_prefix("export component ") {
+                let name = rest.split(|c: char| c == '{' || c.is_whitespace()).next().unwrap_or("");
+                let _ = write!(out, "\n### {name}\n\n");
+                if !note.is_empty() {
+                    let _ = writeln!(out, "{note}\n");
+                }
+                in_block = true;
+                in_component = true;
+                depth = 1;
+                out.push_str("| Name | Kind | Type | Notes |\n|---|---|---|---|\n");
+                continue;
+            }
             if let Some(rest) = code.strip_prefix("export global ").or_else(|| code.strip_prefix("export struct ")).or_else(|| code.strip_prefix("export enum ")) {
                 let name = rest.split(|c: char| c == '{' || c.is_whitespace()).next().unwrap_or("");
                 let _ = write!(out, "\n### {name}\n\n");
@@ -217,6 +301,8 @@ pub fn api_reference(ui: &Path) -> String {
             }
             if code.starts_with('}') {
                 in_block = false;
+                in_component = false;
+                depth = 0;
                 continue;
             }
             if !in_block {
