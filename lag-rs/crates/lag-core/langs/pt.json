@@ -444,5 +444,7 @@
   "Theme_InUse": "em uso",
   "Theme_AfterRestart": "escolhido: após reiniciar",
   "Theme_OldFolder": "{0} (uma pasta, criada antes da 2.2)",
-  "Theme_Converted": "Agora um só ficheiro: {0}"
+  "Theme_Converted": "Agora um só ficheiro: {0}",
+  "ThemeEditor_AddImage": "+ Imagem",
+  "ThemeEditor_Op_add-image": "imagem adicionada"
 }

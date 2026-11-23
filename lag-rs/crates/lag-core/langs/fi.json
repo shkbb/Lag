@@ -444,5 +444,7 @@
   "Theme_InUse": "käytössä",
   "Theme_AfterRestart": "valittu: uudelleenkäynnistyksen jälkeen",
   "Theme_OldFolder": "{0} (kansio, luotu ennen 2.2:ta)",
-  "Theme_Converted": "Nyt yksi tiedosto: {0}"
+  "Theme_Converted": "Nyt yksi tiedosto: {0}",
+  "ThemeEditor_AddImage": "+ Kuva",
+  "ThemeEditor_Op_add-image": "kuva lisätty"
 }

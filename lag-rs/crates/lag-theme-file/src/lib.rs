@@ -37,7 +37,7 @@ const FILE: &str = "#@file ";
 const DATA: &str = "#@data ";
 /// Text files (stored as they are) and binary files (base64) a theme may hold.
 pub const TEXT_KINDS: &[&str] = &["slint", "svg", "md", "txt"];
-pub const BINARY_KINDS: &[&str] = &["png", "jpg", "jpeg", "gif", "webp", "apng", "ttf", "otf", "mp4", "webm"];
+pub const BINARY_KINDS: &[&str] = &["png", "jpg", "jpeg", "gif", "webp", "ttf", "otf", "mp4", "webm"];
 pub const MAX_FILES: usize = 2000;
 pub const MAX_FILE: usize = 64 << 20;
 pub const MAX_TOTAL: usize = 192 << 20;

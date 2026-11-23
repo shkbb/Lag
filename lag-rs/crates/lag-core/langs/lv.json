@@ -444,5 +444,7 @@
   "Theme_InUse": "tiek lietota",
   "Theme_AfterRestart": "izvēlēta: pēc restartēšanas",
   "Theme_OldFolder": "{0} (mape, izveidota pirms 2.2)",
-  "Theme_Converted": "Tagad viens fails: {0}"
+  "Theme_Converted": "Tagad viens fails: {0}",
+  "ThemeEditor_AddImage": "+ Attēls",
+  "ThemeEditor_Op_add-image": "pievienots attēls"
 }

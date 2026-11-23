@@ -31,7 +31,8 @@ windows = { workspace = true, features = [
 ] }
 raw-window-handle = "0.6"
 chrono = "0.4.45"
-image = { version = "0.25.10", default-features = false, features = ["jpeg", "png"] }
+# gif / webp: animated pictures of themes (src/media.rs)
+image = { version = "0.25.10", default-features = false, features = ["jpeg", "png", "gif", "webp"] }
 # shell-B: GNU-compatible tray, embedded ICO decoding, on-demand HTTP (worker threads only)
 tray-icon = { version = "0.26.1", default-features = false }
 muda = { version = "0.21.2", default-features = false }

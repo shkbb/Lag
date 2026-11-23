@@ -1,4 +1,4 @@
-//! Interface themes (docs/spec/themes.md, phase 2): a theme is a folder in `%APPDATA%\Lag\themes\<id>\` with a
+﻿//! Interface themes (docs/spec/themes.md, phase 2): a theme is a folder in `%APPDATA%\Lag\themes\<id>\` with a
 //! `theme.toml` manifest, `.slint` files and pictures / fonts. Lag's own UI (`ui\`, shipped next to Lag.exe) is
 //! the built-in theme "lag". A theme replaces the windows it defines (usually `AppWindow`); the rest stay Lag's.
 //! It talks to Lag only through `@lag/api.slint` (the globals Lag fills). A theme that does not compile never
@@ -39,9 +39,9 @@ pub const BUILTIN: &str = "lag";
 pub const API_VERSION: u32 = 1;
 /// The API globals Lag's Rust code drives; re-exported for every theme.
 const API_GLOBALS: &str =
-    "Tr, MainVM, Page, WindowMetrics, SettingsVM, LibraryVM, PlayerVM, EditorVM, PlayerOverlayVM, EditorOverlayVM, AutoScroll";
+    "Tr, MainVM, Page, WindowMetrics, SettingsVM, LibraryVM, PlayerVM, EditorVM, PlayerOverlayVM, EditorOverlayVM, AutoScroll, Media";
 const ALLOWED: &[&str] =
-    &["slint", "toml", "md", "txt", "png", "jpg", "jpeg", "svg", "gif", "webp", "apng", "ttf", "otf", "mp4", "webm"];
+    &["slint", "toml", "md", "txt", "png", "jpg", "jpeg", "svg", "gif", "webp", "ttf", "otf", "mp4", "webm"];
 const MAX_FILE: u64 = 32 << 20;
 const MAX_TOTAL: u64 = 96 << 20;
 const MAX_FILES: usize = 2000;

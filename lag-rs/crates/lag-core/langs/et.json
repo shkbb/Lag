@@ -444,5 +444,7 @@
   "Theme_InUse": "kasutusel",
   "Theme_AfterRestart": "valitud: pärast taaskäivitust",
   "Theme_OldFolder": "{0} (kaust, loodud enne 2.2)",
-  "Theme_Converted": "Nüüd üks fail: {0}"
+  "Theme_Converted": "Nüüd üks fail: {0}",
+  "ThemeEditor_AddImage": "+ Pilt",
+  "ThemeEditor_Op_add-image": "pilt lisatud"
 }

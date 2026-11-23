@@ -444,5 +444,7 @@
   "Theme_InUse": "використовується",
   "Theme_AfterRestart": "вибрано: після перезапуску",
   "Theme_OldFolder": "{0} (тека, створена до 2.2)",
-  "Theme_Converted": "Тепер одним файлом: {0}"
+  "Theme_Converted": "Тепер одним файлом: {0}",
+  "ThemeEditor_AddImage": "+ Картинка",
+  "ThemeEditor_Op_add-image": "додано картинку"
 }

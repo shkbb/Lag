@@ -444,5 +444,7 @@
   "Theme_InUse": "in gebruik",
   "Theme_AfterRestart": "gekozen: na herstart",
   "Theme_OldFolder": "{0} (een map, gemaakt vóór 2.2)",
-  "Theme_Converted": "Nu één bestand: {0}"
+  "Theme_Converted": "Nu één bestand: {0}",
+  "ThemeEditor_AddImage": "+ Afbeelding",
+  "ThemeEditor_Op_add-image": "afbeelding toegevoegd"
 }

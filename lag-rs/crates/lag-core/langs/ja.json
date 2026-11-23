@@ -444,5 +444,7 @@
   "Theme_InUse": "使用中",
   "Theme_AfterRestart": "選択済み：再起動後",
   "Theme_OldFolder": "{0}（2.2 より前に作られたフォルダー）",
-  "Theme_Converted": "1つのファイルになりました：{0}"
+  "Theme_Converted": "1つのファイルになりました：{0}",
+  "ThemeEditor_AddImage": "+ 画像",
+  "ThemeEditor_Op_add-image": "画像を追加しました"
 }

@@ -210,14 +210,23 @@ pub(crate) fn restructure(text: &str, path: &Path, offset: u32, op: &str) -> Res
             let new_block_start = if i < j { a0 + tb.len() + mid.len() } else { a0 };
             Ok((out, Some((new_block_start + inside) as u32)))
         }
-        "add-rect" | "add-text" => {
+        _ if op == "add-rect" || op == "add-text" || op.starts_with("add-image|") => {
             let close = el.child_token(SyntaxKind::RBrace).ok_or("no } in the element")?;
             let at = usize::from(close.text_range().start());
             let indent = indent_at(text, offset as usize);
-            let snippet = if op == "add-rect" {
-                "Rectangle { x: 24px; y: 24px; width: 180px; height: 90px; background: #FF4FA3; border-radius: 14px; }"
-            } else {
-                "Text { x: 24px; y: 24px; text: \"Text\"; color: #FFFFFF; font-size: 20px; font-weight: 700; }"
+            let picture;
+            let snippet = match op {
+                "add-rect" => "Rectangle { x: 24px; y: 24px; width: 180px; height: 90px; background: #FF4FA3; border-radius: 14px; }",
+                "add-text" => "Text { x: 24px; y: 24px; text: \"Text\"; color: #FFFFFF; font-size: 20px; font-weight: 700; }",
+                // `add-image|<path>|<width>|<height>`: an AnimatedImage (a GIF / WebP / APNG plays, a still one stands)
+                _ => {
+                    let mut parts = op.split('|').skip(1);
+                    let (rel, w, h) = (parts.next().unwrap_or(""), parts.next().unwrap_or("160"), parts.next().unwrap_or("160"));
+                    picture = format!(
+                        "AnimatedImage {{ x: 24px; y: 24px; width: {w}px; height: {h}px; source: @image-url(\"{rel}\"); image-fit: contain; }}"
+                    );
+                    picture.as_str()
+                }
             };
             // keep `}` on its own line where it was
             let before_close = text[..at].trim_end_matches([' ', '\t']);
@@ -226,10 +235,42 @@ pub(crate) fn restructure(text: &str, path: &Path, offset: u32, op: &str) -> Res
             let lead = if before_close.ends_with('\n') { "" } else { "\n" };
             out.replace_range(start..at, &format!("{lead}{ins}"));
             let name_at = start + lead.len() + indent.len() + 4;
+            if op.starts_with("add-image|") {
+                // the file needs `AnimatedImage` from the API
+                let (out, shift) = import_api(&out, "AnimatedImage");
+                return Ok((out, Some((name_at + shift) as u32)));
+            }
             Ok((out, Some(name_at as u32)))
         }
         _ => Err(format!("unknown change {op}")),
     }
+}
+
+/// `name` imported from "@lag/api.slint" in a `.slint` text: added to its import from there, or a new import on the
+/// first line. Returns the text and how far the rest of it moved (everything after the import moves by that much;
+/// imports come before the elements).
+fn import_api(text: &str, name: &str) -> (String, usize) {
+    const FROM: &str = "\"@lag/api.slint\"";
+    let mut search = 0;
+    while let Some(i) = text[search..].find(FROM).map(|i| i + search) {
+        search = i + FROM.len();
+        let head = &text[..i];
+        let (Some(open), Some(close)) = (head.rfind('{'), head.rfind('}')) else { continue };
+        if close < open || !head[..open].trim_end().ends_with("import") {
+            continue;
+        }
+        let names = &text[open + 1..close];
+        if names.split(',').any(|n| n.trim() == name) {
+            return (text.to_owned(), 0);
+        }
+        let ins = if names.trim().is_empty() { format!(" {name} ") } else { format!(", {name}") };
+        let at = open + 1 + names.trim_end().len();
+        let mut out = text.to_owned();
+        out.insert_str(at, &ins);
+        return (out, ins.len());
+    }
+    let line = format!("import {{ {name} }} from {FROM};\n");
+    (format!("{line}{text}"), line.len())
 }
 
 fn ident_char(c: char) -> bool {
@@ -424,6 +465,7 @@ fn factory(
         // a theme without Lag's colour modes has no such property: nothing to set
         let _ = inst.set_property("theme-mode", Value::String(mode.borrow().as_str().into()));
         forward_layout(&inst);
+        crate::media::attach(&inst);
         mirror(&inst);
         *slot.borrow_mut() = Some(slint::ComponentHandle::clone_strong(&inst));
         Some(inst)
@@ -613,6 +655,9 @@ fn props_of(st: &State, s: &Source) -> Vec<EditorProp> {
         .filter_map(|(name, t)| {
             let (kind, label, options) = kind_of(&t)?;
             let value = node.as_ref().and_then(|n| binding_text(n, &name)).unwrap_or_default();
+            let bound = !value.is_empty();
+            // a switch that is not set shows what it is anyway (an AnimatedImage plays unless told otherwise)
+            let value = if !bound && kind == 4 && default_bool(&el, &name) == Some(true) { "true".to_owned() } else { value };
             // a literal colour, or a colour of the theme's palette (`Theme.on-accent`) as the chosen mode shows it
             let known = parse_color(&value).or_else(|| palette::colour_named(&value, &st.tokens, &st.mode.borrow()));
             let swatch = known.unwrap_or(Color::from_argb_u8(0, 0, 0, 0));
@@ -624,7 +669,7 @@ fn props_of(st: &State, s: &Source) -> Vec<EditorProp> {
                 name: name.to_string().into(),
                 kind,
                 type_label: label.into(),
-                bound: !value.is_empty(),
+                bound,
                 value: value.into(),
                 options: ModelRc::new(VecModel::from(
                     options.into_iter().map(|o| ComboBoxItemData { text: o.into(), tier: 0 }).collect::<Vec<_>>(),
@@ -642,6 +687,20 @@ fn props_of(st: &State, s: &Source) -> Vec<EditorProp> {
     });
     props.dedup_by(|a, b| a.name == b.name);
     props
+}
+
+/// The value a yes/no property of a component has where the element does not set it (`playing: true`).
+fn default_bool(el: &ElementRc, name: &str) -> Option<bool> {
+    use i_slint_compiler::expression_tree::Expression;
+    use i_slint_compiler::langtype::ElementType;
+    let base = el.borrow().base_type.clone();
+    let ElementType::Component(c) = base else { return None };
+    let root = c.root_element.borrow();
+    let b = root.binding(name)?;
+    match &b.expression {
+        Expression::BoolLiteral(v) => Some(*v),
+        _ => None,
+    }
 }
 
 /// What the user typed -> a Slint expression for this kind of property.
@@ -1059,6 +1118,61 @@ fn apply_picked(ui: &ThemeEditorWindow, s: &Rc<RefCell<State>>, value: &str) {
     }
 }
 
+/// A structural change (`op`, see `restructure`) to the selected element; `label` names it in the status line.
+fn structure(ui: &ThemeEditorWindow, s: &Rc<RefCell<State>>, op: &str, label: &str) {
+    let result = {
+        let mut st = s.borrow_mut();
+        let Some(sel) = st.selected.clone() else { return };
+        // the element around it, found before the change (after a delete its place leads nowhere)
+        let parent = crumbs(&sel).into_iter().rev().nth(1);
+        let r = std::fs::read_to_string(&sel.path)
+            .map_err(|e| e.to_string())
+            .and_then(|t| restructure(&t, &sel.path, sel.offset, op))
+            .and_then(|(after, next)| change(ui, &mut st, &sel.path, after, true).map(|_| next));
+        match r {
+            Ok(next) => {
+                match (next, parent) {
+                    (Some(at), _) => st.selected = st.sources.iter().find(|x| x.path == sel.path && x.offset == at).cloned(),
+                    (None, Some(p)) => reselect(&mut st, &p),
+                    (None, None) => st.selected = None,
+                }
+                Ok(format!("{}: {}", sel.label, tr(&format!("ThemeEditor_Op_{label}"))))
+            }
+            Err(e) => {
+                reselect(&mut st, &sel);
+                Err(e)
+            }
+        }
+    };
+    report(ui, result);
+    refresh_soon(ui, s);
+}
+
+/// The "+ Picture" button: `file` brought into the theme (as a picture chosen for an element is) and placed in the
+/// selected element as an AnimatedImage at most 240 px across, keeping its shape.
+fn add_picture(ui: &ThemeEditorWindow, s: &Rc<RefCell<State>>, file: &Path) {
+    let rel = {
+        let mut st = s.borrow_mut();
+        let Some(sel) = st.selected.clone() else { return };
+        let art = st.dir.join("art");
+        let before: Vec<PathBuf> = std::fs::read_dir(&art).map(|e| e.flatten().map(|e| e.path()).collect()).unwrap_or_default();
+        let rel = import_picture(&st.dir, &st.build, file, &sel.path);
+        let new: Vec<PathBuf> = std::fs::read_dir(&art)
+            .map(|e| e.flatten().map(|e| e.path()).filter(|p| !before.contains(p)).collect())
+            .unwrap_or_default();
+        st.imported.extend(new);
+        rel
+    };
+    let rel = match rel {
+        Ok(r) => r,
+        Err(e) => return report(ui, Err(e)),
+    };
+    let (w, h) = image::image_dimensions(file).map(|(w, h)| (w as f32, h as f32)).unwrap_or((160.0, 160.0));
+    let k = (240.0 / w.max(h).max(1.0)).min(1.0);
+    let (w, h) = ((w * k).round().max(1.0), (h * k).round().max(1.0));
+    structure(ui, s, &format!("add-image|{rel}|{w}|{h}"), "add-image");
+}
+
 /// A picture file chosen for the selected element's `name`: brought into the theme and named there.
 fn set_picture(ui: &ThemeEditorWindow, s: &Rc<RefCell<State>>, name: &str, file: &Path) {
     let rel = {
@@ -1199,32 +1313,29 @@ pub fn run(dir: PathBuf) {
     let (s, weak) = (st.clone(), ui.as_weak());
     ui.on_structure(move |op| {
         let Some(ui) = weak.upgrade() else { return };
-        let result = {
-            let mut st = s.borrow_mut();
-            let Some(sel) = st.selected.clone() else { return };
-            // the element around it, found before the change (after a delete its place leads nowhere)
-            let parent = crumbs(&sel).into_iter().rev().nth(1);
-            let r = std::fs::read_to_string(&sel.path)
-                .map_err(|e| e.to_string())
-                .and_then(|t| restructure(&t, &sel.path, sel.offset, &op))
-                .and_then(|(after, next)| change(&ui, &mut st, &sel.path, after, true).map(|_| next));
-            match r {
-                Ok(next) => {
-                    match (next, parent) {
-                        (Some(at), _) => st.selected = st.sources.iter().find(|x| x.path == sel.path && x.offset == at).cloned(),
-                        (None, Some(p)) => reselect(&mut st, &p),
-                        (None, None) => st.selected = None,
-                    }
-                    Ok(format!("{}: {}", sel.label, tr(&format!("ThemeEditor_Op_{op}"))))
-                }
-                Err(e) => {
-                    reselect(&mut st, &sel);
-                    Err(e)
-                }
-            }
-        };
-        report(&ui, result);
-        refresh_soon(&ui, &s);
+        structure(&ui, &s, &op, &op);
+    });
+    let (s, weak) = (st.clone(), ui.as_weak());
+    ui.on_add_image(move || {
+        let (sender, receiver) = std::sync::mpsc::channel();
+        let filter = lag_core::i18n::tr("ThemeEditor_ImageFilter").to_owned();
+        std::thread::spawn(move || {
+            let _ = sender.send(crate::views::settings::os::pick_file(None, &filter, "*.gif;*.webp;*.png;*.jpg;*.jpeg;*.svg", "gif"));
+        });
+        let (s, weak) = (s.clone(), weak.clone());
+        let timer = Rc::new(slint::Timer::default());
+        let keep = timer.clone();
+        timer.start(slint::TimerMode::Repeated, Duration::from_millis(50), move || {
+            let Ok(result) = receiver.try_recv() else { return };
+            keep.stop();
+            let (Some(file), Some(ui)) = (result, weak.upgrade()) else { return };
+            add_picture(&ui, &s, Path::new(&file));
+        });
+    });
+    let (s, weak) = (st.clone(), ui.as_weak());
+    ui.on_add_image_file(move |file| {
+        let Some(ui) = weak.upgrade() else { return };
+        add_picture(&ui, &s, Path::new(file.as_str()));
     });
     let (s, weak) = (st.clone(), ui.as_weak());
     ui.on_drag_end(move |dx, dy| {
@@ -1587,6 +1698,8 @@ fn command(ui: &ThemeEditorWindow, line: &str) -> Command {
                 ui.window().dispatch_event(WindowEvent::KeyReleased { text: mod_key(m) });
             }
         }
+        // `add-image FILE`: + Picture with FILE chosen
+        "add-image" => ui.invoke_add_image_file(rest.trim().into()),
         // `image NAME FILE`: as if FILE was chosen in the dialog for NAME
         "image" => {
             let (n, f) = rest.split_once(' ').unwrap_or((rest, ""));
@@ -1689,6 +1802,31 @@ mod tests {
         assert!(in_layout(&find_element(&root, a_at).unwrap()));
         assert!(!in_layout(&find_element(&root, lay_at).unwrap()));
         assert_eq!(label_of(&find_element(&root, text.find("Window").unwrap() as u32).unwrap()), "W");
+    }
+
+    #[test]
+    fn a_picture_brings_its_import() {
+        // no import from the API yet: one on the first line, the rest moves by its length
+        let (t, shift) = import_api("component A {}
+", "AnimatedImage");
+        assert_eq!(t, "import { AnimatedImage } from \"@lag/api.slint\";
+component A {}
+");
+        assert_eq!(shift, t.len() - "component A {}
+".len());
+        // an import from the API: the name joins it
+        let (t, shift) = import_api("import { MainVM, Tr } from \"@lag/api.slint\";
+A {}", "AnimatedImage");
+        assert_eq!(t, "import { MainVM, Tr, AnimatedImage } from \"@lag/api.slint\";
+A {}");
+        assert_eq!(shift, ", AnimatedImage".len());
+        // already there: nothing changes
+        let (t2, shift) = import_api(&t, "AnimatedImage");
+        assert_eq!((t2.as_str(), shift), (t.as_str(), 0));
+        // `@lag/api.slint` named in a comment only is not an import
+        let (t, _) = import_api("// see \"@lag/api.slint\"
+A {}", "AnimatedImage");
+        assert!(t.starts_with("import { AnimatedImage }"));
     }
 
     #[test]

@@ -444,5 +444,7 @@
   "Theme_InUse": "i brug",
   "Theme_AfterRestart": "valgt: efter genstart",
   "Theme_OldFolder": "{0} (en mappe, lavet før 2.2)",
-  "Theme_Converted": "Nu én fil: {0}"
+  "Theme_Converted": "Nu én fil: {0}",
+  "ThemeEditor_AddImage": "+ Billede",
+  "ThemeEditor_Op_add-image": "billede tilføjet"
 }

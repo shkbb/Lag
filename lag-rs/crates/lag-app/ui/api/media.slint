@@ -1,0 +1,53 @@
+// Moving pictures for themes (docs/spec/themes.md §21, docs/themes/API.md "Animated pictures"). Lag decodes and
+// plays them; a theme only places them:
+//   import { AnimatedImage } from "@lag/api.slint";
+//   AnimatedImage { source: @image-url("pics/girl.gif"); image-fit: cover; }
+
+// Driven by Lag (src/media.rs): the frame to show now. A theme does not need it directly.
+export global Media {
+    // bumped by Lag whenever an animation moves to its next frame: every AnimatedImage on screen asks again
+    in property <int> tick: 0;
+    // the frame of a picture for now: a GIF, WebP or APNG plays in a loop; any other picture comes back as it is
+    pure callback frame(image, int, float) -> image;
+}
+
+// An animated picture: GIF, WebP or APNG, played in a loop. Takes everything an Image takes; a still picture is
+// shown as it is. It plays only while it is on screen (not on another page, not in a hidden window) and stops
+// while a game (anything full screen) is in front of Lag. Where nothing plays it (the editor's file view, an old
+// Lag) its first frame shows.
+export component AnimatedImage {
+    in property <image> source;
+    // false: the first frame, standing still
+    in property <bool> playing: true;
+    // 2 = twice as fast, 0.5 = half as fast
+    in property <float> speed: 1;
+    in property <ImageFit> image-fit: fill;
+    in property <ImageRendering> image-rendering: smooth;
+    in property <brush> colorize: transparent;
+    in property <ImageHorizontalAlignment> horizontal-alignment: center;
+    in property <ImageVerticalAlignment> vertical-alignment: center;
+    in property <ImageTiling> horizontal-tiling: none;
+    in property <ImageTiling> vertical-tiling: none;
+    // as large as the picture unless told otherwise (an Image's own size)
+    preferred-width: still.preferred-width;
+    preferred-height: still.preferred-height;
+
+    still := Image {
+        source: root.source;
+        width: 0;
+        height: 0;
+        visible: false;
+    }
+    Image {
+        width: 100%;
+        height: 100%;
+        source: root.playing ? Media.frame(root.source, Media.tick, root.speed) : root.source;
+        image-fit: root.image-fit;
+        image-rendering: root.image-rendering;
+        colorize: root.colorize;
+        horizontal-alignment: root.horizontal-alignment;
+        vertical-alignment: root.vertical-alignment;
+        horizontal-tiling: root.horizontal-tiling;
+        vertical-tiling: root.vertical-tiling;
+    }
+}

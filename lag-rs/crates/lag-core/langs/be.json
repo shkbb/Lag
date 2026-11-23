@@ -444,5 +444,7 @@
   "Theme_InUse": "выкарыстоўваецца",
   "Theme_AfterRestart": "абрана: пасля перазапуску",
   "Theme_OldFolder": "{0} (тэчка, створаная да 2.2)",
-  "Theme_Converted": "Цяпер адным файлам: {0}"
+  "Theme_Converted": "Цяпер адным файлам: {0}",
+  "ThemeEditor_AddImage": "+ Малюнак",
+  "ThemeEditor_Op_add-image": "дададзены малюнак"
 }

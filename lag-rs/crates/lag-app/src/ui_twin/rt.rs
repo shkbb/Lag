@@ -137,7 +137,10 @@ pub trait TwinComponent: Sized + 'static {
     fn new() -> Result<Self, slint::PlatformError> {
         let def = DEFINITIONS.with(|d| d.borrow().get(Self::NAME).cloned());
         let def = def.ok_or_else(|| slint::PlatformError::Other(format!("UI has no `{}`", Self::NAME)))?;
-        Ok(Self::wrap(def.create()?))
+        let inst = def.create()?;
+        // animated pictures of a theme play in every window
+        crate::media::attach(&inst);
+        Ok(Self::wrap(inst))
     }
     fn global<'a, G: TwinGlobal<'a>>(&'a self) -> G {
         G::get(self.instance())
