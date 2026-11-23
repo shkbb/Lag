@@ -169,6 +169,10 @@ pub(crate) fn restructure(text: &str, path: &Path, offset: u32, op: &str) -> Res
     let root = parse_text(text, path);
     let el = find_element(&root, offset).ok_or(tr("ThemeEditor_ErrMoved"))?;
     let mut out = text.to_owned();
+    // something added inside a layout gets its place and size from the layout: no x / y (Slint refuses them there;
+    // QA 2026-11-23: "+ Video" in a HorizontalLayout was a wall of errors)
+    let layout = el.child_node(SyntaxKind::QualifiedName).is_some_and(|q| q.text().to_string().trim().ends_with("Layout"));
+    let placed = |snippet: String| if layout { snippet.replace("x: 24px; y: 24px; ", "").replace("x: 0; y: 0; width: parent.width; height: parent.height; ", "") } else { snippet };
     match op {
         "delete" => {
             let b = block_of(&el).ok_or(tr("ThemeEditor_ErrRoot"))?;
@@ -210,6 +214,20 @@ pub(crate) fn restructure(text: &str, path: &Path, offset: u32, op: &str) -> Res
             let new_block_start = if i < j { a0 + tb.len() + mid.len() } else { a0 };
             Ok((out, Some((new_block_start + inside) as u32)))
         }
+        // `add-video|<path from the theme's top folder>`: a Video first inside the element (behind its other
+        // children), its whole size
+        _ if op.starts_with("add-video|") => {
+            let open = el.child_token(SyntaxKind::LBrace).ok_or("no { in the element")?;
+            let at = usize::from(open.text_range().end());
+            let indent = indent_at(text, offset as usize);
+            let rel = op.split('|').nth(1).unwrap_or("");
+            let snippet = placed(format!("Video {{ x: 0; y: 0; width: parent.width; height: parent.height; source: \"{rel}\"; }}"));
+            let ins = format!("\n{indent}    {snippet}");
+            out.insert_str(at, &ins);
+            let name_at = at + 1 + indent.len() + 4;
+            let (out, shift) = import_api(&out, "Video");
+            Ok((out, Some((name_at + shift) as u32)))
+        }
         _ if op == "add-rect" || op == "add-text" || op.starts_with("add-image|") => {
             let close = el.child_token(SyntaxKind::RBrace).ok_or("no } in the element")?;
             let at = usize::from(close.text_range().start());
@@ -228,6 +246,7 @@ pub(crate) fn restructure(text: &str, path: &Path, offset: u32, op: &str) -> Res
                     picture.as_str()
                 }
             };
+            let snippet = placed(snippet.to_owned());
             // keep `}` on its own line where it was
             let before_close = text[..at].trim_end_matches([' ', '\t']);
             let ins = format!("{indent}    {snippet}\n{indent}");
@@ -744,7 +763,7 @@ fn import_picture(theme_dir: &Path, build: &Path, file: &Path, slint_file: &Path
         return Ok(relative(&clean(slint_file.parent().unwrap_or(&build)), &file));
     }
     let ext = file.extension().map(|e| e.to_string_lossy().to_lowercase()).unwrap_or_default();
-    if !["png", "jpg", "jpeg", "svg", "gif", "webp"].contains(&ext.as_str()) {
+    if !["png", "jpg", "jpeg", "svg", "gif", "webp", "mp4", "webm"].contains(&ext.as_str()) {
         return Err(lag_core::i18n::format("ThemeEditor_ErrNotPicture", &[&file.display().to_string()]).unwrap_or_default());
     }
     let target = if file.starts_with(&dir) {
@@ -857,6 +876,11 @@ fn apply(ui: &ThemeEditorWindow, st: &mut State, target: &Path, before: Option<S
     if let Err(e) = load(ui, st) {
         let _ = write_own(st, target, before.as_deref());
         let _ = load(ui, st);
+        // the first errors say it; the rest is mostly what follows from them (binding loops)
+        let lines: Vec<&str> = e.lines().collect();
+        let e = if lines.len() > 3 { format!("{}
+… +{}", lines[..3].join("
+"), lines.len() - 3) } else { e };
         return Err(lag_core::i18n::format("ThemeEditor_NotApplied", &[&e]).unwrap_or(e));
     }
     // a .lag theme: the change goes into its one file at once
@@ -1173,6 +1197,34 @@ fn add_picture(ui: &ThemeEditorWindow, s: &Rc<RefCell<State>>, file: &Path) {
     structure(ui, s, &format!("add-image|{rel}|{w}|{h}"), "add-image");
 }
 
+/// The "+ Video" button: `file` brought into the theme (`art/`) and placed first in the selected element, its whole
+/// size. A Video names its file from the theme's top folder (not from the `.slint` file, as pictures do).
+fn add_video(ui: &ThemeEditorWindow, s: &Rc<RefCell<State>>, file: &Path) {
+    let ext = file.extension().map(|e| e.to_string_lossy().to_lowercase()).unwrap_or_default();
+    if !["mp4", "webm"].contains(&ext.as_str()) {
+        return report(ui, Err(lag_core::i18n::format("ThemeEditor_ErrNotVideo", &[&file.display().to_string()]).unwrap_or_default()));
+    }
+    let rel = {
+        let mut st = s.borrow_mut();
+        if st.selected.is_none() {
+            return;
+        }
+        let art = st.dir.join("art");
+        let before: Vec<PathBuf> = std::fs::read_dir(&art).map(|e| e.flatten().map(|e| e.path()).collect()).unwrap_or_default();
+        // from the top folder: as if a file there named it
+        let rel = import_picture(&st.dir, &st.build, file, &st.build.join("top.slint"));
+        let new: Vec<PathBuf> = std::fs::read_dir(&art)
+            .map(|e| e.flatten().map(|e| e.path()).filter(|p| !before.contains(p)).collect())
+            .unwrap_or_default();
+        st.imported.extend(new);
+        rel
+    };
+    match rel {
+        Ok(rel) => structure(ui, s, &format!("add-video|{rel}"), "add-video"),
+        Err(e) => report(ui, Err(e)),
+    }
+}
+
 /// A picture file chosen for the selected element's `name`: brought into the theme and named there.
 fn set_picture(ui: &ThemeEditorWindow, s: &Rc<RefCell<State>>, name: &str, file: &Path) {
     let rel = {
@@ -1336,6 +1388,28 @@ pub fn run(dir: PathBuf) {
     ui.on_add_image_file(move |file| {
         let Some(ui) = weak.upgrade() else { return };
         add_picture(&ui, &s, Path::new(file.as_str()));
+    });
+    let (s, weak) = (st.clone(), ui.as_weak());
+    ui.on_add_video(move || {
+        let (sender, receiver) = std::sync::mpsc::channel();
+        let filter = lag_core::i18n::tr("ThemeEditor_VideoFilter").to_owned();
+        std::thread::spawn(move || {
+            let _ = sender.send(crate::views::settings::os::pick_file(None, &filter, "*.mp4;*.webm", "mp4"));
+        });
+        let (s, weak) = (s.clone(), weak.clone());
+        let timer = Rc::new(slint::Timer::default());
+        let keep = timer.clone();
+        timer.start(slint::TimerMode::Repeated, Duration::from_millis(50), move || {
+            let Ok(result) = receiver.try_recv() else { return };
+            keep.stop();
+            let (Some(file), Some(ui)) = (result, weak.upgrade()) else { return };
+            add_video(&ui, &s, Path::new(&file));
+        });
+    });
+    let (s, weak) = (st.clone(), ui.as_weak());
+    ui.on_add_video_file(move |file| {
+        let Some(ui) = weak.upgrade() else { return };
+        add_video(&ui, &s, Path::new(file.as_str()));
     });
     let (s, weak) = (st.clone(), ui.as_weak());
     ui.on_drag_end(move |dx, dy| {
@@ -1698,8 +1772,9 @@ fn command(ui: &ThemeEditorWindow, line: &str) -> Command {
                 ui.window().dispatch_event(WindowEvent::KeyReleased { text: mod_key(m) });
             }
         }
-        // `add-image FILE`: + Picture with FILE chosen
+        // `add-image FILE`: + Picture with FILE chosen; `add-video FILE`: + Video
         "add-image" => ui.invoke_add_image_file(rest.trim().into()),
+        "add-video" => ui.invoke_add_video_file(rest.trim().into()),
         // `image NAME FILE`: as if FILE was chosen in the dialog for NAME
         "image" => {
             let (n, f) = rest.split_once(' ').unwrap_or((rest, ""));
@@ -1795,7 +1870,15 @@ mod tests {
         // add a rectangle inside the layout, on its own line, `}` kept on its line
         let lay_at = text.find("HorizontalLayout").unwrap() as u32;
         let (added, at) = restructure(text, p, lay_at, "add-rect").unwrap();
-        assert!(added.contains("Text { text: \"b\"; }\n        Rectangle { x: 24px;"), "{added}");
+        // the layout places it: no x / y (Slint refuses them there)
+        assert!(added.contains("Text { text: \"b\"; }\n        Rectangle { width: 180px;"), "{added}");
+        // a video goes first inside (behind the rest); in a layout without place and size, elsewhere the whole parent
+        let (v, vat) = restructure(text, p, lay_at, "add-video|art/bg.mp4").unwrap();
+        assert!(v.starts_with("import { Video } from \"@lag/api.slint\";\n"), "{v}");
+        assert!(v.contains("HorizontalLayout {\n        Video { source: \"art/bg.mp4\"; }\n        a := Rectangle"), "{v}");
+        assert_eq!(&v[vat.unwrap() as usize..vat.unwrap() as usize + 5], "Video");
+        let (v, _) = restructure(text, p, a_at, "add-video|art/bg.mp4").unwrap();
+        assert!(v.contains("Video { x: 0; y: 0; width: parent.width; height: parent.height; source: \"art/bg.mp4\"; }"), "{v}");
         assert!(added.contains("border-radius: 14px; }\n    }\n}"), "{added}");
         assert_eq!(&added[at.unwrap() as usize..at.unwrap() as usize + 9], "Rectangle");
         let root = parse_text(text, p);

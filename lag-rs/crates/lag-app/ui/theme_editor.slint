@@ -421,6 +421,9 @@ export component ThemeEditorWindow inherits Window {
     // + Picture: a picture file (system dialog) placed in the selected element as an AnimatedImage; -file: that file
     callback add-image();
     callback add-image-file(string);
+    // + Video: a video file as the selected element's moving background (first inside it, its whole size)
+    callback add-video();
+    callback add-video-file(string);
     callback pick(length, length);
     callback set-prop(string, string);
     callback reset-prop(string);
@@ -576,6 +579,7 @@ export component ThemeEditorWindow inherits Window {
                         RChipButton { text: Tr.t("ThemeEditor_AddRect", Tr.rev); clicked => { root.structure("add-rect"); } }
                         RChipButton { text: Tr.t("ThemeEditor_AddText", Tr.rev); clicked => { root.structure("add-text"); } }
                         RChipButton { text: Tr.t("ThemeEditor_AddImage", Tr.rev); clicked => { root.add-image(); } }
+                        RChipButton { text: Tr.t("ThemeEditor_AddVideo", Tr.rev); clicked => { root.add-video(); } }
                     }
                     if root.selected-name != "": LagTextInput {
                         text <=> root.filter;

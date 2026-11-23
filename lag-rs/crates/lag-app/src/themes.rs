@@ -547,6 +547,8 @@ pub fn compile_theme(theme: &ThemeInfo) -> Result<(Vec<slint_interpreter::Compon
     validate(&theme.dir)?;
     // the theme over Lag's own UI; `@lag/` leads there too, so the theme's files and Lag's share one API
     let api = sync(theme)?;
+    // a theme's `Video { source }` paths start at its top folder
+    crate::media::set_root(&api);
     let entry = api.join(&theme.entry);
     // the compiler names the build folder: the author knows the theme's own paths
     let prefix = format!("{}{}", api.display(), std::path::MAIN_SEPARATOR);

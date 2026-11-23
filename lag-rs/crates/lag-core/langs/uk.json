@@ -446,5 +446,9 @@
   "Theme_OldFolder": "{0} (тека, створена до 2.2)",
   "Theme_Converted": "Тепер одним файлом: {0}",
   "ThemeEditor_AddImage": "+ Картинка",
-  "ThemeEditor_Op_add-image": "додано картинку"
+  "ThemeEditor_Op_add-image": "додано картинку",
+  "ThemeEditor_AddVideo": "+ Відео",
+  "ThemeEditor_Op_add-video": "додано відео",
+  "ThemeEditor_VideoFilter": "Відео",
+  "ThemeEditor_ErrNotVideo": "{0} — не відео, яке може містити тема (MP4 або WebM)"
 }

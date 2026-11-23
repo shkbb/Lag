@@ -446,5 +446,9 @@
   "Theme_OldFolder": "{0} (en mappe, laget før 2.2)",
   "Theme_Converted": "Nå én fil: {0}",
   "ThemeEditor_AddImage": "+ Bilde",
-  "ThemeEditor_Op_add-image": "bilde lagt til"
+  "ThemeEditor_Op_add-image": "bilde lagt til",
+  "ThemeEditor_AddVideo": "+ Video",
+  "ThemeEditor_Op_add-video": "video lagt til",
+  "ThemeEditor_VideoFilter": "Videoer",
+  "ThemeEditor_ErrNotVideo": "{0} er ikke en video et tema kan inneholde (MP4 eller WebM)"
 }

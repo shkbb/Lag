@@ -1,4 +1,5 @@
-//! Animated pictures of themes (docs/spec/themes.md §21): `AnimatedImage { source: @image-url("girl.gif"); }`.
+//! Animated pictures and videos of themes (docs/spec/themes.md §21): `AnimatedImage { source: @image-url("girl.gif"); }`,
+//! `Video { source: "videos/bg.mp4"; }`.
 //!
 //! A theme places the picture as any other one (the compiler resolves its path, the editor's picture picker works,
 //! the first frame shows even where nothing plays it); Lag plays it. The `Media` global of every window gets a
@@ -11,7 +12,12 @@
 //! - It plays only while it is drawn: a picture on another page, in a hidden or minimised window, does not ask
 //!   for frames, and its player stops (and is dropped a minute later). Nothing plays while something full screen
 //!   (a game) is in front of Lag.
-//! - The same on every OS: the decoders are Rust (image); only "something full screen in front" asks the system.
+//! - A video is decoded by Lag's own FFmpeg (the one that makes the library's thumbnails), one process per file,
+//!   at most 1920 px across and `max-fps` frames a second, read from its output as raw frames. A stopped video is
+//!   simply not read: FFmpeg waits on the full pipe and costs nothing. A WebM with transparency (VP8/VP9 alpha)
+//!   keeps it.
+//! - The same on every OS: the picture decoders are Rust (image), FFmpeg runs everywhere; only "something full
+//!   screen in front" asks the system.
 
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -21,7 +27,7 @@ use std::sync::mpsc;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use slint::{Image, Rgba8Pixel, SharedPixelBuffer};
+use slint::{Image, Rgb8Pixel, Rgba8Pixel, SharedPixelBuffer};
 use slint_interpreter::{ComponentInstance, Value};
 
 /// One animation is kept whole (every frame decoded once) up to this size...
@@ -40,9 +46,32 @@ const STEP: Duration = Duration::from_millis(8);
 const GAME_CHECK: Duration = Duration::from_millis(500);
 /// Nothing on screen plays: a look now and then to drop the players left over.
 const IDLE: Duration = Duration::from_secs(5);
+/// A video is decoded at most this many pixels across (Lag scales it up to the window).
+const VIDEO_SIDE: u32 = 1920;
+
+/// One decoded frame: pictures and transparent videos have alpha, other videos do not (a quarter less to copy).
+enum Pixels {
+    Rgba(SharedPixelBuffer<Rgba8Pixel>),
+    Rgb(SharedPixelBuffer<Rgb8Pixel>),
+}
+
+impl Pixels {
+    fn bytes(&self) -> usize {
+        match self {
+            Pixels::Rgba(p) => p.width() as usize * p.height() as usize * 4,
+            Pixels::Rgb(p) => p.width() as usize * p.height() as usize * 3,
+        }
+    }
+    fn image(self) -> Image {
+        match self {
+            Pixels::Rgba(p) => Image::from_rgba8(p),
+            Pixels::Rgb(p) => Image::from_rgb8(p),
+        }
+    }
+}
 
 enum Msg {
-    Frame(SharedPixelBuffer<Rgba8Pixel>, Duration),
+    Frame(Pixels, Duration),
     /// the last frame of a loop was sent; the next one is the first again
     End,
 }
@@ -65,6 +94,10 @@ struct Player {
     /// the last tick it was drawn at
     seen_tick: i32,
     stopped_at: Option<Instant>,
+    /// a video told `playing: false`: its first frame stays
+    hold: bool,
+    /// a frame of its own is shown (not the placeholder)
+    started: bool,
 }
 
 #[derive(Default)]
@@ -79,10 +112,17 @@ struct Media {
     /// how often the timer fires now
     pace: Duration,
     game: Option<(Instant, bool)>,
+    /// the theme's top folder (built): `Video { source }` paths start there
+    root: Option<PathBuf>,
 }
 
 thread_local! {
     static MEDIA: RefCell<Media> = RefCell::new(Media::default());
+}
+
+/// The theme whose videos play now (its build folder; set when a theme is compiled).
+pub fn set_root(dir: &std::path::Path) {
+    MEDIA.with(|m| m.borrow_mut().root = Some(dir.to_path_buf()));
 }
 
 /// Lets a window play animated pictures (every twin window and the editor's canvas).
@@ -103,6 +143,15 @@ pub fn attach(inst: &ComponentInstance) {
     {
         return;
     }
+    let _ = inst.set_global_callback("Media", "video", |args| {
+        let num = |i: usize, d: f64| match args.get(i) {
+            Some(Value::Number(n)) => *n,
+            _ => d,
+        };
+        let Some(Value::String(source)) = args.first() else { return Value::Image(Image::default()) };
+        let playing = !matches!(args.get(4), Some(Value::Bool(false)));
+        Value::Image(video(source, num(1, 0.0) as i32, num(2, 1.0) as f32, num(3, 30.0) as u32, playing))
+    });
     MEDIA.with(|m| {
         let mut m = m.borrow_mut();
         let _ = inst.set_global_property("Media", "tick", Value::Number(m.tick as f64));
@@ -119,13 +168,7 @@ fn frame(source: &Image, tick: i32, speed: f32) -> Image {
         let mut m = m.borrow_mut();
         let now = Instant::now();
         let p = m.players.entry(path).or_insert_with_key(|path| start(path, source, now));
-        p.seen_tick = p.seen_tick.max(tick);
-        p.speed = if speed.is_finite() && speed > 0.0 { speed.min(100.0) } else { 1.0 };
-        if p.stopped_at.take().is_some() {
-            p.due = now;
-        }
-        let playing = !matches!(p.feed, Feed::Still);
-        (p.shown.clone(), playing)
+        (seen(p, tick, speed, now), !matches!(p.feed, Feed::Still))
     });
     if shown.1 {
         ensure_timer();
@@ -133,9 +176,170 @@ fn frame(source: &Image, tick: i32, speed: f32) -> Image {
     shown.0
 }
 
+/// A drawn picture or video asked for its frame at `tick`: it is on screen, it plays on.
+fn seen(p: &mut Player, tick: i32, speed: f32, now: Instant) -> Image {
+    p.seen_tick = p.seen_tick.max(tick);
+    p.speed = if speed.is_finite() && speed > 0.0 { speed.min(100.0) } else { 1.0 };
+    if p.stopped_at.take().is_some() {
+        p.due = now;
+    }
+    p.shown.clone()
+}
+
+/// The frame of the theme's video `source` (a path from the theme's top folder) to show now.
+fn video(source: &str, tick: i32, speed: f32, max_fps: u32, playing: bool) -> Image {
+    // only a video of the theme: a plain relative path, no way out of its folder
+    let ext = source.rsplit('.').next().unwrap_or("").to_ascii_lowercase();
+    if lag_theme_file::check_path(source).is_err() || !["mp4", "webm"].contains(&ext.as_str()) {
+        return Image::default();
+    }
+    let shown = MEDIA.with(|m| {
+        let mut m = m.borrow_mut();
+        let root = m.root.clone()?;
+        let now = Instant::now();
+        let p = m.players.entry(root.join(source)).or_insert_with_key(|path| start_video(path, max_fps, now));
+        p.hold = !playing;
+        Some((seen(p, tick, speed, now), !matches!(p.feed, Feed::Still)))
+    });
+    let Some((image, live)) = shown else { return Image::default() };
+    if live {
+        ensure_timer();
+    }
+    image
+}
+
+fn placeholder(feed: Feed, shown: Image, now: Instant) -> Player {
+    Player { feed, shown, due: now, speed: 1.0, seen_tick: 0, stopped_at: None, hold: false, started: false }
+}
+
+/// A player for a theme's video: FFmpeg on a thread of its own.
+fn start_video(path: &std::path::Path, max_fps: u32, now: Instant) -> Player {
+    let name = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+    if !path.is_file() {
+        log::warn!("[Media] the theme has no video {}", path.display());
+        return placeholder(Feed::Still, Image::default(), now);
+    }
+    let (tx, rx) = mpsc::sync_channel(2);
+    let file = path.to_path_buf();
+    let max_fps = max_fps.clamp(1, 60);
+    match std::thread::Builder::new().name("lag-video".into()).spawn(move || play_video(&file, max_fps, &tx)) {
+        Ok(_) => log::info!("[Media] {name} plays"),
+        Err(e) => log::warn!("[Media] {name}: no decoder thread: {e}"),
+    }
+    placeholder(Feed::Stream { rx, kept: None }, Image::default(), now)
+}
+
+/// What FFmpeg needs to know before it decodes: size, frame rate, codec, transparency.
+#[derive(Debug, PartialEq)]
+struct Probe {
+    width: u32,
+    height: u32,
+    fps: f64,
+    codec: String,
+    alpha: bool,
+}
+
+/// `ffprobe -of default=nw=1` lines -> a Probe.
+fn parse_probe(text: &str) -> Option<Probe> {
+    let mut p = Probe { width: 0, height: 0, fps: 0.0, codec: String::new(), alpha: false };
+    let rate = |v: &str| {
+        let (n, d) = v.split_once('/').unwrap_or((v, "1"));
+        let (n, d) = (n.trim().parse::<f64>().ok()?, d.trim().parse::<f64>().ok()?);
+        (d > 0.0 && n > 0.0).then_some(n / d)
+    };
+    for line in text.lines() {
+        let Some((k, v)) = line.split_once('=') else { continue };
+        match k.trim() {
+            "width" => p.width = v.trim().parse().unwrap_or(0),
+            "height" => p.height = v.trim().parse().unwrap_or(0),
+            "codec_name" => p.codec = v.trim().to_owned(),
+            // the average rate first; the base rate where it is unknown
+            "avg_frame_rate" => p.fps = rate(v).unwrap_or(p.fps),
+            "r_frame_rate" if p.fps == 0.0 => p.fps = rate(v).unwrap_or(0.0),
+            "TAG:alpha_mode" | "TAG:ALPHA_MODE" => p.alpha = v.trim() == "1",
+            _ => {}
+        }
+    }
+    (p.width > 0 && p.height > 0).then_some(p)
+}
+
+/// The decoded size: at most `VIDEO_SIDE` across, the same shape, even numbers (what the scaler wants).
+fn video_size(w: u32, h: u32) -> (u32, u32) {
+    let k = (f64::from(VIDEO_SIDE) / f64::from(w.max(h))).min(1.0);
+    let even = |v: f64| ((v.round() as u32) & !1).max(2);
+    (even(f64::from(w) * k), even(f64::from(h) * k))
+}
+
+fn tool(name: &str) -> std::process::Command {
+    let exe = if cfg!(windows) { format!("{name}.exe") } else { name.to_owned() };
+    let mut c = std::process::Command::new(crate::services::ffmpeg::resolve_tool(&exe));
+    c.stdin(std::process::Stdio::null()).stderr(std::process::Stdio::null());
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        // no console window; below normal priority (a background never takes time from a game)
+        c.creation_flags(0x0800_0000 | 0x0000_4000);
+    }
+    c
+}
+
+/// The video thread: FFmpeg decodes the file in a loop into raw frames; they go to the player one by one.
+fn play_video(file: &std::path::Path, max_fps: u32, tx: &mpsc::SyncSender<Msg>) {
+    let name = file.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+    let probed = tool("ffprobe")
+        .args(["-v", "error", "-select_streams", "v:0", "-show_entries"])
+        .arg("stream=codec_name,width,height,avg_frame_rate,r_frame_rate:stream_tags=alpha_mode")
+        .args(["-of", "default=nw=1"])
+        .arg(file)
+        .output();
+    let Some(probe) = probed.ok().and_then(|o| parse_probe(&String::from_utf8_lossy(&o.stdout))) else {
+        log::warn!("[Media] {name}: not a video FFmpeg can read");
+        return;
+    };
+    let (w, h) = video_size(probe.width, probe.height);
+    let fps = if probe.fps > 0.0 { probe.fps.min(f64::from(max_fps)) } else { f64::from(max_fps) };
+    let mut cmd = tool("ffmpeg");
+    cmd.args(["-hide_banner", "-loglevel", "error", "-nostdin"]);
+    // FFmpeg's own VP8/VP9 decoders drop the transparency: libvpx keeps it
+    if probe.alpha {
+        cmd.args(["-c:v", if probe.codec == "vp8" { "libvpx" } else { "libvpx-vp9" }]);
+    }
+    cmd.args(["-stream_loop", "-1", "-i"]).arg(file);
+    cmd.args(["-an", "-sn", "-vf", &format!("fps={fps:.3},scale={w}:{h}:flags=bicubic")]);
+    cmd.args(["-pix_fmt", if probe.alpha { "rgba" } else { "rgb24" }, "-f", "rawvideo", "-"]);
+    cmd.stdout(std::process::Stdio::piped());
+    let mut child = match cmd.spawn() {
+        Ok(c) => c,
+        Err(e) => {
+            log::warn!("[Media] {name}: FFmpeg did not start: {e}");
+            return;
+        }
+    };
+    log::info!("[Media] {name}: {}x{} {} at {fps:.0} fps{}", w, h, probe.codec, if probe.alpha { ", transparent" } else { "" });
+    let delay = Duration::from_secs_f64(1.0 / fps);
+    let bpp = if probe.alpha { 4 } else { 3 };
+    let mut buf = vec![0u8; (w * h) as usize * bpp];
+    if let Some(mut out) = child.stdout.take() {
+        use std::io::Read;
+        while out.read_exact(&mut buf).is_ok() {
+            let px = if probe.alpha {
+                Pixels::Rgba(SharedPixelBuffer::clone_from_slice(&buf, w, h))
+            } else {
+                Pixels::Rgb(SharedPixelBuffer::clone_from_slice(&buf, w, h))
+            };
+            // the player is gone: FFmpeg goes too
+            if tx.send(Msg::Frame(px, delay)).is_err() {
+                break;
+            }
+        }
+    }
+    let _ = child.kill();
+    let _ = child.wait();
+}
+
 /// A player for the file of `source`: animated GIF, WebP or APNG gets a decoder thread.
-fn start(path: &PathBuf, source: &Image, now: Instant) -> Player {
-    let still = |feed| Player { feed, shown: source.clone(), due: now, speed: 1.0, seen_tick: 0, stopped_at: None };
+fn start(path: &std::path::Path, source: &Image, now: Instant) -> Player {
+    let still = |feed| placeholder(feed, source.clone(), now);
     let Ok(bytes) = std::fs::read(path) else { return still(Feed::Still) };
     let bytes: Arc<[u8]> = bytes.into();
     let Some(kind) = kind(&bytes) else { return still(Feed::Still) };
@@ -210,7 +414,7 @@ fn decode(bytes: &Arc<[u8]>, kind: Kind, tx: &mpsc::SyncSender<Msg>) {
             if u64::from(w) * u64::from(h) > MAX_PIXELS {
                 return;
             }
-            let px = SharedPixelBuffer::<Rgba8Pixel>::clone_from_slice(buf.as_raw(), w, h);
+            let px = Pixels::Rgba(SharedPixelBuffer::clone_from_slice(buf.as_raw(), w, h));
             if tx.send(Msg::Frame(px, Duration::from_millis(u64::from(ms)))).is_err() {
                 return;
             }
@@ -263,6 +467,10 @@ fn step() {
             }
             playing = true;
             p.stopped_at = None;
+            // a held video: its first frame, then nothing more
+            if p.hold && p.started {
+                return true;
+            }
             if now >= p.due {
                 moved |= advance(p, now);
             }
@@ -327,8 +535,8 @@ fn advance(p: &mut Player, now: Instant) -> bool {
         }
         Feed::Stream { rx, kept } => match rx.try_recv() {
             Ok(Msg::Frame(px, d)) => {
-                let size = px.width() as usize * px.height() as usize * 4;
-                let img = Image::from_rgba8(px);
+                let size = px.bytes();
+                let img = px.image();
                 if let Some((frames, bytes)) = kept {
                     *bytes += size;
                     if *bytes > KEEP_ONE {
@@ -338,6 +546,7 @@ fn advance(p: &mut Player, now: Instant) -> bool {
                     }
                 }
                 p.shown = img;
+                p.started = true;
                 d
             }
             Ok(Msg::End) => {
@@ -475,16 +684,33 @@ mod tests {
         let mut seen = Vec::new();
         for _ in 0..6 {
             seen.push(match rx.recv().unwrap() {
-                Msg::Frame(px, d) => {
+                Msg::Frame(Pixels::Rgba(px), d) => {
                     assert_eq!((px.width(), px.height()), (8, 6));
                     format!("f{}", d.as_millis())
                 }
                 Msg::End => "end".into(),
+                Msg::Frame(Pixels::Rgb(_), _) => "rgb".into(),
             });
         }
         assert_eq!(seen, ["f50", "f50", "end", "f50", "f50", "end"]);
         // the player gone: the thread ends
         drop(rx);
         t.join().unwrap();
+    }
+
+    #[test]
+    fn a_video_is_probed_and_sized() {
+        let p = parse_probe("codec_name=vp9\nwidth=3840\nheight=2160\nr_frame_rate=60/1\navg_frame_rate=60000/1001\nTAG:alpha_mode=1\n").unwrap();
+        assert_eq!((p.width, p.height, p.codec.as_str(), p.alpha), (3840, 2160, "vp9", true));
+        assert!((p.fps - 59.94).abs() < 0.01);
+        // an unknown average rate: the base one
+        let p = parse_probe("codec_name=h264\nwidth=1280\nheight=720\nr_frame_rate=30/1\navg_frame_rate=0/0\n").unwrap();
+        assert_eq!((p.fps, p.alpha), (30.0, false));
+        assert!(parse_probe("codec_name=png\n").is_none());
+        // at most 1920 across, the same shape, even
+        assert_eq!(video_size(3840, 2160), (1920, 1080));
+        assert_eq!(video_size(1080, 1920), (1080, 1920));
+        assert_eq!(video_size(1281, 721), (1280, 720));
+        assert_eq!(video_size(640, 360), (640, 360));
     }
 }

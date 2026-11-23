@@ -446,5 +446,9 @@
   "Theme_OldFolder": "{0}（2.2 より前に作られたフォルダー）",
   "Theme_Converted": "1つのファイルになりました：{0}",
   "ThemeEditor_AddImage": "+ 画像",
-  "ThemeEditor_Op_add-image": "画像を追加しました"
+  "ThemeEditor_Op_add-image": "画像を追加しました",
+  "ThemeEditor_AddVideo": "+ 動画",
+  "ThemeEditor_Op_add-video": "動画を追加しました",
+  "ThemeEditor_VideoFilter": "動画",
+  "ThemeEditor_ErrNotVideo": "{0} はテーマに入れられる動画ではありません（MP4 または WebM）"
 }

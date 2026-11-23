@@ -1,7 +1,8 @@
-// Moving pictures for themes (docs/spec/themes.md §21, docs/themes/API.md "Animated pictures"). Lag decodes and
-// plays them; a theme only places them:
-//   import { AnimatedImage } from "@lag/api.slint";
+// Moving pictures and videos for themes (docs/spec/themes.md §21, docs/themes/API.md "Animated pictures and
+// video"). Lag decodes and plays them; a theme only places them:
+//   import { AnimatedImage, Video } from "@lag/api.slint";
 //   AnimatedImage { source: @image-url("pics/girl.gif"); image-fit: cover; }
+//   Video { source: "videos/rain.mp4"; width: parent.width; height: parent.height; }
 
 // Driven by Lag (src/media.rs): the frame to show now. A theme does not need it directly.
 export global Media {
@@ -9,6 +10,8 @@ export global Media {
     in property <int> tick: 0;
     // the frame of a picture for now: a GIF, WebP or APNG plays in a loop; any other picture comes back as it is
     pure callback frame(image, int, float) -> image;
+    // the frame of a theme's video (path from the theme's top folder) for now: (path, tick, speed, max fps, playing)
+    pure callback video(string, int, float, int, bool) -> image;
 }
 
 // An animated picture: GIF, WebP or APNG, played in a loop. Takes everything an Image takes; a still picture is
@@ -49,5 +52,34 @@ export component AnimatedImage {
         vertical-alignment: root.vertical-alignment;
         horizontal-tiling: root.horizontal-tiling;
         vertical-tiling: root.vertical-tiling;
+    }
+}
+
+// A video in a loop, without sound: a moving background, a living picture. MP4 (H.264, HEVC, AV1) or WebM (VP8,
+// VP9, AV1); a WebM with transparency stays transparent (a character over the interface, not a box).
+// `source` is the file's path from the theme's top folder ("videos/rain.mp4"; the editor's "+ Video" puts it in
+// "art/"), not from this file. Plays like AnimatedImage: only while on screen, never while a game is in front. Lag
+// decodes it at most 1920 px across and `max-fps` frames a second (1..60).
+export component Video {
+    in property <string> source;
+    // false: stands on its first frame
+    in property <bool> playing: true;
+    in property <float> speed: 1;
+    in property <int> max-fps: 30;
+    in property <ImageFit> image-fit: cover;
+    in property <ImageRendering> image-rendering: smooth;
+    in property <brush> colorize: transparent;
+    in property <ImageHorizontalAlignment> horizontal-alignment: center;
+    in property <ImageVerticalAlignment> vertical-alignment: center;
+
+    Image {
+        width: 100%;
+        height: 100%;
+        source: Media.video(root.source, Media.tick, root.speed, root.max-fps, root.playing);
+        image-fit: root.image-fit;
+        image-rendering: root.image-rendering;
+        colorize: root.colorize;
+        horizontal-alignment: root.horizontal-alignment;
+        vertical-alignment: root.vertical-alignment;
     }
 }

@@ -446,5 +446,9 @@
   "Theme_OldFolder": "{0} (aplankas, sukurtas iki 2.2)",
   "Theme_Converted": "Dabar vienas failas: {0}",
   "ThemeEditor_AddImage": "+ Paveikslėlis",
-  "ThemeEditor_Op_add-image": "pridėtas paveikslėlis"
+  "ThemeEditor_Op_add-image": "pridėtas paveikslėlis",
+  "ThemeEditor_AddVideo": "+ Vaizdo įrašas",
+  "ThemeEditor_Op_add-video": "pridėtas vaizdo įrašas",
+  "ThemeEditor_VideoFilter": "Vaizdo įrašai",
+  "ThemeEditor_ErrNotVideo": "{0} nėra vaizdo įrašas, kurį gali turėti tema (MP4 arba WebM)"
 }

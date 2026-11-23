@@ -446,5 +446,9 @@
   "Theme_OldFolder": "{0} (mape, izveidota pirms 2.2)",
   "Theme_Converted": "Tagad viens fails: {0}",
   "ThemeEditor_AddImage": "+ Attēls",
-  "ThemeEditor_Op_add-image": "pievienots attēls"
+  "ThemeEditor_Op_add-image": "pievienots attēls",
+  "ThemeEditor_AddVideo": "+ Video",
+  "ThemeEditor_Op_add-video": "pievienots video",
+  "ThemeEditor_VideoFilter": "Video",
+  "ThemeEditor_ErrNotVideo": "{0} nav video, ko tēma var saturēt (MP4 vai WebM)"
 }

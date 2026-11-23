@@ -446,5 +446,9 @@
   "Theme_OldFolder": "{0} (kansio, luotu ennen 2.2:ta)",
   "Theme_Converted": "Nyt yksi tiedosto: {0}",
   "ThemeEditor_AddImage": "+ Kuva",
-  "ThemeEditor_Op_add-image": "kuva lisätty"
+  "ThemeEditor_Op_add-image": "kuva lisätty",
+  "ThemeEditor_AddVideo": "+ Video",
+  "ThemeEditor_Op_add-video": "video lisätty",
+  "ThemeEditor_VideoFilter": "Videot",
+  "ThemeEditor_ErrNotVideo": "{0} ei ole video, jonka teema voi sisältää (MP4 tai WebM)"
 }

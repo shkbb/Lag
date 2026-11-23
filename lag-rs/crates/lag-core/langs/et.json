@@ -446,5 +446,9 @@
   "Theme_OldFolder": "{0} (kaust, loodud enne 2.2)",
   "Theme_Converted": "Nüüd üks fail: {0}",
   "ThemeEditor_AddImage": "+ Pilt",
-  "ThemeEditor_Op_add-image": "pilt lisatud"
+  "ThemeEditor_Op_add-image": "pilt lisatud",
+  "ThemeEditor_AddVideo": "+ Video",
+  "ThemeEditor_Op_add-video": "video lisatud",
+  "ThemeEditor_VideoFilter": "Videod",
+  "ThemeEditor_ErrNotVideo": "{0} ei ole video, mida teema saab sisaldada (MP4 või WebM)"
 }

@@ -446,5 +446,9 @@
   "Theme_OldFolder": "{0} (a folder, made before 2.2)",
   "Theme_Converted": "Now one file: {0}",
   "ThemeEditor_AddImage": "+ Picture",
-  "ThemeEditor_Op_add-image": "picture added"
+  "ThemeEditor_Op_add-image": "picture added",
+  "ThemeEditor_AddVideo": "+ Video",
+  "ThemeEditor_Op_add-video": "video added",
+  "ThemeEditor_VideoFilter": "Videos",
+  "ThemeEditor_ErrNotVideo": "{0} is not a video a theme can hold (MP4 or WebM)"
 }

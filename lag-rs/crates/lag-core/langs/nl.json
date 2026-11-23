@@ -446,5 +446,9 @@
   "Theme_OldFolder": "{0} (een map, gemaakt vóór 2.2)",
   "Theme_Converted": "Nu één bestand: {0}",
   "ThemeEditor_AddImage": "+ Afbeelding",
-  "ThemeEditor_Op_add-image": "afbeelding toegevoegd"
+  "ThemeEditor_Op_add-image": "afbeelding toegevoegd",
+  "ThemeEditor_AddVideo": "+ Video",
+  "ThemeEditor_Op_add-video": "video toegevoegd",
+  "ThemeEditor_VideoFilter": "Video's",
+  "ThemeEditor_ErrNotVideo": "{0} is geen video die een thema kan bevatten (MP4 of WebM)"
 }
