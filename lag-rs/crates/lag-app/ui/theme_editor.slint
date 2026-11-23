@@ -355,7 +355,8 @@ component ColorPicker inherits Rectangle {
 }
 
 export component ThemeEditorWindow inherits Window {
-    title: "Lag";
+    // which theme is open shows in the window's title too
+    title: root.theme-name + " · " + root.theme-file + " — Lag";
     preferred-width: 1640px;
     preferred-height: 960px;
     background: Theme.surface-app;
@@ -368,6 +369,12 @@ export component ThemeEditorWindow inherits Window {
     in property <length> canvas-min-height: 600px;
     in property <string> theme-name;
     callback rename(string);
+    // the theme's file (`anime.lag`, or the folder of a theme made before 2.2)
+    in property <string> theme-file;
+    // Esc: nothing picked
+    callback deselect();
+    // keys for the canvas (Ctrl+Z ...): the canvas takes the keyboard when clicked
+    public function take-keys() { keys.focus(); }
     // the page on the canvas (0 settings, 1 library, 2 player, 3 editor), marked in the toolbar
     in-out property <int> current-page: 1;
     // the selected element (canvas coordinates) and what it is
@@ -439,6 +446,14 @@ export component ThemeEditorWindow inherits Window {
                 text: root.theme-name;
                 accepted(t) => { root.rename(t); }
             }
+            Text {
+                text: root.theme-file;
+                color: Theme.text-faint;
+                font-size: 12px;
+                vertical-alignment: center;
+                overflow: elide;
+                max-width: 220px;
+            }
             Rectangle { width: 10px; }
             RChipButton { text: Tr.t("Nav_Library", Tr.rev); active: root.current-page == 1; clicked => { root.page(1); } }
             RChipButton { text: Tr.t("Nav_Player", Tr.rev); active: root.current-page == 2; clicked => { root.page(2); } }
@@ -491,6 +506,7 @@ export component ThemeEditorWindow inherits Window {
                                 } else {
                                     root.pick(self.pressed-x, self.pressed-y);
                                 }
+                                keys.focus();
                             }
                         }
                     }
@@ -666,5 +682,41 @@ export component ThemeEditorWindow inherits Window {
         close => { root.picker-open = false; }
     }
     DropdownLayer { x: 0; y: 0; width: root.width; height: root.height; }
+
+    // the usual keys of any editor. A text field keeps its own (Ctrl+Z in a field undoes the typing there);
+    // these act when the canvas was clicked last. Letters by key position: Z / Я, Y / Н, D / В.
+    keys := FocusScope {
+        x: 0; y: 0; width: 0; height: 0;
+        key-pressed(e) => {
+            if (e.modifiers.control && (e.text == "z" || e.text == "Z" || e.text == "я" || e.text == "Я")) {
+                if (e.modifiers.shift) { root.redo(); } else { root.undo(); }
+                return accept;
+            }
+            if (e.modifiers.control && (e.text == "y" || e.text == "Y" || e.text == "н" || e.text == "Н")) {
+                root.redo();
+                return accept;
+            }
+            if (e.modifiers.control && (e.text == "d" || e.text == "D" || e.text == "в" || e.text == "В")) {
+                if (root.selected-name != "") { root.structure("duplicate"); }
+                return accept;
+            }
+            if (e.text == Key.Delete || e.text == Key.Backspace) {
+                if (root.selected-name != "") { root.structure("delete"); }
+                return accept;
+            }
+            if (e.text == Key.Escape) {
+                if (root.picker-open) { root.picker-open = false; } else { root.deselect(); }
+                return accept;
+            }
+            // arrows nudge the picked element: 1 px, Shift 10 px
+            if (root.selected-name != "" && (e.text == Key.LeftArrow || e.text == Key.RightArrow || e.text == Key.UpArrow || e.text == Key.DownArrow)) {
+                root.drag-end(
+                    (e.text == Key.LeftArrow ? -1px : e.text == Key.RightArrow ? 1px : 0px) * (e.modifiers.shift ? 10 : 1),
+                    (e.text == Key.UpArrow ? -1px : e.text == Key.DownArrow ? 1px : 0px) * (e.modifiers.shift ? 10 : 1));
+                return accept;
+            }
+            reject
+        }
+    }
 }
 

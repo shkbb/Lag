@@ -399,6 +399,19 @@ fn mirror(to: &ComponentInstance) {
     });
 }
 
+/// The library on the canvas tells Lag (the donor) its own width and scroll: the clip cards are laid out in columns
+/// for the canvas, not for the donor's hidden window (QA 2026-11-23: the right column was cut off).
+fn forward_layout(inst: &ComponentInstance) {
+    let _ = inst.set_global_callback("LibraryVM", "viewport-changed", |args| {
+        DONOR.with(|d| {
+            if let Some((donor, _)) = d.borrow().as_ref() {
+                let _ = donor.instance().invoke_global("LibraryVM", "viewport-changed", args);
+            }
+        });
+        Value::Void
+    });
+}
+
 fn factory(
     def: ComponentDefinition,
     slot: Rc<RefCell<Option<ComponentInstance>>>,
@@ -410,6 +423,7 @@ fn factory(
         fill(&inst, page.get());
         // a theme without Lag's colour modes has no such property: nothing to set
         let _ = inst.set_property("theme-mode", Value::String(mode.borrow().as_str().into()));
+        forward_layout(&inst);
         mirror(&inst);
         *slot.borrow_mut() = Some(slint::ComponentHandle::clone_strong(&inst));
         Some(inst)
@@ -1087,6 +1101,7 @@ pub fn run(dir: PathBuf) {
     let Ok(ui) = ThemeEditorWindow::new() else { return };
     ui.global::<Tr>().on_t(|key, _| lag_core::i18n::tr(&key).into());
     ui.set_theme_name(theme.name.clone().into());
+    ui.set_theme_file(theme.location().file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default().into());
     start_donor(&settings);
     let st = Rc::new(RefCell::new(State {
         build: themes::build_dir(&theme),
@@ -1244,6 +1259,12 @@ pub fn run(dir: PathBuf) {
             let _ = i.set_global_property("MainVM", "current-page", Value::EnumerationValue("Page".into(), PAGES[p.clamp(0, 3) as usize].into()));
         }
         refresh_soon(&ui, &s);
+    });
+    let (s, weak) = (st.clone(), ui.as_weak());
+    ui.on_deselect(move || {
+        let Some(ui) = weak.upgrade() else { return };
+        s.borrow_mut().selected = None;
+        refresh(&ui, &s.borrow());
     });
     let (s, weak) = (st.clone(), ui.as_weak());
     ui.on_rename(move |name| {
@@ -1534,6 +1555,38 @@ fn command(ui: &ThemeEditorWindow, line: &str) -> Command {
         }
         "picker-close" => ui.set_picker_open(false),
         "rename" => ui.invoke_rename(rest.trim().into()),
+        // `key ctrl+z`, `key delete`, `key shift+left`: keys to the canvas (as after a click on it)
+        "key" => {
+            use slint::platform::{Key, WindowEvent};
+            ui.invoke_take_keys();
+            let spec = rest.trim().to_lowercase();
+            let parts: Vec<&str> = spec.split('+').collect();
+            let (mods, key) = parts.split_at(parts.len().saturating_sub(1));
+            let text: slint::SharedString = match key.first().copied().unwrap_or("") {
+                "delete" => Key::Delete.into(),
+                "escape" | "esc" => Key::Escape.into(),
+                "left" => Key::LeftArrow.into(),
+                "right" => Key::RightArrow.into(),
+                "up" => Key::UpArrow.into(),
+                "down" => Key::DownArrow.into(),
+                other => other.into(),
+            };
+            let mod_key = |m: &str| -> slint::SharedString {
+                match m {
+                    "ctrl" => Key::Control.into(),
+                    "shift" => Key::Shift.into(),
+                    _ => Key::Alt.into(),
+                }
+            };
+            for m in mods {
+                ui.window().dispatch_event(WindowEvent::KeyPressed { text: mod_key(m) });
+            }
+            ui.window().dispatch_event(WindowEvent::KeyPressed { text: text.clone() });
+            ui.window().dispatch_event(WindowEvent::KeyReleased { text });
+            for m in mods.iter().rev() {
+                ui.window().dispatch_event(WindowEvent::KeyReleased { text: mod_key(m) });
+            }
+        }
         // `image NAME FILE`: as if FILE was chosen in the dialog for NAME
         "image" => {
             let (n, f) = rest.split_once(' ').unwrap_or((rest, ""));
