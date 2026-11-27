@@ -369,6 +369,38 @@ impl Snapshot {
                     win.dispatch_event(WindowEvent::KeyReleased { text: t });
                 }
                 "wait" => self.pump(Duration::from_millis(num(&a, 0) as u64)),
+                // `bench-scroll X Y STEPS DY`: STEPS wheel steps at X,Y; after each, frames are drawn for 50 ms and
+                // timed (the UI's work + drawing). Prints the frame times (a smoothness check without a window).
+                "bench-scroll" => {
+                    let (steps, dy) = (num(&a, 2).max(1.0) as usize, num(&a, 3));
+                    let (w, h) = self.cur.get();
+                    let mut buf = vec![Rgba::default(); (w * h) as usize];
+                    let mut times: Vec<f64> = Vec::new();
+                    let started = Instant::now();
+                    for _ in 0..steps {
+                        win.dispatch_event(WindowEvent::PointerScrolled { position: at, delta_x: 0.0, delta_y: dy });
+                        let until = Instant::now() + Duration::from_millis(50);
+                        while Instant::now() < until {
+                            let t = Instant::now();
+                            slint::platform::update_timers_and_animations();
+                            self.window.request_redraw();
+                            self.window.draw_if_needed(|r| {
+                                r.render(&mut buf, w as usize);
+                            });
+                            times.push(t.elapsed().as_secs_f64() * 1000.0);
+                        }
+                    }
+                    times.sort_by(|x, y| x.total_cmp(y));
+                    let pick = |q: f64| times[((times.len() - 1) as f64 * q) as usize];
+                    println!(
+                        "bench-scroll: {} frames in {:.0} ms | median {:.1} ms, p95 {:.1} ms, max {:.1} ms",
+                        times.len(),
+                        started.elapsed().as_secs_f64() * 1000.0,
+                        pick(0.5),
+                        pick(0.95),
+                        pick(1.0)
+                    );
+                }
                 "shot" => {
                     self.pump(Duration::from_millis(50));
                     let out = format!("{dir}/{}.png", a.first().copied().unwrap_or("shot"));
