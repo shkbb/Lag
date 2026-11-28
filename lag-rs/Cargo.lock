@@ -2333,7 +2333,7 @@ dependencies = [
 
 [[package]]
 name = "lag-app"
-version = "2.2.0"
+version = "2.2.1"
 dependencies = [
  "chrono",
  "crossbeam-channel",
@@ -2364,7 +2364,7 @@ dependencies = [
 
 [[package]]
 name = "lag-audio"
-version = "2.2.0"
+version = "2.2.1"
 dependencies = [
  "crossbeam-channel",
  "lag-ffi",
@@ -2375,7 +2375,7 @@ dependencies = [
 
 [[package]]
 name = "lag-capture"
-version = "2.2.0"
+version = "2.2.1"
 dependencies = [
  "lag-audio",
  "lag-core",
@@ -2389,7 +2389,7 @@ dependencies = [
 
 [[package]]
 name = "lag-cloud"
-version = "2.2.0"
+version = "2.2.1"
 dependencies = [
  "chrono",
  "log",
@@ -2400,7 +2400,7 @@ dependencies = [
 
 [[package]]
 name = "lag-cloud-drive"
-version = "2.2.0"
+version = "2.2.1"
 dependencies = [
  "base64",
  "chrono",
@@ -2416,7 +2416,7 @@ dependencies = [
 
 [[package]]
 name = "lag-core"
-version = "2.2.0"
+version = "2.2.1"
 dependencies = [
  "chrono",
  "crossbeam-channel",
@@ -2430,14 +2430,14 @@ dependencies = [
 
 [[package]]
 name = "lag-ffi"
-version = "2.2.0"
+version = "2.2.1"
 dependencies = [
  "bindgen",
 ]
 
 [[package]]
 name = "lag-player"
-version = "2.2.0"
+version = "2.2.1"
 dependencies = [
  "glow 0.16.0",
  "lag-ffi",
@@ -2447,7 +2447,7 @@ dependencies = [
 
 [[package]]
 name = "lag-theme-file"
-version = "2.2.0"
+version = "2.2.1"
 dependencies = [
  "base64",
  "serde",
@@ -2456,7 +2456,7 @@ dependencies = [
 
 [[package]]
 name = "lag-update"
-version = "2.2.0"
+version = "2.2.1"
 dependencies = [
  "slint",
  "slint-build",
