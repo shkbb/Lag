@@ -31,3 +31,5 @@ log = "0.4"
 # addition (lag-rs/vendor/README.md). Remove when Slint offers it upstream.
 [patch.crates-io]
 slint-interpreter = { path = "vendor/slint-interpreter" }
+# LAG PATCH: tinted icons colorized once and shared (vendor/README.md)
+i-slint-renderer-femtovg = { path = "vendor/i-slint-renderer-femtovg" }

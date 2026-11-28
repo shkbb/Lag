@@ -28,6 +28,8 @@ windows = { workspace = true, features = [
     "Win32_System_Com", "Win32_Graphics_Gdi", "Win32_UI_Input_KeyboardAndMouse", "Win32_System_SystemInformation",
     "Win32_System_Registry", "Win32_System_LibraryLoader", "Win32_UI_HiDpi", "Win32_Graphics_Dwm",
     "Win32_Networking_WinHttp", "Win32_UI_Input", "Win32_UI_Shell_Common",
+    # stall_probe (--gpu-check): walking the UI thread's stack
+    "Win32_System_Diagnostics_Debug", "Win32_System_Kernel",
 ] }
 raw-window-handle = "0.6"
 chrono = "0.4.45"
@@ -42,7 +44,12 @@ ico = "0.6"
 lag-player = { workspace = true }
 
 # themes: the UI loaded from files at run time (src/ui_twin)
-slint-interpreter = { version = "=1.18.1", features = ["internal", "internal-highlight"] }
+# default features WITHOUT "accessibility": AccessKit rebuilt the accessibility tree of the whole interpreted UI after
+# every change (instantiating every repeater), 100-300 ms at a time - the library scrolled like a slideshow
+# (owner, 2026-11-27; 2.1 had no AccessKit: the compiled UI never enabled it)
+slint-interpreter = { version = "=1.18.1", default-features = false, features = [
+    "internal", "internal-highlight", "backend-default", "renderer-femtovg", "renderer-software", "compat-1-2", "system-tray",
+] }
 # the theme editor reads and edits .slint sources (element nodes, bindings)
 i-slint-compiler = "=1.18.1"
 i-slint-core = "=1.18.1"
@@ -55,7 +62,7 @@ serde = { workspace = true }
 
 [build-dependencies]
 # the UI twin generator (build_twin.rs) reads the .slint types; "internal" = full type info, pinned exactly
-slint-interpreter = { version = "=1.18.1", features = ["internal"] }
+slint-interpreter = { version = "=1.18.1", default-features = false, features = ["internal", "compat-1-2"] }
 i-slint-compiler = "=1.18.1"
 i-slint-core = "=1.18.1"
 

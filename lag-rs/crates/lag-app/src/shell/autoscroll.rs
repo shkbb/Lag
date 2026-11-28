@@ -192,12 +192,103 @@ struct Frames {
     gaps_ms: Vec<f32>,
 }
 
+/// A run of frames drawn one after another (scrolling, an animation): how smooth it was. Kept for the log (a
+/// slow run is written down, owner 2026-11-27: "бібліотека листається в 2-3 фпс") and for `--gpu-check`.
+#[derive(Default, Clone)]
+pub struct Burst {
+    last: Option<Instant>,
+    started_render: Option<Instant>,
+    pub gaps_ms: Vec<f32>,
+    pub render_ms: Vec<f32>,
+}
+
+impl Burst {
+    /// (frames, avg gap, p95 gap, max gap, avg time spent drawing) in ms
+    pub fn stats(&self) -> Option<(usize, f32, f32, f32, f32)> {
+        if self.gaps_ms.len() < 2 {
+            return None;
+        }
+        let mut sorted = self.gaps_ms.clone();
+        sorted.sort_by(f32::total_cmp);
+        let avg = sorted.iter().sum::<f32>() / sorted.len() as f32;
+        let p95 = sorted[(sorted.len() * 95 / 100).min(sorted.len() - 1)];
+        let render = self.render_ms.iter().sum::<f32>() / self.render_ms.len().max(1) as f32;
+        Some((sorted.len() + 1, avg, p95, sorted[sorted.len() - 1], render))
+    }
+}
+
+thread_local! {
+    /// the run of frames going on now, the last one that ended, and when a slow one was last logged
+    static BURST: std::cell::RefCell<(Burst, Burst, Option<Instant>)> = std::cell::RefCell::default();
+}
+
+/// The last finished run of frames (and the one going on, if any frames came since).
+pub fn last_burst() -> Burst {
+    BURST.with(|b| {
+        let b = b.borrow();
+        if b.0.gaps_ms.len() >= 2 { b.0.clone() } else { b.1.clone() }
+    })
+}
+
+/// Clears the runs (a measurement starts).
+pub fn reset_bursts() {
+    BURST.with(|b| *b.borrow_mut() = Default::default());
+}
+
+/// Every frame of the main window: a pause of 100 ms ends a run; a run of 20+ frames slower than ~80 fps is
+/// logged (at most every 30 s), with what was drawing it.
+fn track_frame(state: slint::RenderingState, page: &str) {
+    let now = Instant::now();
+    BURST.with(|b| {
+        let mut b = b.borrow_mut();
+        match state {
+            slint::RenderingState::BeforeRendering => {
+                match b.0.last {
+                    Some(last) if now.duration_since(last) < Duration::from_millis(100) => {
+                        let gap = now.duration_since(last).as_secs_f32() * 1000.0;
+                        b.0.gaps_ms.push(gap);
+                    }
+                    _ => {
+                        let done = std::mem::take(&mut b.0);
+                        if done.gaps_ms.len() >= 20 {
+                            if let Some((n, avg, p95, max, render)) = done.stats() {
+                                let quiet = b.2.is_some_and(|t| now.duration_since(t) < Duration::from_secs(30));
+                                if avg > 12.5 && !quiet {
+                                    log::info!(
+                                        "[UI] slow frames on {page}: {n} frames, avg {avg:.1} ms ({:.0} fps), p95 {p95:.1} ms, max {max:.1} ms, drawing {render:.1} ms/frame",
+                                        1000.0 / avg.max(0.01)
+                                    );
+                                    b.2 = Some(now);
+                                }
+                            }
+                        }
+                        if done.gaps_ms.len() >= 2 {
+                            b.1 = done;
+                        }
+                    }
+                }
+                b.0.last = Some(now);
+                b.0.started_render = Some(now);
+            }
+            slint::RenderingState::AfterRendering => {
+                if let Some(t) = b.0.started_render.take() {
+                    let ms = now.duration_since(t).as_secs_f32() * 1000.0;
+                    b.0.render_ms.push(ms);
+                }
+            }
+            _ => {}
+        }
+    });
+}
+
 /// Drives the scrolling from the main window's rendering: call once at start-up.
 pub fn install(ui: &AppWindow, state: std::rc::Rc<State>) {
     let frames = std::cell::RefCell::new(Frames::default());
     let weak = ui.as_weak();
     let result = ui.window().set_rendering_notifier(move |rendering, _| {
         let Some(ui) = weak.upgrade() else { return };
+        let page = format!("{:?}", ui.global::<crate::MainVM>().get_current_page()).to_lowercase();
+        track_frame(rendering.clone(), &page);
         let g = ui.global::<AutoScroll>();
         let mut f = frames.borrow_mut();
         match rendering {

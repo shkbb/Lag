@@ -1,5 +1,6 @@
 target/
 vendor/*
 !vendor/slint-interpreter/
+!vendor/i-slint-renderer-femtovg/
 !vendor/README.md
 tools/bin/

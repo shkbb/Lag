@@ -382,6 +382,17 @@ impl Snapshot {
                         let until = Instant::now() + Duration::from_millis(50);
                         while Instant::now() < until {
                             let t = Instant::now();
+                            // work posted to the UI thread (thumbnails landing...): as the real event loop runs it
+                            let jobs: Vec<Job> = std::mem::take(&mut *self.jobs.lock().unwrap_or_else(|e| e.into_inner()));
+                            let tj = Instant::now();
+                            let n = jobs.len();
+                            for j in jobs {
+                                j();
+                            }
+                            let job_ms = tj.elapsed().as_secs_f64() * 1000.0;
+                            if job_ms > 8.0 {
+                                println!("  posted work: {n} job(s) took {job_ms:.1} ms");
+                            }
                             slint::platform::update_timers_and_animations();
                             self.window.request_redraw();
                             self.window.draw_if_needed(|r| {

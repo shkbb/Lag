@@ -8,6 +8,7 @@ pub use ui_twin::TwinComponent as ComponentHandle;
 mod app_ctx;
 mod gpucheck;
 mod media;
+mod stall_probe;
 mod services;
 mod shell;
 mod snapshot;

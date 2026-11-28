@@ -22,6 +22,7 @@ use slint::LogicalPosition;
 use std::{cell::RefCell, collections::VecDeque, rc::Rc, time::Duration};
 
 thread_local! {
+    static PROBE: RefCell<Option<crate::stall_probe::Probe>> = const { RefCell::new(None) };
     /// windows a script opened (splash, HUD), kept alive until `splash-off` / the end
     static KEEP: RefCell<Vec<Box<dyn std::any::Any>>> = RefCell::default();
 }
@@ -60,6 +61,8 @@ pub fn run(script: String, dir: String) {
     }
     let weak = ui.as_weak();
     let _keep = ctx.clone();
+    // where the UI thread is when it stops drawing (printed at the end)
+    PROBE.with(|p| *p.borrow_mut() = crate::stall_probe::start());
     slint::Timer::single_shot(Duration::from_millis(1500), move || step(weak, queue, dir));
     let _ = slint::run_event_loop_until_quit();
     // stop a running recording cleanly first: a process killed mid-NVENC once left the driver hung
@@ -75,6 +78,11 @@ pub fn run(script: String, dir: String) {
 fn step(weak: crate::Weak<AppWindow>, queue: Rc<RefCell<VecDeque<String>>>, dir: String) {
     let Some(ui) = weak.upgrade() else { return };
     let Some(line) = queue.borrow_mut().pop_front() else {
+        PROBE.with(|p| {
+            if let Some(p) = p.borrow().as_ref() {
+                crate::stall_probe::report(p);
+            }
+        });
         let _ = slint::quit_event_loop();
         return;
     };
@@ -119,6 +127,31 @@ fn step(weak: crate::Weak<AppWindow>, queue: Rc<RefCell<VecDeque<String>>>, dir:
             delta_y: a.get(2).copied().unwrap_or(0.0),
         }),
         "wait" => delay = a.first().copied().unwrap_or(100.0) as u64,
+        // `bench-scroll X Y STEPS DY`: a wheel step every 16 ms, then the frames the real window drew meanwhile
+        "bench-scroll" => {
+            let (steps, dy) = (a.get(2).copied().unwrap_or(30.0).max(1.0) as u32, a.get(3).copied().unwrap_or(-120.0));
+            crate::shell::autoscroll::reset_bursts();
+            for i in 0..steps {
+                let w = weak.clone();
+                slint::Timer::single_shot(Duration::from_millis(16 * u64::from(i)), move || {
+                    if let Some(ui) = w.upgrade() {
+                        ui.window().dispatch_event(WindowEvent::PointerScrolled { position: at, delta_x: 0.0, delta_y: dy });
+                    }
+                });
+            }
+            let total = 16 * u64::from(steps) + 400;
+            slint::Timer::single_shot(Duration::from_millis(total), move || {
+                let b = crate::shell::autoscroll::last_burst();
+                match b.stats() {
+                    Some((n, avg, p95, max, render)) => println!(
+                        "bench-scroll: {n} frames, avg {avg:.1} ms ({:.0} fps), p95 {p95:.1} ms, max {max:.1} ms, drawing {render:.1} ms/frame",
+                        1000.0 / avg.max(0.01)
+                    ),
+                    None => println!("bench-scroll: no frames drawn"),
+                }
+            });
+            delay = total + 100;
+        }
         "editor-clip" => {
             use slint::Model;
             let vm = ui.global::<crate::EditorVM>();

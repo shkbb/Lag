@@ -16,3 +16,18 @@ crate's own private helpers (`all_instances`, `item_flat_index_to_rect`, the LLR
 
 When upgrading Slint: copy the new version here and re-apply the two `LAG PATCH` blocks (highlight.rs, api.rs),
 or drop the patch if upstream exposes an equivalent.
+
+## i-slint-renderer-femtovg 1.18.1
+
+An unmodified copy of `i-slint-renderer-femtovg` 1.18.1 from crates.io (same licence as above, see `LICENSES/`),
+with ONE addition marked `LAG PATCH` (images.rs, itemrenderer.rs):
+
+- `TextureCache` keeps colorized copies by (source texture, colour, image flags): an image with `colorize` (every
+  tinted `MaterialIcon`) is colorized once per window and shared, instead of once per element.
+
+Why: colorizing renders the image into a new texture through its own framebuffer. Every element did that, so
+scrolling a list (new cards, each with a few tinted icons) created ~640 tiny framebuffers in a few seconds of
+scrolling the library (owner, 2026-11-27: "листається наче слайдшоу"; measured with `--gpu-check`'s stall probe).
+
+When upgrading Slint: copy the new version here and re-apply the `LAG PATCH` blocks, or drop the patch if upstream
+shares colorized images itself.
